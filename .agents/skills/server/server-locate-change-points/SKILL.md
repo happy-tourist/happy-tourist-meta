@@ -62,6 +62,7 @@ The sibling client already assumes a checkers contract; server is still scaffold
 | GET | `/health` | `{ status, uptime }` — deploy/monitor |
 | GET | `/hi` | Plain text smoke check |
 | GET | `/api/hello` | Demo JSON via `createEndpoint` |
+| GET | `/api/theme` | `{ theme: 'light' \| 'dark' \| null }`; `auth.middleware()`; registered only; SELECT `users.theme` |
 | POST | `/api/theme` | Body `{ theme: 'light' \| 'dark' }`; `auth.middleware()`; registered only; updates `users.theme` |
 | * | `/auth/*` | Provided by `@colyseus/auth` when `database` is set (incl. `/auth/provider/google/callback`) |
 | GET | `/rooms/:roomName` | Colyseus available-rooms listing (HTTP fallback; live UI uses LobbyRoom) |
@@ -112,7 +113,7 @@ Use these rules to pick the layer before naming files.
 | If the change is… | Prefer |
 |-------------------|--------|
 | Room create/join, auth JWT connect | `test/MyRoom.test.ts` (update room name / contract when registration changes) |
-| Theme preference HTTP | `test/theme.test.ts` (`POST /api/theme` auth + persist) |
+| Theme preference HTTP | `test/theme.test.ts` (`GET`/`POST /api/theme` auth + persist + reload GET) |
 | Multi-client join pressure | `loadtest/example.ts` (`joinOrCreate`; `--room` / `--numClients`) |
 
 ## Domain Hotspots
@@ -144,7 +145,7 @@ Use these rules to pick the layer before naming files.
    - schema symbols (`MyRoomState`, `Schema`, `type`, `MapSchema`, board/turn/status/players);
    - auth (`JWT.verify`, `@colyseus/auth`, `AUTH_SALT`, `JWT_SECRET`);
    - DB (`GameDatabase`, `users`, `displayName`, `rating`, `gamesPlayed`, `gamesWon`, `theme`);
-   - HTTP (`/health`, `/hi`, `/api/hello`, `POST /api/theme`, `createEndpoint`, CORS, `monitor`, `playground`);
+   - HTTP (`/health`, `/hi`, `/api/hello`, `GET|POST /api/theme`, `createEndpoint`, CORS, `monitor`, `playground`);
    - tests / loadtest (`@colyseus/testing`, `joinOrCreate`);
    - deploy (`ecosystem.config.cjs`, `pm2`, `rsync`, `DATABASE_URL`).
 
@@ -170,7 +171,7 @@ Use these rules to pick the layer before naming files.
 | OAuth providers (Google) | `src/config/auth.ts` (`addProvider`); import from `app.config.ts` |
 | User columns / defaults | `src/db/schema.ts` |
 | Express / CORS / health | `express(app)` in `src/app.config.ts` |
-| Custom HTTP routes (`/api/hello`, `POST /api/theme`, …) | `routes` / `createEndpoint` in `src/app.config.ts` |
+| Custom HTTP routes (`/api/hello`, `GET|POST /api/theme`, …) | `routes` / `createEndpoint` in `src/app.config.ts` |
 | Env secrets / DB path | `.env.example`, `.env.development`, `.env.production` |
 | Tests | `test/**.test.ts` — boots `appConfig`, JWT, room name |
 | Loadtest | `loadtest/example.ts` |

@@ -28,7 +28,7 @@ There is **no** axios layer and **no** BFF. Live lobby uses `LobbyRoom` WebSocke
 | Pages | Call store actions; do not call `client.*` from pages/components |
 | Live lobby list | `subscribeLobby` → `joinOrCreate(LOBBY_ROOM, { filter: { name: CHECKERS_ROOM } })` + `rooms` / `+` / `-` |
 | HTTP fallback | `refreshRooms` → `client.http.get('/rooms/checkers')` — unused by LobbyPage; **not** `getAvailableRooms` |
-| Theme preference | `stores/theme.ts` → `client.http.post('/api/theme', { body: { theme } })` for registered users; guest uses `localStorage` only |
+| Theme preference | `stores/theme.ts` → registered `client.http.get('/api/theme')` restore (≠ JWT-only) + `post('/api/theme', { body: { theme } })` on toggle; guest uses `localStorage` only |
 | Room names | `CHECKERS_ROOM = 'checkers'`; `LOBBY_ROOM = 'lobby'` in `stores/game.ts` |
 | Connect | `client.create` / `joinById` / `joinOrCreate` via game store actions |
 | Moves | `room.send('move', { from, to })` via `sendMove` |
@@ -46,7 +46,7 @@ There is **no** axios layer and **no** BFF. Live lobby uses `LobbyRoom` WebSocke
 | Import `client` from `@/boot/colyseus` | Create a second `Client`, or call `axios` / raw `fetch` for Colyseus |
 | Keep Colyseus I/O inside Pinia (`auth`, `theme`, `game`) | Scatter `client.http` / `client.create` / `room.send` across components |
 | List rooms via `subscribeLobby` (LobbyRoom `rooms` / `+` / `-`) | Poll `setInterval` + HTTP, or use `client.getAvailableRooms` |
-| Save registered theme via `stores/theme` → `POST /api/theme` | POST theme from page templates, or save guest theme to the server |
+| Restore/save registered theme via `stores/theme` → `GET`/`POST` `/api/theme` | Theme HTTP from page templates; JWT-only restore after reload; save guest theme to the server |
 | Use `CHECKERS_ROOM` / `LOBBY_ROOM` constants | Hardcode room names in multiple places or invent names without the server |
 | Enter rooms via `createGame` / `joinGame` (`_enterRoom`) | Duplicate connect + `onStateChange` wiring in pages |
 | Send moves with `sendMove` → `room.send('move', { from, to })` | Invent other message names without coordinating with the server |

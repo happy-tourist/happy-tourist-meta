@@ -60,14 +60,14 @@ routes: createRouter({
   api_hello: createEndpoint("/api/hello", { method: "GET" }, async () => {
     return { message: "Hello World" };
   }),
-  // Example: JWT-gated preference (see api_theme)
+  // Example: JWT-gated preference (see api_theme / api_theme_get)
 }),
 ```
 
-- Key (`api_hello` / `api_theme`) is an internal id; path/method come from `createEndpoint`.
+- Key (`api_hello` / `api_theme` / `api_theme_get`) is an internal id; path/method come from `createEndpoint`.
 - Handler returns a value → JSON response. Keep it side-effect light.
 - Prefer this for new **public demo / thin JSON** endpoints that are not healthchecks.
-- Authenticated thin writes (profile prefs): `use: [auth.middleware()]`, validate body (e.g. zod), update Drizzle row by `auth.id`; reject missing JWT / `anonymous === true`.
+- Authenticated thin reads/writes (profile prefs): `use: [auth.middleware()]`; writes validate body (e.g. zod) and update Drizzle by `auth.id`; reads SELECT by `auth.id`; reject missing JWT / `anonymous === true`.
 
 ### 2. `express(app)` — raw Express 5
 
@@ -93,6 +93,7 @@ For CORS / monitor details use `work-with-middleware` and `work-with-config`.
 | Method | Path | Source | Notes |
 |--------|------|--------|-------|
 | GET | `/api/hello` | `createEndpoint` (`api_hello`) | Demo JSON `{ message }` |
+| GET | `/api/theme` | `createEndpoint` (`api_theme_get`) | `{ theme: 'light' \| 'dark' \| null }`; `auth.middleware()`; registered JWT only; SELECT `users.theme`; reject unauth / anonymous |
 | POST | `/api/theme` | `createEndpoint` (`api_theme`) | Body `{ theme: 'light' \| 'dark' }`; `auth.middleware()`; registered JWT only; updates `users.theme`; reject unauth / anonymous |
 | GET | `/health` | `express` hook | `{ status, uptime }` — deploy / monitor |
 | GET | `/hi` | `express` hook | Plain text smoke |

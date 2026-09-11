@@ -119,7 +119,7 @@ Decide in this order:
 2. **Synced state fields?** → `src/rooms/schema/<Name>State.ts` only; Room assigns/mutates them.
 3. **Move / game messages?** → Room `onMessage('move', …)` (or equivalent) — validate, apply, update schema.
 4. **User profile columns?** → `src/db/schema.ts`: **NOT NULL** columns need `.default(...)` so `/auth/register` / `/auth/login` stay compatible; nullable prefs (e.g. `theme`) do not; wire via `src/db/index.ts` if needed.
-5. **Thin HTTP (health, demo API, preference save)?** → `express` hook or `createEndpoint` in `app.config.ts` (e.g. `POST /api/theme`). CORS stays first.
+5. **Thin HTTP (health, demo API, preference read/save)?** → `express` hook or `createEndpoint` in `app.config.ts` (e.g. `GET|POST /api/theme`). CORS stays first.
 6. **Auth HTTP?** → Already from `@colyseus/auth` when `database` is set — do not reimplement `/auth/*`.
 7. **OAuth provider (Google)?** → `src/config/auth.ts` via `auth.oauth.addProvider`; side-effect import from `app.config.ts`; do not override built-in `onOAuthProviderCallback` unless product asks.
 8. **Room gate?** → static `onAuth` with `JWT.verify` on the Room class.
@@ -223,7 +223,7 @@ ecosystem.config.cjs
 
 **Auth gate** — `MyRoom.onAuth` → `JWT.verify(token)` → userdata to `onJoin`.
 
-**HTTP** — CORS middleware first in `express`; `/health` JSON; `createEndpoint("/api/hello", …)` demo; `createEndpoint("/api/theme", …)` JWT + registered theme preference; `/auth/*` from `@colyseus/auth` via `database: db`.
+**HTTP** — CORS middleware first in `express`; `/health` JSON; `createEndpoint("/api/hello", …)` demo; `createEndpoint` `GET|POST /api/theme` JWT + registered theme preference; `/auth/*` from `@colyseus/auth` via `database: db`.
 
 **Test** — `boot(appConfig)`, `JWT.sign(...)`, `createRoom("checkers")`, `connectTo`, assert `sessionId`; lobby `+`/`-` cases when listing changes.
 

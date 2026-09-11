@@ -63,7 +63,7 @@ Use these rules to pick the layer before naming files.
 | Page-specific UI / interaction | owning `src/pages/*Page.vue` |
 | Reusable across pages | `src/components/` (only when reuse is real; avoid premature extraction) |
 | Global shell / theme toggle | `src/App.vue` (`q-header` Dark toggle + `theme.error` banner; syncs `auth` → `theme`) |
-| Theme / Dark preference | `boot/theme.ts`, `stores/theme.ts`, `quasar.config.ts` (`Dark` plugin); guest `localStorage` / registered `POST /api/theme` |
+| Theme / Dark preference | `boot/theme.ts`, `stores/theme.ts`, `quasar.config.ts` (`Dark` plugin); guest `localStorage`; registered `GET`/`POST` `/api/theme` (restore ≠ JWT-only) |
 | Theme / global styles | `src/css/quasar.variables.scss`, `src/css/app.scss` (`.text-muted`) |
 | Copy / locale strings | `src/i18n/` (+ boot `src/boot/i18n.ts` if wiring changes) |
 
@@ -74,7 +74,7 @@ Shared mutable session and realtime I/O belong in Pinia, not ad-hoc page-only `c
 | Concern | Store surface (typical) |
 |---------|-------------------------|
 | Auth session | `stores/auth.ts`: `register` / `login` / `loginAnonymously` / `loginWithGoogle` / `logout` / `whenReady`; `isAuthenticated`, `displayName`; optional `user.theme`; sync via `client.auth.onChange` |
-| UI theme (chrome Dark) | `stores/theme.ts`: `syncFromAuthUser` / `toggle`; guest `localStorage` (`ht-theme`); registered `client.http.post('/api/theme')`; wired from `App.vue` |
+| UI theme (chrome Dark) | `stores/theme.ts`: `syncFromAuthUser` / `toggle`; guest `localStorage` (`ht-theme`); registered `client.http.get('/api/theme')` restore (≠ JWT-only) + `post` on toggle; wired from `App.vue` |
 | Lobby room list | `stores/game.ts` `subscribeLobby` / `unsubscribeLobby` → LobbyRoom `rooms` / `+` / `-` |
 | Enter / leave room | `createGame` / `joinGame` / `leaveGame` (`CHECKERS_ROOM` / `LOBBY_ROOM`) |
 | Board sync / moves | `_attachRoom` `onStateChange`; `sendMove` → `room.send('move', { from, to })`; getters `isInRoom`, `canMove` |

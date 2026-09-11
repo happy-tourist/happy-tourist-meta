@@ -37,7 +37,7 @@ Driver: **better-sqlite3**. ORM surface: **drizzle-orm** via Colyseus `tables.sq
 | `gamesWon` | `games_won` | `integer().notNull().default(0)` |
 | `theme` | `theme` | nullable `text` — `light` \| `dark` \| unset (`null`); **no** NOT NULL / no default required |
 
-These are **profile** fields (display name, rating, games played/won, UI theme) for auth users — not room/board state. `theme` is written by thin `POST /api/theme` for registered users only; it lands in JWT userdata on subsequent login.
+These are **profile** fields (display name, rating, games played/won, UI theme) for auth users — not room/board state. `theme` is written by thin `POST /api/theme` and read by `GET /api/theme` for registered users only; it also lands in JWT userdata on subsequent login (client restore must not rely on JWT alone after reload).
 
 ## Relation To Auth
 

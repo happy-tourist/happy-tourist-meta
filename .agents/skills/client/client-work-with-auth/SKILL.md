@@ -107,8 +107,9 @@ client.auth.onChange((data) => {
 ```
 
 Do not invent a parallel session flag. Trust `onChange` + `isAuthenticated`.
-Chrome Dark preference is owned by `stores/theme` (applies `user.theme` for
-registered users); auth store must not call `Dark` or `POST /api/theme`.
+Chrome Dark preference is owned by `stores/theme` (`GET /api/theme` restore for
+registered users — not JWT `user.theme` alone; guest `localStorage`); auth store
+must not call `Dark` or theme HTTP.
 
 ## Login Page Patterns
 

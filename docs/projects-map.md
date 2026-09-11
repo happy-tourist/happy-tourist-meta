@@ -77,8 +77,8 @@ server: C:/Users/You/work/happy-tourist-server
 | `client.agents` | `../happy-tourist.github.io/AGENTS.md` | продукт / стек / домены client |
 | `client.src` | `../happy-tourist.github.io/src/` | исходники UI |
 | `client.pages` | `../happy-tourist.github.io/src/pages/` | route pages (Login/Lobby/Game) |
-| `client.stores` | `../happy-tourist.github.io/src/stores/` | Pinia (`auth`, `game`) |
-| `client.boot` | `../happy-tourist.github.io/src/boot/` | Quasar boot (`colyseus`, `i18n`) |
+| `client.stores` | `../happy-tourist.github.io/src/stores/` | Pinia (`auth`, `theme`, `game`) |
+| `client.boot` | `../happy-tourist.github.io/src/boot/` | Quasar boot (`theme`, `colyseus`, `i18n`) |
 | `server` | `../happy-tourist-server/` | Colyseus backend |
 | `server.agents` | `../happy-tourist-server/AGENTS.md` | продукт / стек / домены server |
 | `server.src` | `../happy-tourist-server/src/` | исходники сервера |

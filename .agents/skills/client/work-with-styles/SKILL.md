@@ -3,7 +3,8 @@ name: work-with-styles
 description: >-
   Use when adding, changing, reviewing, or debugging Vue 3 / Quasar 2 styles in
   the happy-tourist client: Quasar Dark plugin + theme boot/store, App.vue
-  header toggle, guest localStorage vs registered POST /api/theme, muted chrome
+  header toggle, guest localStorage vs registered GET/POST /api/theme (restore
+  ≠ JWT-only), muted chrome
   text, quasar.variables.scss tokens, app.scss, page scoped CSS (especially
   GamePage board/cell/piece), Quasar utility classes, Material Icons / Roboto,
   or color props on Quasar components.
@@ -50,14 +51,17 @@ to auto in v1).
 |---------|----------|------|
 | Early apply | Boot reads `localStorage` key `ht-theme` and calls `Dark.set` | `src/boot/theme.ts` |
 | Guest / signed out | Persist explicit choice in `localStorage` only | `writeStoredTheme` / `readStoredTheme` |
-| Registered (email / Google) | Apply `user.theme` from userdata on `auth.onChange` / login; save via `client.http.post('/api/theme', { body: { theme } })`; also write `localStorage` on toggle (flash / device copy); failures → store `error` + `q-banner` in `App.vue` | `stores/theme.ts` `syncFromAuthUser` / `toggle` |
+| Registered restore | On `auth.ready` / identity change: async `client.http.get('/api/theme')` and apply; **not** JWT `user.theme` alone after reload (claims may be stale); align device copy (`writeStoredTheme` or `clearStoredTheme` when profile unset → auto); ignore stale GET via generation counter; patch in-memory userdata for display; GET fail → keep boot/`localStorage`, do not fall back to JWT-only | `stores/theme.ts` `syncFromAuthUser` |
+| Registered save | Toggle → `client.http.post('/api/theme', { body: { theme } })`; also write `localStorage` (flash / device copy); failures → store `error` + `q-banner` in `App.vue` | `stores/theme.ts` `toggle` |
 | Header control | Shared `q-header` + `q-btn` icons `dark_mode` / `light_mode` | `App.vue` |
-| Auth wiring | `App.vue` watches `auth.ready` + `auth.user` → `theme.syncFromAuthUser` | do not call HTTP from page templates |
+| Auth wiring | `App.vue` watches `auth.ready` + user id / anonymous (not in-memory `user.theme` patches) → `theme.syncFromAuthUser` | do not call HTTP from page templates |
 | Board | Unchanged — `.cell.dark` is a **square color**, not app Dark mode | `GamePage.vue` scoped CSS |
 
-`AuthUser` may include optional `theme?: string | null` from userdata. Anonymous
-sessions must not POST `/api/theme` (server rejects). Colyseus HTTP for theme
-belongs in the theme store only (`colyseus-client` / stores pattern).
+`AuthUser` may include optional `theme?: string | null` from userdata (login /
+display); restore after reload must use **GET** `/api/theme`, not JWT claims
+alone. Anonymous sessions must not GET/POST `/api/theme` (server rejects).
+Colyseus HTTP for theme belongs in the theme store only (`colyseus-client` /
+stores pattern).
 
 Muted secondary chrome text uses global `.text-muted` (with `.body--dark`
 override) instead of hardcoding `text-grey-7` on Login / Lobby / Game chrome.
@@ -234,7 +238,7 @@ Prefer `color="primary"` / `bg-negative` over hardcoding `#1976d2` /
 | Area | Typical path |
 |------|----------------|
 | Dark plugin + boot list | `quasar.config.ts` (`plugins: ['Dark']`, `boot: ['theme', …]`) |
-| Theme boot helpers | `src/boot/theme.ts` |
+| Theme boot helpers | `src/boot/theme.ts` (`readStoredTheme` / `writeStoredTheme` / `clearStoredTheme` / `applyQuasarTheme`) |
 | Theme Pinia store | `src/stores/theme.ts` |
 | Header theme toggle | `src/App.vue` |
 | Theme variables | `src/css/quasar.variables.scss` |
@@ -254,8 +258,8 @@ prefer the login → lobby → game flow for new UI.
 2. For ordinary spacing, flex, type, and button colors — use Quasar classes /
    props first; secondary labels → `text-muted`.
 3. For light/dark chrome — Quasar `Dark` via `boot/theme` + `stores/theme` +
-   `App.vue` header; guest → `localStorage` (`ht-theme`); registered → userdata
-   + `POST /api/theme`.
+   `App.vue` header; guest → `localStorage` (`ht-theme`); registered →
+   `GET /api/theme` restore (≠ JWT-only) + `POST /api/theme` on toggle.
 4. For theme-wide palette changes — edit `src/css/quasar.variables.scss`.
 5. For true app-wide CSS — edit `src/css/app.scss` sparingly.
 6. For board / piece / selection / target / disabled look — edit scoped CSS in
@@ -271,7 +275,8 @@ prefer the login → lobby → game flow for new UI.
 - Reaching for Vuetify utilities (`pa-8`, `d-flex`, `primary--text`) — this
   client is Quasar (`q-pa-md`, `row`, `text-primary` / `color="primary"`).
 - Building a custom CSS theme system instead of Quasar `Dark`.
-- POSTing theme from page templates, or saving guest theme to the server.
+- Calling theme GET/POST from page templates, or saving guest theme to the server.
+- Restoring registered theme from JWT `user.theme` alone after reload (use GET).
 - Using `text-grey-7` for secondary chrome (poor contrast in dark) — prefer
   `text-muted`.
 - Changing board cell/piece CSS when toggling app Dark mode.

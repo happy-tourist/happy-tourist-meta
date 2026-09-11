@@ -110,7 +110,7 @@ Decide in this order:
 **Put in stores**
 
 - Colyseus auth: register / login / anonymous / Google / logout / `whenReady`.
-- Theme preference: Quasar Dark + guest `localStorage` / registered `POST /api/theme` (`stores/theme.ts`).
+- Theme preference: Quasar Dark + guest `localStorage` / registered `GET`+`POST` `/api/theme` (restore ≠ JWT-only; `stores/theme.ts`).
 - Room lifecycle: `subscribeLobby`, `unsubscribeLobby`, `createGame`, `joinGame`, `leaveGame`, `sendMove`.
 - Mirrored room state: `board`, `myColor`, `currentTurn`, `status`, `rooms`, errors.
 
@@ -189,9 +189,9 @@ Registered in `quasar.config.ts` boot array: `theme`, `i18n`, `colyseus` (+ `fra
 
 **Game** — `GamePage` binds board from `useGameStore`, sends moves via `sendMove`, rejoins by `roomId` on refresh; local move highlights are UI-only.
 
-**App shell** — `App.vue` hosts `q-layout` → theme `q-header` → `router-view`; watches `auth` → `theme.syncFromAuthUser`; shows `theme.error` banner.
+**App shell** — `App.vue` hosts `q-layout` → theme `q-header` → `router-view`; watches `auth.ready` + user id / anonymous → async `theme.syncFromAuthUser` (GET restore for registered); shows `theme.error` banner.
 
-**Boot** — `theme.ts` applies early Dark; `colyseus.ts` exports singleton `client`; stores import them.
+**Boot** — `theme.ts` applies early Dark (`readStoredTheme` / `clearStoredTheme`); `colyseus.ts` exports singleton `client`; stores import them.
 
 ## Creating New Pieces — Checklist
 

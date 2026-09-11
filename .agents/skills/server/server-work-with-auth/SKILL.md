@@ -169,7 +169,7 @@ export const users = tables.sqlite.users("colyseus_users", {
 | `displayName` | Optional text; may map from register `options.name` / client display |
 | `rating` | Default `1000` |
 | `gamesPlayed` / `gamesWon` | Default `0` |
-| `theme` | Nullable UI preference (`light` \| `dark`); written by `POST /api/theme` for registered users; appears in userdata on next login |
+| `theme` | Nullable UI preference (`light` \| `dark`); written by `POST /api/theme`, read by `GET /api/theme` for registered users; also appears in userdata on next login (JWT alone is not enough for reload sync) |
 
 When adding new **NOT NULL** profile columns, always add `.default(...)` or
 register/login will break. Nullable prefs (like `theme`) do not need a default.
@@ -206,7 +206,7 @@ onJoin(client: Client, _options: any, auth: any) {
 | Room join | Auth via JWT in `onAuth`, not Express middleware |
 | CORS | Allow credentials + `Authorization`; keep CORS first in `express(app)` |
 
-Game logic stays in the Room. Thin HTTP (`/health`, `/api/hello`, `POST /api/theme`)
+Game logic stays in the Room. Thin HTTP (`/health`, `/api/hello`, `GET|POST /api/theme`)
 is unrelated to challenge-login BFF patterns; theme save uses `auth.middleware()` +
 registered-user check (see `work-with-routes` / `work-with-database`).
 

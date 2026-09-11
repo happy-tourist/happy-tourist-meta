@@ -3,7 +3,7 @@ name: server-work-with-test
 description: >-
   Use when planning or writing mocha + @colyseus/testing tests for
   happy-tourist-server: room connect with JWT, onAuth failures, move messages,
-  schema sync assertions, GET /rooms listing, or preference HTTP (POST /api/theme).
+  schema sync assertions, GET /rooms listing, or preference HTTP (GET/POST /api/theme).
   Core workflow: test plan (mocks/verify) → write test/*.test.ts → run npm test
   from server package root and fix failures. Do not invent Jest/babel patterns.
 trigger: slash
@@ -51,7 +51,7 @@ tests; fix failures before claiming done.
 | `src/rooms/MyRoom.ts` (or `CheckersRoom`) | `test/MyRoom.test.ts` (or `test/CheckersRoom.test.ts`) |
 | Room schema / messages covered with room | Same room test file (or `test/<Room>.messages.test.ts` if large) |
 | HTTP helpers (`/health`, `/rooms/:name`) | `test/http.test.ts` or next to the feature under test |
-| Preference HTTP (`POST /api/theme`) | `test/theme.test.ts` (auth reject + registered persist/login) |
+| Preference HTTP (`GET`/`POST /api/theme`) | `test/theme.test.ts` (auth reject + persist/login + GET after POST same JWT + cross-device older JWT) |
 
 Mocha picks up `test/**.test.ts` via the npm script. Mirror room names under
 `test/` as rooms grow; keep relative imports to `../src/...`.
@@ -73,7 +73,7 @@ import appConfig from "../src/app.config.js";
    below and the coverage topics.
 4. Cover success and failure paths that exist in the SUT (valid JWT join,
    invalid/missing token, illegal `move`, schema fields after join/move,
-   lobby live-list `+` / `-` when applicable, JWT-gated HTTP like `POST /api/theme`).
+   lobby live-list `+` / `-` when applicable, JWT-gated HTTP like `GET|POST /api/theme`).
 5. Run `npm test` from the server package root (optionally a single file if mocha
    path filtering is used); fix failures before claiming done.
 
@@ -108,8 +108,10 @@ Use these categories only when the SUT has relevant behavior:
 - Listing: live LobbyRoom — after `createRoom("checkers")`, lobby client
   receives `+`; after dispose, receives `-` (SC-LOBBY-02/03). HTTP
   `GET /rooms/checkers` remains optional fallback.
-- Preference HTTP: `POST /api/theme` — unauthenticated / anonymous rejected;
-  registered JWT persists `theme` and returns it on next login (`test/theme.test.ts`).
+- Preference HTTP: `GET`/`POST /api/theme` — unauthenticated / anonymous rejected;
+  registered JWT persists `theme`, returns it on next login, `GET` returns
+  profile after POST with the same JWT without re-login, and an older session
+  JWT also sees a theme saved from another session (`test/theme.test.ts`).
 
 Formulation rules:
 
@@ -134,8 +136,10 @@ Verify live lobby listing:
 - room.disconnect() → lobby receives -
 
 Verify theme preference HTTP:
-- No token / anonymous: POST /api/theme rejects (401/403)
+- No token / anonymous: GET/POST /api/theme reject (401/403)
 - Registered: POST { theme: "dark" } → login userdata.theme === "dark"
+- Registered: POST then GET /api/theme with same JWT → theme without re-login
+- Cross-device: older session JWT GET returns theme saved from another session POST
 ```
 
 ## Coverage Topics

@@ -1,6 +1,6 @@
 ## Context
 
-См. `proposal.md` (Why / Scope). Сейчас в client нет runtime Dark: `quasar.config.ts` → `plugins: []`, `App.vue` — только `q-layout` + `router-view` без шапки. Skill `work-with-styles` фиксирует отсутствие runtime theme override. Server: `colyseus_users` расширен `displayName` / rating / games*; отдельного preferences API нет. `GET /auth/userdata` отдаёт JWT payload (`onParseToken`), не live SELECT — для «подтянуть при логине» достаточно поля в row → JWT на login/register/Google.
+См. `proposal.md` (Why / Scope). Client: Quasar Dark, `App.vue` header toggle, theme store, guest `localStorage`. Server: nullable `users.theme`, `POST /api/theme`. `GET /auth/userdata` отдаёт JWT payload (`onParseToken`), **не** live SELECT — после POST claims устаревают, поэтому F5 и другое уже залогиненное устройство после своего reload показывают старую тему, пока read не идёт из БД.
 
 Пакеты: **client** (`../happy-tourist.github.io`) + **server** (`../happy-tourist-server`). Room `checkers` / messages / board schema **без изменений**.
 
@@ -10,12 +10,13 @@
 
 - Quasar Dark для chrome; default `auto` (device), после выбора — `light` | `dark`.
 - Общая шапка с toggle на всех экранах.
-- Guest → `localStorage`; registered → колонка profile + HTTP save; apply theme из userdata при логине/`onChange`.
+- Guest → `localStorage`; registered → колонка profile + HTTP save; apply при логине и при reload/restore из **профиля БД**.
+- Другое устройство с живой сессией → актуальная тема после **его** reload (без re-login).
 - Контраст вторичного текста (`text-grey-7` и аналоги) в dark.
 
 **Non-Goals:**
 
-- Редизайн доски; return-to-auto после явного выбора; live sync без логина; guest→DB; изменение OAuth/email flows кроме theme в userdata.
+- Редизайн доски; return-to-auto после явного выбора; live-push / polling без reload; guest→DB; изменение OAuth/email flows кроме theme в профиле/userdata.
 
 ## Decisions
 
@@ -38,17 +39,20 @@
 
 ### D4 — Client state / I/O
 
-- Тонкий composable или setup-store предпочтений (не раздувать `auth` Colyseus-логикой UI): apply Dark; guest read/write `localStorage` (ключ вида `ht-theme`); для registered — `client.http.post` сохранения.
-- Применение серверной темы: в реакции на `auth.onChange` / после login, если `user.theme` ∈ {`light`,`dark`} и `!user.anonymous`; иначе local/auto.
-- HTTP I/O предпочтений — через auth/preferences helper в store/composable, не из template.
+- Тонкий setup-store предпочтений (не раздувать `auth`): apply Dark; guest read/write `localStorage` (`ht-theme`); registered — `client.http.post` save и **`client.http.get` restore**.
+- При session restore / `auth.ready` для registered: читать тему через GET профиля и `apply`; **не** использовать JWT `user.theme` как единственный источник после reload (SC-THEME-08/09).
+- Login userdata по-прежнему может сразу показать theme; reload обязан сходиться с GET.
+- Guest: без GET; только localStorage.
+- После успешного POST: локальный apply + localStorage; патч in-memory `auth.user.theme` — не замена GET на следующем reload.
+- HTTP I/O — только из store/composable, не из template.
 
 ### D5 — Server: колонка + thin POST
 
-- `src/db/schema.ts`: nullable text `theme` (например `theme: text("theme")`) — без NOT NULL, чтобы `/auth/register|/auth/login` не ломались.
-- Endpoint: `POST /api/theme` (или `/api/preferences/theme`) через `createEndpoint` + `auth.middleware()`; body `{ theme: 'light' | 'dark' }`; обновить row по `auth.id`; отклонить anonymous / missing id.
-- Login уже кладёт custom columns в JWT через `findByEmail` / anonymous register row — theme попадёт в userdata после save и следующего login; для текущей сессии клиент применяет локально сразу после успешного POST.
-- Prod SQLite: добавить колонку на существующий `game.db` (ALTER / совместимый путь GameDatabase) — см. Risks.
-- CORS уже разрешает POST; Authorization header уже в allow-list.
+- `src/db/schema.ts`: nullable text `theme` — без NOT NULL.
+- Endpoint: `POST /api/theme` через `createEndpoint` + `auth.middleware()`; body `{ theme: 'light' | 'dark' }`; update по `auth.id`; reject anonymous / missing id.
+- Login кладёт custom columns в JWT — theme в userdata после следующего login; для текущей сессии клиент применяет локально после POST.
+- Prod SQLite: ALTER / auto-migrate колонки — см. Risks.
+- CORS: POST (+ GET в D8); Authorization в allow-list.
 
 ### D6 — Доска
 
@@ -56,7 +60,13 @@
 
 ### D7 — Docs/skills (после кода)
 
-- Обновить `work-with-styles` (runtime Dark), при необходимости DB/routes/auth skills — через check-changes; не блокер design.
+- Обновить `work-with-styles` / stores / routes (runtime Dark, GET restore) — через check-changes; не блокер design.
+
+### D8 — Источник правды при restore: профиль БД через GET
+
+- Thin **`GET /api/theme`**: `auth.middleware()`; registered only; `SELECT theme` по `auth.id`; ответ `{ theme: 'light' | 'dark' | null }`; reject unauth / anonymous.
+- Альтернатива: `onParseToken` с SELECT на каждый userdata — сильнее связывает auth с UI-pref; отвергнуто.
+- Альтернатива: re-sign JWT после POST — не чинит устройство B со старым JWT до DB read; GET достаточнее.
 
 Чеклист реализации: `tasks.md`.
 
@@ -64,19 +74,20 @@
 
 | Risk | Mitigation |
 |------|------------|
-| JWT/`/auth/userdata` не отражает свежий theme до re-login | По продукту ок (apply on login); после POST клиент сразу `Dark.set` локально |
-| Prod `game.db` без новой колонки | Явный ALTER/migrate step в tasks; default null |
-| Anonymous с row в БД может вызвать PUT по ошибке | Endpoint явно rejects `anonymous === true` |
+| JWT/`/auth/userdata` устаревает после POST | GET `/api/theme` при restore; клиент не опирается только на JWT theme |
+| Лишний HTTP на каждый reload | Один GET; кэш не обязателен в v1 |
+| Flash: boot local → затем GET | Early localStorage apply; GET уточняет registered |
+| Prod `game.db` без новой колонки | ALTER/migrate в tasks; default null |
+| Anonymous с row в БД | POST/GET reject `anonymous === true` |
 | Контраст `text-grey-7` в dark | Пройти Login/Lobby/Game chrome в tasks |
-| Flash светлой темы до boot | Ранний boot Dark + чтение localStorage до paint по возможности |
 
 ## Migration Plan
 
-1. Deploy server schema + endpoint (nullable theme).
-2. Deploy client с Dark + header + sync.
-3. Rollback: client без Dark безопасен при лишней колонке; endpoint можно оставить; колонку не удалять без нужды.
+1. Deploy server schema + POST (+ затем GET) theme.
+2. Deploy client Dark + header + sync; затем restore via GET.
+3. Rollback: старый client игнорирует GET; POST/колонка безвредны.
 
 ## Technical prerequisites (из explore)
 
-- Закрыты: DB для registered; guest localStorage; apply on login; device default; header all pages; board unchanged.
+- Закрыты: DB для registered; guest localStorage; apply on login; device default; header; board unchanged; reload sync from profile (не live без reload).
 - Открытых блокеров нет.

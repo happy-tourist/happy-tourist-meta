@@ -1,6 +1,6 @@
 ## Purpose
 
-Управление светлой и тёмной темой UI Happy Tourist: следование теме устройства до явного выбора, локальное сохранение для гостя и серверный preference для зарегистрированных пользователей с применением при логине.
+Управление светлой и тёмной темой UI Happy Tourist: следование теме устройства до явного выбора, локальное сохранение для гостя и серверный preference для зарегистрированных пользователей с применением при логине и при reload/restore сессии из актуального профиля БД (в том числе на другом уже залогиненном устройстве после его обновления страницы). Live-push без reload не требуется.
 
 ## Traceability
 
@@ -11,8 +11,10 @@
 | SC-THEME-03 | implemented (guest `localStorage` `ht-theme`; lint+typecheck) |
 | SC-THEME-04 | server mocha (HTTP save theme + reject unauthenticated / anonymous) |
 | SC-THEME-05 | server mocha (registered user theme persisted; login userdata includes theme) |
-| SC-THEME-06 | implemented (theme store `syncFromAuthUser` from userdata; lint+typecheck) |
+| SC-THEME-06 | implemented (theme from login/userdata; lint+typecheck) — restore after reload уточняется SC-THEME-08/09 |
 | SC-THEME-07 | covered-by-reuse (board visuals unchanged — no board CSS change in scope) |
+| SC-THEME-08 | implemented (server mocha GET profile after save with same JWT; client GET restore) |
+| SC-THEME-09 | implemented (server mocha + client: other device session picks up theme after its reload) |
 
 ## ADDED Requirements
 
@@ -64,7 +66,7 @@ The system SHALL store an explicit `light` or `dark` theme preference on the reg
 
 ### Requirement: Registered theme is applied on login
 
-When a registered user completes login (email/password or Google) or restores a session whose userdata includes a stored theme, the client SHALL apply that light or dark preference to the chrome. The system is NOT required to push live theme updates to other already-open sessions without a new login.
+When a registered user completes login (email/password or Google), the client SHALL apply that light or dark preference to the chrome from login userdata (or an equivalent authenticated profile read). A second device obtains the same preference when that user logs in there. Live push to already-open sessions without reload is NOT required.
 
 #### Scenario [SC-THEME-06]: Theme from userdata applied after login
 
@@ -72,6 +74,26 @@ When a registered user completes login (email/password or Google) or restores a 
 - **WHEN** the user successfully logs in (or the client receives userdata containing that theme on session restore after login)
 - **THEN** the client applies the corresponding dark or light chrome
 - **AND** a second device obtains the same preference when that user logs in there
+
+### Requirement: Registered theme on session restore comes from the user profile
+
+When a registered (non-anonymous) user restores or reloads an authenticated session, the system SHALL apply the current `light` or `dark` theme stored on that user’s profile in the database. The system MUST NOT rely solely on theme claims frozen in the JWT from an earlier login when those claims differ from the profile. If the profile theme is unset, the client MAY follow the device color scheme. The system is NOT required to push theme updates to other open sessions without a page reload or equivalent session restore on that client.
+
+#### Scenario [SC-THEME-08]: Reload applies profile theme after save
+
+- **GIVEN** a registered user with a valid JWT whose token claims may still reflect an older or unset theme
+- **AND** the user has saved theme `light` or `dark` on the profile via the preferences HTTP API
+- **WHEN** the client restores or reloads the authenticated session
+- **THEN** the chrome applies the theme currently stored on the user profile
+- **AND** a stale theme value in JWT claims alone does not override the profile value
+
+#### Scenario [SC-THEME-09]: Other device picks up theme after its reload
+
+- **GIVEN** a registered user has an authenticated session on device B
+- **AND** the same user has saved a different theme on the profile from device A
+- **WHEN** device B reloads or restores the session (without requiring a new login)
+- **THEN** device B applies the theme currently stored on the user profile
+- **AND** the system is not required to update device B before that reload or restore
 
 ### Requirement: Checkers board appearance is unchanged by theme
 

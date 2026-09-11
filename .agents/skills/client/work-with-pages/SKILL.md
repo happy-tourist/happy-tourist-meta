@@ -116,7 +116,7 @@ Every route renders inside:
 </q-layout>
 ```
 
-Shared theme toggle + `theme.error` banner live here (`useThemeStore`, sync from `auth.user`). Do not duplicate a layout wrapper or per-page theme control when adding pages. Route-specific headers/actions stay in the page.
+Shared theme toggle + `theme.error` banner live here (`useThemeStore`). On `auth.ready` / identity change, restore via `syncFromAuthUser` (registered → `GET /api/theme`, guest → `localStorage`) — not JWT `user.theme` alone. Do not duplicate a layout wrapper or per-page theme control when adding pages. Route-specific headers/actions stay in the page.
 
 ## Router Patterns
 

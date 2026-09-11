@@ -200,7 +200,7 @@ use the shared `App.vue` banner only.
 | GamePage missing room and no `roomId` | Redirect lobby without setting a new error |
 | Leave room (user or `_enterRoom` cleanup) | Swallow leave errors |
 | Room `onError` while seated | Store only — banner on GamePage |
-| Theme toggle / `POST /api/theme` fail | `stores/theme` sets `error`; banner in `App.vue` |
+| Theme toggle / restore `GET`/`POST /api/theme` fail | `stores/theme` sets `error`; banner in `App.vue` |
 | Best-effort side effect | Prefer store pattern above; avoid empty catch that hides failures without store `error` or intentional swallow |
 
 ## Patterns And Examples

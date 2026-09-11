@@ -34,7 +34,7 @@ Pinia is installed via Quasar store entry `src/stores/index.ts` (`createPinia()`
 | Store | Style | Why |
 |-------|--------|-----|
 | `auth` | **Setup** (`defineStore('auth', () => { … })`) | Refs + computed, `onChange` subscription, `whenReady` promise — fits Composition API |
-| `theme` | **Setup** (`defineStore('theme', () => { … })`) | Dark preference + `syncFromAuthUser` / `toggle`; HTTP save for registered users |
+| `theme` | **Setup** (`defineStore('theme', () => { … })`) | Dark preference + `syncFromAuthUser` / `toggle`; registered GET restore + POST save |
 | `game` | **Options** (`defineStore('game', { state, getters, actions })`) | Clear room lifecycle, `this.*` mutations, private helpers `_enterRoom` / `_attachRoom` |
 | `counter` (`example-store`) | Options | Scaffold only — do not extend for product features |
 
@@ -80,16 +80,16 @@ Use a store for shared domain data, realtime session, or anything the router/oth
 | Store | Owns | Typical consumers |
 |-------|------|-------------------|
 | **auth** | `user`, `token`, `loading`, `error`, `ready`; `isAuthenticated`, `displayName`; register/login/anonymous/Google/`logout`/`whenReady` | `LoginPage`, router `beforeEach`, `LobbyPage` logout/header, `App.vue` theme sync |
-| **theme** | Quasar Dark `preference`, `error`; `syncFromAuthUser`, `toggle` (guest `localStorage` `ht-theme`; registered `client.http.post('/api/theme')`) | `App.vue` header toggle + auth watch |
+| **theme** | Quasar Dark `preference`, `error`; async `syncFromAuthUser` (GET restore + generation + `clearStoredTheme` when unset), `toggle` (guest `localStorage` `ht-theme`; registered `get` ≠ JWT-only, `post` on toggle) | `App.vue` header toggle + auth identity watch |
 | **game** | lobby `rooms`/`lobbyRoom`/`listing`; active `room`/`roomId`; `board`, `myColor`, `currentTurn`, `status`, `error`; subscribe/unsubscribe / create/join/leave/`sendMove` | `LobbyPage`, `GamePage` |
 | **counter** | scaffold only | none in product flow — ignore unless cleaning scaffold |
 
 ### Auth vs theme vs game ownership
 
-- **auth** owns Colyseus Auth only (`client.auth.*`, token sync via `onChange`). It does not create rooms, send moves, or call Dark/`POST /api/theme`.
-- **theme** owns chrome Dark preference and preference HTTP (`client.http.post('/api/theme')`). Wired from `App.vue`; does not own auth session or rooms. See `work-with-styles`.
+- **auth** owns Colyseus Auth only (`client.auth.*`, token sync via `onChange`). It does not create rooms, send moves, or call Dark/`GET|POST /api/theme`.
+- **theme** owns chrome Dark preference and preference HTTP (`client.http.get('/api/theme')` on restore, `post` on toggle). Wired from `App.vue`; does not own auth session or rooms. See `work-with-styles`.
 - **game** owns room listing, room lifecycle, board snapshot from `onStateChange`, and `room.send('move', …)`. It does not call `client.auth` or theme APIs.
-- Cross-cutting: router awaits `useAuthStore().whenReady()` then enforces `requiresAuth` / `guest`. `App.vue` watches `auth.ready`/`auth.user` → `theme.syncFromAuthUser`. Game pages assume auth already passed.
+- Cross-cutting: router awaits `useAuthStore().whenReady()` then enforces `requiresAuth` / `guest`. `App.vue` watches `auth.ready` + user id / anonymous → `theme.syncFromAuthUser` (GET restore; not JWT `user.theme`-only). Game pages assume auth already passed.
 - Board cell values (server): `0` empty, `1` white, `2` black, `3` white king, `4` black king. Room constants: `CHECKERS_ROOM = 'checkers'`, `LOBBY_ROOM = 'lobby'`.
 
 ### Decision checklist
