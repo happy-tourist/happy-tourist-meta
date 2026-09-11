@@ -35,7 +35,9 @@ OpenSpec: [`openspec/config.yaml`](../openspec/config.yaml); артефакты 
 
 | Skill | Когда |
 |-------|--------|
+| [`align-code`](skills/align-code/SKILL.md) | Client + server: `*-align-code` + `*-verify-code` → сводный отчёт |
 | [`commit`](skills/commit/SKILL.md) | Status → stage → commit → **push** по meta + client + server (main/master) |
+| [`check-changes`](skills/check-changes/SKILL.md) | Unstaged client/server → предложения: добавить/изменить skills, maps, docs, AGENTS.md |
 | [`openspec-propose`](skills/openspec-propose/SKILL.md) | Новая задача: proposal → specs → design → tasks |
 | [`openspec-new-change`](skills/openspec-new-change/SKILL.md) | Создать change и начать артефакты по схеме |
 | [`openspec-continue-change`](skills/openspec-continue-change/SKILL.md) | Продолжить создание недостающих артефактов change |

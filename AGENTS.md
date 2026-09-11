@@ -39,7 +39,7 @@
 
 ## Skills (discovery)
 
-- OpenSpec / workspace (этот репозиторий): `.agents/skills/` (`openspec-*`, [`commit`](.agents/skills/commit/SKILL.md))
+- OpenSpec / workspace (этот репозиторий): `.agents/skills/` (`openspec-*`, [`align-code`](.agents/skills/align-code/SKILL.md), [`commit`](.agents/skills/commit/SKILL.md), [`check-changes`](.agents/skills/check-changes/SKILL.md))
 - Client-wide (meta): [`.agents/skills/client/`](.agents/skills/client/) — runtime UI: `../happy-tourist.github.io/`
 - Server-wide (meta): [`.agents/skills/server/`](.agents/skills/server/) — runtime Colyseus: `../happy-tourist-server/`
 
