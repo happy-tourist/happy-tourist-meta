@@ -3,8 +3,8 @@ name: work-with-database
 description: >-
   Use when adding, changing, reviewing, or debugging GameDatabase, Drizzle user
   schema, colyseus_users extensions, DATABASE_URL / game.db paths, or profile
-  fields (displayName, rating, gamesPlayed, gamesWon) in happy-tourist-server
-  so built-in /auth/register and /auth/login keep working.
+  fields (displayName, rating, gamesPlayed, gamesWon, theme) in
+  happy-tourist-server so built-in /auth/register and /auth/login keep working.
 ---
 
 # Work With Database
@@ -35,8 +35,9 @@ Driver: **better-sqlite3**. ORM surface: **drizzle-orm** via Colyseus `tables.sq
 | `rating` | `rating` | `integer().notNull().default(1000)` |
 | `gamesPlayed` | `games_played` | `integer().notNull().default(0)` |
 | `gamesWon` | `games_won` | `integer().notNull().default(0)` |
+| `theme` | `theme` | nullable `text` — `light` \| `dark` \| unset (`null`); **no** NOT NULL / no default required |
 
-These are **profile** fields (display name, rating, games played/won) for auth users — not room/board state.
+These are **profile** fields (display name, rating, games played/won, UI theme) for auth users — not room/board state. `theme` is written by thin `POST /api/theme` for registered users only; it lands in JWT userdata on subsequent login.
 
 ## Relation To Auth
 
@@ -55,8 +56,10 @@ defineServer({ database: db })
 
 - Built-in auth routes fill **only standard Colyseus user columns**.
 - Custom columns that are `NOT NULL` **without** `.default(...)` break `/auth/register` and `/auth/login`.
+- Nullable preference columns (like `theme`) are fine **without** `.default(...)` — auth insert leaves them unset.
 - Do **not** reinvent register/login HTTP; extend `users` in `schema.ts` and keep `schemas: { users }` in `index.ts`.
 - Room gate stays JWT in `MyRoom.onAuth`; DB schema is for **persisted** profile data, not realtime board truth.
+- Existing prod `game.db` must gain new columns (GameDatabase schema sync / ALTER-compatible path) — deploy does not ship a fresh DB.
 
 ## How To Add Columns Safely
 
@@ -75,6 +78,7 @@ export const users = tables.sqlite.users("colyseus_users", {
   rating: integer("rating").notNull().default(1000),
   gamesPlayed: integer("games_played").notNull().default(0),
   gamesWon: integer("games_won").notNull().default(0),
+  theme: text("theme"), // nullable light | dark | unset
   // newField: integer("new_field").notNull().default(0),
 });
 ```

@@ -2,17 +2,17 @@
 name: work-with-stores
 description: >-
   Instructions for Pinia stores in the happy-tourist Vue 3 client:
-  setup vs options defineStore, auth vs game ownership, local page state vs
-  Pinia, Colyseus I/O in stores, acceptHMRUpdate, and Quasar pinia entry.
-  Use when adding, changing, reviewing, or debugging Pinia stores, shared
-  game/auth state, or page-to-store wiring.
+  setup vs options defineStore, auth vs game vs theme ownership, local page
+  state vs Pinia, Colyseus I/O in stores, acceptHMRUpdate, and Quasar pinia
+  entry. Use when adding, changing, reviewing, or debugging Pinia stores,
+  shared game/auth/theme state, or page-to-store wiring.
 ---
 
 # Work With Stores
 
 Use this skill when deciding where state should live or when changing Pinia stores in the **happy-tourist client** (`happy-tourist.github.io`).
 
-This app uses **Pinia 4** with **two domain stores** (`auth`, `game`) plus Quasar’s Pinia entry. Pages use Composition API (`<script setup>`) and call `useAuthStore()` / `useGameStore()` directly — not Vuex `map*`.
+This app uses **Pinia 4** with **three domain stores** (`auth`, `theme`, `game`) plus Quasar’s Pinia entry. Pages use Composition API (`<script setup>`) and call `useAuthStore()` / `useThemeStore()` / `useGameStore()` directly — not Vuex `map*`.
 
 Skills for this client live under `.agents/skills/client/`. Runtime paths below are relative to this repo root.
 
@@ -22,23 +22,25 @@ Skills for this client live under `.agents/skills/client/`. Runtime paths below 
 src/stores/
   index.ts          # Quasar defineStore → createPinia() (app entry, not a domain store)
   auth.ts           # setup store (Composition API defineStore)
+  theme.ts          # setup store — Quasar Dark preference (guest local / registered HTTP)
   game.ts           # options store
   example-store.ts  # Quasar scaffold counter — unused by login/lobby/game
 ```
 
-Pinia is installed via Quasar store entry `src/stores/index.ts` (`createPinia()`). Domain stores import the Colyseus `client` from `@/boot/colyseus`. Prefer importing `use*Store` from `@/stores/auth` / `@/stores/game` in pages and router; keep Colyseus calls inside those stores.
+Pinia is installed via Quasar store entry `src/stores/index.ts` (`createPinia()`). Domain stores import the Colyseus `client` from `@/boot/colyseus`. Prefer importing `use*Store` from `@/stores/auth` / `@/stores/theme` / `@/stores/game` in pages and router; keep Colyseus calls inside those stores.
 
 ### Store styles in this repo
 
 | Store | Style | Why |
 |-------|--------|-----|
 | `auth` | **Setup** (`defineStore('auth', () => { … })`) | Refs + computed, `onChange` subscription, `whenReady` promise — fits Composition API |
+| `theme` | **Setup** (`defineStore('theme', () => { … })`) | Dark preference + `syncFromAuthUser` / `toggle`; HTTP save for registered users |
 | `game` | **Options** (`defineStore('game', { state, getters, actions })`) | Clear room lifecycle, `this.*` mutations, private helpers `_enterRoom` / `_attachRoom` |
 | `counter` (`example-store`) | Options | Scaffold only — do not extend for product features |
 
 **When to choose setup vs options**
 
-- Prefer **setup** when the store needs Vue composables heavily (`ref`/`computed`), long-lived subscriptions, or readiness promises (`auth`).
+- Prefer **setup** when the store needs Vue composables heavily (`ref`/`computed`), long-lived subscriptions, or readiness promises (`auth`, `theme`).
 - Prefer **options** when the domain is action-centric with shared mutable session state and imperative helpers (`game`).
 - Do not convert an existing store style without a concrete reason. Match the neighbor store’s style when extending the same domain.
 
@@ -46,8 +48,8 @@ Pinia is installed via Quasar store entry `src/stores/index.ts` (`createPinia()`
 
 | Layer | Pattern | Examples |
 |-------|---------|----------|
-| Store id | kebab/camel short id | `'auth'`, `'game'` |
-| Composable | `use*Store` | `useAuthStore`, `useGameStore` |
+| Store id | kebab/camel short id | `'auth'`, `'theme'`, `'game'` |
+| Composable | `use*Store` | `useAuthStore`, `useThemeStore`, `useGameStore` |
 | State | camelCase | `user`, `roomId`, `currentTurn` |
 | Getters | camelCase boolean/derived | `isAuthenticated`, `canMove`, `isInRoom` |
 | Actions | verb / domain | `login`, `subscribeLobby`, `sendMove`, `leaveGame` |
@@ -77,15 +79,17 @@ Use a store for shared domain data, realtime session, or anything the router/oth
 
 | Store | Owns | Typical consumers |
 |-------|------|-------------------|
-| **auth** | `user`, `token`, `loading`, `error`, `ready`; `isAuthenticated`, `displayName`; register/login/anonymous/Google/`logout`/`whenReady` | `LoginPage`, router `beforeEach`, `LobbyPage` logout/header |
+| **auth** | `user`, `token`, `loading`, `error`, `ready`; `isAuthenticated`, `displayName`; register/login/anonymous/Google/`logout`/`whenReady` | `LoginPage`, router `beforeEach`, `LobbyPage` logout/header, `App.vue` theme sync |
+| **theme** | Quasar Dark `preference`, `error`; `syncFromAuthUser`, `toggle` (guest `localStorage` `ht-theme`; registered `client.http.post('/api/theme')`) | `App.vue` header toggle + auth watch |
 | **game** | lobby `rooms`/`lobbyRoom`/`listing`; active `room`/`roomId`; `board`, `myColor`, `currentTurn`, `status`, `error`; subscribe/unsubscribe / create/join/leave/`sendMove` | `LobbyPage`, `GamePage` |
 | **counter** | scaffold only | none in product flow — ignore unless cleaning scaffold |
 
-### Auth vs game ownership
+### Auth vs theme vs game ownership
 
-- **auth** owns Colyseus Auth only (`client.auth.*`, token sync via `onChange`). It does not create rooms or send moves.
-- **game** owns room listing, room lifecycle, board snapshot from `onStateChange`, and `room.send('move', …)`. It does not call `client.auth`.
-- Cross-cutting: router awaits `useAuthStore().whenReady()` then enforces `requiresAuth` / `guest`. Game pages assume auth already passed.
+- **auth** owns Colyseus Auth only (`client.auth.*`, token sync via `onChange`). It does not create rooms, send moves, or call Dark/`POST /api/theme`.
+- **theme** owns chrome Dark preference and preference HTTP (`client.http.post('/api/theme')`). Wired from `App.vue`; does not own auth session or rooms. See `work-with-styles`.
+- **game** owns room listing, room lifecycle, board snapshot from `onStateChange`, and `room.send('move', …)`. It does not call `client.auth` or theme APIs.
+- Cross-cutting: router awaits `useAuthStore().whenReady()` then enforces `requiresAuth` / `guest`. `App.vue` watches `auth.ready`/`auth.user` → `theme.syncFromAuthUser`. Game pages assume auth already passed.
 - Board cell values (server): `0` empty, `1` white, `2` black, `3` white king, `4` black king. Room constants: `CHECKERS_ROOM = 'checkers'`, `LOBBY_ROOM = 'lobby'`.
 
 ### Decision checklist
@@ -120,7 +124,7 @@ await client.auth.signInWithEmailAndPassword(email, password);
 client.auth.onChange((data) => { /* sync token/user/ready */ });
 ```
 
-Do **not** scatter `client.create` / `client.auth.*` / `room.send` across many components. Import `client` from `@/boot/colyseus` inside stores (and boot), not from random widgets.
+Do **not** scatter `client.create` / `client.auth.*` / `client.http` / `room.send` across many components. Import `client` from `@/boot/colyseus` inside stores (and boot), not from random widgets. Theme preference HTTP belongs in `stores/theme.ts` (see `work-with-styles`), not in pages.
 
 ### Setup store (`auth`)
 

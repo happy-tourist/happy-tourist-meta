@@ -29,13 +29,13 @@ Composition is flat under `src/`. Search and assign ownership top-down.
 | Routes | `src/router/routes.ts` + `index.ts` | hash routes + guards |
 | Pages | `src/pages/*Page.vue` | LoginPage, LobbyPage, GamePage |
 | Components | `src/components/` | mostly scaffold; prefer pages→stores |
-| Boot | `src/boot/` | i18n, colyseus |
-| Stores | `src/stores/` | auth, game, example-store |
+| Boot | `src/boot/` | theme, i18n, colyseus |
+| Stores | `src/stores/` | auth, theme, game, example-store |
 | CSS | `src/css/` | app.scss, quasar.variables.scss |
 | i18n | `src/i18n/` | en-US |
 | Env/CI | `.env.*`, `.github/workflows/deploy.yml` | VITE_*, GitHub Pages |
 
-Allowed dependency direction: `pages` → `stores` / `boot` / `components`. Keep **Colyseus I/O inside Pinia stores** (`auth`, `game`) — do not scatter `client.*` across many components. Prefer importing `client` from `@/boot/colyseus` over `$colyseus`.
+Allowed dependency direction: `pages` → `stores` / `boot` / `components`. Keep **Colyseus I/O inside Pinia stores** (`auth`, `theme`, `game`) — do not scatter `client.*` across many components. Prefer importing `client` from `@/boot/colyseus` over `$colyseus`.
 
 Scaffold leftovers (`EssentialLink.vue`, `example-store.ts`, unused `pages/index*`) are not part of the game flow — prefer login / lobby / game.
 
@@ -62,8 +62,9 @@ Use these rules to pick the layer before naming files.
 | A new screen / URL | `src/router/routes.ts` (+ guard meta in `index.ts` if needed) + new `src/pages/FooPage.vue` |
 | Page-specific UI / interaction | owning `src/pages/*Page.vue` |
 | Reusable across pages | `src/components/` (only when reuse is real; avoid premature extraction) |
-| Global shell | `src/App.vue` (minimal today: `q-layout` → `router-view`; chrome lives in pages) |
-| Theme / global styles | `src/css/quasar.variables.scss`, `src/css/app.scss` |
+| Global shell / theme toggle | `src/App.vue` (`q-header` Dark toggle + `theme.error` banner; syncs `auth` → `theme`) |
+| Theme / Dark preference | `boot/theme.ts`, `stores/theme.ts`, `quasar.config.ts` (`Dark` plugin); guest `localStorage` / registered `POST /api/theme` |
+| Theme / global styles | `src/css/quasar.variables.scss`, `src/css/app.scss` (`.text-muted`) |
 | Copy / locale strings | `src/i18n/` (+ boot `src/boot/i18n.ts` if wiring changes) |
 
 ### Pinia as state / Colyseus boundary
@@ -72,11 +73,12 @@ Shared mutable session and realtime I/O belong in Pinia, not ad-hoc page-only `c
 
 | Concern | Store surface (typical) |
 |---------|-------------------------|
-| Auth session | `stores/auth.ts`: `register` / `login` / `loginAnonymously` / `loginWithGoogle` / `logout` / `whenReady`; `isAuthenticated`, `displayName`; sync via `client.auth.onChange` |
+| Auth session | `stores/auth.ts`: `register` / `login` / `loginAnonymously` / `loginWithGoogle` / `logout` / `whenReady`; `isAuthenticated`, `displayName`; optional `user.theme`; sync via `client.auth.onChange` |
+| UI theme (chrome Dark) | `stores/theme.ts`: `syncFromAuthUser` / `toggle`; guest `localStorage` (`ht-theme`); registered `client.http.post('/api/theme')`; wired from `App.vue` |
 | Lobby room list | `stores/game.ts` `subscribeLobby` / `unsubscribeLobby` → LobbyRoom `rooms` / `+` / `-` |
 | Enter / leave room | `createGame` / `joinGame` / `leaveGame` (`CHECKERS_ROOM` / `LOBBY_ROOM`) |
 | Board sync / moves | `_attachRoom` `onStateChange`; `sendMove` → `room.send('move', { from, to })`; getters `isInRoom`, `canMove` |
-| Errors / loading flags | store `error` / `loading` / `listing`; pages show `q-banner` |
+| Errors / loading flags | store `error` / `loading` / `listing`; pages show `q-banner`; theme save fail → `App.vue` banner |
 
 Local page state is fine for ephemeral UI (selected cell, form fields) that never leave that page. Game rules and board truth live on the server; client highlights are UI hints only.
 
@@ -108,7 +110,7 @@ Do not invent room schemas, HTTP routes, or move payloads — note the server pa
 | Lobby (list / create / join) | `pages/LobbyPage.vue` + `stores/game` `subscribeLobby` / `createGame` / `joinGame` |
 | Game board (render, move, rejoin) | `pages/GamePage.vue` + `stores/game` `sendMove` / `onStateChange` / `joinGame(roomId)` |
 | Env / deploy | `.env.*`, `env.d.ts`, `boot/colyseus.ts`, `.github/workflows/deploy.yml` |
-| Theme / layout chrome | `css/*`, `App.vue`, page-level Quasar chrome |
+| Theme / layout chrome | `App.vue` header + `stores/theme` + `boot/theme` + `css/*` (board CSS ≠ app Dark) |
 | i18n copy | `src/i18n/`, boot `i18n` |
 
 Board cell values from server: `0` empty, `1` white, `2` black, `3` white king, `4` black king. Expected state: `board`, `currentTurn`, `status`, `players[sessionId].color`.
@@ -131,7 +133,7 @@ Board cell values from server: `0` empty, `1` white, `2` black, `3` white king, 
 3. Walk ownership:
    - route → page → store / boot / component imports;
    - Pinia usage from the page;
-   - Colyseus calls only inside `stores/auth` or `stores/game` (flag page-level `client.*` as a smell to relocate);
+   - Colyseus calls only inside `stores/auth`, `stores/theme`, or `stores/game` (flag page-level `client.*` as a smell to relocate);
    - server sibling when protocol/schema/room listing must change.
 
 4. Apply decision guidance above to classify each hit as edit vs add, and note related store/boot/env/server touch points.

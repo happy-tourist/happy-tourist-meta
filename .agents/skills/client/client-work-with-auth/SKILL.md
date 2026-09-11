@@ -79,7 +79,7 @@ File: `src/stores/auth.ts` (setup store).
 
 | State / computed | Meaning |
 |------------------|---------|
-| `user` | SDK userdata (`id`, `email`, `name`, `anonymous`, …) |
+| `user` | SDK userdata (`id`, `email`, `name`, `anonymous`, optional `theme` `light`\|`dark`\|null from userdata, …) |
 | `token` | Auth token string or `null` |
 | `loading` / `error` | In-flight flag + last error message |
 | `ready` | First `onChange` completed (session restore settled) |
@@ -107,6 +107,8 @@ client.auth.onChange((data) => {
 ```
 
 Do not invent a parallel session flag. Trust `onChange` + `isAuthenticated`.
+Chrome Dark preference is owned by `stores/theme` (applies `user.theme` for
+registered users); auth store must not call `Dark` or `POST /api/theme`.
 
 ## Login Page Patterns
 

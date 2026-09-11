@@ -4,8 +4,8 @@ description: >-
   Use when the user asks to verify code, check skill compliance, audit a branch
   diff vs master/main/merge-base, audit local diffs, or after implementing a
   change in the happy-tourist checkers Vue 3 client. Also when checking Vue
-  Style Guide soft SFC order on changed Vue files. Reports three tiers:
-  Violations, Warnings, Recommendations.
+  Style Guide soft SFC order, or DRY / KISS / YAGNI balance on changed files.
+  Reports three tiers: Violations, Warnings, Recommendations.
 ---
 
 # Verify Code
@@ -13,7 +13,8 @@ description: >-
 Use this skill to check **all production code changed on the current branch** in
 the `happy-tourist.github.io` client package against **all code-related** project
 skills under `.agents/skills/client/`, plus the **built-in** checks in this file
-(Vue Style Guide soft recommendations and Client conventions).
+(Vue Style Guide soft recommendations, Client conventions, and DRY / KISS /
+YAGNI with conflict-aware judgment).
 
 Default scope is the **full branch diff**: commits vs merge-base **and**
 uncommitted working-tree changes. Do not stop at staged/unstaged/untracked.
@@ -21,7 +22,8 @@ uncommitted working-tree changes. Do not stop at staged/unstaged/untracked.
 This skill is primarily an **orchestrator**: domain rules live in the code
 skills listed below — **read those skill files** when present and apply them; do
 not restate or invent parallel domain rules here. Built-in sections below fill
-gaps when a listed skill file is missing, and own Vue SFC order guidance.
+gaps when a listed skill file is missing, and own Vue SFC order guidance plus
+DRY / KISS / YAGNI balance.
 
 **Paths:** skills currently live in **this repo** at `.agents/skills/client/`
 (temporary; later move to **happy-tourist-meta**). Runtime code and `src/…`
@@ -148,16 +150,21 @@ project config and skill text.
    When unsure, apply the skill. If missing, use Built-in Client conventions.
 4. For every checked `.vue` file, apply **Built-in: Vue Style Guide**.
 5. Apply **Built-in: Client conventions** to all checked production files.
-6. Classify every finding into Violations / Warnings / Recommendations
+6. Apply **Built-in: DRY / KISS / YAGNI** to all checked production files.
+   Resolve principle conflicts with the order in that section **before**
+   classifying or fixing — never emit opposing principle fixes for the same hunk.
+7. Classify every finding into Violations / Warnings / Recommendations
    (see Severity). Each item: file path, what is wrong, which skill/rule, and
    the expected pattern. Soft Prefer guidance → Warnings or Recommendations,
    not silence.
-7. Fix **Violations** when the user asked to verify-and-fix, or when
+8. Fix **Violations** when the user asked to verify-and-fix, or when
    verification runs as part of an implementation task you own. Fix **Warnings**
    on verify-and-fix when the preferred pattern clearly fits. Fix
    **Recommendations** only if the user asked to tidy / apply soft order.
-   Otherwise list findings and wait.
-8. When implementing / verify-and-fix: **run** `npm run lint` and
+   On principle fixes, obey **Built-in: DRY / KISS / YAGNI** conflict order so
+   DRY does not fight KISS/YAGNI (and vice versa). Otherwise list findings and
+   wait.
+9. When implementing / verify-and-fix: **run** `npm run lint` and
    `npm run typecheck` (and `npm run build` / `quasar build` if requested) from
    the client package root; fix failures before claiming done.
 
@@ -288,7 +295,52 @@ Apply always; sibling skills win when they exist and conflict on a detail.
 |------|----------|
 | **Violations** | Ad-hoc axios / second HTTP client; Colyseus I/O scattered outside stores; empty `catch` on auth/game; history router without request; inventing move protocol / board truth on client |
 | **Warnings** | Importing only `$colyseus` when `@/boot/colyseus` fits; wiring LobbyPage back to HTTP `refreshRooms` poll; hardcoding env URLs; expanding scaffold leftovers instead of login/lobby/game |
-| **Recommendations** | Vue SFC block order; minor formatting / import tidy |
+| **Recommendations** | Vue SFC block order; minor formatting / import tidy; mild DRY/KISS polish |
+
+## Built-in: DRY / KISS / YAGNI
+
+Report as `(skill: client-verify-code / DRY-KISS-YAGNI)`. Apply to all checked
+production files. Principles are **judgment lenses**, not absolute mandates.
+
+**Core:** Prefer the simplest correct code that meets the real requirement.
+Project skills and Client conventions **win** over DRY, KISS, and YAGNI. When
+principles pull opposite ways, choose **one** outcome using the conflict order
+below — never “satisfy DRY” by violating KISS/YAGNI or a domain skill, and never
+“simplify” by deleting a required shared contract.
+
+### Verify lens
+
+| Principle | Flag when | Do not flag when |
+|-----------|-----------|------------------|
+| **DRY** | Same *knowledge/rule* is duplicated in the change set and will drift if only one side changes | Similar-looking code with different domain meaning; intentional parallel helpers a skill requires; trivial short copies that stay clearer separate |
+| **KISS** | New indirection, factory, or clever layer that obscures the change without payoff | Required layering from skills (Pinia stores, Colyseus I/O placement, Quasar patterns) |
+| **YAGNI** | Abstraction, extension point, or helper built for hypothetical future call sites (0–1 real uses of that shape) | Small helper with 2+ real call sites of the *same* shape already in the change |
+
+### Conflict resolution (required before classify / fix)
+
+Apply **in order**:
+
+1. **Domain skills / Client conventions / contracts** — do not dedupe or simplify away a required pattern (e.g. keep store-private leave splits when `work-with-rooms` says so).
+2. **YAGNI** — remove or do not introduce unused / future-only abstractions.
+3. **KISS** — prefer direct code over shared machinery when duplication is small or meanings differ.
+4. **DRY** — extract only when identical knowledge would otherwise drift; the extraction must stay simple.
+
+**Anti-conflict rule:** Do not report both “extract for DRY” and “inline for KISS/YAGNI” on the same hunk. Pick one using the order above. On verify-and-fix, apply that single outcome. Prefer **one finding per hunk** that names the winning principle (mention secondary principles only as supporting reason in the same bullet).
+
+### Severity cues
+
+| Tier | When |
+|------|------|
+| **Violations** | Rare for pure principles. Only if a new premature abstraction **breaks** a required skill/contract, or critical contract knowledge is duplicated **and already diverges** in the same change set |
+| **Warnings** | Identical-knowledge duplication likely to drift; unused/future-only abstraction; complexity that obscures a preferred skill pattern |
+| **Recommendations** | Mild duplication or slightly overcomplicated local code where a simpler safe shape is obvious |
+
+### Red flags — STOP and re-resolve
+
+- “Merge for DRY” when a skill says keep the split
+- Shared util with one call site “for later” (YAGNI)
+- Inlining a module that multiple real callers already need (false KISS)
+- Opposing principle findings on the same hunk without conflict resolution
 
 ## Path hints (optional prioritization only)
 
@@ -320,6 +372,7 @@ Reminders to **open the skill** (or Built-in) — skill text wins.
 - **Errors**: store `error` + `q-banner`; no empty `catch`.
 - **Env/deploy**: `VITE_*`, hash router, GH Pages SPA build.
 - **Vue SFC order** (soft): `<template>` → `<script setup>` → `<style>`.
+- **DRY/KISS/YAGNI**: conflict order — skills → YAGNI → KISS → DRY; one fix per hunk.
 
 ## Severity
 
@@ -330,7 +383,7 @@ when wording mixes levels, pick the strongest that still applies.
 |------|------|-------------------------------|
 | **Violations** | Hard break of a required pattern / contract | Do / Don't, Must, Never, Always, Hard Rules, forbidden empty `catch`, axios instead of Colyseus client, Colyseus I/O outside stores |
 | **Warnings** | Preferred pattern clearly fits; allowed exception does **not** apply | Prefer, Should, “use X instead of Y” when X fits |
-| **Recommendations** | Soft tidy / style / optional polish | usually, Soft, Vue Style Guide, optional SFC block reorder |
+| **Recommendations** | Soft tidy / style / optional polish | usually, Soft, Vue Style Guide, optional SFC block reorder, mild DRY/KISS |
 
 Do not invent findings outside the code skills and the built-in sections above.
 Do not inflate Prefer into Violations.
@@ -348,7 +401,7 @@ Format:
 ## Verify Code
 
 Scope: branch vs <merge-base> (<base-ref>) + staged + unstaged + untracked [+ path if used]
-Skills: all code skills (excl. locate/align/openspec/commit) + Vue Style Guide + Client conventions
+Skills: all code skills (excl. locate/align/openspec/commit) + Vue Style Guide + Client conventions + DRY/KISS/YAGNI
 Lint/typecheck/build: <commands run and pass/fail summary, or skipped with reason>
 
 ### Violations
@@ -379,5 +432,6 @@ These mean STOP and re-collect files vs merge-base before reporting:
 
 ## Related Skills
 
-All skills in the Always include table. Vue Style Guide soft order and Client
-conventions are owned by this skill when sibling files are absent.
+All skills in the Always include table. Vue Style Guide soft order, Client
+conventions, and DRY / KISS / YAGNI balance are owned by this skill when sibling
+files are absent.

@@ -2,9 +2,9 @@
 name: client-work-with-errors
 description: >-
   Use when adding, changing, reviewing, or debugging error handling in the
-  happy-tourist Vue 3 client — Pinia auth/game `error` strings, try/catch/finally,
-  Colyseus `room.onError`, q-banner display, leave/rejoin edge cases, or page-level
-  catch that relies on store state.
+  happy-tourist Vue 3 client — Pinia auth/theme/game `error` strings, try/catch/finally,
+  Colyseus `room.onError`, q-banner display (pages + App theme banner), leave/rejoin edge
+  cases, or page-level catch that relies on store state.
 ---
 
 # Work With Errors
@@ -12,30 +12,30 @@ description: >-
 Use this skill when working with request / realtime errors in Vue 3 `<script setup>`
 pages, Pinia stores, and Colyseus client calls under this package (`happy-tourist.github.io`).
 
-Stack context: Vue 3 Composition API, Pinia (`auth` setup store, `game` options store),
+Stack context: Vue 3 Composition API, Pinia (`auth` / `theme` setup stores, `game` options store),
 vue-router (hash), Quasar, `@colyseus/sdk` via `src/boot/colyseus`. Language is TypeScript.
-Surface errors via store `error: string | null` and `q-banner` on pages.
+Surface errors via store `error: string | null` and `q-banner` on pages (auth/game) or `App.vue` (theme).
 
 There is **no** shared axios layer, **no** response interceptors, **no** Vuex
 `GLOBAL_ERROR_*`, **no** Qrator dialogs, and **no** `SHOW_DIALOG` error channel.
 
 ## Core Model
 
-Error handling is **store-local**, not centralized:
+Error handling is **store-local**, not a second toast pipeline:
 
-- Auth and game I/O live in Pinia (`stores/auth`, `stores/game`). Pages call store
+- Auth, theme, and game I/O live in Pinia (`stores/auth`, `stores/theme`, `stores/game`). Pages call store
   actions; they do **not** catch Colyseus/`client` errors for display themselves.
 - Failed actions set `error` to a string:
   `e instanceof Error ? e.message : String(e)`.
 - Clear `error` at the start of a new attempt (`error = null` / `this.error = null`).
 - Loading / listing flags clear in `finally` (auth `loading`, game `listing`).
 - Pages bind `q-banner` to `auth.error` or `game.error`.
+- Theme save failures bind `q-banner` to `theme.error` in `App.vue` (shared shell).
 - Page `catch` blocks are empty (or only navigate) with a comment that the store
   already holds the message — do not duplicate toasts or dialogs.
 - Room lifecycle errors also arrive via `room.onError` into `game.error`.
 
-Do not invent a second global toast / dialog / interceptor pipeline. Prefer Pinia
-`error` + `q-banner`.
+Do not invent Notify plugins / dialog interceptors. Prefer Pinia `error` + `q-banner`.
 
 ## Auth Store Pattern
 
@@ -168,8 +168,19 @@ Typical markup:
 </q-banner>
 ```
 
-Use Quasar `bg-negative text-white`; keep dense. Do not add Notify plugins,
-`$q.dialog`, or a global error host in `App.vue` for these flows.
+```vue
+<!-- App.vue — theme preference save failure -->
+<q-banner v-if="theme.error" dense rounded class="bg-negative text-white q-ma-md">
+  {{ theme.error }}
+  <template #action>
+    <q-btn flat dense label="OK" @click="theme.error = null" />
+  </template>
+</q-banner>
+```
+
+Use Quasar `bg-negative text-white`; keep dense. Do not add Notify plugins or
+`$q.dialog` for these flows. Auth/game banners stay on pages; theme save errors
+use the shared `App.vue` banner only.
 
 ### Clearing
 
@@ -189,6 +200,7 @@ Use Quasar `bg-negative text-white`; keep dense. Do not add Notify plugins,
 | GamePage missing room and no `roomId` | Redirect lobby without setting a new error |
 | Leave room (user or `_enterRoom` cleanup) | Swallow leave errors |
 | Room `onError` while seated | Store only — banner on GamePage |
+| Theme toggle / `POST /api/theme` fail | `stores/theme` sets `error`; banner in `App.vue` |
 | Best-effort side effect | Prefer store pattern above; avoid empty catch that hides failures without store `error` or intentional swallow |
 
 ## Patterns And Examples
@@ -277,7 +289,7 @@ setting `error`. Document with a short comment.
 - Adding axios interceptors, Vuex `GLOBAL_ERROR_*`, Qrator, or `SHOW_DIALOG` —
   none of that exists in this client.
 - Showing errors only with `console.error` / Notify while leaving `auth.error` /
-  `game.error` unset — banners will stay empty.
+  `game.error` / `theme.error` unset — banners will stay empty.
 - Catching in the page and setting a second local `error` ref that duplicates the store.
 - Forgetting to clear `error` before a new attempt (stale banner).
 - Skipping `finally` for `loading` / `listing` (or page `joining` / `creating`).
@@ -285,15 +297,19 @@ setting `error`. Document with a short comment.
 - Swallowing join/auth failures without store `error` **and** without navigation —
   user sees no feedback.
 - Staying on GamePage after failed rejoin instead of redirecting to lobby.
-- Putting `client.create` / `joinById` / `http.get` try/catch in a page instead of
-  the game store.
+- Putting `client.create` / `joinById` / `http.get` / theme POST try/catch in a page
+  instead of the owning store (`game` / `theme`).
+- Showing theme save failures only on a page while leaving `theme.error` unset —
+  use the shared `App.vue` banner.
 
 ## Key Files
 
 | Path | Role |
 |------|------|
 | `src/stores/auth.ts` | Auth actions: `error` / `loading` / re-throw |
+| `src/stores/theme.ts` | Theme toggle/save: `error` → `App.vue` banner |
 | `src/stores/game.ts` | Rooms, `_enterRoom`, `room.onError`, `leaveGame` swallow |
+| `src/App.vue` | Shared `theme.error` `q-banner` |
 | `src/pages/LoginPage.vue` | `q-banner` + `auth.error`; clear on toggle |
 | `src/pages/LobbyPage.vue` | `q-banner` + `game.error`; join/create catch |
 | `src/pages/GamePage.vue` | `q-banner` + rejoin fail → lobby |

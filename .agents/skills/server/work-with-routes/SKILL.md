@@ -12,8 +12,8 @@ description: >-
 Use this skill when adding or changing **HTTP** handlers in `happy-tourist-server`.
 
 This is a **realtime game server**, not a REST BFF. Prefer WebSocket room messages
-for gameplay. HTTP is for health, demo/smoke, auth (provided by Colyseus), and
-lobby room listing.
+for gameplay. HTTP is for health, demo/smoke, auth (provided by Colyseus), thin
+profile preferences (e.g. UI theme), and lobby room listing.
 
 Stack: Express **5** (via `defineServer({ express })`), `createRouter` /
 `createEndpoint` from `colyseus` / `@colyseus/tools`, TypeScript ESM (NodeNext).
@@ -60,12 +60,14 @@ routes: createRouter({
   api_hello: createEndpoint("/api/hello", { method: "GET" }, async () => {
     return { message: "Hello World" };
   }),
+  // Example: JWT-gated preference (see api_theme)
 }),
 ```
 
-- Key (`api_hello`) is an internal id; path/method come from `createEndpoint`.
+- Key (`api_hello` / `api_theme`) is an internal id; path/method come from `createEndpoint`.
 - Handler returns a value → JSON response. Keep it side-effect light.
 - Prefer this for new **public demo / thin JSON** endpoints that are not healthchecks.
+- Authenticated thin writes (profile prefs): `use: [auth.middleware()]`, validate body (e.g. zod), update Drizzle row by `auth.id`; reject missing JWT / `anonymous === true`.
 
 ### 2. `express(app)` — raw Express 5
 
@@ -91,6 +93,7 @@ For CORS / monitor details use `work-with-middleware` and `work-with-config`.
 | Method | Path | Source | Notes |
 |--------|------|--------|-------|
 | GET | `/api/hello` | `createEndpoint` (`api_hello`) | Demo JSON `{ message }` |
+| POST | `/api/theme` | `createEndpoint` (`api_theme`) | Body `{ theme: 'light' \| 'dark' }`; `auth.middleware()`; registered JWT only; updates `users.theme`; reject unauth / anonymous |
 | GET | `/health` | `express` hook | `{ status, uptime }` — deploy / monitor |
 | GET | `/hi` | `express` hook | Plain text smoke |
 | * | `/auth/*` | `@colyseus/auth` | Present when `database: db` is set |
@@ -127,7 +130,7 @@ handler → mutate synced state. Not `POST /api/move`.
 
 | Kind | Pattern | Examples |
 |------|---------|----------|
-| JSON object | return value from `createEndpoint` or `res.json(...)` | `/api/hello`, `/health` |
+| JSON object | return value from `createEndpoint` or `res.json(...)` | `/api/hello`, `/api/theme`, `/health` |
 | Plain text | `res.send(string)` | `/hi` |
 | Auth | shapes from `@colyseus/auth` | `/auth/*` |
 | Errors | Keep simple; no ServiceError / BFF envelope | see `server-work-with-errors` |

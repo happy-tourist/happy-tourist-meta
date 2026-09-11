@@ -56,7 +56,7 @@ guards. Do not put game rules in `/auth/*` handlers.
 | Server def | `src/app.config.ts` | `database: db` enables `@colyseus/auth` HTTP routes + user store; side-effect import of `src/config/auth.ts` |
 | OAuth providers | `src/config/auth.ts` | `auth.oauth.addProvider('google', …)`; do **not** override `onOAuthProviderCallback` (reuse built-in) |
 | DB init | `src/db/index.ts` | `GameDatabase` + `schemas: { users }` |
-| Users schema | `src/db/schema.ts` | Extends `colyseus_users`: `displayName`, `rating`, `gamesPlayed`, `gamesWon` |
+| Users schema | `src/db/schema.ts` | Extends `colyseus_users`: `displayName`, `rating`, `gamesPlayed`, `gamesWon`, nullable `theme` |
 | Room gate | `src/rooms/MyRoom.ts` | `static onAuth(token)` → `JWT.verify(token)` → userdata to `onJoin` |
 | Secrets | `.env.example` / `.env.development` / `.env.production` | `AUTH_SALT`, `JWT_SECRET`, `SESSION_SECRET`, `DATABASE_URL`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` |
 | HTTP auth | `/auth/*` (auto) | register / login / anonymous / OAuth provider callbacks from `@colyseus/auth` when `database` set |
@@ -160,6 +160,7 @@ export const users = tables.sqlite.users("colyseus_users", {
   rating: integer("rating").notNull().default(1000),
   gamesPlayed: integer("games_played").notNull().default(0),
   gamesWon: integer("games_won").notNull().default(0),
+  theme: text("theme"), // nullable light | dark | unset — no NOT NULL / default required
 });
 ```
 
@@ -168,9 +169,10 @@ export const users = tables.sqlite.users("colyseus_users", {
 | `displayName` | Optional text; may map from register `options.name` / client display |
 | `rating` | Default `1000` |
 | `gamesPlayed` / `gamesWon` | Default `0` |
+| `theme` | Nullable UI preference (`light` \| `dark`); written by `POST /api/theme` for registered users; appears in userdata on next login |
 
-When adding new required profile columns, always add `.default(...)` or
-register/login will break with NOT NULL.
+When adding new **NOT NULL** profile columns, always add `.default(...)` or
+register/login will break. Nullable prefs (like `theme`) do not need a default.
 
 ## Room Gate (`onAuth` → `onJoin`)
 
@@ -204,8 +206,9 @@ onJoin(client: Client, _options: any, auth: any) {
 | Room join | Auth via JWT in `onAuth`, not Express middleware |
 | CORS | Allow credentials + `Authorization`; keep CORS first in `express(app)` |
 
-Game logic stays in the Room. Thin HTTP (`/health`, `/api/hello`) is unrelated
-to challenge-login BFF patterns.
+Game logic stays in the Room. Thin HTTP (`/health`, `/api/hello`, `POST /api/theme`)
+is unrelated to challenge-login BFF patterns; theme save uses `auth.middleware()` +
+registered-user check (see `work-with-routes` / `work-with-database`).
 
 ## Contract With Client
 

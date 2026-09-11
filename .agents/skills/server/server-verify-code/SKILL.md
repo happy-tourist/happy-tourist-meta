@@ -4,9 +4,9 @@ description: >-
   Use when the user asks to verify code, check skill compliance, audit a branch
   diff vs master/main/merge-base, audit local diffs, or after implementing a
   change in the happy-tourist Colyseus checkers server. Also when checking
-  defineServer wiring, room/schema/message contracts, auth/JWT, CORS, or DB
-  user defaults on changed server files. Reports three tiers: Violations,
-  Warnings, Recommendations.
+  defineServer wiring, room/schema/message contracts, auth/JWT, CORS, DB user
+  defaults, or DRY / KISS / YAGNI balance on changed server files. Reports
+  three tiers: Violations, Warnings, Recommendations.
 ---
 
 # Verify Code
@@ -14,7 +14,7 @@ description: >-
 Use this skill to check **all production code changed on the current branch** in
 the `happy-tourist-server` package against **all code-related** project skills
 under `.agents/skills/server/`, plus the **built-in** checks in this file
-(Server conventions).
+(Server conventions, and DRY / KISS / YAGNI with conflict-aware judgment).
 
 Default scope is the **full branch diff**: commits vs merge-base **and**
 uncommitted working-tree changes. Do not stop at staged/unstaged/untracked.
@@ -23,7 +23,8 @@ This skill is primarily an **orchestrator**: domain rules live in the code
 skills listed below — **read those skill files** when present and apply them; do
 not restate or invent parallel domain rules here. Built-in sections below fill
 gaps when a listed skill file is missing, and own Colyseus server conventions
-(defineServer, rooms, auth, CORS, schema/messages).
+(defineServer, rooms, auth, CORS, schema/messages) plus DRY / KISS / YAGNI
+balance.
 
 **Paths:** skills currently live in **this repo** at `.agents/skills/server/`
 (temporary; later move to **happy-tourist-meta**). Runtime code and `src/…`
@@ -155,16 +156,21 @@ config and skill text.
 3. For each source file, apply every code skill whose rules can touch that file.
    When unsure, apply the skill. If missing, use Built-in Server conventions.
 4. Apply **Built-in: Server conventions** to all checked production files.
-5. Classify every finding into Violations / Warnings / Recommendations
+5. Apply **Built-in: DRY / KISS / YAGNI** to all checked production files.
+   Resolve principle conflicts with the order in that section **before**
+   classifying or fixing — never emit opposing principle fixes for the same hunk.
+6. Classify every finding into Violations / Warnings / Recommendations
    (see Severity). Each item: file path, what is wrong, which skill/rule, and
    the expected pattern. Soft Prefer guidance → Warnings or Recommendations,
    not silence.
-6. Fix **Violations** when the user asked to verify-and-fix, or when
+7. Fix **Violations** when the user asked to verify-and-fix, or when
    verification runs as part of an implementation task you own. Fix **Warnings**
    on verify-and-fix when the preferred pattern clearly fits. Fix
    **Recommendations** only if the user asked to tidy / apply soft order.
-   Otherwise list findings and wait.
-7. When implementing / verify-and-fix: **run** `npm test` and `npm run build`
+   On principle fixes, obey **Built-in: DRY / KISS / YAGNI** conflict order so
+   DRY does not fight KISS/YAGNI (and vice versa). Otherwise list findings and
+   wait.
+8. When implementing / verify-and-fix: **run** `npm test` and `npm run build`
    (and loadtest if relevant) from the server package root; fix failures before
    claiming done.
 
@@ -308,7 +314,52 @@ rules only on the client; scatter a second HTTP auth implementation beside
 |------|----------|
 | **Violations** | Room name/state/move contract breaks client; missing JWT `onAuth`; trusting client board; CORS not first / wrong prod origin; NOT NULL user columns without defaults; gameplay wiring forced into `index.ts`; empty `catch` on auth/game paths; secrets in source |
 | **Warnings** | Prefer existing schema fields but a one-off parallel property was added; env URL/path hardcoded when `.env` already covers it; HTTP listing used as primary path while live LobbyRoom is the product UI |
-| **Recommendations** | Import grouping tidy; minor formatting; soft consistency with nearby room/schema analogues |
+| **Recommendations** | Import grouping tidy; minor formatting; soft consistency with nearby room/schema analogues; mild DRY/KISS polish |
+
+## Built-in: DRY / KISS / YAGNI
+
+Report as `(skill: server-verify-code / DRY-KISS-YAGNI)`. Apply to all checked
+production files. Principles are **judgment lenses**, not absolute mandates.
+
+**Core:** Prefer the simplest correct code that meets the real requirement.
+Project skills and Server conventions **win** over DRY, KISS, and YAGNI. When
+principles pull opposite ways, choose **one** outcome using the conflict order
+below — never “satisfy DRY” by violating KISS/YAGNI or a domain skill, and never
+“simplify” by deleting a required shared contract.
+
+### Verify lens
+
+| Principle | Flag when | Do not flag when |
+|-----------|-----------|------------------|
+| **DRY** | Same *knowledge/rule* is duplicated in the change set and will drift if only one side changes | Similar-looking code with different domain meaning; intentional parallel handlers a skill requires; trivial short copies that stay clearer separate |
+| **KISS** | New indirection, factory, or clever layer that obscures the change without payoff | Required layering from skills (`defineServer`, rooms, schema, auth, Express order) |
+| **YAGNI** | Abstraction, extension point, or helper built for hypothetical future call sites (0–1 real uses of that shape) | Small helper with 2+ real call sites of the *same* shape already in the change |
+
+### Conflict resolution (required before classify / fix)
+
+Apply **in order**:
+
+1. **Domain skills / Server conventions / contracts** — do not dedupe or simplify away a required pattern (e.g. keep authoritative rules on the server; do not merge distinct room/message concerns into one grab-bag).
+2. **YAGNI** — remove or do not introduce unused / future-only abstractions.
+3. **KISS** — prefer direct code over shared machinery when duplication is small or meanings differ.
+4. **DRY** — extract only when identical knowledge would otherwise drift; the extraction must stay simple.
+
+**Anti-conflict rule:** Do not report both “extract for DRY” and “inline for KISS/YAGNI” on the same hunk. Pick one using the order above. On verify-and-fix, apply that single outcome. Prefer **one finding per hunk** that names the winning principle (mention secondary principles only as supporting reason in the same bullet).
+
+### Severity cues
+
+| Tier | When |
+|------|------|
+| **Violations** | Rare for pure principles. Only if a new premature abstraction **breaks** a required skill/contract, or critical contract knowledge is duplicated **and already diverges** in the same change set |
+| **Warnings** | Identical-knowledge duplication likely to drift; unused/future-only abstraction; complexity that obscures a preferred skill pattern |
+| **Recommendations** | Mild duplication or slightly overcomplicated local code where a simpler safe shape is obvious |
+
+### Red flags — STOP and re-resolve
+
+- “Merge for DRY” when a skill or contract says keep the split
+- Shared util with one call site “for later” (YAGNI)
+- Inlining a module that multiple real callers already need (false KISS)
+- Opposing principle findings on the same hunk without conflict resolution
 
 ## Path hints (optional prioritization only)
 
@@ -339,6 +390,7 @@ Reminders to **open the skill** (or Built-in) — skill text wins.
 - **Rules**: authoritative on server; never trust client board.
 - **DB**: user column `.default(...)` for register/login.
 - **Tooling**: run `npm test` / `npm run build` from the server package root.
+- **DRY/KISS/YAGNI**: conflict order — skills → YAGNI → KISS → DRY; one fix per hunk.
 
 ## Severity
 
@@ -349,7 +401,7 @@ when wording mixes levels, pick the strongest that still applies.
 |------|------|-------------------------------|
 | **Violations** | Hard break of a required pattern / contract | Do / Don't, Must, Never, Always, Hard Rules, missing `onAuth`, client board trust, CORS order, breaking `checkers` contract |
 | **Warnings** | Preferred pattern clearly fits; allowed exception does **not** apply | Prefer, Should, “use X instead of Y” when X fits |
-| **Recommendations** | Soft tidy / style / optional polish | usually, Soft, import grouping, optional analogue consistency |
+| **Recommendations** | Soft tidy / style / optional polish | usually, Soft, import grouping, optional analogue consistency, mild DRY/KISS |
 
 Do not invent findings outside the code skills and the built-in sections above.
 Do not inflate Prefer into Violations.
@@ -369,7 +421,7 @@ Format:
 ## Verify Code
 
 Scope: branch vs <merge-base> (<base-ref>) + staged + unstaged + untracked [+ path if used]
-Skills: all code skills (excl. test/locate/align/openspec/commit) + Server conventions
+Skills: all code skills (excl. test/locate/align/openspec/commit) + Server conventions + DRY/KISS/YAGNI
 Tests/build: <commands run and pass/fail summary, or skipped with reason>
 
 ### Violations
@@ -402,5 +454,5 @@ These mean STOP and re-collect files vs merge-base before reporting:
 
 All skills in the Always include table. For tests use `server-work-with-test`
 when present (and when the user asks to include tests). For requirements /
-analogue alignment use `server-align-code`. Server conventions are owned by this
-skill when sibling files are absent.
+analogue alignment use `server-align-code`. Server conventions and DRY / KISS /
+YAGNI balance are owned by this skill when sibling files are absent.

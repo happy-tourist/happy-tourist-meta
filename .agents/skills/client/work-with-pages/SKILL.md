@@ -30,8 +30,8 @@ When the task is only about creating or wiring a page:
 1. Add the page as a single file `src/pages/<Name>Page.vue` (optional scoped `<style>` in the same file).
 2. Register a route in `src/router/routes.ts` with `path`, `name`, lazy `component`, and `meta` when needed.
 3. Do **not** enable filename-based routing — `quasar.config.ts` keeps `filenameBasedRouting: false`; routes stay manual.
-4. Keep the global shell in `App.vue` — only `q-layout` → `q-page-container` → `<router-view />`. Page chrome (headers, actions) lives inside the page.
-5. Prefer: `pages` → `stores` / `boot` / `components`. Keep Colyseus I/O in Pinia (`auth`, `game`), not scattered across new pages.
+4. Keep the global shell in `App.vue` — `q-layout` → shared theme `q-header` → `q-page-container` → theme `q-banner` + `<router-view />`. Route chrome (logout, leave-room, page banners) lives inside the page; do not duplicate the theme toggle.
+5. Prefer: `pages` → `stores` / `boot` / `components`. Keep Colyseus I/O in Pinia (`auth`, `theme`, `game`), not scattered across new pages.
 6. Wrap page content in Quasar `q-page` (match nearby pages).
 
 If the route path or page name is unclear, ask the user before editing.
@@ -102,13 +102,21 @@ Every route renders inside:
 
 ```vue
 <q-layout view="hHh lpR fFf">
+  <q-header bordered>
+    <q-toolbar>
+      <q-space />
+      <q-btn flat round dense :icon="…" aria-label="Toggle theme" @click="onToggleTheme" />
+    </q-toolbar>
+  </q-header>
+
   <q-page-container>
+    <q-banner v-if="theme.error" …>{{ theme.error }}</q-banner>
     <router-view />
   </q-page-container>
 </q-layout>
 ```
 
-No global header, footer, or dialog host yet. Do not duplicate a layout wrapper when adding pages.
+Shared theme toggle + `theme.error` banner live here (`useThemeStore`, sync from `auth.user`). Do not duplicate a layout wrapper or per-page theme control when adding pages. Route-specific headers/actions stay in the page.
 
 ## Router Patterns
 
@@ -188,6 +196,7 @@ If an old path changes, keep a redirect in `routes.ts`:
 | Domain | Page | Typical stores / notes |
 |--------|------|------------------------|
 | Auth | `LoginPage` | `stores/auth`; `meta.guest` |
+| Theme (chrome Dark) | `App.vue` header | `stores/theme` + `boot/theme` |
 | Lobby / rooms | `LobbyPage` | `stores/game.subscribeLobby`, create/join; `meta.requiresAuth` |
 | Game session | `GamePage` | `stores/game` board/move/leave; route param `roomId`; `meta.requiresAuth` |
 

@@ -30,8 +30,8 @@ may also host copies later).
 3. Place UI by layer role (route page vs reusable widget vs store-owned I/O).
 4. Respect **allowed dependency direction** (see below). Never invert layers.
 5. Import `.vue` / `.ts` by direct path. No per-feature `index.ts` barrels required.
-6. Keep `App.vue` minimal: `q-layout` + `q-page-container` + `<router-view />`. Page chrome (headers, logout, banners) lives **inside each page**.
-7. Keep Colyseus auth/room I/O inside Pinia stores (`auth`, `game`). Prefer `import { client } from '@/boot/colyseus'` over `$colyseus` in script.
+6. Keep `App.vue` as the shared shell: `q-layout` → shared `q-header` (theme toggle) → `q-page-container` → theme `q-banner` + `<router-view />`. Page chrome (logout, leave-room, page banners) stays **inside each page**; do not duplicate the theme toggle per page.
+7. Keep Colyseus auth/room/theme I/O inside Pinia stores (`auth`, `theme`, `game`). Prefer `import { client } from '@/boot/colyseus'` over `$colyseus` in script.
 8. Use Quasar auto-imported components (`q-page`, `q-btn`, …). Do not manually register Quasar UI components.
 9. Prefer Composition API + `<script setup lang="ts">`. Do not introduce Options API pages.
 
@@ -41,8 +41,8 @@ may also host copies later).
 |-------|------|------|
 | Pages | `src/pages/*Page.vue` | Route-level screens; compose stores + Quasar + optional components |
 | Components | `src/components/` | Reusable widgets (mostly Quasar scaffold leftovers today) |
-| Stores | `src/stores/` | Pinia: `auth`, `game` (+ unused scaffold `example-store`) |
-| Boot | `src/boot/` | Quasar boot: `i18n`, `colyseus` (registered in `quasar.config.ts`) |
+| Stores | `src/stores/` | Pinia: `auth`, `theme`, `game` (+ unused scaffold `example-store`) |
+| Boot | `src/boot/` | Quasar boot: `theme`, `i18n`, `colyseus` (registered in `quasar.config.ts`; `framework.plugins: ['Dark']`) |
 | Router | `src/router/` | `routes.ts` + guards in `index.ts` (`filenameBasedRouting: false`) |
 | i18n | `src/i18n/` | Locale message trees (`en-US`) |
 | CSS | `src/css/` | `app.scss`, `quasar.variables.scss` |
@@ -61,14 +61,15 @@ Allowed:
 ```text
 pages       →  stores / boot / components / router (params)
 components  →  other components (keep lean; prefer props over store)
-stores      →  boot/colyseus (client)
-boot        →  env / SDK / i18n setup only
-App.vue     →  Quasar layout + router-view only
+stores      →  boot/colyseus (client); theme store also uses boot/theme helpers
+boot        →  env / SDK / i18n / early Dark apply only
+App.vue     →  layout + shared theme header/banner + auth→theme sync
 ```
 
 Also normal:
 
 - Pages call Pinia actions (`useAuthStore`, `useGameStore`) and read store state.
+- `App.vue` uses `useThemeStore` / `useAuthStore` for the shared theme toggle (not pages).
 - Router guards await `useAuthStore().whenReady()` then enforce `requiresAuth` / `guest`.
 - Quasar components used in templates without local imports (auto-import).
 
@@ -79,7 +80,7 @@ Also normal:
 | `components` → `pages` | Widgets stay page-agnostic |
 | `stores` → `pages` / `components` | Data layer must not import UI |
 | `boot` → `pages` / `components` | Boot is app setup only |
-| Scattering `client.*` across many components | Keep Colyseus I/O in `stores/auth` and `stores/game` |
+| Scattering `client.*` across many components | Keep Colyseus I/O in `stores/auth`, `stores/theme`, `stores/game` |
 | Adding `blocks/` or `dialogs/` registry “like B2B” | This app has no those layers |
 
 ## Where New UI Belongs
@@ -88,8 +89,8 @@ Decide in this order:
 
 1. **New route / screen?** → `src/pages/<Name>Page.vue` + route in `src/router/routes.ts`
 2. **Reusable control used in 2+ pages or clearly generic?** → `src/components/<Name>.vue` (or small folder if peers do)
-3. **Auth / room / move / listing logic?** → Pinia store (`stores/auth.ts` or `stores/game.ts`), not inline in the page beyond thin wiring
-4. **App-wide plugin / SDK singleton?** → Quasar boot file under `src/boot/` + register in `quasar.config.ts`
+3. **Auth / room / move / listing / theme preference logic?** → Pinia store (`stores/auth.ts`, `stores/theme.ts`, or `stores/game.ts`), not inline in the page beyond thin wiring
+4. **App-wide plugin / SDK singleton / early Dark apply?** → Quasar boot file under `src/boot/` + register in `quasar.config.ts`
 5. **Page-local overlay / dialog?** → Keep in the page (or extract a component) with local `ref` / Quasar dialog props — **do not** invent a global dialogs registry
 
 ### Pages vs components — what belongs where
@@ -99,7 +100,7 @@ Decide in this order:
 - Route entry (`*Page.vue`) and page orchestration (form state, selection, route params).
 - Screen chrome for that route (title bar, logout, leave-room controls).
 - Markup that exists only on that route (lobby list, board grid, login forms).
-- Thin wiring: call store actions, show `store.error` via `q-banner`.
+- Thin wiring: call store actions, show page `store.error` via `q-banner`.
 
 **Put in components**
 
@@ -109,11 +110,13 @@ Decide in this order:
 **Put in stores**
 
 - Colyseus auth: register / login / anonymous / Google / logout / `whenReady`.
+- Theme preference: Quasar Dark + guest `localStorage` / registered `POST /api/theme` (`stores/theme.ts`).
 - Room lifecycle: `subscribeLobby`, `unsubscribeLobby`, `createGame`, `joinGame`, `leaveGame`, `sendMove`.
 - Mirrored room state: `board`, `myColor`, `currentTurn`, `status`, `rooms`, errors.
 
 **Put in boot**
 
+- `theme` — early `Dark.set` from `localStorage` (`ht-theme`) or `auto`.
 - `i18n` — `createI18n` + `app.use`.
 - `colyseus` — `new Client(...)`, export `client`, optional `$colyseus` globalProperty.
 
@@ -121,8 +124,8 @@ Decide in this order:
 
 | Avoid | Prefer |
 |-------|--------|
-| Global header/footer/dialog host in `App.vue` | Per-page chrome until a real shell is designed |
-| Colyseus `client.create` / `send` / `auth.*` in a random component | `stores/auth` or `stores/game` |
+| Per-page theme toggle or theme HTTP | Shared `App.vue` header + `stores/theme` |
+| Colyseus `client.create` / `send` / `auth.*` / theme POST in a random component | `stores/auth`, `stores/theme`, or `stores/game` |
 | New `*View.vue` naming | `*Page.vue` |
 | `src/blocks/` or `src/dialogs/index` registry | Page-local UI or a plain component |
 | Empty layer folders “for later” | Add when the first file is needed |
@@ -137,8 +140,8 @@ Decide in this order:
 | Page file | PascalCase + `Page` suffix | `LoginPage.vue`, `LobbyPage.vue`, `GamePage.vue` |
 | Route `name` | lowercase (existing) | `login`, `lobby`, `game` |
 | Component file | PascalCase | `EssentialLink.vue` (scaffold); new: `BoardCell.vue` |
-| Store file | kebab or descriptive | `auth.ts`, `game.ts` |
-| Boot file | lowercase | `i18n.ts`, `colyseus.ts` |
+| Store file | kebab or descriptive | `auth.ts`, `theme.ts`, `game.ts` |
+| Boot file | lowercase | `theme.ts`, `i18n.ts`, `colyseus.ts` |
 | Imports | Alias `@/` | `import { client } from '@/boot/colyseus'` |
 
 Pages are **flat files** under `src/pages/` (not `pages/LoginPage/LoginPage.vue` folders), matching current peers.
@@ -163,6 +166,7 @@ src/components/BoardCell.vue
 
 ```text
 src/stores/auth.ts    # setup store
+src/stores/theme.ts   # setup store — Quasar Dark preference
 src/stores/game.ts    # options store
 src/stores/index.ts   # Quasar Pinia entry
 ```
@@ -170,11 +174,12 @@ src/stores/index.ts   # Quasar Pinia entry
 ### Boot
 
 ```text
+src/boot/theme.ts
 src/boot/i18n.ts
 src/boot/colyseus.ts
 ```
 
-Registered in `quasar.config.ts` boot array: `i18n`, `colyseus`.
+Registered in `quasar.config.ts` boot array: `theme`, `i18n`, `colyseus` (+ `framework.plugins: ['Dark']`).
 
 ## Real Composition Examples
 
@@ -184,9 +189,9 @@ Registered in `quasar.config.ts` boot array: `i18n`, `colyseus`.
 
 **Game** — `GamePage` binds board from `useGameStore`, sends moves via `sendMove`, rejoins by `roomId` on refresh; local move highlights are UI-only.
 
-**App shell** — `App.vue` only hosts `q-layout` → `router-view`; no header/footer/dialog host.
+**App shell** — `App.vue` hosts `q-layout` → theme `q-header` → `router-view`; watches `auth` → `theme.syncFromAuthUser`; shows `theme.error` banner.
 
-**Boot** — `colyseus.ts` exports singleton `client`; stores import it.
+**Boot** — `theme.ts` applies early Dark; `colyseus.ts` exports singleton `client`; stores import them.
 
 ## Creating New Pieces — Checklist
 
@@ -195,7 +200,7 @@ Registered in `quasar.config.ts` boot array: `i18n`, `colyseus`.
 1. `src/pages/<Name>Page.vue` with `<script setup lang="ts">`.
 2. Add route in `src/router/routes.ts` (lazy `() => import('@/pages/...')`), set `meta.requiresAuth` or `meta.guest` as needed.
 3. Wire UI to Pinia; keep Colyseus I/O in stores.
-4. Keep shell chrome in the page (not `App.vue`) unless introducing a deliberate shared layout.
+4. Keep route chrome in the page; shared theme toggle stays in `App.vue`.
 
 **New component**
 
@@ -205,9 +210,9 @@ Registered in `quasar.config.ts` boot array: `i18n`, `colyseus`.
 
 **New store logic**
 
-1. Extend `stores/auth.ts` or `stores/game.ts` (or add a focused store if domain is new).
-2. Import `client` from `@/boot/colyseus`.
-3. Surface `error` / loading flags for pages to display.
+1. Extend `stores/auth.ts`, `stores/theme.ts`, or `stores/game.ts` (or add a focused store if domain is new).
+2. Import `client` from `@/boot/colyseus` when calling the SDK.
+3. Surface `error` / loading flags for pages (or `App.vue` for theme) to display.
 
 **New boot file**
 
@@ -220,9 +225,10 @@ Registered in `quasar.config.ts` boot array: `i18n`, `colyseus`.
 | Domain | Page | Store / boot |
 |--------|------|----------------|
 | Auth | `LoginPage` | `stores/auth` + `boot/colyseus` |
+| Theme (chrome Dark) | `App.vue` header | `stores/theme` + `boot/theme` |
 | Lobby / rooms | `LobbyPage` | `stores/game.subscribeLobby` / create / join |
 | Game session | `GamePage` | `stores/game` room state + `sendMove` |
-| Shell | `App.vue` | layout + `router-view` only |
+| Shell | `App.vue` | layout + theme header/banner + `router-view` |
 
 Routes (from `src/router/routes.ts`):
 
@@ -244,18 +250,19 @@ Board cell values (server truth): `0` empty, `1` white, `2` black, `3` white kin
 |---------|-----|
 | Naming a screen `*View.vue` | Use `*Page.vue` |
 | Adding `blocks/` or a dialogs registry | Keep UI in page/component |
-| Putting room/auth SDK calls in the page body | Move to `stores/auth` / `stores/game` |
+| Putting room/auth/theme SDK calls in the page body | Move to `stores/auth` / `stores/theme` / `stores/game` |
 | Importing a page from a component | Invert: page imports the component |
-| Growing `App.vue` with feature chrome | Keep chrome in pages |
+| Duplicating theme toggle on every page | Keep shared toggle in `App.vue` |
 | Using scaffold `pages/index*` for new routes | Add `*Page.vue` + `routes.ts` entry |
 | Reintroducing Vuex or axios for Colyseus | Pinia + `client` / `client.http` |
 | Manual Quasar imports for auto-imported tags | Use `q-*` in template as-is |
 
 ## Related Skills
 
-- (Add as created) page routing / guards → `work-with-pages`
-- (Add as created) Pinia auth/game → `work-with-stores`
-- Sibling server contracts → `../happy-tourist-server` (coordinate room name `checkers`, move payload, state shape)
+- Page routing / guards → `work-with-pages`
+- Pinia auth/theme/game → `work-with-stores`
+- Quasar Dark / muted chrome → `work-with-styles`
+- Sibling server contracts → `../happy-tourist-server` (coordinate room name `checkers`, move payload, state shape, `/api/theme`)
 
 ## Verification
 
@@ -265,6 +272,6 @@ For structure-only placement tasks, confirm:
 - [ ] `*Page.vue` naming (not `*View`)
 - [ ] No new `blocks/` or `dialogs/` registry
 - [ ] Dependency direction respected
-- [ ] Colyseus I/O stays in stores
+- [ ] Colyseus I/O stays in stores (`auth` / `theme` / `game`)
 - [ ] Route registered in `routes.ts` with correct meta
-- [ ] `App.vue` still shell-only unless a shared layout was explicitly requested
+- [ ] Shared theme chrome stays in `App.vue`; route chrome stays in pages

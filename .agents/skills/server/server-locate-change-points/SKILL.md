@@ -62,6 +62,7 @@ The sibling client already assumes a checkers contract; server is still scaffold
 | GET | `/health` | `{ status, uptime }` — deploy/monitor |
 | GET | `/hi` | Plain text smoke check |
 | GET | `/api/hello` | Demo JSON via `createEndpoint` |
+| POST | `/api/theme` | Body `{ theme: 'light' \| 'dark' }`; `auth.middleware()`; registered only; updates `users.theme` |
 | * | `/auth/*` | Provided by `@colyseus/auth` when `database` is set (incl. `/auth/provider/google/callback`) |
 | GET | `/rooms/:roomName` | Colyseus available-rooms listing (HTTP fallback; live UI uses LobbyRoom) |
 | GET | `/monitor` | Dev only (`monitor()`) |
@@ -92,7 +93,7 @@ Use these rules to pick the layer before naming files.
 |-------------------|--------|
 | Room join gate / JWT verify | `MyRoom.onAuth` (`JWT.verify`) — userdata flows to `onJoin` |
 | Register / login / anonymous / Google OAuth HTTP | Built-in `@colyseus/auth` (`/auth/*`) via `database: db` in `app.config.ts`; Google via `src/config/auth.ts` `addProvider` — avoid reinventing unless extending |
-| Persisted profile fields (`displayName`, `rating`, `gamesPlayed`, `gamesWon`, …) | `src/db/schema.ts` users extension — custom columns need `.default(...)` so `/auth/register` / `/auth/login` do not fail on NOT NULL |
+| Persisted profile fields (`displayName`, `rating`, `gamesPlayed`, `gamesWon`, nullable `theme`, …) | `src/db/schema.ts` users extension — **NOT NULL** custom columns need `.default(...)` so `/auth/register` / `/auth/login` do not fail; nullable prefs like `theme` do not |
 | GameDatabase wiring / schemas map | `src/db/index.ts` |
 | Secrets for auth (salt, JWT, session, Google client) | `.env.example` / `.env.development` / `.env.production` (`AUTH_SALT`, `JWT_SECRET`, `SESSION_SECRET`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`) |
 
@@ -111,6 +112,7 @@ Use these rules to pick the layer before naming files.
 | If the change is… | Prefer |
 |-------------------|--------|
 | Room create/join, auth JWT connect | `test/MyRoom.test.ts` (update room name / contract when registration changes) |
+| Theme preference HTTP | `test/theme.test.ts` (`POST /api/theme` auth + persist) |
 | Multi-client join pressure | `loadtest/example.ts` (`joinOrCreate`; `--room` / `--numClients`) |
 
 ## Domain Hotspots
@@ -124,7 +126,7 @@ Use these rules to pick the layer before naming files.
 | Game state sync | `src/rooms/schema/MyRoomState.ts` |
 | Moves / match flow | `src/rooms/MyRoom.ts` messages + lifecycle; align with client `move` / board cells `0`–`4` |
 | HTTP health / CORS / demo API | `src/app.config.ts` express + routes |
-| Tests | `test/MyRoom.test.ts` |
+| Tests | `test/MyRoom.test.ts`, `test/theme.test.ts`, … |
 | Loadtest | `loadtest/example.ts` |
 | Deploy / PM2 / CI | `ecosystem.config.cjs`, `.github/workflows/deploy.yml`, `.env.production` (on server only) |
 
@@ -141,8 +143,8 @@ Use these rules to pick the layer before naming files.
    - room hooks (`onAuth`, `onCreate`, `onJoin`, `onLeave`, `onDispose`, `onMessage`);
    - schema symbols (`MyRoomState`, `Schema`, `type`, `MapSchema`, board/turn/status/players);
    - auth (`JWT.verify`, `@colyseus/auth`, `AUTH_SALT`, `JWT_SECRET`);
-   - DB (`GameDatabase`, `users`, `displayName`, `rating`, `gamesPlayed`, `gamesWon`);
-   - HTTP (`/health`, `/hi`, `/api/hello`, `createEndpoint`, CORS, `monitor`, `playground`);
+   - DB (`GameDatabase`, `users`, `displayName`, `rating`, `gamesPlayed`, `gamesWon`, `theme`);
+   - HTTP (`/health`, `/hi`, `/api/hello`, `POST /api/theme`, `createEndpoint`, CORS, `monitor`, `playground`);
    - tests / loadtest (`@colyseus/testing`, `joinOrCreate`);
    - deploy (`ecosystem.config.cjs`, `pm2`, `rsync`, `DATABASE_URL`).
 
@@ -168,7 +170,7 @@ Use these rules to pick the layer before naming files.
 | OAuth providers (Google) | `src/config/auth.ts` (`addProvider`); import from `app.config.ts` |
 | User columns / defaults | `src/db/schema.ts` |
 | Express / CORS / health | `express(app)` in `src/app.config.ts` |
-| Custom HTTP demo routes | `routes` / `createEndpoint` in `src/app.config.ts` |
+| Custom HTTP routes (`/api/hello`, `POST /api/theme`, …) | `routes` / `createEndpoint` in `src/app.config.ts` |
 | Env secrets / DB path | `.env.example`, `.env.development`, `.env.production` |
 | Tests | `test/**.test.ts` — boots `appConfig`, JWT, room name |
 | Loadtest | `loadtest/example.ts` |

@@ -118,8 +118,8 @@ Decide in this order:
 1. **New room type / rename?** → `src/rooms/<Name>.ts` + register in `app.config.ts` `rooms` (playable key `checkers`; live list needs `lobby` + `.enableRealtimeListing()`).
 2. **Synced state fields?** → `src/rooms/schema/<Name>State.ts` only; Room assigns/mutates them.
 3. **Move / game messages?** → Room `onMessage('move', …)` (or equivalent) — validate, apply, update schema.
-4. **User profile columns?** → `src/db/schema.ts` with `.default(...)` so `/auth/register` / `/auth/login` stay compatible; wire via `src/db/index.ts` if needed.
-5. **Thin HTTP (health, demo API)?** → `express` hook or `createEndpoint` in `app.config.ts`. CORS stays first.
+4. **User profile columns?** → `src/db/schema.ts`: **NOT NULL** columns need `.default(...)` so `/auth/register` / `/auth/login` stay compatible; nullable prefs (e.g. `theme`) do not; wire via `src/db/index.ts` if needed.
+5. **Thin HTTP (health, demo API, preference save)?** → `express` hook or `createEndpoint` in `app.config.ts` (e.g. `POST /api/theme`). CORS stays first.
 6. **Auth HTTP?** → Already from `@colyseus/auth` when `database` is set — do not reimplement `/auth/*`.
 7. **OAuth provider (Google)?** → `src/config/auth.ts` via `auth.oauth.addProvider`; side-effect import from `app.config.ts`; do not override built-in `onOAuthProviderCallback` unless product asks.
 8. **Room gate?** → static `onAuth` with `JWT.verify` on the Room class.
@@ -144,7 +144,7 @@ Decide in this order:
 
 **Put in db**
 
-- Extend `users` (`displayName`, `rating`, `gamesPlayed`, `gamesWon`, …) with NOT NULL-safe defaults.
+- Extend `users` (`displayName`, `rating`, `gamesPlayed`, `gamesWon`, nullable `theme`, …); NOT NULL columns need defaults.
 - `GameDatabase` connection string from `DATABASE_URL`.
 
 **Put in app.config / index / config**
@@ -223,7 +223,7 @@ ecosystem.config.cjs
 
 **Auth gate** — `MyRoom.onAuth` → `JWT.verify(token)` → userdata to `onJoin`.
 
-**HTTP** — CORS middleware first in `express`; `/health` JSON; `createEndpoint("/api/hello", …)` for demo; `/auth/*` from `@colyseus/auth` via `database: db`.
+**HTTP** — CORS middleware first in `express`; `/health` JSON; `createEndpoint("/api/hello", …)` demo; `createEndpoint("/api/theme", …)` JWT + registered theme preference; `/auth/*` from `@colyseus/auth` via `database: db`.
 
 **Test** — `boot(appConfig)`, `JWT.sign(...)`, `createRoom("checkers")`, `connectTo`, assert `sessionId`; lobby `+`/`-` cases when listing changes.
 
@@ -247,7 +247,7 @@ ecosystem.config.cjs
 
 **New user column**
 
-1. Extend `src/db/schema.ts` with `.default(...)`.
+1. Extend `src/db/schema.ts` — NOT NULL columns get `.default(...)`; nullable prefs (e.g. `theme`) may omit default.
 2. Do not break `@colyseus/auth` register/login column set.
 
 **New HTTP endpoint**
@@ -268,7 +268,7 @@ ecosystem.config.cjs
 | Server wiring | `src/app.config.ts` | DB, rooms, thin HTTP, CORS |
 | Auth HTTP | `@colyseus/auth` via `database` | `/auth/*` — do not reimplement |
 | Room auth | `rooms/*.ts` `onAuth` | `JWT.verify` |
-| Users / rating | `src/db/schema.ts` | defaults required |
+| Users / rating / theme | `src/db/schema.ts` | NOT NULL → defaults; nullable prefs OK |
 | Gameplay | `src/rooms/*` + `rooms/schema/*` | authoritative rules + sync |
 | Lobby list | `lobby` LobbyRoom + `checkers` `.enableRealtimeListing()` | HTTP `/rooms/:roomName` is fallback |
 | Health / smoke | `express` `/health`, `/hi` | deploy checks |
