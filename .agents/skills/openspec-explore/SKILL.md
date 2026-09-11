@@ -1,6 +1,6 @@
 ---
 name: openspec-explore
-description: Enter explore mode - a thinking partner for exploring ideas, investigating problems, and clarifying requirements. Use when the user wants to think through something before or during a change.
+description: Enter explore mode - a thinking partner for exploring ideas, investigating problems, and clarifying requirements; explicitly flags when a feature is not implementable yet because the project lacks a developer decision (libs, uploads, providers, etc.). Use when the user wants to think through something before or during a change.
 allowed-tools: Bash(openspec:*)
 license: MIT
 compatibility: Requires openspec CLI.
@@ -78,6 +78,67 @@ Unicode diagram glyphs can render at different widths across terminals, fonts, a
 - Identify what could go wrong
 - Find gaps in understanding
 - Suggest spikes or investigations
+- **Always** run the **Developer decision / implementability** check below when the idea touches runtime work
+
+---
+
+## Developer decision / implementability (обязательно)
+
+Explore должен **явно подсветить**, если фичу **нельзя** (или рано) заимплементить в рамках текущего проекта, пока разработчик не принял решение. Это не «открытый вопрос на потом» в конце — это **стоп-сигнал** для propose/apply.
+
+### Что считать блокером
+
+Любой вопрос, **не решённый в рамках проекта** (код, deps, skills, docs, OpenSpec specs/design, AGENTS, conventions), без которого реализация — угадывание. Примеры:
+
+- нет подходящей библиотеки / пакета в client или server (и нет канона «берём X»)
+- нет принятого решения по домену (загрузка файлов, хранение медиа, email, платежи, push, offline, …)
+- нет инфраструктуры / env / провайдера (S3, SMTP, OAuth app, …) и нет зафиксированного выбора
+- конфликт со стеком или skills (нужен подход вне Vue/Quasar/Colyseus/Drizzle/SQLite и т.п. без решения)
+- нет контракта client↔server / capability path, и его нельзя вывести из существующих доменов
+- продуктовый выбор с несколькими несовместимыми вариантами без default в проекте
+- legal/security/ops вопрос (PII, секреты, CORS origins, prod callback), который должен решить человек
+- зависимость от внешней системы, которой в репо ещё нет и путь не описан
+
+Не относить сюда мелочи, где есть разумный default из skills / существующих паттернов / sibling AGENTS — их можно рекомендовать, не эскалируя.
+
+### Как проверять
+
+Сверять идею с реальностью проекта (read-only):
+
+- `openspec/config.yaml` context, `docs/`, sibling `AGENTS.md`, skills
+- `package.json` / deps client и server
+- существующие flows (auth, lobby, rooms, schema, HTTP)
+
+Если в проекте **нет** решения — не маскировать под «можно сделать так или так» без ярлыка блокера.
+
+### Как подсвечивать (обязательный формат)
+
+Как только нашли такой пункт — вынести **отдельным заметным блоком** (не хоронить в абзаце):
+
+```markdown
+## ⛔ Нужно решение разработчика
+
+Фичу / часть scope **нельзя** уверенно закладывать в propose/apply, пока не решено:
+
+| ID | Вопрос | Почему блокер в этом проекте | Что нужно от разработчика |
+|----|--------|------------------------------|---------------------------|
+| D1 | … | нет lib / нет канона / нет решения в docs|skills | выбрать A/B/… или «out of scope» |
+
+**Пока открыто:** не предлагать «готов к proposal/implement» для затронутого scope.
+**Можно параллельно:** исследовать остальное, сузить scope, набросать варианты после решения.
+```
+
+Правила:
+
+- Повторять/обновлять блок, когда всплывают новые D*; не снимать, пока человек не решил или явно не вывел в out of scope.
+- Варианты ответа — кратко (A/B/C + tradeoff), без реализации.
+- При capture в change: эти пункты → **design.md** как технические prerequisite/блокеры (см. `openspec/config.yaml` rules); в proposal — только следствия для Scope / Out of scope, не детальный техблокер-список.
+- Если весь запрос упирается в D* — сказать прямо: **сейчас не implementable в рамках проекта** до решения.
+
+### Stance addition
+
+- **Honest about fit** — лучше рано сказать «в текущем проекте этого ещё нет», чем вести к proposal с дырой
+- **Developer owns unresolved choices** — агент не выбирает за разработчика библиотеку/провайдера/политику, если в проекте нет канона
 
 ---
 
@@ -287,12 +348,17 @@ When it feels like things are crystallizing, you might summarize:
 
 **The approach**: [if one emerged]
 
-**Open questions**: [if any remain]
+**⛔ Нужно решение разработчика**: [D1… или «нет — в рамках проекта закрыто»]
+
+**Open questions** (не блокеры): [мелочи / уточнения]
 
 **Next steps** (if ready):
-- Create a change proposal
+- Resolve D* with the developer first (if any)
+- Create a change proposal (only if no blocking D* on in-scope work)
 - Keep exploring: just keep talking
 ```
+
+If any **⛔** rows remain for in-scope work, do **not** present the idea as ready for `/opsx-propose` or implement without calling that out first.
 
 But this summary is optional. Sometimes the thinking IS the value.
 
@@ -304,6 +370,8 @@ But this summary is optional. Sometimes the thinking IS the value.
 - **Don't fake understanding** - If something is unclear, dig deeper
 - **Don't rush** - Discovery is thinking time, not task time
 - **Don't force structure** - Let patterns emerge naturally
+- **Don't bury developer blockers** - Unresolved project decisions (missing libs, no upload strategy, no provider choice, …) must use the **⛔ Нужно решение разработчика** callout; never only a soft “open question”
+- **Don't claim implementable** - If blocking D* remain for the discussed scope, do not say the feature is ready to propose/implement inside this project
 - **Don't auto-capture** - Offer to save insights, don't just do it. Read-only commands and tools need no confirmation. Before the first write-capable action—including `openspec new change` or another command that writes files—name the artifacts or files and proposed changes, ask a direct yes/no question, and wait for explicit confirmation in a separate user message. That confirmation covers only the described scope; ask again before expanding it. Answers to design or clarifying questions are never consent to write.
 - **Don't manually scaffold changes** - Never create a new change directory under `openspec/changes/` by hand. Always use `openspec new change "<name>"` (with `--store <id>` when applicable) so required metadata such as `.openspec.yaml` is created before writing artifacts.
 - **Do visualize** - A good diagram is worth many paragraphs

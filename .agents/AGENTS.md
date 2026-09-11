@@ -38,6 +38,8 @@ OpenSpec: [`openspec/config.yaml`](../openspec/config.yaml); артефакты 
 | [`align-code`](skills/align-code/SKILL.md) | Client + server: `*-align-code` + `*-verify-code` → сводный отчёт |
 | [`commit`](skills/commit/SKILL.md) | Status → stage → commit → **push** по meta + client + server (main/master) |
 | [`check-changes`](skills/check-changes/SKILL.md) | Unstaged client/server → предложения: добавить/изменить skills, maps, docs, AGENTS.md |
+| [`implement-change`](skills/implement-change/SKILL.md) | Активный change: apply (блоки tasks в субагентах) → align → check-changes → commit |
+| [`continue-implement-change`](skills/continue-implement-change/SKILL.md) | Resume прерванного `implement-change` с фазы/блока (state + эвристики) |
 | [`openspec-propose`](skills/openspec-propose/SKILL.md) | Новая задача: proposal → specs → design → tasks |
 | [`openspec-new-change`](skills/openspec-new-change/SKILL.md) | Создать change и начать артефакты по схеме |
 | [`openspec-continue-change`](skills/openspec-continue-change/SKILL.md) | Продолжить создание недостающих артефактов change |
@@ -45,7 +47,7 @@ OpenSpec: [`openspec/config.yaml`](../openspec/config.yaml); артефакты 
 | [`openspec-apply-change`](skills/openspec-apply-change/SKILL.md) | Реализация по `tasks.md` |
 | [`openspec-verify-change`](skills/openspec-verify-change/SKILL.md) | Проверка реализации против артефактов |
 | [`openspec-archive-change`](skills/openspec-archive-change/SKILL.md) | Архивация закрытого change |
-| [`openspec-explore`](skills/openspec-explore/SKILL.md) | Explore mode до/во время change |
+| [`openspec-explore`](skills/openspec-explore/SKILL.md) | Explore mode до/во время change; явно флагает «⛔ нужно решение разработчика» если фича ещё не implementable в проекте |
 | [`openspec-sync-specs`](skills/openspec-sync-specs/SKILL.md) | Delta → main specs без archive |
 
 ### Discovery (другие корни)
