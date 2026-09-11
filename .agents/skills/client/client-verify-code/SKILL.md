@@ -1,0 +1,382 @@
+---
+name: client-verify-code
+description: >-
+  Use when the user asks to verify code, check skill compliance, audit a branch
+  diff vs master/main/merge-base, audit local diffs, or after implementing a
+  change in the happy-tourist checkers Vue 3 client. Also when checking Vue
+  Style Guide soft SFC order on changed Vue files. Reports three tiers:
+  Violations, Warnings, Recommendations.
+---
+
+# Verify Code
+
+Use this skill to check **all production code changed on the current branch** in
+the `happy-tourist.github.io` client package against **all code-related** project
+skills under `.agents/skills/client/`, plus the **built-in** checks in this file
+(Vue Style Guide soft recommendations and Client conventions).
+
+Default scope is the **full branch diff**: commits vs merge-base **and**
+uncommitted working-tree changes. Do not stop at staged/unstaged/untracked.
+
+This skill is primarily an **orchestrator**: domain rules live in the code
+skills listed below — **read those skill files** when present and apply them; do
+not restate or invent parallel domain rules here. Built-in sections below fill
+gaps when a listed skill file is missing, and own Vue SFC order guidance.
+
+**Paths:** skills currently live in **this repo** at `.agents/skills/client/`
+(temporary; later move to **happy-tourist-meta**). Runtime code and `src/…`
+paths are relative to **this client repo root** (`happy-tourist.github.io`).
+Sibling Colyseus server is **`../happy-tourist-server`**, not a path under
+skills.
+
+**Stack assumptions:** Vue 3 Composition API / `<script setup>`, Pinia,
+TypeScript, Quasar 2 + `@quasar/app-vite`, `@colyseus/sdk` (no axios), hash
+router, GitHub Pages deploy.
+
+## When To Use
+
+- User asks to verify code / skill compliance / convention check
+- After implementing a feature or refactor, before commit
+- When reviewing the current branch (or a named path) for convention drift
+
+## Scope: code skills only
+
+Skills live under `.agents/skills/client/<name>/SKILL.md` in this repo
+(temporary; later `happy-tourist-meta/.agents/skills/client/`).
+
+### Always include (read and apply each when the file exists)
+
+Verify against **every** skill in this set for the checked code — not a subset
+guessed from the path. Path routing below only helps prioritize deeper reading;
+it does **not** allow skipping skills from this list.
+
+| Skill | Concern |
+|-------|---------|
+| `colyseus-client` | `client.http`, room messages, Colyseus Client |
+| `client-work-with-errors` | store error + `q-banner`, room `onError` |
+| `work-with-stores` | Pinia auth/game |
+| `work-with-forms` | LoginPage `q-form` |
+| `work-with-pages` | routes + guards |
+| `client-work-with-structure` | pages/boot/stores layout |
+| `work-with-styles` | Quasar variables + board CSS |
+| `client-work-with-auth` | Colyseus Auth |
+| `work-with-localization` | vue-i18n boot |
+| `work-with-lobby` | room list/poll/create/join |
+| `work-with-rooms` | Room lifecycle |
+| `work-with-game-board` | board, moves, `canMove` |
+| `work-with-env-deploy` | `VITE_*`, hash router, GH Pages |
+
+If a new code skill appears under `.agents/skills/client/` (same kind: how to
+write app code), include it too. Prefer reading one extra skill over missing a
+rule.
+
+If a listed skill file is **missing**, do not invent a parallel rulebook — apply
+**Built-in: Client conventions** for that concern and continue.
+
+### Always exclude
+
+Do **not** use these for client-verify-code (unless the user explicitly asks):
+
+| Skill | Why excluded |
+|-------|----------------|
+| `client-locate-change-points` | planning where to edit |
+| `client-verify-code` | this orchestrator |
+| `client-align-code` | alignment / docs authorship |
+| `openspec` / opsx skills | change workflow / specs |
+| `commit` | commit messages |
+
+Skip verifying files that are **only** tests (`**/tests/**`, `**/*.spec.ts`,
+`**/*.spec.js`, `**/__tests__/**`) unless the user explicitly asks to include
+them. Focus on production/source code under `src/`.
+
+## What To Check
+
+**Always** inspect the full branch change set. Working tree alone is not enough.
+
+Run git from the **repository root** (this client package is the git root).
+
+1. Resolve merge-base: `git merge-base HEAD <base-ref>`. Prefer `origin/main`
+   (this repo), else `origin/master`, `main`, `master`, `develop` — first that
+   exists.
+2. Committed on the branch: `git diff --name-only <merge-base>...HEAD` and
+   `git diff <merge-base>...HEAD`
+3. Staged: `git diff --cached --name-only` and `git diff --cached`
+4. Unstaged: `git diff --name-only` and `git diff`
+5. Untracked: `git ls-files --others --exclude-standard` (read those files fully)
+
+Union of 2–5 is the file set (filter to client production sources unless the user
+widened scope). Never skip step 2 because the working tree looks small.
+
+Narrow only when the user **explicitly** asks for working-tree-only / only staged,
+or names a **folder or path**.
+
+Skip unrelated noise (lockfiles, coverage, binary assets, deploy blobs) unless
+the user asked to include them.
+
+## Commands (before done)
+
+Per `AGENTS.md`: the **user** runs package scripts from this package; the agent
+**proposes** the command and **waits for «готово»**. Do not run lint / typecheck
+/ build yourself unless the user already said to execute them.
+
+When verification is part of an implementation you own, or when the user asked
+to verify-and-fix / “make sure it passes”, propose:
+
+| Command | Purpose |
+|---------|---------|
+| `npm run lint` | ESLint (flat config) |
+| `npm run typecheck` | `vue-tsc` / typecheck |
+| `npm run build` / `quasar build` | Production SPA build |
+
+Prefer proposing `npm run lint` and `npm run typecheck` for touched areas.
+Propose `npm run build` / `quasar build` when the user asks for build parity or
+deploy confidence. Do not treat passing lint/typecheck/build as a substitute for
+skill checks.
+
+After the user replies «готово», report failed lint/typecheck/build output under
+**Violations** (tooling) with the command and a short failure summary. Do not
+invent eslint rules beyond the project config and skill text.
+
+## Workflow
+
+1. Collect the file set: merge-base…HEAD **plus** staged, unstaged, untracked
+   (or the path the user named). Exclude test-only files per Scope.
+2. **Read all skills from the Always include table** that exist on disk (do not
+   rely on memory; do not skip because the path “looks unrelated”).
+3. For each source file, apply every code skill whose rules can touch that file.
+   When unsure, apply the skill. If missing, use Built-in Client conventions.
+4. For every checked `.vue` file, apply **Built-in: Vue Style Guide**.
+5. Apply **Built-in: Client conventions** to all checked production files.
+6. Classify every finding into Violations / Warnings / Recommendations
+   (see Severity). Each item: file path, what is wrong, which skill/rule, and
+   the expected pattern. Soft Prefer guidance → Warnings or Recommendations,
+   not silence.
+7. Fix **Violations** when the user asked to verify-and-fix, or when
+   verification runs as part of an implementation task you own. Fix **Warnings**
+   on verify-and-fix when the preferred pattern clearly fits. Fix
+   **Recommendations** only if the user asked to tidy / apply soft order.
+   Otherwise list findings and wait.
+8. When implementing / verify-and-fix: **propose** `npm run lint` and
+   `npm run typecheck` (and `npm run build` / `quasar build` if requested), then
+   wait for «готово» before claiming done.
+
+Do not praise compliant code. Do not turn this into a product/bug review skill.
+
+## Built-in: Vue Style Guide
+
+Source: [Vue.js Style Guide — Priority C Rules: Recommended](https://vuejs.org/style-guide/rules-recommended.html),
+adapted for **Composition API / `<script setup>`** (this package does not use
+Options API category order). Soft guidance on changed/new `.vue` files. Report as
+`(skill: client-verify-code / Vue Style Guide)`.
+
+**Soft recommendations only — tidy order, do not enforce rigidly.**
+
+- Goal: keep SFCs readable with a consistent block order.
+- **Not** a hard lint: do not demand a full reorder if it risks breakage.
+- Prefer clear, safe tidy-ups over micro-nits.
+- Severity: always **Recommendations** — unless verify-and-fix and reorder is
+  clearly safe.
+
+### SFC top-level block order
+
+In this Vue 3 / `<script setup>` project prefer:
+
+`<template>` → `<script setup>` → `<style>` (style last).
+
+Also acceptable: `<script setup>` → `<template>` → `<style>`.
+
+**Suggest fix when:** `<style>` is before `<script setup>`/`<template>`, or both
+block-order variants appear in the same change set without reason.
+
+Do **not** apply Options API component-options category order (`data` /
+`computed` / `methods` / lifecycle hooks as option keys) — this package uses
+Composition API inside `<script setup>`.
+
+### Element attribute order
+
+On elements/components in templates, prefer:
+
+1. `is`
+2. `v-for`
+3. `v-if` / `v-else-if` / `v-else` / `v-show` / `v-cloak`
+4. `v-pre` / `v-once`
+5. `id`
+6. `ref` / `key`
+7. `v-model`
+8. Other attributes (bound and unbound)
+9. `v-on` / `@…`
+10. `v-html` / `v-text`
+
+**Suggest** only obvious inversions (e.g. `@click` before `v-if`). Do not
+rewrite every attribute line for minor reordering unless asked to fix.
+
+### Empty lines between multi-line declarations
+
+When multi-line reactive blocks / adjacent multi-line declarations become hard
+to skim, prefer a blank line between them. Do not flag readable dense
+single-line blocks.
+
+## Built-in: Client conventions
+
+Grounded in `AGENTS.md`. Report as `(skill: client-verify-code / Client conventions)`.
+Apply always; sibling skills win when they exist and conflict on a detail.
+
+### Language and architecture
+
+- **TypeScript** + **Vue 3** SFCs with **Composition API** / `<script setup>`.
+- **Pinia** for application state (`stores/auth`, `stores/game`); do not add a
+  parallel Vuex or ad-hoc global reactive singleton for game/auth.
+- **Quasar 2** components and theming (`q-page`, `q-card`, `q-btn`, `q-form`,
+  `q-banner`, …); prefer Quasar patterns already used on Login/Lobby/Game pages.
+- Dependency direction: `pages` → `stores` / `boot` / `components`. Keep
+  Colyseus I/O inside Pinia stores (`auth`, `game`) rather than scattering
+  `client.*` calls across many components.
+- Prefer the login / lobby / game flow over scaffold leftovers
+  (`EssentialLink.vue`, `example-store.ts`, unused `pages/index*`).
+
+### Colyseus / HTTP (no axios)
+
+- Shared `Client` from `src/boot/colyseus.ts`
+  (`new Client(import.meta.env.VITE_COLYSEUS_URL)`). Prefer importing `client`
+  from `@/boot/colyseus` in script (not only `$colyseus`).
+- **No axios layer** — auth and rooms go through the Colyseus SDK client.
+- Lobby listing: `client.http.get('/rooms/checkers')` (not removed
+  `getAvailableRooms`).
+- Room type constant `CHECKERS_ROOM = 'checkers'` in `stores/game`.
+- Room lifecycle: `create` / `joinById` / `joinOrCreate`, `onStateChange`,
+  `send('move')`, `leave`.
+- Move payload: `{ from, to }`. Board truth and rules live on the server;
+  client highlights are UI hints only.
+- Board cell values: `0` empty, `1` white, `2` black, `3` white king,
+  `4` black king.
+
+### Auth and routing
+
+- Auth via `client.auth` (Colyseus Auth): register, email/password, anonymous,
+  sign-out — through `stores/auth`. Token key `colyseus-auth-token`.
+- Router: **hash** mode (`/#/lobby`, `/#/game/...`). Guards await
+  `auth.whenReady()`, then enforce `requiresAuth` / `guest` meta.
+- Do not switch to history mode without an explicit request (GitHub Pages has
+  no history fallback; CI copies `index.html` → `404.html`).
+
+### Errors and async
+
+- Auth/game actions catch errors into store `error` string; pages show
+  `q-banner`.
+- Do not swallow errors with empty `catch` (except established room-leave
+  closed-room swallow in `leaveGame`).
+- `GamePage` rejoins by `roomId` if Pinia lost the room; failed rejoin → lobby.
+
+### Env and deploy
+
+- Vite env: `VITE_COLYSEUS_URL`, `VITE_API_URL` (typed in `env.d.ts`; local
+  `.env.development` / `.env.production`; CI injects GitHub Actions `vars`).
+- Do not hardcode production host URLs in app logic when env already covers them.
+- Deploy: `.github/workflows/deploy.yml` (`quasar build -m spa`).
+
+### UI / i18n / styles
+
+- Theme Sass in `src/css/quasar.variables.scss`; global styles in
+  `src/css/app.scss`.
+- i18n via boot `i18n` + `vue-i18n` (default locale `en-US`).
+- Path alias `@/*` → `src/*`.
+
+### Severity cues for built-in conventions
+
+| Tier | Examples |
+|------|----------|
+| **Violations** | Ad-hoc axios / second HTTP client; Colyseus I/O scattered outside stores; empty `catch` on auth/game; history router without request; inventing move protocol / board truth on client |
+| **Warnings** | Importing only `$colyseus` when `@/boot/colyseus` fits; duplicating room-list HTTP outside `refreshRooms`; hardcoding env URLs; expanding scaffold leftovers instead of login/lobby/game |
+| **Recommendations** | Vue SFC block order; minor formatting / import tidy |
+
+## Path hints (optional prioritization only)
+
+Use only to decide **where to look harder**, never to drop a skill from Always include.
+
+| Change / path signals | Look harder at |
+|----------------------|----------------|
+| `src/boot/colyseus.ts`, `client.http`, room `send` / `onStateChange` | `colyseus-client`, `work-with-rooms` |
+| `stores/auth.ts`, LoginPage auth flows | `client-work-with-auth`, `work-with-forms` |
+| `stores/game.ts`, LobbyPage | `work-with-lobby`, `work-with-stores` |
+| `GamePage`, board CSS / move UI | `work-with-game-board`, `work-with-styles` |
+| `src/router/**`, route meta / guards | `work-with-pages` |
+| `src/pages/**`, `src/boot/**`, `src/stores/**` | `client-work-with-structure` |
+| store `error`, `q-banner`, room `onError` | `client-work-with-errors` |
+| `src/i18n/**`, boot `i18n` | `work-with-localization` |
+| `.env*`, `env.d.ts`, `quasar.config.ts`, `.github/workflows/**` | `work-with-env-deploy` |
+| `src/css/**`, Quasar variables, board styles | `work-with-styles` |
+| `*.vue` block/attribute order | Vue Style Guide |
+
+## High-signal checks (examples, not a full rulebook)
+
+Reminders to **open the skill** (or Built-in) — skill text wins.
+
+- **Colyseus**: shared Client from boot; HTTP via `client.http`; moves via
+  `send('move')`; I/O in Pinia stores.
+- **Auth**: `client.auth` + `stores/auth`; guards wait for `whenReady()`.
+- **Lobby/rooms**: `GET /rooms/checkers`; create/join/leave through `stores/game`.
+- **Board**: render server state; `canMove` gates sends; cell values 0–4.
+- **Errors**: store `error` + `q-banner`; no empty `catch`.
+- **Env/deploy**: `VITE_*`, hash router, GH Pages SPA build.
+- **Vue SFC order** (soft): `<template>` → `<script setup>` → `<style>`.
+
+## Severity
+
+Map each skill finding by how the source skill phrases the rule. Skill text wins;
+when wording mixes levels, pick the strongest that still applies.
+
+| Tier | When | Skill wording cues (examples) |
+|------|------|-------------------------------|
+| **Violations** | Hard break of a required pattern / contract | Do / Don't, Must, Never, Always, Hard Rules, forbidden empty `catch`, axios instead of Colyseus client, Colyseus I/O outside stores |
+| **Warnings** | Preferred pattern clearly fits; allowed exception does **not** apply | Prefer, Should, “use X instead of Y” when X fits |
+| **Recommendations** | Soft tidy / style / optional polish | usually, Soft, Vue Style Guide, optional SFC block reorder |
+
+Do not invent findings outside the code skills and the built-in sections above.
+Do not inflate Prefer into Violations.
+
+## Output
+
+Report language: **English** for prose; keep paths, symbols, and code as-is.
+
+Always include all three finding sections. If a section has no items, put a
+single line `- none` (do not mix items and `none` in the same section).
+
+Format:
+
+```text
+## Verify Code
+
+Scope: branch vs <merge-base> (<base-ref>) + staged + unstaged + untracked [+ path if used]
+Skills: all code skills (excl. locate/align/openspec/commit) + Vue Style Guide + Client conventions
+Lint/typecheck/build: <proposed commands; results after user «готово», or skipped>
+
+### Violations
+- `path` — <what is wrong> (skill: `<name>`)
+  Expected: <short correct pattern or cite skill section>
+
+### Warnings
+- `path` — <what is wrong> (skill: `<name>`)
+  Expected: <short correct pattern or cite skill section>
+
+### Recommendations
+- none
+```
+
+Empty-section example: only `- none` under that heading. Item shape is the same
+in every tier. Do not collapse Warnings/Recommendations into Violations or omit
+soft Prefer findings.
+
+## Red Flags — collect the branch first
+
+These mean STOP and re-collect files vs merge-base before reporting:
+
+- Ran only `git diff` / `--cached` / untracked
+- “User didn’t ask for the whole branch”
+- “Working tree has the real work”
+- “I’ll check working tree first, branch later”
+- Report Scope without `branch vs <merge-base>`
+
+## Related Skills
+
+All skills in the Always include table. Vue Style Guide soft order and Client
+conventions are owned by this skill when sibling files are absent.

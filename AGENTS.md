@@ -1,0 +1,63 @@
+# AGENTS.md — happy-tourist-meta
+
+Метарепозиторий экосистемы Happy Tourist (онлайн-шашки): каноническая документация и skills для AI-агентов.  
+**Runtime-код здесь не живёт** — исходники в sibling-репозиториях `../happy-tourist.github.io` (client) и `../happy-tourist-server` (server).
+
+Подробный индекс docs и skills: [`.agents/AGENTS.md`](.agents/AGENTS.md).
+
+## Обязательно перед работой
+
+1. Из корня meta: [`docs/projects-map.md`](docs/projects-map.md) — таблица «Пути для OpenSpec / агентов»; при наличии — смержить [`projects-map.local.yaml`](projects-map.local.yaml) (local перекрывает канон). Шаблон: [`projects-map.local.yaml.example`](projects-map.local.yaml.example).
+2. Если работаешь в sibling-репозитории — сначала локальный `project-map.md` (ключ `happy-tourist-meta` → `..`), затем `happy-tourist-meta/docs/projects-map.md` (+ local YAML в meta).
+3. Пути к коду — siblings через projects-map (+ local):
+   - Client: `../happy-tourist.github.io`
+   - Server: `../happy-tourist-server`
+4. Канон документации: [`docs/README.md`](docs/README.md). В child markdown — ссылки вида `happy-tourist-meta/docs/...` (резолв через `project-map.md`).
+5. **Контекст пакета:** перед правками читай `AGENTS.md` целевого репозитория:
+   - Client (Vue 3 + Quasar): [`../happy-tourist.github.io/AGENTS.md`](../happy-tourist.github.io/AGENTS.md)
+   - Server (Colyseus): [`../happy-tourist-server/AGENTS.md`](../happy-tourist-server/AGENTS.md)
+6. **Перед выбором скилла:** skills из `happy-tourist-meta/.agents/skills/` — [`client/`](.agents/skills/client/) для UI, [`server/`](.agents/skills/server/) для Colyseus-бэкенда, плюс OpenSpec (`openspec-*`). Локальных канонических `.agents/skills/` в sibling-репозиториях нет (в client мог остаться временный дубликат до переноса).
+
+## OpenSpec
+
+- Конфиг: [`openspec/config.yaml`](openspec/config.yaml).
+- Capability ID — продуктовый путь (auth/login, lobby/rooms, game/move, …), не номер тикета и не имя change.
+- **Запрещено** класть в `openspec/specs/` номер задачи или имя change как capability.
+- Артефакты OpenSpec создаются и архивируются **в happy-tourist-meta**, не в sibling runtime-репозиториях.
+- Пути к runtime при apply — через [`docs/projects-map.md`](docs/projects-map.md) (+ local YAML).
+
+## Работа с OpenSpec
+
+- **task** — schema по умолчанию `spec-driven` (proposal → specs → design → tasks).
+- Типичный Cursor chat workflow: `/opsx-explore` → `/opsx-propose` → review → `/opsx-apply` → `/opsx-sync` → `/opsx-archive`.
+
+## Работа с Git
+
+- Runtime-код коммитить в соответствующий sibling (`happy-tourist.github.io` или `happy-tourist-server`); docs/OpenSpec/skills meta — в `happy-tourist-meta`.
+- Если начинаем новую задачу, но есть локальные изменения — спроси, что с ними делать.
+- Не пушить и не создавать PR/MR без явной просьбы пользователя.
+
+## Skills (discovery)
+
+- OpenSpec / workspace (этот репозиторий): `.agents/skills/` (`openspec-*`, [`commit`](.agents/skills/commit/SKILL.md))
+- Client-wide (meta): [`.agents/skills/client/`](.agents/skills/client/) — runtime UI: `../happy-tourist.github.io/`
+- Server-wide (meta): [`.agents/skills/server/`](.agents/skills/server/) — runtime Colyseus: `../happy-tourist-server/`
+
+Детали и перечень: [`.agents/AGENTS.md`](.agents/AGENTS.md).
+
+## Сборка и команды
+
+Команды `npm` / сборку / тесты выполняет **пользователь**. Агент предлагает команду и ждёт подтверждения («готово»).
+
+Типичные команды:
+
+- Client (`happy-tourist.github.io`): `npm install` / `npm run dev` / `npm run lint` / `npm run typecheck` / `npm run build`
+- Server (`happy-tourist-server`): `npm install` / `npm run dev` / `npm test` / `npm run build` / `npm run loadtest`
+
+## Kilo Code: lazy loading nested skills
+
+При появлении канона: [`kilo.template.jsonc`](kilo.template.jsonc) → локально `cp kilo.template.jsonc kilo.jsonc` (ignored).  
+В `kilo.jsonc` пути nested skills (`skills.paths`: `.agents/skills/client`, `.agents/skills/server`).  
+Root `.agents/skills/` (`openspec-*`, `commit`, …) обнаруживаются автоматически — не дублировать в `skills.paths`.
+
+Скилл [`commit`](.agents/skills/commit/SKILL.md): незакоммиченные изменения в meta + client + server → stage → commit на `main`/`master` → **всегда push** (запуск скилла = разрешение на push).

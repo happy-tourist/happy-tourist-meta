@@ -1,0 +1,206 @@
+# =============================================================================
+# OpenSpec — конфигурация экосистемы Happy Tourist (meta: client + server specs)
+# =============================================================================
+# Этот файл читается CLI и slash-командами (/opsx-propose, /opsx-apply и т.д.).
+# Его содержимое автоматически подмешивается в инструкции при создании артефактов
+# в openspec/changes/<задача>/specs/<capability>/spec.md (proposal, specs, design, tasks).
+#
+# Не дублируйте здесь полные правила из docs/ — достаточно ссылок и ключевых фактов.
+# Подробности: https://github.com/Fission-AI/OpenSpec/blob/main/docs/opsx.md
+# =============================================================================
+
+# Схема workflow: какие артефакты создавать и в каком порядке.
+# spec-driven = proposal → specs → design → tasks (стандарт OpenSpec).
+schema: spec-driven
+
+# Канон путей к sibling-репо — docs/projects-map.md (таблица «Пути для OpenSpec / агентов»).
+# Локальные оверрайды: projects-map.local.yaml (см. projects-map.local.yaml.example).
+projectsMap: docs/projects-map.md
+
+# -----------------------------------------------------------------------------
+# context — «паспорт проекта»
+# -----------------------------------------------------------------------------
+# Попадает во ВСЕ артефакты каждой новой задачи.
+# Зачем: чтобы AI не гадал про стек и знал, где искать правила.
+# Обновляйте при смене стека или появлении важных skills/docs.
+# -----------------------------------------------------------------------------
+context: |
+  Language: Russian
+  All artifacts must be written in Russian.
+  Keep OpenSpec structural headings and SHALL/MUST keywords in English.
+
+  Карта путей (обязательно): docs/projects-map.md — таблица «Пути для OpenSpec / агентов».
+  Sibling-пути ../happy-tourist.github.io (client), ../happy-tourist-server (server) — канон;
+  перекрываются projects-map.local.yaml.
+  Child repos: resolve docs via local project-map.md key happy-tourist-meta (links happy-tourist-meta/docs/...);
+  if unresolved, ask user for absolute happy-tourist-meta path.
+  Runtime: два sibling Git-репозитория (не monorepo).
+
+  Проект: Happy Tourist — онлайн-шашки (realtime multiplayer) в браузере.
+  Домены: auth (register/login/anonymous), lobby (rooms list/create/join), game (board, move, turn/status).
+
+  Skills roots: .agents/skills/client/ (UI), .agents/skills/server/ (Colyseus),
+  .agents/skills/ (openspec-*, commit когда появится).
+  AGENTS.md — индекс docs/, OpenSpec и .agents/skills/.
+  Пакетный контекст: ../happy-tourist.github.io/AGENTS.md, ../happy-tourist-server/AGENTS.md.
+  При /opsx-apply: читать applyContextFiles из этого config.yaml помимо contextFiles из CLI.
+  При /opsx-verify: читать verifyContextFiles и следовать rules.verify из этого config.yaml.
+
+  Сборка: команды `npm` выполняет пользователь из каталога sibling-репо (client или server).
+  Агент указывает команду и ждёт подтверждения («готово»).
+
+  Разделение артефактов (не смешивать слои):
+  - proposal — intent: Why / Scope; без деталей реализации.
+  - specs — поведение: GIVEN/WHEN/THEN; трассировка SC-ID → тест (где применимо).
+  - design — реализация: файлы, слои, точки врезки (без чеклиста и без таблицы SC→тест).
+  - tasks — чеклист для apply по design.
+  Main specs после merge: openspec/specs/ (через /opsx-sync).
+
+  Capability paths (обязательно):
+  - Change-папка: openspec/changes/<slug>/
+  - Delta spec: openspec/changes/<slug>/specs/<capability-id>/spec.md
+  - Main spec: openspec/specs/<capability-id>/spec.md
+  - <capability-id> — продуктовый путь (auth/login, lobby/rooms, game/board, game/move, …)
+    из Business Entities в sibling AGENTS.md; неизвестный домен — согласовать ID в proposal, не выдумывать.
+  - ЗАПРЕЩЕНО: папка spec = номер задачи / имя change (specs/ht-123/, specs/add-checkers-room/).
+  - Пример: задача про ход шашки → change add-checkers-move, delta specs/game/move/spec.md.
+  - Контракт client↔server (room name `checkers`, state board/currentTurn/status/players, message `move`)
+    менять согласованно в обоих siblings.
+
+  --- Client (projects-map ключ client → ../happy-tourist.github.io/) ---
+  Runtime UI: ../happy-tourist.github.io/ (AGENTS.md — продукт/стек/домены; project-map.md → happy-tourist-meta).
+  Client skills: .agents/skills/client/ в happy-tourist-meta.
+
+  Проект: happy-tourist-client — Vue 3 `<script setup>`, Quasar 2, Pinia 4, vue-router 5 hash,
+  vue-i18n 11, @colyseus/sdk 0.18, TypeScript.
+  Архитектура: src/pages/*Page → stores / boot / components; Colyseus I/O в Pinia (auth, game).
+  Pages: LoginPage, LobbyPage, GamePage; guards requiresAuth / guest.
+  Env: VITE_COLYSEUS_URL, VITE_API_URL; deploy GitHub Pages.
+
+  --- Server (projects-map ключ server → ../happy-tourist-server/) ---
+  Runtime: ../happy-tourist-server/ (AGENTS.md — продукт/стек/домены; project-map.md → happy-tourist-meta).
+  Server skills: .agents/skills/server/ в happy-tourist-meta.
+
+  Проект: happy-tourist-server — Colyseus 0.18, @colyseus/tools, @colyseus/auth + JWT onAuth,
+  @colyseus/schema, Express 5 middleware (CORS, /health), Drizzle + SQLite (GameDatabase),
+  mocha + @colyseus/testing, Node >= 22.
+  Слои: app.config (defineServer) → rooms / schema / db; HTTP thin; правила игры авторитетны в room.
+  Целевой контракт с client: room `checkers`, state board/currentTurn/status/players, message `move` {from,to}.
+
+# -----------------------------------------------------------------------------
+# applyContextFiles — обязательные файлы при /opsx-apply
+# -----------------------------------------------------------------------------
+# Не часть стандартного OpenSpec CLI; используется slash-командой opsx-apply.md.
+# Агент ОБЯЗАН прочитать эти файлы после contextFiles из `openspec instructions apply`.
+# -----------------------------------------------------------------------------
+applyContextFiles:
+  - docs/projects-map.md
+  - docs/README.md
+  - AGENTS.md
+  - .agents/AGENTS.md
+  - ../happy-tourist.github.io/AGENTS.md
+  - ../happy-tourist-server/AGENTS.md
+
+# -----------------------------------------------------------------------------
+# verifyContextFiles — обязательные файлы при /opsx-verify
+# -----------------------------------------------------------------------------
+# Не часть стандартного OpenSpec CLI; используется slash-командой opsx-verify.md
+# и skill openspec-verify-change. Агент ОБЯЗАН прочитать эти файлы перед проверками
+# по rules.verify (стандарты кода и тестов).
+# -----------------------------------------------------------------------------
+verifyContextFiles:
+  - ../happy-tourist.github.io/AGENTS.md
+  - ../happy-tourist-server/AGENTS.md
+  - .agents/AGENTS.md
+
+# -----------------------------------------------------------------------------
+# rules — требования к артефактам и slash-командам
+# -----------------------------------------------------------------------------
+# Ключи proposal, specs, design, tasks — файлы в change-папке; подмешиваются
+# в инструкции при создании соответствующего артефакта.
+# Ключ verify — не artifact-файл; инструкции для /opsx-verify (читает skill/command).
+# Правила Client / Server — в тех же ключах proposal/specs/design без отдельного блока.
+# -----------------------------------------------------------------------------
+rules:
+
+  # proposal.md — intent: зачем, границы; БЕЗ деталей реализации
+  proposal:
+    - 'Секции: Why, Scope, Out of scope, References (issue tracker / docs / sibling AGENTS)'
+    - 'What — опционально; 3–5 bullet summary без реализации'
+    - 'Scope — capability (домен), пакеты client и/или server, room/auth/HTTP контракт при необходимости'
+    - 'В Scope явно указать Capability ID (например auth/login, lobby/rooms, game/move); при нескольких доменах — перечислить все; неизвестный домен — согласовать ID, не выдумывать'
+    - 'Ссылаться на docs/ и AGENTS.md siblings, не дублировать правила skills'
+    - 'Явно перечислять scope и out of scope'
+    - '"НЕ в proposal": имена .vue / Pinia action, Room handler-ы, пути src/**, команды npm'
+    - '"НЕ в proposal": технические prerequisite и блокеры — только в design.md'
+    - '"НЕ в proposal": дублирование сценариев из specs/ — поведение описывать в spec'
+    - 'Client — Scope: домены, pages (Login/Lobby/Game), auth vs guest, lobby/game UX'
+    - 'Client — «НЕ в proposal»: имена .vue, store keys, router path literals как реализация, GIVEN/WHEN из specs'
+    - 'Server — Scope: room name/schema/messages, onAuth JWT, HTTP (/health, /rooms/:name, /auth/*), DB user fields'
+    - 'Server — «НЕ в proposal»: имена файлов rooms/schema/db, JWT secret env literals как реализация'
+
+  # specs/**/*.md — поведение и трассировка к тестам
+  specs:
+    - 'Путь delta: specs/<capability-id>/spec.md; <capability-id> — продуктовый путь (auth/login, game/move); не имя change'
+    - 'ЗАПРЕЩЕНО: specs/<номер-задачи>/, specs/<имя-change>/ если это не capability'
+    - 'Несколько capability в одном change — несколько папок (specs/game/move/ и specs/lobby/rooms/)'
+    - 'Неизвестный домен — согласовать ID в proposal, не выдумывать feature-папку'
+    - 'Сценарии в формате GIVEN / WHEN / THEN'
+    - 'Delta-specs: ADDED / MODIFIED / REMOVED'
+    - 'Каждому исполняемому тесту — ровно один сценарий `#### Scenario [SC-…]: …` с тем же ID в тесте (server mocha; client — если тест добавлен)'
+    - 'В начале spec — таблица трассировки ID → файл/тест (или pending)'
+    - 'Можно: room protocol (move from/to), synced state fields, auth outcomes, lobby listing, HTTP status'
+    - 'Нельзя: имена Vue-компонентов, Pinia action names, Room method names, CSS-классы'
+    - 'Spec описывает только поведение ТЕКУЩЕГО change; логика из другого change — одна строка-ссылка в шапке'
+    - 'Client — Поведение UI: loading/empty/error (q-banner), guards, board highlights как UX-hint (не truth)'
+    - 'Client — «НЕ в specs»: имена .vue, CSS-классы, implementation constants'
+    - 'Server — Поведение: JWT onAuth fail/success, move accept/reject, board/turn/status sync, /rooms listing'
+    - 'Server — «НЕ в specs»: имена handler/schema class, internal helper filenames'
+
+  # design.md — как реализовать
+  design:
+    - 'Указать затронутый пакет: client и/или server; согласовать room/auth/message контракт при cross-package change'
+    - 'Client — Точки изменений: src/pages/, src/stores/, src/boot/, src/router/, src/components/, src/css/, src/i18n/'
+    - 'Client — Слои: pages → stores / boot / components; Colyseus I/O в Pinia, не размазывать client.* по UI'
+    - 'Client — Forms: q-form / q-input rules; errors: store error + q-banner'
+    - 'Server — Слои: app.config → rooms / schema / db; Express middleware thin; rules authoritative in room'
+    - 'Server — Auth: JWT.verify в onAuth; users schema defaults совместимы с /auth/register|/auth/login'
+    - 'Server — Align room name `checkers` и state/message с client, не менять client unilaterally'
+    - 'Конкретные файлы, функции, точки врезки в существующий flow'
+    - 'Технические prerequisite и блокеры из explore'
+    - 'Не дублировать чеклист tasks.md — ссылка на tasks'
+    - 'Таблицу трассировки SC-ID → тест держать только в specs/, не в design'
+
+  # tasks.md — чеклист реализации
+  tasks:
+    - 'Дробить по пакетам (client / server) и слоям; не повторять архитектурные решения — ссылка на design.md'
+    - 'Изучение перед работой (skills, proposal/design/spec фрагменты, аналоги): пунктом в том же ##-блоке, где нужно; НЕ выносить всё чтение в первый «Контекст»-блок'
+    - 'В каждом блоке — только релевантное к шагам блока чтение; общие артефакты change можно кратко упомянуть в первом рабочем блоке'
+    - 'Отдельные пункты на тесты где применимо (server: npm test; client: lint/typecheck по tasks)'
+    - 'Client skills при apply: из .agents/skills/client/ (locate/align/verify + topic skills)'
+    - 'Server skills при apply: из .agents/skills/server/ (locate/align/verify + topic skills)'
+    - 'Cross-package: сначала server contract (room/schema/messages/auth), затем client stores/UI — или явно согласовать порядок'
+    - 'Финализация: openspec validate, /opsx-sync, /opsx-archive'
+    - 'Команды npm — выполняет пользователь; в task помечать «(пользователь)» и ждать «готово»'
+
+  # /opsx-verify — сверка реализации с постановкой и стандартами happy-tourist
+  # Не artifact; skill/command читает этот список после verifyContextFiles.
+  verify:
+    # --- Постановка (Correctness / Completeness) — CRITICAL при провале ---
+    - 'CRITICAL: реализация в задаче (change) должна соответствовать OpenSpec-документам change — proposal.md, specs (delta), design.md, tasks.md; расхождение кода с артефактами = провал verify'
+    - 'CRITICAL: каждый `### Requirement:` из delta-spec имеет реализацию в коде'
+    - 'CRITICAL: каждый `#### Scenario [SC-…]:` покрыт кодом; если в таблице трассировки не `covered-by-reuse` — есть тест с тем же SC-ID где применимо'
+    - 'CRITICAL: таблица SC-ID → тест в spec согласована с фактическими тестами (нет «covered» без метода)'
+    - 'CRITICAL: реализация следует решениям design.md (файлы, точки врезки, пакет client/server)'
+    # --- Client ---
+    - 'CRITICAL (client): Colyseus I/O размазан по components в обход Pinia auth/game вопреки design'
+    - 'CRITICAL (client): protected route без requiresAuth / guest meta или без whenReady() вопреки design'
+    - 'WARNING (client): ошибки не через store error + q-banner где применимо'
+    - 'WARNING (client): нет lint/typecheck прогона из tasks (пользователь) или явного skip'
+    # --- Server ---
+    - 'CRITICAL (server): room join без JWT onAuth вопреки design'
+    - 'CRITICAL (server): client board state принимается как truth вместо authoritative room rules'
+    - 'CRITICAL (server): room name / schema / move message расходятся с client контрактом без явного dual-change'
+    - 'WARNING (server): нет mocha-тестов на новые/изменённые room/auth/move из tasks'
+    # --- Общее ---
+    - 'SUGGESTION: мелкие отклонения от стиля пакета (eslint) без влияния на поведение'

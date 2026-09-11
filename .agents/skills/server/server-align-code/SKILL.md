@@ -1,0 +1,395 @@
+---
+name: server-align-code
+description: Use when aligning branch and working-tree changes against Jira, Confluence, optional OpenSpec artifacts, repository analogues, test readiness, preservation of previous behavior, Colyseus room registration (checkers vs my_room), @colyseus/schema board/currentTurn/status/players, JWT onAuth, room message move {from,to}, Express CORS/health endpoints, and GameDatabase/users schema consumed by sibling happy-tourist.github.io.
+---
+
+# Align Code
+
+Perform a read-only code alignment audit for the Colyseus multiplayer checkers backend (`happy-tourist-server`) and report findings in Russian across three tiers: hard gaps, warnings, and recommendations.
+
+Stack context: Colyseus 0.18 (`defineServer` / `defineRoom` via `@colyseus/tools`), `@colyseus/auth` + JWT, `@colyseus/database` + drizzle-orm + better-sqlite3, `@colyseus/schema`, Express 5, TypeScript ESM (`"type": "module"`, NodeNext), Node `>= 22`. Entry: `src/index.ts` → `listen(app)`; configure rooms/HTTP/DB in `src/app.config.ts`. Contract consumers: sibling SPA `../happy-tourist.github.io` (room type `checkers`, state `board` / `currentTurn` / `status` / `players[sessionId].color`, message `move` `{ from, to }`, lobby `GET /rooms/checkers`, Colyseus Auth HTTP).
+
+**Paths:** this skill currently lives in **this server repo** at `.agents/skills/server/` (temporary). Canonical skills/OpenSpec will move to **happy-tourist-meta** when present (`project-map.md` key `happy-tourist-meta`). Runtime `src/…` paths are relative to **this repository root**. Sibling Vue/Quasar client is **`../happy-tourist.github.io`**. Commands (`npm test` / `npm run build` / `npm run dev`) are proposed by the agent and run by the user from this repo root; wait for «готово».
+
+## Four Required Axes
+
+Always complete all four:
+
+1. **Requirements fit** — code and available planning artifacts vs Jira/Confluence/AC.
+2. **Codebase fit** — changed behavior vs strong repository analogues.
+3. **Test readiness** — deterministic defects in reachable states before deriving tests.
+4. **Behavior preservation** — unjustified regressions vs base in refactors, shared helpers, and neighboring edits.
+
+The primary subject is the current working tree and branch diff: staged, unstaged, relevant untracked files, and commits vs base. Planning artifacts are secondary scope evidence.
+
+## Hard Boundary
+
+Do not edit, create, delete, format, or commit files. Do not run tests for preservation analysis. Deliver the complete result in chat.
+
+## Input And Store
+
+Accept Jira/Confluence URLs, issue keys, pasted requirements, and an optional OpenSpec change name. Ask when no requirements source can be resolved.
+
+OpenSpec is expected under **happy-tourist-meta** (may be absent). Resolve meta via `project-map.md` key `happy-tourist-meta`. If OpenSpec/meta is unavailable, audit from Jira/Confluence and repository evidence only — do not invent specs.
+
+## Requirements Sources
+
+Load:
+
+- Jira description, acceptance criteria, comments, linked issues/pages, and requirement-bearing attachments;
+- Confluence page, relevant children/comments, tables, notes, callouts, footnotes, captions, mocks, and linked API/requirement pages;
+- pasted requirements as provided.
+
+Treat explicit prohibitions and exceptions as atomic requirements: "не возвращать", "не добавлять", "не принимать", "только для…", "кроме…", "без JWT", "stub".
+
+Auth (register / login / anonymous) and room JWT gate (`onAuth` → `JWT.verify`) are first-class. Authoritative russian-checkers rules and board truth live on the server; do not treat client local highlights as fulfilment of server AC.
+
+A tester's guess/question is only a lead. Treat a comment as clarification only when it explicitly states or updates expected behavior; record author/date or a stable reference.
+
+## Atomic Requirement Checklist
+
+### Schema / synced state fields
+
+For every stated `@colyseus/schema` field, independently verify:
+
+- present vs intentionally omitted on the synced state;
+- source/path and transformation (room lifecycle → schema mutation → client `onStateChange`);
+- requiredness for client contract;
+- type and format (`number` cell `0|1|2|3|4`, color string/enum, status string, Map/collection of players);
+- allowed range, sign, precision, and length;
+- default / empty / initial board setup;
+- who may mutate (server only — never trust client board);
+- serialization / `@type` annotations match consumer expectations.
+
+A synced field is not covered until all explicit properties are covered. Known client-expected surface: `board`, `currentTurn`, `status`, `players[sessionId].color` (cells: `0` empty, `1` white, `2` black, `3` white king, `4` black king). Scaffold `mySynchronizedProperty` alone does not fulfil that contract.
+
+### Room messages
+
+For every room message / handler, independently verify:
+
+1. triggering client action (`room.send`) and when the room is ready (`status === 'playing'`, seat assigned);
+2. exact message type string (product: `'move'`);
+3. every payload field, nesting, requiredness, value, and source (`{ from, to }` with `{ row, col }` or documented equivalent);
+4. handler registration (`this.onMessage(...)`) and argument order;
+5. auth/seat/turn guards before applying the move;
+6. authoritative rule validation (legal move, captures, promotion);
+7. schema mutations after accept (board, turn, status, players);
+8. reject / no-op / error feedback when illegal (what client observes);
+9. disconnect / rejoin / `onLeave` interaction with in-progress games;
+10. `maxClients` and seat color assignment when AC demands 1v1.
+
+### Auth
+
+For every auth-related requirement, independently verify:
+
+1. HTTP `/auth/*` surface from `@colyseus/auth` when `database: db` is set;
+2. secrets present in env contract: `AUTH_SALT`, `JWT_SECRET`, `SESSION_SECRET` (plus `DATABASE_URL`, `NODE_ENV`, `PORT`);
+3. room gate: `MyRoom.onAuth` (or product room) calls `JWT.verify` and returns userdata to `onJoin`;
+4. userdata fields used for seats/profile (`displayName`, rating, etc.) vs `src/db/schema.ts` defaults;
+5. custom user columns have `.default(...)` so built-in register/login do not fail on NOT NULL;
+6. anonymous vs email/password paths when AC distinguishes them;
+7. missing/invalid token → join rejected (not silent open room).
+
+### HTTP endpoints
+
+For every HTTP endpoint / listing, independently verify:
+
+1. triggering client action (lobby refresh, health probe, demo API);
+2. HTTP method and exact path (`GET /health`, `GET /hi`, `GET /api/hello`, Colyseus `GET /rooms/:roomName`, `/auth/*`);
+3. middleware order — CORS **must be first** in the Express hook;
+4. CORS policy: production `https://happy-tourist.github.io` + credentials; development any origin;
+5. every query/path parameter (room name for listing must match registered room — client expects `checkers`);
+6. success body shape (`{ status, uptime }` for health, JSON for `/api/hello`);
+7. non-prod only: `/monitor`, playground — must not leak in production;
+8. room registration key in `defineServer({ rooms })` aligns with listing path the client calls.
+
+Trace the concrete chain:
+
+```text
+HTTP /auth/* (register|login|anonymous) → JWT
+  → Room.onAuth (JWT.verify) → onJoin / seat / color
+  → schema state sync (board|currentTurn|status|players)
+  → client onStateChange
+  ↔ client room.send('move', { from, to }) → onMessage → rules → schema mutate
+```
+
+Example shape (auth join):
+
+```ts
+// client: auth token → joinOrCreate('checkers')
+// server: MyRoom.onAuth → JWT.verify(token) → userdata
+//         onJoin → assign color → state.players[sessionId].color
+```
+
+Example shape (move):
+
+```ts
+// client: room.send('move', { from, to })
+// server: onMessage('move', …) → validate turn/rules → mutate board / currentTurn / status
+```
+
+Example shape (lobby):
+
+```ts
+// client: GET /rooms/checkers
+// server: rooms registered as checkers in app.config.ts (not my_room scaffold)
+```
+
+Method presence or "looks compatible" alone is insufficient. Track each contract fact separately so one correct layer cannot hide another mismatch.
+
+The client↔server contract is Colyseus Auth + room type `checkers` + HTTP `/rooms/checkers` + message `move` `{ from, to }` and state `board` / `currentTurn` / `status` / `players`. When CR/docs/client and server disagree, report `code-only` / contradiction with both sides named (`src/rooms/*` / `src/rooms/schema/*` vs `../happy-tourist.github.io`).
+
+Prefer aligning room name, schema, and messages with the client rather than changing the client unilaterally — unless AC explicitly says otherwise.
+
+Use `AGENTS.md` and strong in-repo analogues for conventions; never as replacements for requirement evidence.
+
+## Load Branch Work
+
+Inspect read-only (from this server repo root):
+
+```bash
+git status --short
+git diff
+git diff --cached
+git branch -vv
+```
+
+When the branch has commits beyond base, determine merge-base and inspect:
+
+```bash
+git log --oneline <base>..HEAD
+git diff --stat <base>...HEAD
+git diff <base>...HEAD
+```
+
+Read relevant untracked files and full current TS modules when surrounding behavior matters. Prefer `src/app.config.ts`, `src/rooms/`, `src/rooms/schema/`, `src/db/`, `test/`, deploy (`ecosystem.config.cjs`, `.github/workflows/`), and env templates. Do not ignore unstaged work.
+
+## Load Planning Scope
+
+When an OpenSpec change exists under happy-tourist-meta:
+
+```bash
+openspec status --change "<name>" --json
+```
+
+Read concrete existing artifact paths from the result. Report clear docs↔code contradictions. If no OpenSpec change exists (or meta is absent), audit the branch directly from requirements and repository evidence — do not invent specs.
+
+## Axis A — Requirements
+
+Judge implementation first, then planning artifacts.
+
+Report hard gaps only as:
+
+- `missing` — explicitly required and absent;
+- `docs-only` — promised by complete artifacts but absent from implemented feature;
+- `code-only` — clear docs/code contradiction;
+- `extra` — clearly forbidden or unjustified behavior/data/outbound side effect.
+
+Ambiguous CR wording, unresolved Open Questions, or unproven leans → **Warnings**, not hard omissions.
+
+Wrong schema field source/constraint, missing `move` payload field, wrong room name registration, missing JWT `onAuth`, broken CORS order/origin, wrong cell encoding, or trusting client board as authoritative are explicit omissions.
+
+Score **Постановка: N/10** only from hard omissions (`missing` / `docs-only` / `code-only` / `extra`), not from Warnings or Recommendations.
+
+Known scaffold gap vs product contract (repository fact — elevate to hard only when AC/docs demand the product surface): room still `my_room`; state still scaffold; `move` not implemented; cells `0`–`4` not implemented. Do not treat scaffold alone as fulfilment of client contract AC.
+
+## Axis B — Codebase
+
+Find strong untouched analogues for the same domain/flow. Prefer same layer:
+
+| Concern | Look in |
+|---------|---------|
+| Server definition | `src/app.config.ts` (`defineServer`: database, rooms, routes, express) |
+| Room lifecycle | `src/rooms/MyRoom.ts` (`onCreate` / `onAuth` / `onJoin` / `onLeave` / `onDispose` / `onMessage`) |
+| Synced state | `src/rooms/schema/MyRoomState.ts` |
+| Database / users | `src/db/index.ts`, `src/db/schema.ts` |
+| Entry / listen | `src/index.ts` (prefer not changing unless self-hosting) |
+| Tests | `test/**/*.test.ts` (mocha + `@colyseus/testing`, JWT connect) |
+| Loadtest | `loadtest/example.ts` |
+| Env | `.env.example`, `.env.development`, `.env.production` (no prod secrets in git) |
+| Deploy | `ecosystem.config.cjs`, `.github/workflows/deploy.yml` |
+| Sibling client | `../happy-tourist.github.io` (stores / room protocol / lobby HTTP) |
+
+Compare JWT gate, CORS-first middleware, health body, room `maxClients`/seats, schema `@type` fields, message handler registration, user column defaults, and test room name / auth contract only when the analogue proves the behavior.
+
+Prefer authoritative rules inside the Room handler + schema mutations — flag scattered trust of client board or duplicated rule sources as codebase-implied when analogues keep that boundary.
+
+Report `gap` only with:
+
+- concrete analogue path;
+- changed file lacking the behavior;
+- why parity is required rather than optional polish.
+
+Label analogue-driven findings as codebase-implied. Score **Код проекта: N/10** only from hard `gap` items (not Warnings / Recommendations).
+
+## Axis C — Test Readiness
+
+Use evidence in this order:
+
+1. explicit requirements;
+2. room/schema/message contracts, JWT `onAuth`, HTTP path/body shapes, db column defaults;
+3. strong analogues;
+4. deterministic runtime semantics (join without token, full room, illegal move, wrong turn, disconnect).
+
+For reachable behavior, examine permitted empty/null/zero/false inputs, constrained board indices, missing/invalid JWT, second join when `maxClients` reached, turn mismatch, illegal capture/move, promotion edge cases, `onLeave` mid-game, rejoin, CORS preflight `OPTIONS`, production vs development middleware branches, and register/login failure when user columns lack defaults.
+
+Runtime facts that often create defects:
+
+- room registered as `my_room` while client lists/joins `checkers` → lobby empty / join fails;
+- scaffold state missing `board` / `currentTurn` / `status` / `players` → client sync breaks;
+- `onMessage('move')` absent or payload shape drift vs `{ from, to }`;
+- `onAuth` missing / not verifying JWT → open or always-rejected rooms;
+- CORS not first or prod origin wrong → browser credentialed requests fail;
+- custom user columns without `.default(...)` → `/auth/register` / `/auth/login` NOT NULL errors;
+- tests still create `my_room` after rename without update → false green/red.
+
+Report hard `defect` only when a reachable state deterministically causes wrong HTTP/WS payload, runtime failure, invalid schema sync, stuck room state, unsafe side effect, or contract violation.
+
+Each hard defect includes condition, current behavior, expected invariant/evidence, file/symbol, and minimum scenario. Verdict:
+
+- `READY` — no proven deterministic hard defect found;
+- `BLOCKED` — at least one hard defect must be resolved or explicitly characterized before tests.
+
+Unresolved Open Questions / ambiguous error-branch splits that do not yet prove wrong API/room behavior go to **Warnings**, not `BLOCKED`, unless a reachable wrong status/body/state is already deterministic.
+
+Note existing tests under `test/` (mocha + `@colyseus/testing`). Cite missing coverage as **Recommendations** unless the missing test would be the only way to prove a hard defect already evidenced in code. Do not run `npm test` / `npm run build` here for preservation; when suggesting verification outside align mode, propose the command and wait for user «готово».
+
+## Axis D — Behavior Preservation
+
+Classify every changed hunk:
+
+- `task` — directly justified by an atomic requirement;
+- `incidental` — refactor/rename/cleanup/shared-helper change;
+- `neighbor` — unrelated changed behavior in a task file.
+
+Compare before vs after using diff/base, contracts, and callers. Report `regression` only for proven prior behavior changed without task justification: room registration name, schema public fields, message types/payloads, JWT `onAuth`, CORS/HTTP surface, user schema defaults, shared-helper results, or test auth/room contract.
+
+Do not run tests. Do not double-count the same issue as both defect and regression unless the evidence and impact differ.
+
+### Changed rooms, schema, and message contract
+
+Refactors of room/schema surfaces often break `../happy-tourist.github.io` quietly. When a changed file touches `src/app.config.ts` rooms map, `src/rooms/*`, `src/rooms/schema/*`, or message handlers — audit the realtime contract separately from internal helpers.
+
+For every removed, renamed, or reshaped room/field/message, independently verify:
+
+1. **Old public surface** — room type name, schema fields, message type/payload, success/reject behavior previously observed by clients/tests.
+2. **New resolution path** — which room class, schema type, or handler now owns the value.
+3. **Caller migration** — grep sibling client (`stores/game`, boot Colyseus, pages) and `test/` for old room names / field names / `'move'` payload; untouched client call sites are strong regression evidence.
+4. **Effective sync** — trace what `@colyseus/schema` actually patches to clients; a renamed field with old client mapping is a break.
+5. **Indirect paths** — shared rule helpers, seat assignment used by join and move paths.
+
+Typical regression patterns to flag:
+
+- room key renamed (`my_room` ↔ `checkers`) without client/test update;
+- schema field renamed/omitted while client still reads `board` / `currentTurn` / `status` / `players…color`;
+- `onMessage('move')` payload shape drift (`from`/`to` / `row`/`col`);
+- `onAuth` removed or no longer calls `JWT.verify`;
+- `maxClients` / seat colors changed without AC;
+- cell encoding changed away from `0`–`4` without client sync.
+
+Report as `regression` or `defect` when old call sites deterministically stop receiving the intended state, accept/reject moves incorrectly, or fail join/list. Mention approximate client/test hit count when grep proves it.
+
+### Auth, HTTP, DB, and deploy wiring
+
+JWT, Express hook, and user store are easy to break in "cleanup" hunks. Treat them as public cross-layer contracts.
+
+When a changed hunk touches `onAuth`, `src/db/schema.ts`, CORS middleware, `/health` / `/api/*`, env secret names, or deploy/PM2 config, independently verify:
+
+1. **Auth invariants** — room join still requires verified JWT; userdata still reaches `onJoin`.
+2. **HTTP side effects** — CORS still first; prod origin + credentials preserved; monitor/playground still non-prod only.
+3. **DB defaults** — custom columns still have defaults compatible with built-in `/auth/register` / `/auth/login`.
+4. **Listing alignment** — `GET /rooms/<name>` still matches registered room key.
+5. **Tests vs runtime** — a schema only asserted in isolation does not prove room wiring; if `app.config` stops registering the room, report even if unit-like stubs pass.
+6. **Deploy** — rsync excludes, `pm2 reload`, and env-on-server-only assumptions not silently broken when AC touches ops.
+
+Typical regression patterns to flag:
+
+- unused-variable cleanup deletes JWT verify or seat assignment;
+- CORS moved after other middleware or prod origin dropped;
+- user column default removed → register breaks;
+- health body shape changed while probes expect `{ status, uptime }`;
+- test still boots old room name after registration rename.
+
+Report as `regression` or `defect` when consumers deterministically lose auth, CORS, listing, or schema sync after the change. Name the field/room/message/endpoint, before/after call sites, and consumers (client and/or `test/`).
+
+## Severity
+
+Every finding goes into exactly one tier. Do not silence softer items; do not inflate them into hard gaps.
+
+| Tier | When | Align cues |
+|------|------|------------|
+| **Hard gaps** | Explicit requirement / forbidden behavior / required analogue parity / deterministic wrong state / proven unjustified regression | `missing`, `docs-only`, `code-only`, `extra`, required `gap`, `defect`, `regression`; scores and `BLOCKED` use **only** this tier |
+| **Warnings** | Strong lean without full proof; ambiguous AC with a clear risk; desirable analogue parity not proven mandatory; Open Question that can change expected behavior; likely server↔client mismatch pending API/аналитика | `[warning]`; does **not** lower scores or force `BLOCKED` alone |
+| **Recommendations** | Optional polish vs analogue; docs/OpenSpec sync; unchecked planning tasks; test-coverage ideas that are not defects; soft parity with client or neighbouring room | `[recommendation]`; informational only |
+
+Examples:
+
+- AC requires message `move` with `{ from, to }` and handler is absent → hard `[missing]`.
+- AC unclear whether disconnect forfeits or allows rejoin; code picks one and no wrong state is proven → **Warning** until discriminant is settled.
+- Analogue room always verifies JWT in `onAuth` and CR says «как MyRoom» → hard `[gap]` if that file is the cited evidence; if CR is silent → **Recommendation**.
+- OpenSpec `tasks.md` still unchecked while code exists → **Recommendation** (docs sync), not hard requirements gap.
+- Ambiguous CR wording that was misread once already → **Warning** with both readings, ask for confirmation rather than hard `missing`.
+- AC demands room type `checkers` and registration remains `my_room` → hard `[missing]` / `[code-only]` vs client contract as evidenced.
+- Scaffold-only state while AC demands board/turn/status/players → hard `[missing]` / `[docs-only]`; do not treat scaffold property as fulfilment.
+
+Hard sections below still omit when empty. **Warnings** and **Recommendations** always appear; if empty, a single line `- нет`.
+
+## Report
+
+Write in Russian.
+
+```markdown
+## Вердикт
+- Постановка: N/10 — <основание; только hard>
+- Код проекта: N/10 — <основание; только hard>
+- Готовность к тестам: READY | BLOCKED — <основание; только hard defect>
+- Регрессии: нет | N — <основание; только hard>
+- Режим: requirements-only | post-propose | in-progress
+- Источник: <source>
+- Работа в ветке: <staged / unstaged / untracked / commits>
+
+## Просмотренные файлы
+- `path` — <state>
+
+## Пробелы относительно постановки
+- [missing|docs-only|code-only|extra] <gap and evidence>
+
+## Пробелы относительно кода проекта
+- [gap] <gap> — аналог: `path` — нет в: `changed-file`
+
+## Расхождения docs и кода
+- <proven contradiction>
+
+## Явные дефекты перед написанием тестов
+- [defect] <condition/current/expected/evidence/file/scenario>
+
+## Регрессии прежнего поведения (без прогона тестов)
+- [regression] <hunk class/before/after/justification/file/caller>
+
+## Изменившийся HTTP / room listing / CORS
+- [regression|defect] <old method/path/origin/body → new; client/test call sites>
+
+## Room / schema / JWT / move
+- [regression|defect] <room name|schema field|onAuth|message type/payload|turn/status; before/after; consumers; why chain breaks>
+
+## Предупреждения
+- [warning] <risk / ambiguity / likely gap; evidence; what would promote it to hard>
+- нет
+
+## Рекомендации
+- [recommendation] <optional polish / docs sync / soft parity / test coverage>
+- нет
+
+## Карта аналогов
+- `path` — <finding supported>
+
+## Требуется решение перед тестами
+- <only for BLOCKED from hard defects>
+
+## Что делать дальше
+- <hard first; then warnings; recommendations last>
+```
+
+Omit empty hard detail sections. Always keep **Предупреждения** and **Рекомендации** (use `- нет` when empty; do not mix items and `нет`).
+
+Never apply fixes from align mode.
