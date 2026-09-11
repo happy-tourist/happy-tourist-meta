@@ -1,100 +1,136 @@
 ---
 name: work-with-lobby
 description: >-
-  Guides lobby room list, 5s poll, create / join / joinOrCreate, and navigation
-  to /game/:roomId in the happy-tourist checkers client. Use when changing
-  LobbyPage, game.refreshRooms / createGame / joinGame, CHECKERS_ROOM listing
-  via client.http.get('/rooms/checkers'), lobby loading flags, game.error
-  banners, or logout from the lobby.
+  Guides live lobby room list via LobbyRoom subscribe/unsubscribe, leave policy
+  before enter checkers, create / join / joinOrCreate, and navigation to
+  /game/:roomId in the happy-tourist checkers client. Use when changing
+  LobbyPage, game.subscribeLobby / unsubscribeLobby / createGame / joinGame,
+  LOBBY_ROOM / CHECKERS_ROOM listing, lobby loading flags, game.error banners,
+  or logout from the lobby.
 ---
 
 # Work With Lobby
 
-Use this skill for the **lobby** in the happy-tourist checkers client (`happy-tourist.github.io`): room list, poll, create / join / joinOrCreate, then enter the game route.
+Use this skill for the **lobby** in the happy-tourist checkers client (`happy-tourist.github.io`): live room list via built-in Colyseus `LobbyRoom`, create / join / joinOrCreate, then enter the game route.
 
 Stack: Vue 3 `<script setup>`, Quasar 2, Pinia `useGameStore` / `useAuthStore`, `@colyseus/sdk` 0.18.
 
-Sibling server: `../happy-tourist-server`. Coordinate room name (`checkers`) and list metadata with that package.
+Sibling server: `../happy-tourist-server`. Coordinate room name (`checkers`), `lobby` registration, and list metadata with that package.
 
 ## Quick Reference
 
 | Topic | Pattern |
 |-------|---------|
 | Page | `src/pages/LobbyPage.vue` — route `/lobby`, `meta.requiresAuth` |
-| Store | `src/stores/game.ts` — `rooms`, `listing`, `error`, `refreshRooms`, `createGame`, `joinGame`, `leaveGame` |
-| Room name | `CHECKERS_ROOM = 'checkers'` |
-| List rooms | `refreshRooms` → `client.http.get('/rooms/checkers')` — **not** `getAvailableRooms` |
-| Poll | `onMounted`: `refreshRooms` + `setInterval(..., 5000)`; `onUnmounted`: `clearInterval` |
+| Store | `src/stores/game.ts` — `rooms`, `lobbyRoom`, `listing`, `error`, `subscribeLobby`, `unsubscribeLobby`, `createGame`, `joinGame`, `leaveGame` |
+| Room names | `CHECKERS_ROOM = 'checkers'`; `LOBBY_ROOM = 'lobby'` |
+| Live list | `subscribeLobby` → `client.joinOrCreate(LOBBY_ROOM, { filter: { name: CHECKERS_ROOM } })` + handlers `rooms` / `+` / `-` |
+| Leave lobby | `unsubscribeLobby` after successful checkers connect (`_enterRoom`); also on LobbyPage unmount and `leaveGame` / logout |
 | Play | `joinGame()` (no id) → `client.joinOrCreate(CHECKERS_ROOM)` |
 | Create | `createGame()` → `client.create(CHECKERS_ROOM)` |
 | Join by id | `joinGame(roomId)` → `client.joinById(roomId)` |
 | After enter | `router.push({ name: 'game', params: { roomId } })` |
-| Loading | Store `listing`; page refs `creating`, `joining` |
-| Errors | `game.error` + `q-banner` |
+| Loading | Store `listing` during subscribe connect; page refs `creating`, `joining` |
+| Errors | `game.error` + `q-banner` (subscribe fail / lobby `onError`) |
 | Logout | `game.leaveGame()` → `auth.logout()` → `replace({ name: 'login' })` |
 | I/O boundary | Pages call store actions only; Colyseus stays in Pinia |
+| HTTP fallback | `refreshRooms` → `client.http.get('/rooms/checkers')` exists but **LobbyPage must not poll it** |
 
 ## Rules
 
 | Do | Don't |
 |----|--------|
-| List with `client.http.get(\`/rooms/${CHECKERS_ROOM}\`)` inside `refreshRooms` | Call `client.getAvailableRooms` (removed in SDK 0.16+) |
-| Poll every **5s** on lobby mount; clear the timer on unmount | Leave `setInterval` running after leave lobby |
+| Subscribe with `joinOrCreate('lobby', { filter: { name: CHECKERS_ROOM } })` | Poll `setInterval` + HTTP `GET /rooms/checkers` from LobbyPage |
+| Mount → `subscribeLobby`; unmount → `unsubscribeLobby` | Leave lobby WS open after navigate to game or login |
+| Call `unsubscribeLobby` after successful `checkers` connect (`_enterRoom`); keep lobby on failed enter | Keep lobby + checkers sockets both live on GamePage |
 | Play → `joinGame()`; Create → `createGame()`; list click → `joinGame(roomId)` | Invent parallel enter helpers on the page |
 | Navigate to `/game/:roomId` only after a successful enter | Stay on lobby with a live room and no route change |
-| Bind `:loading="game.listing"` / `creating` / `joining` | Leave buttons clickable during connect |
+| Bind listing loading / `creating` / `joining` | Leave buttons clickable during connect |
 | Show `game.error` with `q-banner` | Duplicate a second error channel |
 | Logout via `useAuthStore().logout()` after `leaveGame()` | Call `client.auth.signOut` from LobbyPage |
-| Keep room type / metadata in sync with `../happy-tourist-server` | Change `CHECKERS_ROOM` or list fields without the server |
+| Keep room type / metadata in sync with `../happy-tourist-server` | Change `CHECKERS_ROOM` / `LOBBY_ROOM` without the server |
 
 ## Map Of Pieces
 
 | Layer | Path | Role |
 |-------|------|------|
-| Page | `src/pages/LobbyPage.vue` | List UI, poll, Play / Create / Join, logout |
-| Store | `src/stores/game.ts` | HTTP list + room enter / leave |
+| Page | `src/pages/LobbyPage.vue` | List UI, subscribe lifecycle, Play / Create / Join, logout |
+| Store | `src/stores/game.ts` | LobbyRoom subscribe + room enter / leave |
 | Auth | `src/stores/auth.ts` | `displayName`, `logout` |
 | Client | `src/boot/colyseus.ts` | Shared `Client` (`VITE_COLYSEUS_URL`) |
 | Route | `src/router/routes.ts` | `/lobby` → name `lobby`; `/game/:roomId` → name `game` |
 
 List row shape (`RoomAvailable<GameRoomMeta>`): `roomId`, `clients`, `maxClients`, `metadata?.title`, `metadata?.status` (`waiting` \| `playing` \| `finished`).
 
-## Room list — `refreshRooms`
+## Live list — `subscribeLobby` / `unsubscribeLobby`
 
 ```ts
-async refreshRooms() {
+async subscribeLobby() {
+  await this.unsubscribeLobby();
   this.listing = true;
   this.error = null;
+
   try {
-    // Requires server GET /rooms/:roomName (getAvailableRooms removed in 0.16+)
-    const { data } = await client.http.get(`/rooms/${CHECKERS_ROOM}`);
-    this.rooms = (data ?? []) as RoomAvailable<GameRoomMeta>[];
+    const lobby = await client.joinOrCreate(LOBBY_ROOM, {
+      filter: { name: CHECKERS_ROOM },
+    });
+    this.lobbyRoom = lobby;
+
+    lobby.onMessage('rooms', (rooms) => {
+      this.rooms = rooms ?? [];
+    });
+    lobby.onMessage('+', ([roomId, room]) => {
+      /* upsert into this.rooms */
+    });
+    lobby.onMessage('-', (roomId) => {
+      this.rooms = this.rooms.filter((r) => r.roomId !== roomId);
+    });
+    lobby.onError((_code, message) => {
+      this.error = message || 'Lobby error';
+    });
   } catch (e) {
     this.error = e instanceof Error ? e.message : String(e);
     this.rooms = [];
+    this.lobbyRoom = null;
   } finally {
     this.listing = false;
   }
 }
+
+async unsubscribeLobby() {
+  const lobby = this.lobbyRoom;
+  this.lobbyRoom = null;
+  if (lobby) {
+    try {
+      await lobby.leave();
+    } catch {
+      /* already closed */
+    }
+  }
+}
 ```
 
-- Path resolves to `GET /rooms/checkers`.
-- Manual refresh button also calls `game.refreshRooms()` with `:loading="game.listing"`.
+- Filter keeps only `checkers` rooms in the live list (design D3).
+- Server must register `lobby: defineRoom(LobbyRoom)` and `checkers: …enableRealtimeListing()`.
+- `refreshRooms` HTTP remains as unused fallback; do not wire it back to LobbyPage poll.
 
-## Poll (LobbyPage)
+## LobbyPage lifecycle
 
 ```ts
 onMounted(() => {
-  void game.refreshRooms();
-  pollTimer = setInterval(() => void game.refreshRooms(), 5000);
+  void game.subscribeLobby();
 });
 
 onUnmounted(() => {
-  if (pollTimer) clearInterval(pollTimer);
+  void game.unsubscribeLobby();
 });
 ```
 
-Always clear the interval on unmount so lobby polling stops after navigate to game or login.
+No `setInterval`. Returning to `/lobby` remounts and resubscribes (SC-LOBBY-06).
+
+## Leave policy (enter game)
+
+`_enterRoom` detaches any prior checkers room via `_leaveCheckersRoom()` (lobby stays subscribed during the attempt), then `connect()`, then `unsubscribeLobby()` **only on success** (SC-LOBBY-05 / design D2). Failed enter keeps the live list on LobbyPage (SC-LOBBY-01). GamePage therefore has only the `checkers` socket — no background lobby WS. Logout / leave still uses `leaveGame()` → `unsubscribeLobby` + leave checkers.
 
 ## Enter flows
 
@@ -104,7 +140,7 @@ Always clear the interval on unmount so lobby polling stops after navigate to ga
 | «Создать игру» (Create) | `onCreate` | `createGame()` | `create(CHECKERS_ROOM)` |
 | List row / «Войти» | `onJoin(roomId)` | `joinGame(roomId)` | `joinById(roomId)` |
 
-All go through `_enterRoom`: clear prior room → connect → `_attachRoom` → return `Room`. Page then navigates:
+All go through `_enterRoom`: clear prior checkers room → connect → `unsubscribeLobby` on success → `_attachRoom` → return `Room`. Page then navigates:
 
 ```ts
 const room = await game.joinGame(); // or createGame / joinGame(id)
@@ -117,16 +153,17 @@ Page `catch` is empty on purpose — failure already sets `game.error`.
 
 | Flag | Where | Covers |
 |------|-------|--------|
-| `game.listing` | store | `refreshRooms` (poll + manual) |
+| `game.listing` | store | `subscribeLobby` connect window |
 | `joining` | LobbyPage `ref` | Play + join-by-id |
 | `creating` | LobbyPage `ref` | Create |
 
-Reset page refs in `finally`. Store clears `listing` in `finally`.
+Reset page refs in `finally`. Store clears `listing` in `finally` of subscribe.
 
 ## Errors And Logout
 
-- API / connect failures → `game.error` string → `q-banner` (`bg-negative`).
+- Subscribe / lobby `onError` / connect failures → `game.error` string → `q-banner` (`bg-negative`) (SC-LOBBY-07).
 - Logout: `await game.leaveGame()` → `await auth.logout()` → `router.replace({ name: 'login' })`.
+- Listing error must not block logout.
 
 ## Patterns
 
@@ -166,33 +203,34 @@ await router.push({ name: 'game', params: { roomId } });
 
 ## Checklist
 
-1. Listing uses `refreshRooms` → `client.http.get('/rooms/checkers')`, not `getAvailableRooms`.
-2. Lobby polls every 5s on mount; interval cleared on unmount.
+1. Listing uses LobbyRoom `subscribeLobby` (filter `name: checkers`), not LobbyPage HTTP poll.
+2. Lobby mounts subscribe; unmount / logout / successful enter unsubscribe lobby WS; failed enter keeps subscription.
 3. Play / Create / Join map to `joinGame()` / `createGame()` / `joinGame(roomId)`.
-4. Successful enter navigates to `/game/:roomId` (route name `game`).
-5. `listing` / `creating` / `joining` bound on buttons; cleared in `finally`.
-6. Failures surface as `game.error` + `q-banner`.
+4. Successful enter navigates to `/game/:roomId` (route name `game`) with no active lobby subscription.
+5. `listing` / `creating` / `joining` bound; cleared in `finally`.
+6. Failures surface as `game.error` + `q-banner`; logout still works.
 7. Logout goes through auth store (after `leaveGame`).
-8. Room name and list metadata match `../happy-tourist-server`.
+8. Room name and list metadata match `../happy-tourist-server` (`lobby` + `checkers` + realtime listing).
 9. No `client.*` calls from LobbyPage — only store actions.
-10. Propose `npm run lint` / `typecheck`; wait for user «готово».
+10. Run `npm run lint` / `typecheck` from the client package root; fix failures before claiming done.
 
 ## Common mistakes
 
 | Mistake | Fix |
 |---------|-----|
-| `client.getAvailableRooms('checkers')` | `client.http.get('/rooms/checkers')` via `refreshRooms` |
-| Poll without `clearInterval` | Clear in `onUnmounted` |
+| `setInterval` + `refreshRooms` on LobbyPage | `subscribeLobby` / `unsubscribeLobby` only |
+| `client.getAvailableRooms('checkers')` | Live LobbyRoom messages; HTTP only as unused fallback |
+| Keeping lobby WS on GamePage | `unsubscribeLobby` after successful connect in `_enterRoom`; `leaveGame` on logout/leave |
 | Play calling `createGame` | Play = `joinGame()` → `joinOrCreate` |
 | Join without `roomId` when clicking a list row | Pass `room.roomId` into `joinGame(roomId)` |
 | Enter success but no navigation | `push({ name: 'game', params: { roomId } })` |
 | Calling `client.create` / `joinById` in the page | Use `createGame` / `joinGame` on the store |
 | Ignoring `game.error` | Show `q-banner` |
-| Hardcoding a new room name in the client only | Align `CHECKERS_ROOM` + server registration + `GET /rooms/:roomName` |
+| Hardcoding a new room name in the client only | Align `CHECKERS_ROOM` / `LOBBY_ROOM` + server registration |
 
 ## Related
 
 - Broader Colyseus I/O: `.agents/skills/client/colyseus-client/SKILL.md`
 - Auth / logout details: `.agents/skills/client/client-work-with-auth/SKILL.md`
 - Overview: `AGENTS.md` (Lobby / rooms)
-- Server: `../happy-tourist-server` — room type `checkers`, HTTP `GET /rooms/:roomName`
+- Server: `../happy-tourist-server` — `lobby` + `checkers` + `.enableRealtimeListing()`

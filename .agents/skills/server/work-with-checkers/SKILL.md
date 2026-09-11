@@ -24,7 +24,7 @@ Pair with client board UX: `../happy-tourist.github.io/.agents/skills/client/wor
 | Rules (preferred) | new pure module e.g. `src/rooms/checkers/` or `src/game/` | Validate / apply moves without Colyseus I/O |
 | Registration | `src/app.config.ts` | Room name must be `checkers` for client lobby |
 
-Scaffold today: room/schema are stubs (`my_room`, `mySynchronizedProperty`). Guide implementation toward the client contract below; do not treat unimplemented behavior as shipped product fact.
+Scaffold today: room/schema are stubs (`checkers` registered, but `MyRoomState` still `mySynchronizedProperty`). Guide implementation toward the client contract below; do not treat unimplemented behavior as shipped product fact.
 
 ## Authority
 

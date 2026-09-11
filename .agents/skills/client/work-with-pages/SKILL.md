@@ -22,7 +22,7 @@ When the task is only about creating or wiring a page:
 - Do not invent or expand i18n catalogs unless the user explicitly asks.
 - Do not write tests unless the user explicitly asks for page tests.
 - Do not install packages.
-- Do not run scripts.
+- Do not start long-lived dev servers unless needed for verification; when verifying, run `npm run lint` / `typecheck` from the client package root.
 - Do not fix IDE diagnostics.
 
 ## Standard Page Wiring
@@ -188,7 +188,7 @@ If an old path changes, keep a redirect in `routes.ts`:
 | Domain | Page | Typical stores / notes |
 |--------|------|------------------------|
 | Auth | `LoginPage` | `stores/auth`; `meta.guest` |
-| Lobby / rooms | `LobbyPage` | `stores/game.refreshRooms`, create/join; `meta.requiresAuth` |
+| Lobby / rooms | `LobbyPage` | `stores/game.subscribeLobby`, create/join; `meta.requiresAuth` |
 | Game session | `GamePage` | `stores/game` board/move/leave; route param `roomId`; `meta.requiresAuth` |
 
 Room protocol and board truth live on the server (`../happy-tourist-server`); the client renders state and sends `move`.

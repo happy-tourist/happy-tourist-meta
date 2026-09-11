@@ -3,3 +3,7 @@ projects-map.local.yaml
 
 # Kilo Code local config (tokens / paths)
 kilo.jsonc
+
+# Local IDE / agent session artifacts
+.cursor/
+.superpowers/

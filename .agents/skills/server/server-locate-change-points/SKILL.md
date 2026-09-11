@@ -47,11 +47,12 @@ The sibling client already assumes a checkers contract; server is still scaffold
 
 | Client expectation | Server today |
 |--------------------|--------------|
-| Room type name `checkers` | Registered as `my_room` in `app.config.ts` |
+| Room type name `checkers` | Registered as `checkers` in `app.config.ts` with `.enableRealtimeListing()` |
+| Live lobby (`LobbyRoom`) | `lobby: defineRoom(LobbyRoom)` — client filters `name: checkers` |
 | State: `board`, `currentTurn`, `status`, `players[sessionId].color` | Scaffold `MyRoomState` (`mySynchronizedProperty`) |
 | Message `move` `{ from, to }` | Not implemented yet |
 | Cell values `0`–`4` (empty / white / black / kings) | Not implemented yet |
-| Lobby `GET /rooms/checkers` | Works once room is registered as `checkers` (Colyseus built-in listing) |
+| Lobby `GET /rooms/checkers` | Available (HTTP fallback; UI uses live LobbyRoom) |
 
 ### HTTP surface (today)
 
@@ -61,7 +62,7 @@ The sibling client already assumes a checkers contract; server is still scaffold
 | GET | `/hi` | Plain text smoke check |
 | GET | `/api/hello` | Demo JSON via `createEndpoint` |
 | * | `/auth/*` | Provided by `@colyseus/auth` when `database` is set |
-| GET | `/rooms/:roomName` | Colyseus available-rooms listing (client lobby) |
+| GET | `/rooms/:roomName` | Colyseus available-rooms listing (HTTP fallback; live UI uses LobbyRoom) |
 | GET | `/monitor` | Dev only (`monitor()`) |
 | * | `/` playground | Dev only (`playground()`) |
 
@@ -76,7 +77,7 @@ Use these rules to pick the layer before naming files.
 | If the change is… | Prefer |
 |-------------------|--------|
 | New or changed HTTP path (health, demo API, custom Express) | `src/app.config.ts` — `routes` (`createEndpoint`) and/or `express(app)` middleware |
-| Lobby room listing by name | Register room name in `app.config.ts` `rooms`; listing is Colyseus `GET /rooms/:roomName` (no custom handler unless extending) |
+| Lobby room listing by name | Register `lobby` + `checkers` with `.enableRealtimeListing()`; HTTP `GET /rooms/:roomName` is fallback only |
 | Realtime gameplay intent (move, resign, rematch, chat) | Room message handler in `src/rooms/MyRoom.ts` (`this.onMessage(...)`), not a new HTTP route |
 | Synced board / turn / status / player seats visible to clients | `@colyseus/schema` in `src/rooms/schema/MyRoomState.ts` (+ room code that mutates state) |
 | Authoritative rules / validation of moves | Room handler (`MyRoom.ts`); do not trust client board state |
@@ -115,7 +116,7 @@ Use these rules to pick the layer before naming files.
 
 | Domain | Start here |
 |--------|------------|
-| Room registration / lobby name | `src/app.config.ts` `rooms` (`my_room` → intended `checkers`) |
+| Room registration / lobby name | `src/app.config.ts` `rooms` (`lobby` + `checkers` + `.enableRealtimeListing()`) |
 | Auth to rooms | `MyRoom.onAuth` + `@colyseus/auth` JWT; secrets in `.env.*` |
 | User profile columns | `src/db/schema.ts` + `src/db/index.ts` |
 | Game state sync | `src/rooms/schema/MyRoomState.ts` |
@@ -134,7 +135,7 @@ Use these rules to pick the layer before naming files.
    - whether the client contract (room name `checkers`, state shape, `move`, `/rooms/checkers`) is involved.
 
 2. Search the codebase by domain terms from the task:
-   - room name / registration (`my_room`, `checkers`, `defineRoom`, `rooms:`);
+   - room name / registration (`lobby`, `checkers`, `LobbyRoom`, `enableRealtimeListing`, `defineRoom`, `rooms:`);
    - room hooks (`onAuth`, `onCreate`, `onJoin`, `onLeave`, `onDispose`, `onMessage`);
    - schema symbols (`MyRoomState`, `Schema`, `type`, `MapSchema`, board/turn/status/players);
    - auth (`JWT.verify`, `@colyseus/auth`, `AUTH_SALT`, `JWT_SECRET`);

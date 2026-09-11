@@ -35,8 +35,9 @@ createGame / joinGame(roomId?) / joinGame()
         ▼
   _enterRoom(connect)
         │  status = 'connecting'; clear error
-        │  await leaveGame()          ← leave before enter
-        │  room = await connect()     ← create | joinById | joinOrCreate
+        │  await _leaveCheckersRoom()  ← prior checkers only; lobby stays live
+        │  room = await connect()      ← create | joinById | joinOrCreate
+        │  await unsubscribeLobby()    ← SC-LOBBY-05 only on success
         │  _attachRoom(room)
         ▼
   listeners (store only)
@@ -45,7 +46,7 @@ createGame / joinGame(roomId?) / joinGame()
         │  onLeave → _resetRoomState()
         ▼
   leaveGame() or remote leave
-        │  _resetRoomState(); room.leave() (swallow closed-room errors)
+        │  unsubscribeLobby(); _resetRoomState(); room.leave() (swallow)
 ```
 
 ### Public actions → SDK
@@ -55,30 +56,32 @@ createGame / joinGame(roomId?) / joinGame()
 | New room | `createGame(options?)` | `client.create(CHECKERS_ROOM, options)` |
 | Join by id | `joinGame(roomId, options?)` | `client.joinById(roomId, options)` |
 | Join or create | `joinGame()` (no id) | `client.joinOrCreate(CHECKERS_ROOM, options)` |
-| Leave | `leaveGame()` | `room.leave()` after `_resetRoomState` |
+| Leave | `leaveGame()` | `unsubscribeLobby` + `room.leave()` after `_resetRoomState` |
 | Move | `sendMove(from, to)` | `room.send('move', { from, to })` |
 
 All connect paths go through `_enterRoom`. Do not call `client.create` / `joinById` / `joinOrCreate` from pages.
 
 ## Private Actions Pattern
 
-Three private helpers own the room session. Keep this split when extending the store.
+Three private helpers own the room session (`_enterRoom`, `_attachRoom`, `_resetRoomState`) plus `_leaveCheckersRoom` for enter cleanup. Keep this split when extending the store.
 
 ### `_enterRoom(connect)`
 
 1. Set `status = 'connecting'`, `error = null`.
-2. **`await this.leaveGame()`** — always leave before enter (detach previous room / clear state).
+2. **`await this._leaveCheckersRoom()`** — detach prior checkers room; **keep** lobby subscription during the attempt.
 3. `const room = await connect()`.
-4. `this._attachRoom(room)` and return `room`.
-5. On failure: `status = 'idle'`, set `error`, rethrow.
+4. **`await this.unsubscribeLobby()`** — only after success (SC-LOBBY-05).
+5. `this._attachRoom(room)` and return `room`.
+6. On failure: `status = 'idle'`, set `error`, rethrow (lobby stays subscribed on LobbyPage).
 
 ```ts
 async _enterRoom(connect: () => Promise<Room>) {
   this.status = 'connecting';
   this.error = null;
   try {
-    await this.leaveGame();
+    await this._leaveCheckersRoom();
     const room = await connect();
+    await this.unsubscribeLobby();
     this._attachRoom(room);
     return room;
   } catch (e) {
@@ -88,7 +91,6 @@ async _enterRoom(connect: () => Promise<Room>) {
   }
 }
 ```
-
 ### `_attachRoom(room)`
 
 Wire listeners **once** in the store (never in `GamePage`):
@@ -106,6 +108,7 @@ Clear session fields: `room`, `roomId`, `board` (empty 8×8), `myColor`, `curren
 
 ```ts
 async leaveGame() {
+  await this.unsubscribeLobby();
   const room = this.room;
   this._resetRoomState();
   if (room) {
@@ -118,9 +121,10 @@ async leaveGame() {
 }
 ```
 
+- Used for logout / explicit leave (Lobby «Выйти», GamePage «Лобби»).
 - Reset Pinia first, then call `leave`.
 - **Swallow** closed-room errors — do not surface them as `game.error`.
-- `_enterRoom` always calls `leaveGame` before connecting so only one room is attached.
+- `_enterRoom` uses `_leaveCheckersRoom` (not `leaveGame`) so a failed enter keeps the lobby list live.
 
 ## onStateChange Mapping
 
@@ -201,7 +205,7 @@ sendMove(from, to) {
 | Do | Don't |
 |----|--------|
 | Enter via `createGame` / `joinGame` → `_enterRoom` | Call `client.create` / `joinById` from a page |
-| Leave before enter (`leaveGame` inside `_enterRoom`) | Attach a second room without leaving the first |
+| Leave before enter (`_leaveCheckersRoom` inside `_enterRoom`; unsubscribe lobby on success) | Attach a second checkers room without leaving the first |
 | Wire `onStateChange` / `onError` / `onLeave` in `_attachRoom` | Put room listeners in `GamePage` or components |
 | Rejoin with `joinGame(roomId)` when Pinia lost room | Assume `game.room` survives refresh |
 | On rejoin failure → lobby | Leave the user on `/game/:id` with empty board |
@@ -212,12 +216,12 @@ sendMove(from, to) {
 ## Change Checklist
 
 1. Belongs in `stores/game` (listeners + connect), not the page.
-2. New connect path still goes through `_enterRoom` (leave → connect → `_attachRoom`).
+2. New connect path still goes through `_enterRoom` (`_leaveCheckersRoom` → connect → `unsubscribeLobby` → `_attachRoom`).
 3. State fields / `move` payload match `../happy-tourist-server`.
 4. `onLeave` / `leaveGame` still call `_resetRoomState`.
 5. `GamePage` rejoin-by-`roomId` still works after refresh; fail → lobby.
 6. Pages only call store actions and bind store state.
-7. Propose `npm run lint` / `npm run typecheck`; wait for user «готово».
+7. Run `npm run lint` / `npm run typecheck` from the client package root; fix failures before claiming done.
 
 ## Related
 

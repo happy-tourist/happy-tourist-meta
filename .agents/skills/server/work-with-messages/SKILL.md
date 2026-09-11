@@ -5,7 +5,7 @@ description: >-
   the happy-tourist checkers server — especially `move` (`from`/`to` `{row,col}`),
   `this.onMessage(...)`, validating client intents before mutating schema state,
   optional move-error feedback, or aligning the message contract with the client
-  `stores/game.ts` protocol. Not for lobby listing (HTTP GET /rooms/checkers).
+  `stores/game.ts` protocol. Not for lobby listing (LobbyRoom / HTTP fallback).
 ---
 
 # Work With Messages
@@ -20,7 +20,7 @@ Coordinate with: `work-with-rooms` (lifecycle / registration), `work-with-schema
 
 | In scope | Out of scope |
 |----------|--------------|
-| `this.onMessage('move', …)` and future room message types | Lobby listing — client uses **HTTP** `GET /rooms/checkers` (Colyseus built-in), not a room message |
+| `this.onMessage('move', …)` and future room message types | Lobby listing — client uses **LobbyRoom** (`rooms` / `+` / `-`), not a gameplay room message |
 | Payload shape / type guards for client intents | Auth join gate — `onAuth` + JWT (`server-work-with-auth`) |
 | Validate → mutate `@colyseus/schema` state | Express routes / `createEndpoint` |
 | Optional per-client error feedback for bad moves | Pure draughts rules implementation details (`work-with-checkers`) |
@@ -51,7 +51,7 @@ Today the client does **not** listen for a custom `onMessage('moveError')` (or s
 ## Server Today
 
 - `src/rooms/MyRoom.ts` — **no** `this.onMessage('move', …)` yet (scaffold).
-- Room still registered as `my_room`; client expects room type `checkers` (registration is `work-with-rooms` / `app.config.ts`, not a message type).
+- Room registered as `checkers` (+ `lobby` for live list); do not reintroduce `my_room` (registration is `work-with-rooms` / `app.config.ts`, not a message type).
 
 ## Handler Pattern
 
@@ -110,7 +110,7 @@ Before adding e.g. `resign`, `rematch`, `chat`:
 | Implement `this.onMessage('move', …)` with `{ from, to }` `{ row, col }` | Invent alternate payloads (`fromIndex`, chess SAN, etc.) without client update |
 | Validate then mutate schema | Trust client board or apply moves blindly |
 | Keep success path = state sync only | Require a success ack message the client does not handle |
-| Treat lobby as `GET /rooms/checkers` | Add a room message for room listing |
+| Treat lobby as LobbyRoom live list (not a `move`-style message) | Add a gameplay room message for room listing |
 | Align with `../happy-tourist.github.io/src/stores/game.ts` | Change client unilaterally to match a server-only protocol |
 | Follow `server-work-with-errors` for reject / feedback | Invent ServiceError-style envelopes for moves |
 
@@ -123,7 +123,7 @@ Before adding e.g. `resign`, `rematch`, `chat`:
 5. Error feedback consistent with `server-work-with-errors` and current client listeners (`onError` / state only unless client also gains a listener).
 6. No move logic in Express routes; lobby remains HTTP listing.
 7. Update `test/` / `loadtest/` when the message contract becomes testable.
-8. Propose `npm test` / `npm run build` as appropriate; wait for user «готово».
+8. Run `npm test` / `npm run build` from the server package root as appropriate; fix failures before claiming done.
 
 ## Related
 

@@ -109,7 +109,7 @@ Decide in this order:
 **Put in stores**
 
 - Colyseus auth: register / login / anonymous / logout / `whenReady`.
-- Room lifecycle: `refreshRooms`, `createGame`, `joinGame`, `leaveGame`, `sendMove`.
+- Room lifecycle: `subscribeLobby`, `unsubscribeLobby`, `createGame`, `joinGame`, `leaveGame`, `sendMove`.
 - Mirrored room state: `board`, `myColor`, `currentTurn`, `status`, `rooms`, errors.
 
 **Put in boot**
@@ -128,7 +128,7 @@ Decide in this order:
 | Empty layer folders “for later” | Add when the first file is needed |
 | Extending unused scaffold pages (`pages/index*`) | Login / lobby / game routes only |
 | Manual Quasar component registration | Auto-import |
-| New axios/API module for Colyseus HTTP | `client.http` via store (e.g. `GET /rooms/checkers`) |
+| New axios/API module for Colyseus HTTP | LobbyRoom via store (`subscribeLobby`); `client.http` only as unused fallback |
 
 ## Naming
 
@@ -180,7 +180,7 @@ Registered in `quasar.config.ts` boot array: `i18n`, `colyseus`.
 
 **Auth page** — `LoginPage` uses `useAuthStore()` for register / login / anonymous; shows `error` banner; no Colyseus calls outside the store.
 
-**Lobby** — `LobbyPage` uses `useGameStore().refreshRooms` / `createGame` / `joinGame` and `useAuthStore` for display/logout.
+**Lobby** — `LobbyPage` uses `useGameStore().subscribeLobby` / `createGame` / `joinGame` and `useAuthStore` for display/logout.
 
 **Game** — `GamePage` binds board from `useGameStore`, sends moves via `sendMove`, rejoins by `roomId` on refresh; local move highlights are UI-only.
 
@@ -220,7 +220,7 @@ Registered in `quasar.config.ts` boot array: `i18n`, `colyseus`.
 | Domain | Page | Store / boot |
 |--------|------|----------------|
 | Auth | `LoginPage` | `stores/auth` + `boot/colyseus` |
-| Lobby / rooms | `LobbyPage` | `stores/game.refreshRooms` / create / join |
+| Lobby / rooms | `LobbyPage` | `stores/game.subscribeLobby` / create / join |
 | Game session | `GamePage` | `stores/game` room state + `sendMove` |
 | Shell | `App.vue` | layout + `router-view` only |
 

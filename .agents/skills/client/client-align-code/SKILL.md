@@ -7,7 +7,7 @@ description: Use when aligning branch and working-tree changes against Jira, Con
 
 Perform a read-only code alignment audit for the Vue 3 Quasar checkers SPA (`happy-tourist.github.io`) and report findings in Russian across three tiers: hard gaps, warnings, and recommendations.
 
-Stack context: Vue 3 `<script setup>`, Quasar 2, Pinia 4 (`auth` setup store, `game` options store), `@colyseus/sdk` 0.18, vue-router 5 hash mode, vue-i18n 11, TypeScript. Contract surface: Colyseus Auth + room messages via `client` from `src/boot/colyseus.ts`; lobby HTTP `GET /rooms/checkers`; sibling server `../happy-tourist-server`.
+Stack context: Vue 3 `<script setup>`, Quasar 2, Pinia 4 (`auth` setup store, `game` options store), `@colyseus/sdk` 0.18, vue-router 5 hash mode, vue-i18n 11, TypeScript. Contract surface: Colyseus Auth + room messages via `client` from `src/boot/colyseus.ts`; live lobby via LobbyRoom (`subscribeLobby`); sibling server `../happy-tourist-server`.
 
 **Paths:** this skill currently lives in **this client repo** at `.agents/skills/client/` (temporary). Canonical skills/OpenSpec will move to **happy-tourist-meta** when present (`project-map.md` key `happy-tourist-meta`). Runtime `src/…` paths are relative to **this repository root**. Sibling Colyseus server is **`../happy-tourist-server`**.
 
@@ -28,9 +28,23 @@ Do not edit, create, delete, format, or commit files. Do not run tests for prese
 
 ## Input And Store
 
-Accept Jira/Confluence URLs, issue keys, pasted requirements, and an optional OpenSpec change name. Ask when no requirements source can be resolved.
+Accept Jira/Confluence URLs, issue keys, pasted requirements, and an optional OpenSpec change name. Ask when no requirements source can be resolved (no Jira/Confluence/paste **and** no resolvable OpenSpec change).
 
-OpenSpec is expected under **happy-tourist-meta** (may be absent). Resolve meta via `project-map.md` key `happy-tourist-meta`. If OpenSpec/meta is unavailable, audit from Jira/Confluence and repository evidence only — do not invent specs.
+OpenSpec is expected under **happy-tourist-meta** (may be absent). Resolve meta via `project-map.md` key `happy-tourist-meta` (from client: sibling `../happy-tourist-meta`). If OpenSpec/meta is unavailable, audit from Jira/Confluence and repository evidence only — do not invent specs.
+
+### Resolve OpenSpec change
+
+Resolve **one** change name before Axes A–D (including edge-case / test-readiness checks):
+
+1. Use the name the user passed (argument, slash-command, explicit mention).
+2. Else infer from conversation context if unambiguous.
+3. Else from meta root: `openspec list --json` — auto-select if exactly **one** active change.
+4. Else if several active changes — ask the user to pick one.
+5. Else if none — continue without OpenSpec (Jira/Confluence/repo only).
+
+Announce: `Using OpenSpec change: <name>` (or `OpenSpec: none`). Override: user passes another name.
+
+That change is **primary requirement evidence** for atomic checklists, Axis A, Axis C edge cases / scenarios, and docs↔code contradictions — not an optional afterthought.
 
 ## Requirements Sources
 
@@ -38,7 +52,8 @@ Load:
 
 - Jira description, acceptance criteria, comments, linked issues/pages, and requirement-bearing attachments;
 - Confluence page, relevant children/comments, tables, notes, callouts, footnotes, captions, mocks, and linked API/requirement pages;
-- pasted requirements as provided.
+- pasted requirements as provided;
+- when a change is resolved: its OpenSpec artifacts (`proposal`, delta `specs/**/spec.md`, `design`, `tasks`) — scenarios (SC-*), acceptance wording, design decisions, and task scope.
 
 Treat explicit prohibitions and exceptions as atomic requirements: "не отображать", "не добавлять", "скрыть", "только для…", "кроме…".
 
@@ -65,8 +80,8 @@ For every request / realtime action, independently verify:
 
 1. triggering UI action and timing;
 2. required warning or blocking confirmation when AC demands it (this app has no global dialog registry — confirm via Quasar dialog/`q-dialog` if specified);
-3. transport: Colyseus Auth method, `client.http.get` path, or `room.send` message type;
-4. every path/query parameter (e.g. `/rooms/checkers`, `joinById(roomId)`);
+3. transport: Colyseus Auth method, LobbyRoom messages (`rooms` / `+` / `-`), or `room.send` message type;
+4. every path/query parameter (e.g. lobby filter `name: checkers`, `joinById(roomId)`);
 5. every body / options / message payload field, nesting, requiredness, value, and source;
 6. actual argument order into store actions / SDK calls;
 7. event wiring (`@click` / `emit` / store action / router `push`);
@@ -101,13 +116,13 @@ game.sendMove({ row, col }, { row, col });
 Example shape (lobby list):
 
 ```ts
-// LobbyPage → game.refreshRooms → client.http.get('/rooms/checkers')
-await game.refreshRooms();
+// LobbyPage → game.subscribeLobby → LobbyRoom rooms / + / -
+await game.subscribeLobby();
 ```
 
 Method presence or "looks compatible" alone is insufficient. Track each contract fact separately so one correct component cannot hide another mismatch.
 
-The client↔server contract is Colyseus Auth + room type `checkers` + HTTP `/rooms/checkers` + message `move` `{ from, to }` and state `board` / `currentTurn` / `status` / `players`. When CR/docs/server and client disagree, report `code-only` / contradiction with both sides named (`src/stores/*` vs `../happy-tourist-server`).
+The client↔server contract is Colyseus Auth + room type `checkers` + live `lobby` (LobbyRoom + `.enableRealtimeListing()`) + message `move` `{ from, to }` and state `board` / `currentTurn` / `status` / `players`. When CR/docs/server and client disagree, report `code-only` / contradiction with both sides named (`src/stores/*` vs `../happy-tourist-server`).
 
 A toast / silent catch is not blocking confirmation. When confirmation is required, wait for explicit approval; cancel/close must not perform the mutating action. With analogue-only evidence, require only what the analogue proves.
 
@@ -136,13 +151,13 @@ Read relevant untracked files and full current Vue/TS files when surrounding beh
 
 ## Load Planning Scope
 
-When an OpenSpec change exists under happy-tourist-meta:
+After resolving the change name (see **Resolve OpenSpec change**), from meta:
 
 ```bash
 openspec status --change "<name>" --json
 ```
 
-Read concrete existing artifact paths from the result. Report clear docs↔code contradictions. If no OpenSpec change exists (or meta is absent), audit the branch directly from requirements and repository evidence.
+Read concrete artifact paths from the result (`proposal`, `specs`, `design`, `tasks`). Use them as requirements for **all four axes**, including Axis C edge cases and scenario IDs from delta specs. Report clear docs↔code contradictions. If no change resolved (or meta absent), audit the branch from Jira/Confluence/paste and repository evidence only.
 
 ## Axis A — Requirements
 
@@ -192,12 +207,12 @@ Label analogue-driven findings as codebase-implied. Score **Код проект�
 
 Use evidence in this order:
 
-1. explicit requirements;
+1. explicit requirements — including the **resolved OpenSpec change** (delta specs scenarios/SC-*, design constraints, task acceptance) when present; do not skip change artifacts and invent generic edge cases instead;
 2. Pinia action/getter contracts, Colyseus message/state shape, props/`emit` contracts, validators;
 3. strong analogues;
 4. deterministic runtime semantics (auth ready gate, room leave/rejoin, `canMove`).
 
-For reachable behavior, examine permitted empty/null/zero/false states, constrained numeric/string boundaries, initial/loading/success/empty/error/retry states, repeated actions, async cleanup, board cell mapping (`0` empty, `1` white, `2` black, `3` white king, `4` black king), conditional rendering by auth/room status, `q-banner` visibility, and validation-vs-handler mismatches.
+For reachable behavior, examine permitted empty/null/zero/false states, constrained numeric/string boundaries, initial/loading/success/empty/error/retry states, repeated actions, async cleanup, board cell mapping (`0` empty, `1` white, `2` black, `3` white king, `4` black king), conditional rendering by auth/room status, `q-banner` visibility, and validation-vs-handler mismatches — **and** every edge/negative path named or implied by the resolved change's specs/design (e.g. empty lobby snapshot, subscribe/unsubscribe, leave-before-enter).
 
 Runtime facts that often create defects:
 
@@ -256,8 +271,8 @@ This SPA wires cross-tree contracts through Pinia stores, the Colyseus client/ro
 
 When a changed hunk touches `stores/auth`, `stores/game`, `boot/colyseus`, room `send`/`onStateChange`, or `router` meta/guards, independently verify:
 
-1. **Pinia still wired** — `auth` setup-store exports (`register` / `login` / `loginAnonymously` / `logout` / `whenReady` / `isAuthenticated` / `displayName` / `error` / …) and `game` options-store actions/getters (`refreshRooms` / `createGame` / `joinGame` / `leaveGame` / `sendMove` / `isInRoom` / `canMove` / …) still match callers; renamed action with old call sites is a regression.
-2. **Room protocol** — message type `'move'` with `{ from, to }` (`from`/`to`: `{ row, col }`); state fields `board`, `currentTurn`, `status`, `players[sessionId].color`; room name `CHECKERS_ROOM = 'checkers'`; listing `GET /rooms/checkers` via `client.http.get`.
+1. **Pinia still wired** — `auth` setup-store exports (`register` / `login` / `loginAnonymously` / `logout` / `whenReady` / `isAuthenticated` / `displayName` / `error` / …) and `game` options-store actions/getters (`subscribeLobby` / `unsubscribeLobby` / `createGame` / `joinGame` / `leaveGame` / `sendMove` / `isInRoom` / `canMove` / …) still match callers; renamed action with old call sites is a regression.
+2. **Room protocol** — message type `'move'` with `{ from, to }` (`from`/`to`: `{ row, col }`); state fields `board`, `currentTurn`, `status`, `players[sessionId].color`; room names `CHECKERS_ROOM = 'checkers'`, `LOBBY_ROOM = 'lobby'`; live listing via LobbyRoom subscribe (HTTP `refreshRooms` unused fallback only).
 3. **Auth lifecycle** — `client.auth.onChange` drives `token`/`user`/`ready`; token key `colyseus-auth-token`; protected routes wait for `whenReady()`.
 4. **Route meta** — `/login` has `meta.guest`; `/lobby` and `/game/:roomId` have `meta.requiresAuth`; hash mode (`/#/…`). Removing or flipping meta without AC is `extra` / `missing`.
 5. **Error UX** — failures land in store `error` and pages show `q-banner`; do not expect SHOW_DIALOG / axios interceptors / brand profiles (absent in this app).
@@ -306,6 +321,7 @@ Write in Russian.
 - Регрессии: нет | N — <основание; только hard>
 - Режим: requirements-only | post-propose | in-progress
 - Источник: <source>
+- OpenSpec change: <name | none; passed | active | inferred>
 - Работа в ветке: <staged / unstaged / untracked / commits>
 
 ## Просмотренные файлы

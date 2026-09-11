@@ -93,7 +93,7 @@ server: C:/Users/You/work/happy-tourist-server
 - Client: `npm install`, `npm run dev`, `npm run lint`, `npm run typecheck`, `npm run build`
 - Server: `npm install`, `npm run dev`, `npm test`, `npm run build`, `npm run loadtest`
 
-Команды `npm` выполняет **пользователь**; агент предлагает команду и ждёт подтверждения («готово»).
+Команды `npm` запускает **агент** из каталога sibling-репо (client или server). Не ждать подтверждения пользователя; при падении — починить до завершения задачи.
 
 ## Skills discovery
 

@@ -62,9 +62,10 @@ Revise a change's existing planning artifacts and keep them coherent. Never edit
    - Revise only files that already exist (`existingOutputPaths`). Do NOT create artifacts that don't exist yet, and do NOT invent new files under a glob artifact - note them and point the user to `/openspec-continue-change` to create them.
    - If the change is already coherent, say so and make no edits.
 
-5. **Confirm and apply, one artifact at a time**
-   - Show each proposed revision and why. Write only after the user confirms.
-   - If the user rejects a revision, do not write it - leave that artifact unchanged.
+5. **Apply revisions (no confirmation gate)**
+   - Read `openspec/config.yaml` → `rules.update` (project override). In this repo: **write immediately** — do not ask yes/no before editing existing planning artifacts.
+   - Apply coherent revisions to each touched artifact; briefly report what changed and why after writes (or in the same turn).
+   - If the user already rejected a specific revision in this conversation, leave that artifact unchanged.
    - When a substantial rewrite is needed, get that artifact's rules and template first:
      ```bash
      openspec instructions "<artifact-id>" --change "<name>" --json
@@ -87,5 +88,5 @@ After each invocation, show:
 - Use the artifact ids and paths reported by `openspec status`; never branch on hardcoded artifact names.
 - Edit only the concrete files in `existingOutputPaths`; never write to a glob `resolvedOutputPath`.
 - Do not advance the build frontier: no new artifacts, no new files under glob artifacts - that is `/openspec-continue-change`'s job.
-- Confirm every edit with the user before writing.
+- Do **not** gate writes on user confirmation when `rules.update` says so (happy-tourist-meta default: apply immediately, report after).
 - If the request changes the change's *intent* rather than refining it, first verify whether the optional `/openspec-new-change` workflow is available. If it is, recommend starting fresh with `/openspec-new-change` (the "Update vs. Start Fresh" heuristic). If it is unavailable, ask for a distinct unused change name and recommend `openspec new change "<new-change-name>"` instead.

@@ -50,6 +50,16 @@ description: >-
 - Jira / Confluence URL, issue key, вставленный текст требований
 - опциональное имя OpenSpec change (артефакты в meta)
 
+**Резолв OpenSpec change** (один раз на весь прогон, до Align):
+
+1. Имя, переданное пользователем.
+2. Иначе — из контекста диалога, если однозначно.
+3. Иначе из meta: `openspec list --json` — автовыбор, если ровно **один** active change.
+4. Иначе при нескольких — спросить.
+5. Иначе — `OpenSpec: none` (только Jira/Confluence/paste/repo).
+
+Объявить: `Using OpenSpec change: <name>` (или `OpenSpec: none`). То же имя передать в client- и server-align. В дочерних align это имя — **primary evidence** для осей A/C (включая краевые случаи из SC-*/design), не опциональная загрузка «если вспомнил».
+
 Если источник требований не резолвится — спросить **один раз** до шага Align (как в дочерних align). Один ответ пользователя использовать и для client, и для server.
 
 Опционально пользователь может сузить scope: `только client` / `только server` — тогда пропустить другой пакет и отметить это в отчёте.
@@ -58,7 +68,7 @@ description: >-
 
 - Не править, не создавать, не удалять, не форматировать runtime-файлы.
 - Не коммитить / не пушить.
-- Не запускать `npm` lint/test/build самому — только предложить в конце отчёта (если verify это требует) и ждать «готово».
+- Дочерние align-скиллы остаются read-only (не `npm` для preservation analysis). Verify: агент сам запускает `npm` lint/test/build из корня client/server, исправляет сбои; report-only verify (без «исправить») — всё равно запускать tooling и включать результаты в отчёт.
 - Align остаётся read-only; verify в этом оркестраторе — **report-only** (не verify-and-fix), если пользователь явно не попросил «исправить».
 
 ## Workflow
@@ -78,7 +88,7 @@ Align-Code Progress:
 
 Из корня meta: projects-map (+ local). Проверить, что client/server — git work trees.
 
-Собрать общий источник требований. OpenSpec — через meta (`openspec status --change "…" --json`), если change указан/найден.
+Собрать общий источник требований. OpenSpec — резолв change как в **Вход**, затем `openspec status --change "…" --json` из meta; артефакты change обязательны для Align осей A/C (краевые случаи / SC-*), не только для списка противоречий docs↔code.
 
 ### 3–4. Client
 
@@ -105,6 +115,7 @@ Client и server можно анализировать последовател�
 # Align Code — отчёт
 
 Источник требований: <jira/confluence/paste/openspec/…>
+OpenSpec change: <name | none; passed | active | inferred>
 Scope: client + server | client-only | server-only
 
 ## Сводка
@@ -131,7 +142,7 @@ Scope: client + server | client-only | server-only
 
 ## Что делать дальше
 - <hard / Violations сначала по обоим пакетам; затем Warnings; Recommendations последними>
-- <предложенные npm-команды client/server, если уместны; ждать «готово»>
+- <выполненные npm-команды client/server и результаты, если уместны>
 ```
 
 Если пакет пропущен (нет пути / user scope) — секция с одной строкой `пропущен: <причина>`, без выдуманных findings.

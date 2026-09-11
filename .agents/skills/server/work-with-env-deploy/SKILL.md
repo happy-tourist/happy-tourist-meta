@@ -23,7 +23,7 @@ Deploy target: VPS under `/var/www/happy-tourist-server`, Node 22, PM2. Trigger:
 | Keep rsync excludes for `.env*` and `game.db*` | Let CI overwrite server DB or prod env |
 | Document new env keys in `.env.example` | Invent CI-injected app secrets (unlike the client; app secrets stay on VPS) |
 | Use GH secrets `SSH_*` only for deploy SSH | Put `AUTH_SALT` / `JWT_SECRET` / `SESSION_SECRET` in GitHub Actions vars |
-| Propose `npm` / PM2 commands; wait for user «готово» | Run `test` / `build` / `dev` / deploy yourself |
+| Run local `npm test` / `build` / `dev` from server package root | Skip verification or assume pass without running |
 
 ## Env vars
 
@@ -109,9 +109,9 @@ Sibling client Pages deploy is a separate repo/workflow — do not mix client `V
 1. Confirm whether the task is local env, prod secrets on VPS, `DATABASE_URL`, PM2 memory/port, or CI/rsync.
 2. Edit only the files in the map above that the change requires.
 3. Keep rsync excludes and “secrets on server only” unless the user explicitly changes the deploy model.
-4. Propose commands; do **not** run them. Wait for the user to reply «готово».
+4. Run local npm verification from the server package root; fix failures before claiming done. Remote prod deploy / VPS smoke (SSH credentials) — propose steps to the user when the agent cannot execute them.
 
-Typical proposes (local):
+Typical commands (agent runs locally):
 
 ```bash
 npm run build
@@ -119,7 +119,7 @@ npm test
 npm run dev
 ```
 
-Prod smoke (user runs on VPS / against prod host — propose only):
+Prod smoke (VPS / prod host — propose when agent lacks SSH access):
 
 ```bash
 curl -sS http://127.0.0.1:2567/health

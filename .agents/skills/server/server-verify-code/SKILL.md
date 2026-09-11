@@ -124,26 +124,27 @@ production secrets in `.env.production`.
 
 ## Commands (before done)
 
-Per `AGENTS.md`: the **user** runs package scripts from this package; the agent
-**proposes** the command and **waits for «готово»**. Do not run test / build
-yourself unless the user already said to execute them.
+Run package scripts from the **server package root** (`happy-tourist-server`).
+Fix failures before claiming done. Do not skip test / build after changes unless
+the user explicitly asked for a report-only pass with no tooling.
 
 When verification is part of an implementation you own, or when the user asked
-to verify-and-fix / “make sure it passes”, propose:
+to verify-and-fix / “make sure it passes”, run:
 
 | Command | Purpose |
 |---------|---------|
 | `npm test` | mocha + `@colyseus/testing` (`test/**.test.ts`) |
 | `npm run build` | `tsc` → `build/` (`tsconfig.build.json`) |
 
-Prefer proposing `npm test` for room/auth/schema behavior and `npm run build`
-for type/compile confidence. Propose `npm run loadtest` only when loadtest
-changes are in scope and the user wants it. Do not treat passing test/build as a
+Prefer `npm test` for room/auth/schema behavior and `npm run build` for
+type/compile confidence. Run `npm run loadtest` when loadtest changes are in
+scope. For interactive smoke, you may start `npm run dev` when needed; prefer
+finite gate commands (test/build). Do not treat passing test/build as a
 substitute for skill checks.
 
-After the user replies «готово», report failed test/build output under
-**Violations** (tooling) with the command and a short failure summary. Do not
-invent eslint/tsc rules beyond the project config and skill text.
+Report failed test/build output under **Violations** (tooling) with the command
+and a short failure summary. Do not invent eslint/tsc rules beyond the project
+config and skill text.
 
 ## Workflow
 
@@ -163,8 +164,8 @@ invent eslint/tsc rules beyond the project config and skill text.
    on verify-and-fix when the preferred pattern clearly fits. Fix
    **Recommendations** only if the user asked to tidy / apply soft order.
    Otherwise list findings and wait.
-7. When implementing / verify-and-fix: **propose** `npm test` and
-   `npm run build` (and loadtest if relevant), then wait for «готово» before
+7. When implementing / verify-and-fix: **run** `npm test` and `npm run build`
+   (and loadtest if relevant) from the server package root; fix failures before
    claiming done.
 
 Do not praise compliant code. Do not turn this into a product/bug review skill
@@ -213,20 +214,20 @@ Sibling client (`../happy-tourist.github.io`) assumes:
 
 | Client expectation | Server should provide |
 |--------------------|------------------------|
-| Room type name `checkers` | Register room as `checkers` (not scaffold `my_room`) |
+| Room type name `checkers` | Register room as `checkers` (+ `lobby` + `.enableRealtimeListing()`) |
 | State: `board`, `currentTurn`, `status`, `players[sessionId].color` | Matching `@colyseus/schema` state |
 | Message `move` `{ from, to }` | Authoritative handler; no trust of client board |
 | Cell values `0`–`4` | empty / white / black / white king / black king |
-| Lobby `GET /rooms/checkers` | Works once room is registered as `checkers` |
+| Live lobby (`LobbyRoom`) | `lobby` registered; checkers has realtime listing |
 
 Prefer aligning room name, schema, and messages with the client rather than
 changing the client unilaterally.
 
 **Violations when:** new gameplay ships under a room name / state shape / move
 payload that breaks the client contract without an explicit coordinated client
-change. **Warnings when:** scaffold leftovers (`my_room`,
-`mySynchronizedProperty`) remain while checkers product code is being
-implemented beside them without a clear migration path.
+change. **Warnings when:** scaffold leftovers (`mySynchronizedProperty`) remain
+while checkers product code is being implemented beside them without a clear
+migration path.
 
 ### Auth and rooms
 
@@ -297,16 +298,16 @@ rules only on the client; scatter a second HTTP auth implementation beside
 
 ### Agent commands
 
-- Propose `npm test` / `npm run build` / `npm run loadtest`; **wait for
-  «готово»**. Do not silently run package scripts unless the user already
-  authorized execution.
+- Run `npm test` / `npm run build` / `npm run loadtest` from the server package
+  root; fix failures before claiming done. Do not skip verification or assume
+  pass without running.
 
 ### Severity cues for built-in conventions
 
 | Tier | Examples |
 |------|----------|
 | **Violations** | Room name/state/move contract breaks client; missing JWT `onAuth`; trusting client board; CORS not first / wrong prod origin; NOT NULL user columns without defaults; gameplay wiring forced into `index.ts`; empty `catch` on auth/game paths; secrets in source |
-| **Warnings** | Prefer `checkers` registration but scaffold `my_room` still registered beside new code; Prefer existing schema fields but a one-off parallel property was added; env URL/path hardcoded when `.env` already covers it |
+| **Warnings** | Prefer existing schema fields but a one-off parallel property was added; env URL/path hardcoded when `.env` already covers it; HTTP listing used as primary path while live LobbyRoom is the product UI |
 | **Recommendations** | Import grouping tidy; minor formatting; soft consistency with nearby room/schema analogues |
 
 ## Path hints (optional prioritization only)
@@ -337,7 +338,7 @@ Reminders to **open the skill** (or Built-in) — skill text wins.
 - **Auth**: JWT in `onAuth`; `@colyseus/auth` + DB user store.
 - **Rules**: authoritative on server; never trust client board.
 - **DB**: user column `.default(...)` for register/login.
-- **Tooling**: propose `npm test` / `npm run build`; wait «готово».
+- **Tooling**: run `npm test` / `npm run build` from the server package root.
 
 ## Severity
 
@@ -369,7 +370,7 @@ Format:
 
 Scope: branch vs <merge-base> (<base-ref>) + staged + unstaged + untracked [+ path if used]
 Skills: all code skills (excl. test/locate/align/openspec/commit) + Server conventions
-Tests/build: <proposed commands; results after user «готово», or skipped>
+Tests/build: <commands run and pass/fail summary, or skipped with reason>
 
 ### Violations
 - `path` — <что не так> (skill: `<name>`)

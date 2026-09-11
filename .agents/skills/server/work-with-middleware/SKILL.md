@@ -150,7 +150,7 @@ Rules:
 3. Add thin routes with `app.get` / `app.use` here; use `createEndpoint` / `createRouter` under `routes:` for typed Colyseus HTTP endpoints (`work-with-routes`).
 4. Do **not** add session/captcha/Redis guards. Room security → `onAuth` + JWT (`server-work-with-auth`).
 5. If changing allowed origin or env, align with `work-with-config` / `.env*`.
-6. Propose `npm test` / `npm run build` when relevant; wait for the user «готово».
+6. Run `npm test` / `npm run build` from the server package root when relevant; fix failures before claiming done.
 
 ## Checklist
 

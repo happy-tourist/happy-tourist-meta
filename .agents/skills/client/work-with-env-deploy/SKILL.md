@@ -21,7 +21,7 @@ Deploy target: GitHub Pages **user/org site at domain root**. Router mode is **h
 | Keep `publicPath: '/'` (domain root) | Assume project-site `base` like `/repo-name/` |
 | Type new `VITE_*` keys in `env.d.ts` | Read secrets from the client; these are build-time public URLs |
 | Inject prod URLs via GitHub Actions `vars` in CI | Commit production secrets into the repo |
-| Propose `quasar` / `npm` commands; wait for user «готово» | Run `lint` / `typecheck` / `dev` / `build` yourself |
+| Run `npm` / `quasar` lint / typecheck / build from client package root | Skip verification or assume pass without running |
 
 ## Env vars
 
@@ -96,9 +96,9 @@ Repo is the **user/org site** (`happy-tourist.github.io`) → always domain root
 1. Confirm whether the task is local env, typed keys, router mode, or CI/Pages.
 2. Edit only the files in the map above that the change requires.
 3. Keep hash mode + domain-root `publicPath` unless the user explicitly changes hosting.
-4. Propose commands; do **not** run them. Wait for the user to reply «готово».
+4. Run local verification from the client package root; fix failures before claiming done.
 
-Typical proposes:
+Typical commands (agent runs):
 
 ```bash
 npm run lint

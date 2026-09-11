@@ -111,7 +111,7 @@ loadtest     →  @colyseus/sdk / loadtest CLI
 
 Decide in this order:
 
-1. **New room type / rename to match client?** → `src/rooms/<Name>.ts` + register in `app.config.ts` `rooms` (prefer name `checkers` to match client lobby `GET /rooms/checkers`).
+1. **New room type / rename?** → `src/rooms/<Name>.ts` + register in `app.config.ts` `rooms` (playable key `checkers`; live list needs `lobby` + `.enableRealtimeListing()`).
 2. **Synced state fields?** → `src/rooms/schema/<Name>State.ts` only; Room assigns/mutates them.
 3. **Move / game messages?** → Room `onMessage('move', …)` (or equivalent) — validate, apply, update schema.
 4. **User profile columns?** → `src/db/schema.ts` with `.default(...)` so `/auth/register` / `/auth/login` stay compatible; wire via `src/db/index.ts` if needed.
@@ -165,14 +165,14 @@ Decide in this order:
 | Kind | Convention | Examples |
 |------|------------|----------|
 | Source files | PascalCase for Room/State classes; camelCase modules as peers | `MyRoom.ts`, `MyRoomState.ts`, `schema.ts` |
-| Room registration key | snake / product name matching client | today `my_room`; target `checkers` |
+| Room registration key | product name matching client | `lobby`, `checkers` (do not reintroduce `my_room`) |
 | Schema export | `schema({ ... })` + `SchemaType<typeof …>` | `MyRoomState` |
 | Imports | relative + `.js` (NodeNext) | `from "./rooms/MyRoom.js"` |
 | Tests | `*.test.ts` under `test/` | `test/MyRoom.test.ts` |
 | Loadtest | `loadtest/*.ts` | `loadtest/example.ts` |
 | PM2 | `.cjs` at repo root | `ecosystem.config.cjs` |
 
-Match existing peers; when renaming room to `checkers`, update `app.config.ts`, tests, and loadtest together.
+Match existing peers; room keys `lobby` + `checkers` must stay aligned across `app.config.ts`, tests, and loadtest.
 
 ## Typical Shapes
 
@@ -213,15 +213,15 @@ ecosystem.config.cjs
 
 **Listen** — `index.ts` imports `./app.config.js` and calls `listen(app)`.
 
-**Wire room** — `app.config.ts` `rooms: { my_room: defineRoom(MyRoom) }` (prefer `checkers` when implementing product contract).
+**Wire room** — `app.config.ts` `rooms: { lobby: defineRoom(LobbyRoom), checkers: defineRoom(MyRoom).enableRealtimeListing() }`.
 
 **Auth gate** — `MyRoom.onAuth` → `JWT.verify(token)` → userdata to `onJoin`.
 
 **HTTP** — CORS middleware first in `express`; `/health` JSON; `createEndpoint("/api/hello", …)` for demo; `/auth/*` from `@colyseus/auth` via `database: db`.
 
-**Test** — `boot(appConfig)`, `JWT.sign(...)`, `createRoom("my_room")`, `connectTo`, assert `sessionId`.
+**Test** — `boot(appConfig)`, `JWT.sign(...)`, `createRoom("checkers")`, `connectTo`, assert `sessionId`; lobby `+`/`-` cases when listing changes.
 
-**Client contract (target)** — room `checkers`; state `board` / `currentTurn` / `status` / `players`; message `move` `{ from, to }`; lobby listing `GET /rooms/checkers`.
+**Client contract** — room `checkers` + live `lobby`; state `board` / `currentTurn` / `status` / `players`; message `move` `{ from, to }`; HTTP `/rooms/checkers` is fallback only.
 
 ## Creating New Pieces — Checklist
 
@@ -229,7 +229,7 @@ ecosystem.config.cjs
 
 1. Implement Room handler under `src/rooms/` (logic + `onMessage('move')`).
 2. Define sync state under `src/rooms/schema/`.
-3. Register room name in `app.config.ts` (prefer `checkers`).
+3. Register room name in `app.config.ts` (`checkers` + live `lobby` when listed).
 4. Keep `onAuth` JWT; set `maxClients = 2` and seat colors in room lifecycle.
 5. Update `test/` and `loadtest/` room name / expectations.
 6. Align cell values and message shape with `../happy-tourist.github.io`.
@@ -264,7 +264,7 @@ ecosystem.config.cjs
 | Room auth | `rooms/*.ts` `onAuth` | `JWT.verify` |
 | Users / rating | `src/db/schema.ts` | defaults required |
 | Gameplay | `src/rooms/*` + `rooms/schema/*` | authoritative rules + sync |
-| Lobby list | Colyseus `GET /rooms/:roomName` | works once room registered as client expects |
+| Lobby list | `lobby` LobbyRoom + `checkers` `.enableRealtimeListing()` | HTTP `/rooms/:roomName` is fallback |
 | Health / smoke | `express` `/health`, `/hi` | deploy checks |
 | Dev tools | `monitor`, `playground` | non-production only |
 | Client SPA | `../happy-tourist.github.io` | coordinate room/state/move |
@@ -277,7 +277,7 @@ ecosystem.config.cjs
 | Putting move validation in HTTP | Room `onMessage` |
 | Schema file with game-rule functions | Keep sync fields only |
 | Inventing Redis/session auth like a BFF | `@colyseus/auth` + JWT `onAuth` |
-| Registering `my_room` while client calls `checkers` | Align room name with client |
+| Reintroducing `my_room` or omitting `.enableRealtimeListing()` | Keep `lobby` + `checkers` registration |
 | Custom DB columns without defaults | Add `.default(...)` |
 | Imports without `.js` suffix | NodeNext: `from "./X.js"` |
 | Leaving tests on old room name after rename | Update `test/` + `loadtest/` |

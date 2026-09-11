@@ -50,9 +50,9 @@ Pinia is installed via Quasar store entry `src/stores/index.ts` (`createPinia()`
 | Composable | `use*Store` | `useAuthStore`, `useGameStore` |
 | State | camelCase | `user`, `roomId`, `currentTurn` |
 | Getters | camelCase boolean/derived | `isAuthenticated`, `canMove`, `isInRoom` |
-| Actions | verb / domain | `login`, `refreshRooms`, `sendMove`, `leaveGame` |
-| Internal helpers | `_` prefix (options) | `_enterRoom`, `_attachRoom`, `_resetRoomState` |
-| Exported constants / types | beside the store | `CHECKERS_ROOM`, `Board`, `CellValue`, `AuthUser` |
+| Actions | verb / domain | `login`, `subscribeLobby`, `sendMove`, `leaveGame` |
+| Internal helpers | `_` prefix (options) | `_enterRoom`, `_leaveCheckersRoom`, `_attachRoom`, `_resetRoomState` |
+| Exported constants / types | beside the store | `CHECKERS_ROOM`, `LOBBY_ROOM`, `Board`, `CellValue`, `AuthUser` |
 
 ## State Ownership
 
@@ -78,7 +78,7 @@ Use a store for shared domain data, realtime session, or anything the router/oth
 | Store | Owns | Typical consumers |
 |-------|------|-------------------|
 | **auth** | `user`, `token`, `loading`, `error`, `ready`; `isAuthenticated`, `displayName`; register/login/anonymous/logout/`whenReady` | `LoginPage`, router `beforeEach`, `LobbyPage` logout/header |
-| **game** | lobby `rooms`/`listing`; active `room`/`roomId`; `board`, `myColor`, `currentTurn`, `status`, `error`; create/join/leave/`sendMove` | `LobbyPage`, `GamePage` |
+| **game** | lobby `rooms`/`lobbyRoom`/`listing`; active `room`/`roomId`; `board`, `myColor`, `currentTurn`, `status`, `error`; subscribe/unsubscribe / create/join/leave/`sendMove` | `LobbyPage`, `GamePage` |
 | **counter** | scaffold only | none in product flow — ignore unless cleaning scaffold |
 
 ### Auth vs game ownership
@@ -86,7 +86,7 @@ Use a store for shared domain data, realtime session, or anything the router/oth
 - **auth** owns Colyseus Auth only (`client.auth.*`, token sync via `onChange`). It does not create rooms or send moves.
 - **game** owns room listing, room lifecycle, board snapshot from `onStateChange`, and `room.send('move', …)`. It does not call `client.auth`.
 - Cross-cutting: router awaits `useAuthStore().whenReady()` then enforces `requiresAuth` / `guest`. Game pages assume auth already passed.
-- Board cell values (server): `0` empty, `1` white, `2` black, `3` white king, `4` black king. Room name constant: `CHECKERS_ROOM = 'checkers'`.
+- Board cell values (server): `0` empty, `1` white, `2` black, `3` white king, `4` black king. Room constants: `CHECKERS_ROOM = 'checkers'`, `LOBBY_ROOM = 'lobby'`.
 
 ### Decision checklist
 
@@ -111,7 +111,7 @@ Pages call store actions; stores call `client` / `room`.
 
 ```ts
 // Do — in stores/game.ts
-const { data } = await client.http.get(`/rooms/${CHECKERS_ROOM}`);
+await client.joinOrCreate(LOBBY_ROOM, { filter: { name: CHECKERS_ROOM } });
 await client.create(CHECKERS_ROOM, options);
 this.room.send('move', { from, to });
 
@@ -167,6 +167,7 @@ Notes:
 export const useGameStore = defineStore('game', {
   state: () => ({
     rooms: [],
+    lobbyRoom: null,
     room: null,
     roomId: null,
     board: emptyBoard(),
@@ -182,7 +183,8 @@ export const useGameStore = defineStore('game', {
       state.status === 'playing' && state.myColor !== null && state.currentTurn === state.myColor,
   },
   actions: {
-    async refreshRooms() { /* client.http.get */ },
+    async subscribeLobby() { /* joinOrCreate lobby + rooms / + / - */ },
+    async unsubscribeLobby() { /* leave lobbyRoom */ },
     async createGame(options = {}) {
       return this._enterRoom(() => client.create(CHECKERS_ROOM, options));
     },
@@ -195,9 +197,9 @@ export const useGameStore = defineStore('game', {
 ```
 
 Notes:
-- Lobby listing uses `client.http.get('/rooms/checkers')` — SDK `getAvailableRooms` was removed in 0.16+.
+- Live lobby listing uses `subscribeLobby` / LobbyRoom messages — not LobbyPage HTTP poll. `refreshRooms` HTTP remains unused fallback.
 - Local move highlights on `GamePage` are UI only; authoritative board/turn/status come from `room.onStateChange`.
-- `leaveGame` swallows leave errors (room may already be closed). `GamePage` rejoins by `roomId` if Pinia lost the room after refresh.
+- `leaveGame` unsubscribes lobby and swallows leave errors (room may already be closed). `GamePage` rejoins by `roomId` if Pinia lost the room after refresh.
 
 ### HMR: always `acceptHMRUpdate`
 
@@ -231,7 +233,7 @@ const auth = useAuthStore();
 const game = useGameStore();
 
 await auth.login(email.value, password.value);
-await game.refreshRooms();
+await game.subscribeLobby();
 game.sendMove(from, to);
 ```
 
@@ -273,7 +275,7 @@ Dependency direction: `pages` → `stores` / `boot` / `components`. Keep Colyseu
 - Adding Vuex-style modules/`mapState` — this client is Pinia + `<script setup>`.
 - Putting login form fields into `auth` state.
 - Putting cell `selected` into `game` state.
-- Using `getAvailableRooms` — use `client.http.get('/rooms/checkers')`.
+- Using `getAvailableRooms` or LobbyPage HTTP poll — use `subscribeLobby` (LobbyRoom); HTTP `refreshRooms` is unused fallback.
 - Assuming `@colyseus/auth` is the client API — browser auth is `client.auth` from `@colyseus/sdk`.
 - Skipping `whenReady()` and racing protected routes before token restore.
 - Leaving room attach listeners only in a page so refresh/rejoin breaks — attach in `game._attachRoom`.

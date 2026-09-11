@@ -73,7 +73,7 @@ OpenSpec: [`openspec/config.yaml`](../openspec/config.yaml); артефакты 
 | [`work-with-stores`](skills/client/work-with-stores/SKILL.md) | Pinia `auth` / `game` |
 | [`work-with-styles`](skills/client/work-with-styles/SKILL.md) | Quasar variables + scoped board CSS |
 | [`work-with-localization`](skills/client/work-with-localization/SKILL.md) | vue-i18n boot |
-| [`work-with-lobby`](skills/client/work-with-lobby/SKILL.md) | Room list, poll, create / join / joinOrCreate |
+| [`work-with-lobby`](skills/client/work-with-lobby/SKILL.md) | Live LobbyRoom subscribe, leave before enter, create / join / joinOrCreate |
 | [`work-with-rooms`](skills/client/work-with-rooms/SKILL.md) | Room lifecycle, `onStateChange` / `onLeave` |
 | [`work-with-game-board`](skills/client/work-with-game-board/SKILL.md) | Board, `send('move')`, highlights, `canMove` |
 | [`work-with-env-deploy`](skills/client/work-with-env-deploy/SKILL.md) | `VITE_*`, hash router, GitHub Pages |

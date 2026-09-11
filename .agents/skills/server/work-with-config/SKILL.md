@@ -40,7 +40,7 @@ Sibling client: `../happy-tourist.github.io` (GitHub Pages origin
 | Env load | `@colyseus/tools` loads `.env.${NODE_ENV}` if present, else `.env` |
 | Secrets / contour | Env only — document in `.env.example`; never hardcode |
 | Server wiring | `defineServer({ database, rooms, routes, express })` in `src/app.config.ts` |
-| Room registration | `rooms: { my_room: defineRoom(MyRoom) }` (align name with client when implementing checkers → `checkers`) |
+| Room registration | `rooms: { lobby: defineRoom(LobbyRoom), checkers: defineRoom(MyRoom).enableRealtimeListing() }` |
 | Thin HTTP API | `createRouter` + `createEndpoint` (e.g. `GET /api/hello`) |
 | CORS | `ALLOWED_ORIGIN` prod string / else `true`; **first** middleware; credentials `true` |
 | Health / smoke | `GET /health`, `GET /hi` in `express` hook |
@@ -101,7 +101,8 @@ const ALLOWED_ORIGIN =
 const server = defineServer({
   database: db, // enables @colyseus/auth HTTP + user store
   rooms: {
-    my_room: defineRoom(MyRoom),
+    lobby: defineRoom(LobbyRoom),
+    checkers: defineRoom(MyRoom).enableRealtimeListing(),
   },
   routes: createRouter({
     api_hello: createEndpoint("/api/hello", { method: "GET" }, async () => {
@@ -257,9 +258,9 @@ When changing or reviewing config-related work:
 
 1. Confirm whether the task is env, `defineServer` wiring, CORS, or monitor/playground.
 2. Edit only the files the change requires (see map below).
-3. Propose npm commands; do **not** run them. Wait for the user to reply «готово».
+3. Run npm commands from the server package root; fix failures before claiming done.
 
-Typical proposes:
+Typical commands (agent runs):
 
 ```bash
 npm run build

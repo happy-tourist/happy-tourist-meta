@@ -73,8 +73,8 @@ Shared mutable session and realtime I/O belong in Pinia, not ad-hoc page-only `c
 | Concern | Store surface (typical) |
 |---------|-------------------------|
 | Auth session | `stores/auth.ts`: `register` / `login` / `loginAnonymously` / `logout` / `whenReady`; `isAuthenticated`, `displayName`; sync via `client.auth.onChange` |
-| Lobby room list | `stores/game.ts` `refreshRooms` → `client.http.get('/rooms/checkers')` |
-| Enter / leave room | `createGame` / `joinGame` / `leaveGame` (`CHECKERS_ROOM = 'checkers'`) |
+| Lobby room list | `stores/game.ts` `subscribeLobby` / `unsubscribeLobby` → LobbyRoom `rooms` / `+` / `-` |
+| Enter / leave room | `createGame` / `joinGame` / `leaveGame` (`CHECKERS_ROOM` / `LOBBY_ROOM`) |
 | Board sync / moves | `_attachRoom` `onStateChange`; `sendMove` → `room.send('move', { from, to })`; getters `isInRoom`, `canMove` |
 | Errors / loading flags | store `error` / `loading` / `listing`; pages show `q-banner` |
 
@@ -105,7 +105,7 @@ Do not invent room schemas, HTTP routes, or move payloads — note the server pa
 | Domain | Start here |
 |--------|------------|
 | Auth (email/password, anonymous, logout) | `pages/LoginPage.vue` + `stores/auth.ts`; router guards in `router/index.ts` |
-| Lobby (list / create / join) | `pages/LobbyPage.vue` + `stores/game` `refreshRooms` / `createGame` / `joinGame` |
+| Lobby (list / create / join) | `pages/LobbyPage.vue` + `stores/game` `subscribeLobby` / `createGame` / `joinGame` |
 | Game board (render, move, rejoin) | `pages/GamePage.vue` + `stores/game` `sendMove` / `onStateChange` / `joinGame(roomId)` |
 | Env / deploy | `.env.*`, `env.d.ts`, `boot/colyseus.ts`, `.github/workflows/deploy.yml` |
 | Theme / layout chrome | `css/*`, `App.vue`, page-level Quasar chrome |
@@ -119,12 +119,12 @@ Board cell values from server: `0` empty, `1` white, `2` black, `3` white king, 
    - target feature or behavior;
    - entities (auth, lobby rooms, game session/board, env/deploy), routes, store actions, UI labels;
    - whether the task changes existing behavior or adds a new flow;
-   - whether the Colyseus server contract (room name, state, `move` message, HTTP `/rooms/checkers`) is involved.
+   - whether the Colyseus server contract (room name, state, `move` message, live LobbyRoom listing) is involved.
 
 2. Search by domain terms:
    - route paths and page names (`login`, `lobby`, `game`);
-   - store names and actions (`register`, `login`, `refreshRooms`, `createGame`, `joinGame`, `sendMove`, `leaveGame`);
-   - Colyseus symbols (`CHECKERS_ROOM`, `client.auth`, `client.http`, `onStateChange`, `room.send`);
+   - store names and actions (`register`, `login`, `subscribeLobby`, `unsubscribeLobby`, `createGame`, `joinGame`, `sendMove`, `leaveGame`);
+   - Colyseus symbols (`CHECKERS_ROOM`, `LOBBY_ROOM`, `client.auth`, `onStateChange`, `room.send`);
    - env keys (`VITE_COLYSEUS_URL`, `VITE_API_URL`);
    - user-visible strings in pages and `src/i18n/`.
 

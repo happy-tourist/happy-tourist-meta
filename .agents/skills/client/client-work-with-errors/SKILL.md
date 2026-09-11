@@ -65,24 +65,31 @@ Applies to: `register`, `login`, `loginAnonymously`, `logout`.
 
 `src/stores/game.ts` (options store).
 
-### Listing (`refreshRooms`)
+### Listing (`subscribeLobby`)
 
 ```ts
 this.listing = true;
 this.error = null;
 
 try {
-  const { data } = await client.http.get(`/rooms/${CHECKERS_ROOM}`);
-  this.rooms = (data ?? []) as RoomAvailable<GameRoomMeta>[];
+  const lobby = await client.joinOrCreate(LOBBY_ROOM, {
+    filter: { name: CHECKERS_ROOM },
+  });
+  this.lobbyRoom = lobby;
+  lobby.onMessage('rooms', (rooms) => { this.rooms = rooms ?? []; });
+  lobby.onError((_code, message) => {
+    this.error = message || 'Lobby error';
+  });
 } catch (e) {
   this.error = e instanceof Error ? e.message : String(e);
   this.rooms = [];
+  this.lobbyRoom = null;
 } finally {
   this.listing = false;
 }
 ```
 
-Does **not** re-throw — lobby poll keeps running; banner shows the message.
+Does **not** re-throw — live list stays on LobbyPage; banner shows the message.
 
 ### Enter room (`_enterRoom` → `createGame` / `joinGame`)
 
@@ -91,18 +98,19 @@ this.status = 'connecting';
 this.error = null;
 
 try {
-  await this.leaveGame();
+  await this._leaveCheckersRoom(); // keep lobby live during attempt
   const room = await connect();
+  await this.unsubscribeLobby(); // SC-LOBBY-05 — only on success
   this._attachRoom(room);
   return room;
 } catch (e) {
   this.status = 'idle';
   this.error = e instanceof Error ? e.message : String(e);
-  throw e;
+  throw e; // lobby subscription still active on LobbyPage
 }
 ```
 
-Re-throws so Lobby / GamePage can avoid navigation or redirect on failure.
+Re-throws so Lobby / GamePage can avoid navigation or redirect on failure. Do not call `subscribeLobby` in this `catch` — it would clear `error`.
 
 ### Room listener (`_attachRoom`)
 
@@ -176,7 +184,7 @@ Use Quasar `bg-negative text-white`; keep dense. Do not add Notify plugins,
 |-----------|---------|
 | Auth register / login / anonymous / logout | Store sets `error`, re-throws; page `catch { /* error already in store */ }` and skips redirect |
 | Lobby create / join / play | Store sets `error`, re-throws; page `catch` + local `creating`/`joining` in `finally` |
-| Lobby room list poll | Store catch sets `error`, empties `rooms`, **no** re-throw |
+| Lobby room list subscribe | Store catch sets `error`, empties `rooms`, **no** re-throw |
 | GamePage mount rejoin | `joinGame(roomId)` fail → `router.replace({ name: 'lobby' })` (error may still be in store for lobby banner) |
 | GamePage missing room and no `roomId` | Redirect lobby without setting a new error |
 | Leave room (user or `_enterRoom` cleanup) | Swallow leave errors |
@@ -229,7 +237,7 @@ Store owns the message; page owns button `loading` via `joining` / `creating`.
 
 ### 3. List refresh (no re-throw)
 
-Use `refreshRooms` as-is: catch → `error` + `rooms = []` → `listing = false` in
+Use `subscribeLobby` as-is: catch → `error` + `rooms = []` → `listing = false` in
 `finally`. Poll interval in LobbyPage should keep calling it.
 
 ### 4. GamePage rejoin failure → lobby

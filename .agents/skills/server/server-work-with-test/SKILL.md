@@ -4,8 +4,8 @@ description: >-
   Use when planning or writing mocha + @colyseus/testing tests for
   happy-tourist-server: room connect with JWT, onAuth failures, move messages,
   schema sync assertions, or GET /rooms listing. Core workflow: test plan
-  (mocks/verify) → write test/*.test.ts → propose npm test and wait for user
-  «готово». Do not invent Jest/babel patterns.
+  (mocks/verify) → write test/*.test.ts → run npm test from server package root
+  and fix failures. Do not invent Jest/babel patterns.
 trigger: slash
 ---
 
@@ -41,8 +41,8 @@ patterns over inventing Jest, Vitest, or babel setups.
 
 Do **not** add `jest.config`, `babel-jest`, `vitest`, or `.cjs` test files.
 
-Agent **does not** run `npm test` itself. Propose the command; wait for the
-user’s «готово» (per `AGENTS.md`).
+Agent **runs** `npm test` from the server package root after writing or changing
+tests; fix failures before claiming done.
 
 ## File Layout
 
@@ -65,15 +65,16 @@ import appConfig from "../src/app.config.js";
 ## Workflow
 
 1. Read the SUT (room, schema, `app.config` room registration, HTTP surface)
-   and note registered room name (`my_room` today; client expects `checkers`).
+   and note registered room names (`lobby` + `checkers`).
 2. Produce a test plan with two sections: **What needs to be mocked / stubbed**
    and **What to verify**.
 3. Place or extend a file under `test/` as `*.test.ts`, following the harness
    below and the coverage topics.
 4. Cover success and failure paths that exist in the SUT (valid JWT join,
-   invalid/missing token, illegal `move`, schema fields after join/move).
-5. Propose `npm test` (optionally a single file if mocha path filtering is
-   used). **Do not run it.** Wait for user «готово», then fix failures if any.
+   invalid/missing token, illegal `move`, schema fields after join/move,
+   lobby live-list `+` / `-` when applicable).
+5. Run `npm test` from the server package root (optionally a single file if mocha
+   path filtering is used); fix failures before claiming done.
 
 ## Test Plan
 
@@ -103,9 +104,9 @@ Use these categories only when the SUT has relevant behavior:
 - Messages: `client.send("move", { from, to })` — legal move updates board;
   illegal move leaves state unchanged (and/or sends an error message if the
   room defines one).
-- Listing: `GET /rooms/checkers` (or current registered name) returns available
-  rooms after create — update tests when room is renamed from `my_room` to
-  `checkers`.
+- Listing: live LobbyRoom — after `createRoom("checkers")`, lobby client
+  receives `+`; after dispose, receives `-` (SC-LOBBY-02/03). HTTP
+  `GET /rooms/checkers` remains optional fallback.
 
 Formulation rules:
 
@@ -125,8 +126,9 @@ Verify move (when implemented):
 - Legal { from, to } on currentTurn: board cells update; turn flips
 - Wrong turn / empty from / occupied to: state unchanged
 
-Verify listing after rename to checkers:
-- createRoom("checkers"); GET /rooms/checkers includes the room
+Verify live lobby listing:
+- joinOrCreate("lobby", { filter: { name: "checkers" } }); createRoom("checkers") → lobby receives +
+- room.disconnect() → lobby receives -
 ```
 
 ## Coverage Topics
@@ -150,7 +152,7 @@ describe("testing your Colyseus app", () => {
     const token = await JWT.sign({ id: 1, username: "test" });
     colyseus.sdk.auth.token = token;
 
-    const room = await colyseus.createRoom("my_room", {});
+    const room = await colyseus.createRoom("checkers", {});
     const client1 = await colyseus.connectTo(room);
 
     assert.strictEqual(client1.sessionId, room.clients[0].sessionId);
@@ -158,8 +160,7 @@ describe("testing your Colyseus app", () => {
 });
 ```
 
-When the registered name becomes `checkers`, change `createRoom("checkers", …)`
-and any listing URL together with `app.config.ts`.
+Always use `createRoom("checkers", …)` matching `app.config.ts`. Include lobby live-list cases when changing listing / metadata.
 
 ### onAuth failure
 
@@ -188,13 +189,12 @@ Server is authoritative; never assert by trusting a client-only board copy.
 - Until schema is implemented, keep tests focused on join/auth; add schema
   assertions in the same change that introduces `MyRoomState` fields.
 
-### Listing `/rooms` when renamed to `checkers`
+### Live lobby listing (SC-LOBBY-02 / SC-LOBBY-03)
 
-- Client lobby uses Colyseus `GET /rooms/:roomName`.
-- After rename `my_room` → `checkers` in `app.config.ts`, tests must
-  `createRoom("checkers", …)` and hit `/rooms/checkers` (via SDK or HTTP
-  against the booted server). Update `loadtest` `--room` and this skill’s
-  examples in the same PR when renaming.
+- Client lobby uses Colyseus built-in `LobbyRoom` with filter `name: checkers`.
+- Tests: `joinOrCreate("lobby", { filter })`, wait for `+` on create and `-` on dispose.
+- `createRoom("checkers", …)` and loadtest `--room checkers` must match `app.config.ts`.
+- HTTP `GET /rooms/checkers` is optional fallback coverage, not the primary UI path.
 
 ## Test File Structure
 
@@ -223,7 +223,7 @@ describe("MyRoom", () => {
     const token = await JWT.sign({ id: 1, username: "test" });
     colyseus.sdk.auth.token = token;
 
-    const room = await colyseus.createRoom("my_room", {});
+    const room = await colyseus.createRoom("checkers", {});
     const client = await colyseus.connectTo(room);
 
     assert.strictEqual(client.sessionId, room.clients[0].sessionId);
@@ -239,6 +239,7 @@ Conventions:
 - Always `boot` once per suite, `cleanup` in `beforeEach`, `shutdown` in
   `after`.
 - Use `assert` / `assert.strictEqual` / `assert.rejects` — not Jest `expect`.
+- Room name in tests must match `app.config.ts` (`checkers`).
 
 ## Helpers (optional, keep in-file)
 
@@ -267,9 +268,9 @@ default is a single `SKILL.md` and in-file helpers — no separate md required.
   present).
 - File is `test/**/*.test.ts` with relative imports to `src/**/*.js`.
 - Harness: `boot` → `cleanup` → `shutdown`; JWT via `@colyseus/auth`.
-- Room name matches `app.config.ts` registration (`my_room` or `checkers`).
+- Room name matches `app.config.ts` registration (`checkers`; also cover `lobby` live-list when changing listing).
 - No Jest / babel / Vitest APIs or config files.
-- Proposed `npm test` and waited for user «готово»; failures fixed if reported.
+- Ran `npm test` from the server package root; failures fixed before claiming done.
 
 ## Anti-Patterns
 
@@ -285,8 +286,8 @@ expect(x).toBe(y);
 // Skipping JWT when room uses onAuth
 // colyseus.connectTo(room) without colyseus.sdk.auth.token
 
-// Hard-coding client room name checkers while server still registers my_room
-// (or the reverse) without updating app.config + tests together
+// Hard-coding a room name that does not match app.config.ts (`checkers` / `lobby`)
+// without updating registration + tests + loadtest together
 
-// Agent running npm test without user «готово»
+// Skipping npm test after adding or changing tests
 ```

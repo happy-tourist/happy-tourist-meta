@@ -61,7 +61,7 @@ it does **not** allow skipping skills from this list.
 | `work-with-styles` | Quasar variables + board CSS |
 | `client-work-with-auth` | Colyseus Auth |
 | `work-with-localization` | vue-i18n boot |
-| `work-with-lobby` | room list/poll/create/join |
+| `work-with-lobby` | live LobbyRoom subscribe / leave before enter / create/join |
 | `work-with-rooms` | Room lifecycle |
 | `work-with-game-board` | board, moves, `canMove` |
 | `work-with-env-deploy` | `VITE_*`, hash router, GH Pages |
@@ -115,12 +115,12 @@ the user asked to include them.
 
 ## Commands (before done)
 
-Per `AGENTS.md`: the **user** runs package scripts from this package; the agent
-**proposes** the command and **waits for «готово»**. Do not run lint / typecheck
-/ build yourself unless the user already said to execute them.
+Run package scripts from the **client package root** (`happy-tourist.github.io`).
+Fix failures before claiming done. Do not skip lint / typecheck after changes
+unless the user explicitly asked for a report-only pass with no tooling.
 
 When verification is part of an implementation you own, or when the user asked
-to verify-and-fix / “make sure it passes”, propose:
+to verify-and-fix / “make sure it passes”, run:
 
 | Command | Purpose |
 |---------|---------|
@@ -128,14 +128,15 @@ to verify-and-fix / “make sure it passes”, propose:
 | `npm run typecheck` | `vue-tsc` / typecheck |
 | `npm run build` / `quasar build` | Production SPA build |
 
-Prefer proposing `npm run lint` and `npm run typecheck` for touched areas.
-Propose `npm run build` / `quasar build` when the user asks for build parity or
-deploy confidence. Do not treat passing lint/typecheck/build as a substitute for
-skill checks.
+Prefer `npm run lint` and `npm run typecheck` for touched areas. Run
+`npm run build` / `quasar build` when the user asks for build parity or deploy
+confidence. For interactive smoke, you may start `quasar dev` when needed;
+prefer finite gate commands (lint/typecheck/build). Do not treat passing
+lint/typecheck/build as a substitute for skill checks.
 
-After the user replies «готово», report failed lint/typecheck/build output under
-**Violations** (tooling) with the command and a short failure summary. Do not
-invent eslint rules beyond the project config and skill text.
+Report failed lint/typecheck/build output under **Violations** (tooling) with
+the command and a short failure summary. Do not invent eslint rules beyond the
+project config and skill text.
 
 ## Workflow
 
@@ -156,9 +157,9 @@ invent eslint rules beyond the project config and skill text.
    on verify-and-fix when the preferred pattern clearly fits. Fix
    **Recommendations** only if the user asked to tidy / apply soft order.
    Otherwise list findings and wait.
-8. When implementing / verify-and-fix: **propose** `npm run lint` and
-   `npm run typecheck` (and `npm run build` / `quasar build` if requested), then
-   wait for «готово» before claiming done.
+8. When implementing / verify-and-fix: **run** `npm run lint` and
+   `npm run typecheck` (and `npm run build` / `quasar build` if requested) from
+   the client package root; fix failures before claiming done.
 
 Do not praise compliant code. Do not turn this into a product/bug review skill.
 
@@ -286,7 +287,7 @@ Apply always; sibling skills win when they exist and conflict on a detail.
 | Tier | Examples |
 |------|----------|
 | **Violations** | Ad-hoc axios / second HTTP client; Colyseus I/O scattered outside stores; empty `catch` on auth/game; history router without request; inventing move protocol / board truth on client |
-| **Warnings** | Importing only `$colyseus` when `@/boot/colyseus` fits; duplicating room-list HTTP outside `refreshRooms`; hardcoding env URLs; expanding scaffold leftovers instead of login/lobby/game |
+| **Warnings** | Importing only `$colyseus` when `@/boot/colyseus` fits; wiring LobbyPage back to HTTP `refreshRooms` poll; hardcoding env URLs; expanding scaffold leftovers instead of login/lobby/game |
 | **Recommendations** | Vue SFC block order; minor formatting / import tidy |
 
 ## Path hints (optional prioritization only)
@@ -314,7 +315,7 @@ Reminders to **open the skill** (or Built-in) — skill text wins.
 - **Colyseus**: shared Client from boot; HTTP via `client.http`; moves via
   `send('move')`; I/O in Pinia stores.
 - **Auth**: `client.auth` + `stores/auth`; guards wait for `whenReady()`.
-- **Lobby/rooms**: `GET /rooms/checkers`; create/join/leave through `stores/game`.
+- **Lobby/rooms**: live LobbyRoom `subscribeLobby`; create/join/leave through `stores/game`.
 - **Board**: render server state; `canMove` gates sends; cell values 0–4.
 - **Errors**: store `error` + `q-banner`; no empty `catch`.
 - **Env/deploy**: `VITE_*`, hash router, GH Pages SPA build.
@@ -348,7 +349,7 @@ Format:
 
 Scope: branch vs <merge-base> (<base-ref>) + staged + unstaged + untracked [+ path if used]
 Skills: all code skills (excl. locate/align/openspec/commit) + Vue Style Guide + Client conventions
-Lint/typecheck/build: <proposed commands; results after user «готово», or skipped>
+Lint/typecheck/build: <commands run and pass/fail summary, or skipped with reason>
 
 ### Violations
 - `path` — <what is wrong> (skill: `<name>`)

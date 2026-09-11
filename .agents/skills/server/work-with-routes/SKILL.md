@@ -34,7 +34,7 @@ Configure HTTP in `src/app.config.ts`. Prefer not editing `src/index.ts`
 | Typed/demo API | `routes: createRouter({ name: createEndpoint(path, opts, handler) })` |
 | Health / smoke | `express(app)` → `app.get(...)` |
 | Auth HTTP | `/auth/*` auto from `@colyseus/auth` when `database` is set — do not reimplement |
-| Lobby listing | Colyseus built-in `GET /rooms/:roomName` (client: `/rooms/checkers`) |
+| Lobby listing | Live UI: `LobbyRoom` + `.enableRealtimeListing()`; HTTP `GET /rooms/:roomName` remains as fallback |
 | CORS / monitor | Express hook — see `work-with-middleware` / `work-with-config` |
 | Gameplay | **Not** HTTP — Room handlers + schema + messages |
 
@@ -45,7 +45,7 @@ Configure HTTP in `src/app.config.ts`. Prefer not editing `src/index.ts`
 | Keep handlers thin (JSON / plain text, no board rules) | Put checkers move validation or board mutation in HTTP |
 | Add demo/API-style endpoints via `createEndpoint` in `routes` | Invent a second Express router tree or BFF layer |
 | Put ops smoke checks (`/health`, `/hi`) in the `express` hook | Duplicate `/auth/*` or reinvent JWT login as custom Express routes |
-| Align lobby listing room name with registered room type | Assume `/rooms/checkers` works while room is still registered as `my_room` |
+| Align registered room name (`checkers`) with client / HTTP path | Assume listing works for a room key the client does not use |
 | Keep success bodies simple (`{ ... }` or plain text) | Invent `{ errorCode, errorMessage }` BFF envelopes (not used here) |
 | Leave CORS first in `express` (credentials + GitHub Pages origin) | Mount game state behind REST “for convenience” |
 
@@ -94,7 +94,7 @@ For CORS / monitor details use `work-with-middleware` and `work-with-config`.
 | GET | `/health` | `express` hook | `{ status, uptime }` — deploy / monitor |
 | GET | `/hi` | `express` hook | Plain text smoke |
 | * | `/auth/*` | `@colyseus/auth` | Present when `database: db` is set |
-| GET | `/rooms/:roomName` | Colyseus | Available-rooms listing (client lobby) |
+| GET | `/rooms/:roomName` | Colyseus | Available-rooms HTTP listing (fallback; live UI uses LobbyRoom) |
 | GET | `/monitor` | `express` (non-prod) | Colyseus Monitor |
 | * | `/` playground | `express` (non-prod) | Dev playground |
 
@@ -106,9 +106,7 @@ Do **not** hand-roll register/login/anonymous in Express. With `database` on
 
 ### Lobby listing vs room registration
 
-Client lobby expects `GET /rooms/checkers`. Listing works for the **registered
-room type name**. Today the room is `my_room` — rename to `checkers` when
-implementing the product room (`work-with-rooms`).
+Live client lobby uses `lobby` + `checkers` with `.enableRealtimeListing()` (`work-with-rooms`). HTTP `GET /rooms/checkers` remains available as fallback for the same registered name — do not reintroduce `my_room`.
 
 ## Layering
 
@@ -144,7 +142,7 @@ handler → mutate synced state. Not `POST /api/move`.
 4. Keep the handler short; no Drizzle board writes, no checkers rules.
 5. Match existing response style (simple JSON or plain text).
 6. If the client will call it, align path/method/body with `../happy-tourist.github.io` (or document that it is server-only smoke).
-7. Propose `npm run build` / smoke against `/health` when useful; wait for user «готово».
+7. Run `npm run build` from the server package root when useful; smoke `/health` locally when a dev server is running; fix failures before claiming done.
 
 Do **not** create `src/app/routes/routes.js`-style BFF trees, mappers, or Soap/axios layers.
 
@@ -156,7 +154,7 @@ Do **not** create `src/app/routes/routes.js`-style BFF trees, mappers, or Soap/a
 | Reimplementing `/auth/register` in Express | Rely on `@colyseus/auth` + `database` |
 | Copying cookie `checkSession` / `createError` BFF envelopes | Not this stack — JWT + thin JSON |
 | Putting CORS after routes | Keep CORS first in `express` |
-| Expecting `/rooms/checkers` while room is `my_room` | Rename registration when aligning client |
+| Expecting listing for a room key the client does not use | Keep registration as `checkers` (+ live `lobby`) |
 | Fat handlers with DB game stats “because HTTP is easy” | Prefer room lifecycle / dedicated thin endpoint only if product asks |
 
 ## Checklist for a new or changed route

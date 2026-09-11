@@ -18,7 +18,7 @@ Skills path for now: `.agents/skills/server/` in this repo (canonical copy may l
 | Piece | Path / command | Role |
 |-------|----------------|------|
 | Script | `loadtest/example.ts` | Per-client bot: `Client` → `joinOrCreate` → listeners → `cli(main)` |
-| npm | `npm run loadtest` | `tsx loadtest/example.ts --room my_room --numClients 2` |
+| npm | `npm run loadtest` | `tsx loadtest/example.ts --room checkers --numClients 2` |
 | Room under test | `src/app.config.ts` `rooms` | Must match `--room` / script default |
 | Auth gate | `src/rooms/MyRoom.ts` `onAuth` | `JWT.verify(token)` — joins fail without a valid token |
 | Mirror in tests | `test/MyRoom.test.ts` | Sets `colyseus.sdk.auth.token` before connect |
@@ -38,15 +38,13 @@ Do not remove `cli(main)`. Prefer extending `main` (messages, moves, auth) over 
 
 ## Room Name
 
-| Today | Intended (client contract) |
-|-------|----------------------------|
-| `my_room` in `package.json` `loadtest` script and `app.config.ts` | `checkers` |
+Registered playable room is **`checkers`** (with `lobby` for live listing). Keep loadtest in sync:
 
-When the room is registered as `checkers`:
-
-1. Update `package.json` → `"loadtest": "tsx loadtest/example.ts --room checkers --numClients 2"`.
-2. Any hardcoded room string in `loadtest/` (if added later) must match.
+1. `package.json` → `"loadtest": "tsx loadtest/example.ts --room checkers --numClients 2"`.
+2. Any hardcoded room string in `loadtest/` must match.
 3. Keep loadtest `--room` in sync with `rooms` keys in `src/app.config.ts` and with `test/MyRoom.test.ts`.
+
+Do not reintroduce `my_room`.
 
 ## Auth / JWT
 
@@ -87,13 +85,13 @@ If `onAuth` is relaxed or bypassed in a branch, document that in the change; def
 1. Confirm room name in `src/app.config.ts` and keep `--room` aligned.
 2. Edit `loadtest/example.ts` for the scenario (join only, send `move`, watch state, leave).
 3. Ensure JWT is set when `onAuth` is active.
-4. Propose the user run loadtest; **do not run it yourself** unless they already said «готово» for that command:
+4. Run loadtest from the server package root:
 
    ```text
    npm run loadtest
    ```
 
-   Wait for user «готово».
+   Fix failures before claiming done.
 
 5. Optional CLI flags (pass through / document when useful):
 
@@ -121,9 +119,9 @@ If `onAuth` is relaxed or bypassed in a branch, document that in the change; def
 | Extend `main` listeners / join options / auth | Drop `cli(main)` |
 | Sync room name with `app.config` + tests | Invent a different room name only in loadtest |
 | Keep scenarios authoritative-client-light (send intents, observe state) | Assert full board rules inside loadtest — that belongs in room + unit/integration tests |
-| Propose `npm run loadtest` and wait «готово» | Silently assume loadtest passed without user confirmation |
+| Run `npm run loadtest` from server package root | Silently assume loadtest passed without running |
 
-## Checklist Before Proposing Run
+## Checklist Before Running
 
 - [ ] Server listening on the endpoint loadtest will use
 - [ ] `--room` matches registered room name
