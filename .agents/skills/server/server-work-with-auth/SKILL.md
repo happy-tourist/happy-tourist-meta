@@ -2,9 +2,10 @@
 name: server-work-with-auth
 description: >-
   Use when adding, changing, reviewing, or debugging server authentication:
-  @colyseus/auth HTTP routes, AUTH_SALT / JWT_SECRET / SESSION_SECRET, users
-  schema defaults, MyRoom.onAuth JWT.verify, register/login/anonymous → JWT →
-  room join, or auth userdata in onJoin for this Colyseus checkers server.
+  @colyseus/auth HTTP routes, Google OAuth addProvider, AUTH_SALT / JWT_SECRET /
+  SESSION_SECRET / GOOGLE_CLIENT_*, users schema defaults, MyRoom.onAuth
+  JWT.verify, register/login/anonymous/Google → JWT → room join, or auth
+  userdata in onJoin for this Colyseus checkers server.
 ---
 
 # Work With Auth
@@ -52,12 +53,13 @@ guards. Do not put game rules in `/auth/*` handlers.
 
 | Layer | Path | Role |
 |-------|------|------|
-| Server def | `src/app.config.ts` | `database: db` enables `@colyseus/auth` HTTP routes + user store |
+| Server def | `src/app.config.ts` | `database: db` enables `@colyseus/auth` HTTP routes + user store; side-effect import of `src/config/auth.ts` |
+| OAuth providers | `src/config/auth.ts` | `auth.oauth.addProvider('google', …)`; do **not** override `onOAuthProviderCallback` (reuse built-in) |
 | DB init | `src/db/index.ts` | `GameDatabase` + `schemas: { users }` |
 | Users schema | `src/db/schema.ts` | Extends `colyseus_users`: `displayName`, `rating`, `gamesPlayed`, `gamesWon` |
 | Room gate | `src/rooms/MyRoom.ts` | `static onAuth(token)` → `JWT.verify(token)` → userdata to `onJoin` |
-| Secrets | `.env.example` / `.env.development` / `.env.production` | `AUTH_SALT`, `JWT_SECRET`, `SESSION_SECRET`, `DATABASE_URL` |
-| HTTP auth | `/auth/*` (auto) | register / login / anonymous from `@colyseus/auth` when `database` set |
+| Secrets | `.env.example` / `.env.development` / `.env.production` | `AUTH_SALT`, `JWT_SECRET`, `SESSION_SECRET`, `DATABASE_URL`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` |
+| HTTP auth | `/auth/*` (auto) | register / login / anonymous / OAuth provider callbacks from `@colyseus/auth` when `database` set |
 | CORS | `app.config.ts` `express` hook | Credentials + `Authorization` allowed; must stay first |
 | Tests | `test/MyRoom.test.ts` | `JWT.sign` → `sdk.auth.token` → create/connect room |
 
@@ -67,10 +69,11 @@ built-in `/auth/register` and `/auth/login` do not fail on NOT NULL.
 ## End-To-End Auth Flow
 
 ```text
-Client: register | login | signInAnonymously  (client.auth / SDK)
+Client: register | login | signInAnonymously | signInWithProvider('google')
         │
         ▼
   POST /auth/*  (@colyseus/auth, enabled by defineServer { database: db })
+  OAuth: /auth/provider/google/callback (built-in AuthService callback)
         │
         ├─ users table (SQLite / GameDatabase)
         └─ issues JWT (JWT_SECRET) → client stores as colyseus-auth-token
@@ -90,13 +93,13 @@ Client: register | login | signInAnonymously  (client.auth / SDK)
         └─ seat colors / profile fields from auth (not from trusted client body)
 ```
 
-Supported sign-in modes (Colyseus Auth): **email/password** and **anonymous**.
-Both yield a JWT the room gate treats the same way.
+Supported sign-in modes (Colyseus Auth): **email/password**, **anonymous**, and **Google OAuth** (`addProvider('google')`).
+All yield a JWT the room gate treats the same way.
 
 ### Step-by-step (happy path)
 
 1. `defineServer({ database: db, … })` wires GameDatabase → `@colyseus/auth` mounts `/auth/*`.
-2. Client registers, logs in, or signs in anonymously via SDK → server validates and returns JWT.
+2. Client registers, logs in, signs in anonymously, or completes Google OAuth via SDK → server validates and returns JWT.
 3. Client persists token as `colyseus-auth-token` and attaches it on room connect.
 4. `MyRoom.onAuth` calls `JWT.verify(token)`; success returns userdata; failure throws → join rejected.
 5. `onJoin` receives `auth` (userdata) — use it for seats / identity; do not trust client-supplied identity fields over `auth`.
@@ -111,10 +114,38 @@ Required for `@colyseus/auth` (see `.env.example`):
 | `JWT_SECRET` | Sign / verify JWTs (`JWT.verify` / `JWT.sign`) |
 | `SESSION_SECRET` | Auth package session secret |
 | `DATABASE_URL` | SQLite path (`./game.db` local; prod often under `/var/www/…`) |
+| `GOOGLE_CLIENT_ID` | Google OAuth Web client ID (`auth.oauth.addProvider`) |
+| `GOOGLE_CLIENT_SECRET` | Google OAuth Web client secret |
+
+Authorized redirect URI pattern (set in Google Cloud Console, not in code):
+
+- Dev: `http://localhost:2567/auth/provider/google/callback`
+- Prod: `https://<api-host>/auth/provider/google/callback`
 
 `@colyseus/tools` loads `.env.${NODE_ENV}` if present, else `.env`. Generate
 secrets with `openssl rand -base64 32`. Never commit production secrets;
 keep `.env.production` on the server only.
+
+## Google OAuth Provider
+
+File: `src/config/auth.ts` (side-effect import from `app.config.ts` before listen).
+
+```ts
+import { auth } from "@colyseus/auth";
+
+auth.oauth.addProvider("google", {
+  key: process.env.GOOGLE_CLIENT_ID,
+  secret: process.env.GOOGLE_CLIENT_SECRET,
+  scope: ["email", "profile"],
+});
+```
+
+- Reuse the built-in AuthService OAuth callback — do **not** set a custom
+  `onOAuthProviderCallback` for MVP.
+- Callback path is fixed by `@colyseus/auth`: `/auth/provider/google/callback`
+  on the API host (same host as Colyseus HTTP).
+- Client reaches Google via `client.auth.signInWithProvider('google')`
+  (store `loginWithGoogle`); JWT room gate is unchanged.
 
 ## Users Schema Defaults
 
@@ -169,6 +200,7 @@ onJoin(client: Client, _options: any, auth: any) {
 | Surface | Notes |
 |---------|--------|
 | `/auth/*` | Provided by `@colyseus/auth` when `database` is set — do not duplicate |
+| `/auth/provider/google/callback` | Built-in Google OAuth callback (API host); register URI in Google Console |
 | Room join | Auth via JWT in `onAuth`, not Express middleware |
 | CORS | Allow credentials + `Authorization`; keep CORS first in `express(app)` |
 
@@ -179,7 +211,7 @@ to challenge-login BFF patterns.
 
 | Client (`happy-tourist.github.io`) | Server |
 |------------------------------------|--------|
-| `client.auth.registerWithEmailAndPassword` / `signInWithEmailAndPassword` / `signInAnonymously` | `/auth/*` via `@colyseus/auth` |
+| `client.auth.registerWithEmailAndPassword` / `signInWithEmailAndPassword` / `signInAnonymously` / `signInWithProvider('google')` | `/auth/*` + Google provider via `@colyseus/auth` |
 | Token key `colyseus-auth-token` | JWT verified in `onAuth` |
 | Pinia `stores/auth`, LoginPage, router guards | **N/A on server** — do not port Vue patterns |
 | Register options e.g. `{ name }` | Persist / map via users schema / Auth hooks if customized |
@@ -192,17 +224,19 @@ Coordinate userdata shape and register options with the client skill
 1. Keep `database: db` on `defineServer` or `/auth/*` disappears.
 2. Preserve `MyRoom.onAuth` → `JWT.verify` → return userdata to `onJoin`.
 3. New `NOT NULL` user columns → `.default(...)` before deploy.
-4. Keep `AUTH_SALT` / `JWT_SECRET` / `SESSION_SECRET` in env templates and deploy notes.
+4. Keep `AUTH_SALT` / `JWT_SECRET` / `SESSION_SECRET` / `GOOGLE_CLIENT_*` in env templates and deploy notes.
 5. CORS must continue to allow credentialed cross-origin auth from
    `https://happy-tourist.github.io` in production.
 6. Update `test/MyRoom.test.ts` (and room name) when auth or room registration changes.
-7. Sync register/login/anonymous + userdata contract with the client — never only one side.
+7. Sync register/login/anonymous/Google + userdata contract with the client — never only one side.
 8. Prefer room `auth` payload for identity; do not trust client `options` over JWT userdata.
+9. Keep Google provider registration in `src/config/auth.ts`; do not custom-override OAuth callback for MVP.
 
 ## Common Mistakes
 
 | Mistake | Why it hurts |
 |---------|----------------|
+| Overriding `onOAuthProviderCallback` for MVP | Breaks built-in callback; keep `addProvider` only |
 | Adding `NOT NULL` user column without `.default` | `/auth/register` / `/auth/login` fail |
 | Removing `database` from `defineServer` | Auth HTTP routes gone |
 | Skipping or weakening `onAuth` | Unauthenticated room joins |
@@ -216,15 +250,16 @@ Coordinate userdata shape and register options with the client skill
 
 When touching auth:
 
-1. Which piece? `app.config` database wiring / `db/schema` / secrets / `MyRoom.onAuth` / `onJoin` / tests / client contract.
-2. `/auth/*` still enabled via `database: db`.
+1. Which piece? `app.config` / `config/auth` OAuth / `db/schema` / secrets / `MyRoom.onAuth` / `onJoin` / tests / client contract.
+2. `/auth/*` still enabled via `database: db`; Google still registered via `addProvider` side-effect.
 3. Custom user columns still have safe `.default(...)` where `NOT NULL`.
 4. `onAuth` still `JWT.verify(token)` and returns userdata.
 5. `onJoin` still uses `auth` for identity / seats.
-6. Env secrets documented in `.env.example`; prod secrets not committed.
+6. Env secrets documented in `.env.example` (incl. `GOOGLE_CLIENT_*` + redirect URI comment); prod secrets not committed.
 7. CORS still allows credentials + client origin in production.
 8. Tests still sign JWT and connect with `sdk.auth.token`.
 9. Contract synced with `../happy-tourist.github.io` (`client-work-with-auth`).
+10. Built-in OAuth callback left untouched (no custom `onOAuthProviderCallback` for MVP).
 
 ## Do / Don't
 
@@ -233,8 +268,8 @@ When touching auth:
 | Use `@colyseus/auth` + JWT for all auth | Invent express-session + Redis / cookie challenge login |
 | Gate rooms with `static onAuth` → `JWT.verify` | Trust client-only auth or skip room gate |
 | Give custom `NOT NULL` columns `.default(...)` | Add required columns that break register/login |
-| Keep secrets in env (`AUTH_SALT`, `JWT_SECRET`, `SESSION_SECRET`) | Hardcode or commit production secrets |
+| Keep secrets in env (`AUTH_SALT`, `JWT_SECRET`, `SESSION_SECRET`, `GOOGLE_CLIENT_*`) | Hardcode or commit production secrets |
 | Pass verified userdata from `onAuth` into `onJoin` | Prefer join `options` over `auth` for identity |
 | Coordinate with client `client.auth` / `colyseus-auth-token` | Import or mimic Vue / Pinia auth on the server |
-| Support anonymous + email/password as Colyseus Auth does | Add captcha / SMS / SmartCaptcha unless product asks |
+| Support anonymous + email/password + Google via `addProvider` | Custom `onOAuthProviderCallback` or captcha / SMS unless product asks |
 | Cover JWT connect in mocha + `@colyseus/testing` | Leave room auth untested after gate changes |

@@ -179,6 +179,7 @@ rules:
     - 'Изучение перед работой (skills, proposal/design/spec фрагменты, аналоги): пунктом в том же ##-блоке, где нужно; НЕ выносить всё чтение в первый «Контекст»-блок'
     - 'В каждом блоке — только релевантное к шагам блока чтение; общие артефакты change можно кратко упомянуть в первом рабочем блоке'
     - 'Отдельные пункты на тесты где применимо (server: npm test; client: lint/typecheck по tasks)'
+    - 'НЕ добавлять пункты ручной проверки / manual smoke / «ручной сценарий» — coverage SC в specs Traceability + автотесты/lint; ручной прогон вне tasks (verify/ops)'
     - 'Client skills при apply: из .agents/skills/client/ (locate/align/verify + topic skills)'
     - 'Server skills при apply: из .agents/skills/server/ (locate/align/verify + topic skills)'
     - 'Cross-package: сначала server contract (room/schema/messages/auth), затем client stores/UI — или явно согласовать порядок'

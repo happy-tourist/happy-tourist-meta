@@ -2,9 +2,9 @@
 name: client-work-with-auth
 description: >-
   Use when adding, changing, reviewing, or debugging client authentication:
-  LoginPage register/login/anonymous guest, Pinia auth store, client.auth from
-  @colyseus/sdk, colyseus-auth-token, whenReady, router requiresAuth / guest
-  guards, or logout in this Quasar Vue 3 checkers SPA.
+  LoginPage register/login/anonymous guest/Google one-click, Pinia auth store,
+  client.auth from @colyseus/sdk, colyseus-auth-token, whenReady, router
+  requiresAuth / guest guards, or logout in this Quasar Vue 3 checkers SPA.
 ---
 
 # Work With Auth
@@ -20,8 +20,8 @@ Auth is **token-based Colyseus Auth** via `client.auth` from `@colyseus/sdk`. Th
 | Layer | Path | Role |
 |-------|------|------|
 | Boot | `src/boot/colyseus.ts` | `Client` singleton (`VITE_COLYSEUS_URL`); `$colyseus` on app |
-| Store | `src/stores/auth.ts` | Pinia setup store: register / login / loginAnonymously / logout / whenReady |
-| Page | `src/pages/LoginPage.vue` | Email/password register↔login + anonymous guest |
+| Store | `src/stores/auth.ts` | Pinia setup store: register / login / loginAnonymously / loginWithGoogle / logout / whenReady |
+| Page | `src/pages/LoginPage.vue` | Email/password register↔login + anonymous guest + one Google button |
 | Router | `src/router/index.ts` | `beforeEach` awaits `whenReady()`; `requiresAuth` / `guest` |
 | Routes | `src/router/routes.ts` | `/login` `guest`; `/lobby`, `/game/:roomId` `requiresAuth` |
 | Token | SDK storage key `colyseus-auth-token` | Persisted by `@colyseus/sdk` Auth; synced via `onChange` |
@@ -48,7 +48,8 @@ App boot → Client(VITE_COLYSEUS_URL)
         │
         ├─ register → client.auth.registerWithEmailAndPassword
         ├─ login    → client.auth.signInWithEmailAndPassword
-        └─ guest    → client.auth.signInAnonymously
+        ├─ guest    → client.auth.signInAnonymously
+        └─ Google   → client.auth.signInWithProvider('google')  (store: loginWithGoogle)
                 │
                 ▼
           onChange updates token/user → isAuthenticated
@@ -68,7 +69,7 @@ App boot → Client(VITE_COLYSEUS_URL)
 2. Auth store subscribes to `client.auth.onChange`. SDK restores token from `colyseus-auth-token` and fetches userdata → first `onChange` sets `ready`.
 3. Any navigation awaits `whenReady()` before applying guards.
 4. Unauthenticated user hitting `/lobby` or `/game/...` is sent to `/login`.
-5. On LoginPage: register, email/password login, or anonymous guest via store actions.
+5. On LoginPage: register, email/password login, anonymous guest, or Google one-click via store actions.
 6. Success → `onChange` fills `token`/`user` → page `replace`s to `?redirect` or `/lobby`.
 7. Authenticated user opening `/login` (`meta.guest`) is redirected to `/lobby`.
 
@@ -92,6 +93,7 @@ Actions (all set `loading`/`error`; rethrow after storing message):
 | `register(email, password, options?)` | `client.auth.registerWithEmailAndPassword` |
 | `login(email, password)` | `client.auth.signInWithEmailAndPassword` |
 | `loginAnonymously(options?)` | `client.auth.signInAnonymously` |
+| `loginWithGoogle()` | `client.auth.signInWithProvider('google')` |
 | `logout()` | `client.auth.signOut()` |
 | `whenReady()` | Resolves when `ready` (or immediately if already ready) |
 
@@ -116,6 +118,7 @@ File: `src/pages/LoginPage.vue`.
 - Errors: `q-banner` bound to `auth.error`; clear on mode toggle.
 - Submit → `auth.register` or `auth.login` → `goAfterLogin()`.
 - Guest → `auth.loginAnonymously(options?)` → same redirect.
+- Google → one button (`$t('login.google')`) → `auth.loginWithGoogle()` → same redirect; cancel/failure → store `error` + existing `q-banner`. Email/password and guest stay (do not remove).
 - Redirect: `route.query.redirect` if string, else `/lobby`.
 
 Catch blocks intentionally empty — store already holds `error`.
@@ -167,6 +170,7 @@ Env: `VITE_COLYSEUS_URL` (also `VITE_API_URL` for HTTP). Local defaults → `loc
 | `registerWithEmailAndPassword(email, password, options?)` | Register; `options` (e.g. `{ name }`) forwarded to server `onRegisterWithEmailAndPassword` |
 | `signInWithEmailAndPassword(email, password)` | Email/password sign-in |
 | `signInAnonymously(options?)` | Guest session |
+| `signInWithProvider('google')` | Google OAuth one-click (store: `loginWithGoogle`) |
 | `signOut()` | Clear session / token |
 | `token` / `onChange` | Current token + userdata sync |
 
@@ -193,6 +197,6 @@ When touching auth:
 3. Preserve `onChange` → `token`/`user`/`ready` and `whenReady()` for the router.
 4. Preserve `isAuthenticated === Boolean(token && user)`.
 5. Keep `requiresAuth` → `/login` and `guest` → `/lobby` behavior.
-6. Update LoginPage + store together; keep anonymous guest path.
+6. Update LoginPage + store together; keep anonymous guest and Google one-click paths.
 7. If register/userdata options change, coordinate with `happy-tourist-server`.
 8. Prefer store `error` + existing `q-banner` over a new toast layer.
