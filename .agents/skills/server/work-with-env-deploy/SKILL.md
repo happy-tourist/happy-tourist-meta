@@ -2,9 +2,9 @@
 name: work-with-env-deploy
 description: >-
   Use when changing server env vars, PM2, VPS deploy, GitHub Actions rsync, or
-  DATABASE_URL for happy-tourist-server — AUTH_SALT / JWT_SECRET / SESSION_SECRET,
-  .env.development / .env.production, ecosystem.config.cjs, or
-  .github/workflows/deploy.yml.
+  DATABASE_URL for happy-tourist-server — AUTH_SALT / JWT_SECRET / SESSION_SECRET /
+  GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET, .env.development / .env.production,
+  ecosystem.config.cjs, or .github/workflows/deploy.yml.
 ---
 
 # Work With Env And Deploy
@@ -22,7 +22,7 @@ Deploy target: VPS under `/var/www/happy-tourist-server`, Node 22, PM2. Trigger:
 | Keep production secrets only on the server (`.env.production`) | Commit prod secrets or `.env.production` with real values |
 | Keep rsync excludes for `.env*` and `game.db*` | Let CI overwrite server DB or prod env |
 | Document new env keys in `.env.example` | Invent CI-injected app secrets (unlike the client; app secrets stay on VPS) |
-| Use GH secrets `SSH_*` only for deploy SSH | Put `AUTH_SALT` / `JWT_SECRET` / `SESSION_SECRET` in GitHub Actions vars |
+| Use GH secrets `SSH_*` only for deploy SSH | Put `AUTH_SALT` / `JWT_SECRET` / `SESSION_SECRET` / `GOOGLE_CLIENT_*` in GitHub Actions vars |
 | Run local `npm test` / `build` / `dev` from server package root | Skip verification or assume pass without running |
 
 ## Env vars
@@ -34,11 +34,15 @@ Deploy target: VPS under `/var/www/happy-tourist-server`, Node 22, PM2. Trigger:
 | `AUTH_SALT` | `@colyseus/auth` password salt | `.env.development` | `/var/www/.../.env.production` |
 | `JWT_SECRET` | JWT sign/verify (rooms `onAuth`) | same | same |
 | `SESSION_SECRET` | Auth session | same | same |
+| `GOOGLE_CLIENT_ID` | Google OAuth Web client ID | same | same |
+| `GOOGLE_CLIENT_SECRET` | Google OAuth Web client secret | same | same |
 | `DATABASE_URL` | SQLite path for GameDatabase | `./game.db` | often `/var/www/happy-tourist-server/game.db` |
 | `NODE_ENV` | `development` / `production` (CORS, monitor/playground) | `development` | `production` (also set in PM2 `env`) |
 | `PORT` | Listen port | `2567` | `2567` (PM2 `env` + file) |
 
 Generate secrets: `openssl rand -base64 32`. Template: `.env.example`.
+
+Google OAuth also needs Authorized redirect URI in Google Cloud Console (`http://localhost:2567/auth/provider/google/callback` locally; `https://<api-host>/auth/provider/google/callback` in prod) — documented in `.env.example`, not injected by CI.
 
 When adding a new env key:
 
@@ -129,7 +133,7 @@ pm2 logs happy-tourist-server --lines 50
 
 ## Anti-patterns
 
-- Committing `.env.production` with real `AUTH_SALT` / `JWT_SECRET` / `SESSION_SECRET`.
+- Committing `.env.production` with real `AUTH_SALT` / `JWT_SECRET` / `SESSION_SECRET` / `GOOGLE_CLIENT_*`.
 - Removing `.env*` or `game.db*` from rsync excludes (wipes prod secrets/DB on deploy).
 - Putting app secrets in GitHub Actions `vars`/`secrets` and expecting the Node process to see them without a server-side `.env.production`.
 - Raising PM2/Node memory past ~350–500M on a 1 GB VPS without a plan.

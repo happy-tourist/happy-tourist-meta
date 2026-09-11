@@ -3,7 +3,8 @@ name: work-with-forms
 description: >-
   Use when creating, changing, reviewing, or debugging Vue 3 forms in the
   happy-tourist client — Quasar q-form + q-input :rules, LoginPage register /
-  login toggle, anonymous guest button, auth store submit, or q-banner errors.
+  login toggle, anonymous guest / Google one-click buttons, auth store submit,
+  or q-banner errors.
 ---
 
 # Work With Forms
@@ -16,7 +17,7 @@ This package validates with Quasar `q-form` + `q-input` `:rules` and `<script se
 
 | Form / surface | Path | Role |
 | --- | --- | --- |
-| Login | `src/pages/LoginPage.vue` | Email/password register or login → `auth`; guest via separate button |
+| Login | `src/pages/LoginPage.vue` | Email/password register or login → `auth`; guest + Google via separate buttons |
 
 Shared pieces:
 
@@ -102,6 +103,7 @@ Prefer keeping rules next to the input (inline arrays) until a shared helper app
 - Register: optional `displayName` → `auth.register(email, password, displayName ? { name } : {})`.
 - Login: `auth.login(email, password)`.
 - Anonymous: **outside** the form (`q-card-actions`) → `auth.loginAnonymously(options)`; still uses `:loading="auth.loading"`. Does not go through `q-form` submit / email-password rules.
+- Google one-click: **outside** the form (same `q-card-actions`) → `auth.loginWithGoogle()`; label via `$t('login.google')`; same loading/error/redirect pattern as guest.
 - API failures: store sets `auth.error`; page shows `q-banner`. Handlers `catch` empty after store throw.
 - Success: `router.replace(route.query.redirect || '/lobby')`.
 - Password visibility toggle via `#append` `q-icon` — UI only.
@@ -111,12 +113,12 @@ Prefer keeping rules next to the input (inline arrays) until a shared helper app
 | Pattern | Usage |
 | --- | --- |
 | `@submit.prevent` on `q-form` | Email/password register & login |
-| Separate `@click` outside form | Guest / anonymous |
+| Separate `@click` outside form | Guest / anonymous / Google one-click |
 | `auth.error` + `q-banner` | Colyseus / network failures |
 | `auth.loading` on buttons | Disable double-submit UX |
 | `try/catch` in page | Swallow after store already set `error` |
 
-Keep I/O in `stores/auth` (`register` / `login` / `loginAnonymously`). Pages call store actions; do not call `client.auth.*` from the form.
+Keep I/O in `stores/auth` (`register` / `login` / `loginAnonymously` / `loginWithGoogle`). Pages call store actions; do not call `client.auth.*` from the form.
 
 ## New Form Checklist
 
@@ -126,14 +128,14 @@ Keep I/O in `stores/auth` (`register` / `login` / `loginAnonymously`). Pages cal
 4. Show `auth.error` (or the relevant store error) with `q-banner`.
 5. Bind `:loading` on submit (and any parallel action buttons).
 6. Auth → call Pinia `auth` actions; navigate only after success.
-7. Actions that skip field validation (e.g. guest) stay outside `q-form` submit.
+7. Actions that skip field validation (e.g. guest, Google) stay outside `q-form` submit.
 
 ## Do
 
 - Match existing Quasar look: `outlined` + `dense` on login inputs.
 - Clear store error when switching register ↔ login.
 - Pass optional `{ name }` only when display name is non-empty.
-- Keep anonymous login as a flat button outside the form.
+- Keep anonymous login and Google one-click as buttons outside the form.
 
 ## Don't
 

@@ -82,6 +82,7 @@ server: C:/Users/You/work/happy-tourist-server
 | `server` | `../happy-tourist-server/` | Colyseus backend |
 | `server.agents` | `../happy-tourist-server/AGENTS.md` | продукт / стек / домены server |
 | `server.src` | `../happy-tourist-server/src/` | исходники сервера |
+| `server.config` | `../happy-tourist-server/src/config/` | OAuth providers (`auth.ts` / `addProvider`) |
 | `server.rooms` | `../happy-tourist-server/src/rooms/` | Room handlers |
 | `server.schema` | `../happy-tourist-server/src/rooms/schema/` | `@colyseus/schema` state |
 | `server.db` | `../happy-tourist-server/src/db/` | GameDatabase / users schema |

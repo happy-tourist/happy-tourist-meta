@@ -108,7 +108,7 @@ Decide in this order:
 
 **Put in stores**
 
-- Colyseus auth: register / login / anonymous / logout / `whenReady`.
+- Colyseus auth: register / login / anonymous / Google / logout / `whenReady`.
 - Room lifecycle: `subscribeLobby`, `unsubscribeLobby`, `createGame`, `joinGame`, `leaveGame`, `sendMove`.
 - Mirrored room state: `board`, `myColor`, `currentTurn`, `status`, `rooms`, errors.
 
@@ -178,7 +178,7 @@ Registered in `quasar.config.ts` boot array: `i18n`, `colyseus`.
 
 ## Real Composition Examples
 
-**Auth page** — `LoginPage` uses `useAuthStore()` for register / login / anonymous; shows `error` banner; no Colyseus calls outside the store.
+**Auth page** — `LoginPage` uses `useAuthStore()` for register / login / anonymous / Google; shows `error` banner; no Colyseus calls outside the store.
 
 **Lobby** — `LobbyPage` uses `useGameStore().subscribeLobby` / `createGame` / `joinGame` and `useAuthStore` for display/logout.
 

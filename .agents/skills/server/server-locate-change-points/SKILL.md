@@ -27,7 +27,8 @@ Search and assign ownership top-down along the call path.
 | Layer | Path | Role |
 |-------|------|------|
 | Entry | `src/index.ts` | `listen(app)` from `@colyseus/tools` |
-| Server def | `src/app.config.ts` | `defineServer`: database, rooms, routes, express (CORS, `/health`, `/hi`, monitor/playground) |
+| Server def | `src/app.config.ts` | `defineServer`: database, rooms, routes, express (CORS, `/health`, `/hi`, monitor/playground); side-effect import `./config/auth.js` |
+| OAuth config | `src/config/auth.ts` | `auth.oauth.addProvider('google', …)`; leave built-in `onOAuthProviderCallback` alone |
 | DB | `src/db/index.ts`, `src/db/schema.ts` | `GameDatabase`, `users` extension |
 | Rooms | `src/rooms/MyRoom.ts` | `onAuth` / `onCreate` / `onJoin` / `onLeave` / `onDispose` |
 | Schema | `src/rooms/schema/MyRoomState.ts` | `@colyseus/schema` sync state |
@@ -37,7 +38,7 @@ Search and assign ownership top-down along the call path.
 
 Allowed dependency direction:
 
-`app.config` (rooms / routes / express) → room handler → schema state; auth userdata from JWT → `onJoin`; DB schema only for persisted profile fields used by `@colyseus/auth` / GameDatabase.
+`app.config` (rooms / routes / express / config/auth) → room handler → schema state; auth userdata from JWT → `onJoin`; DB schema only for persisted profile fields used by `@colyseus/auth` / GameDatabase.
 
 Prefer not editing `src/index.ts` unless self-hosting / listen details require it — configure rooms and HTTP in `src/app.config.ts`.
 
@@ -61,7 +62,7 @@ The sibling client already assumes a checkers contract; server is still scaffold
 | GET | `/health` | `{ status, uptime }` — deploy/monitor |
 | GET | `/hi` | Plain text smoke check |
 | GET | `/api/hello` | Demo JSON via `createEndpoint` |
-| * | `/auth/*` | Provided by `@colyseus/auth` when `database` is set |
+| * | `/auth/*` | Provided by `@colyseus/auth` when `database` is set (incl. `/auth/provider/google/callback`) |
 | GET | `/rooms/:roomName` | Colyseus available-rooms listing (HTTP fallback; live UI uses LobbyRoom) |
 | GET | `/monitor` | Dev only (`monitor()`) |
 | * | `/` playground | Dev only (`playground()`) |
@@ -90,10 +91,10 @@ Use these rules to pick the layer before naming files.
 | If the change is… | Prefer |
 |-------------------|--------|
 | Room join gate / JWT verify | `MyRoom.onAuth` (`JWT.verify`) — userdata flows to `onJoin` |
-| Register / login / anonymous HTTP | Built-in `@colyseus/auth` (`/auth/*`) via `database: db` in `app.config.ts` — avoid reinventing unless extending |
+| Register / login / anonymous / Google OAuth HTTP | Built-in `@colyseus/auth` (`/auth/*`) via `database: db` in `app.config.ts`; Google via `src/config/auth.ts` `addProvider` — avoid reinventing unless extending |
 | Persisted profile fields (`displayName`, `rating`, `gamesPlayed`, `gamesWon`, …) | `src/db/schema.ts` users extension — custom columns need `.default(...)` so `/auth/register` / `/auth/login` do not fail on NOT NULL |
 | GameDatabase wiring / schemas map | `src/db/index.ts` |
-| Secrets for auth (salt, JWT, session) | `.env.example` / `.env.development` / `.env.production` (`AUTH_SALT`, `JWT_SECRET`, `SESSION_SECRET`) |
+| Secrets for auth (salt, JWT, session, Google client) | `.env.example` / `.env.development` / `.env.production` (`AUTH_SALT`, `JWT_SECRET`, `SESSION_SECRET`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`) |
 
 ### Deploy / env
 
@@ -118,6 +119,7 @@ Use these rules to pick the layer before naming files.
 |--------|------------|
 | Room registration / lobby name | `src/app.config.ts` `rooms` (`lobby` + `checkers` + `.enableRealtimeListing()`) |
 | Auth to rooms | `MyRoom.onAuth` + `@colyseus/auth` JWT; secrets in `.env.*` |
+| Google OAuth provider | `src/config/auth.ts` + side-effect import from `app.config.ts`; `GOOGLE_CLIENT_*` in `.env.*` |
 | User profile columns | `src/db/schema.ts` + `src/db/index.ts` |
 | Game state sync | `src/rooms/schema/MyRoomState.ts` |
 | Moves / match flow | `src/rooms/MyRoom.ts` messages + lifecycle; align with client `move` / board cells `0`–`4` |
@@ -163,6 +165,7 @@ Use these rules to pick the layer before naming files.
 | Room lifecycle / messages | `src/rooms/MyRoom.ts` — hooks and `onMessage` |
 | Sync state fields | `src/rooms/schema/MyRoomState.ts` |
 | Auth gate | `onAuth` + `JWT.verify`; auth HTTP is framework-provided under `/auth/*` |
+| OAuth providers (Google) | `src/config/auth.ts` (`addProvider`); import from `app.config.ts` |
 | User columns / defaults | `src/db/schema.ts` |
 | Express / CORS / health | `express(app)` in `src/app.config.ts` |
 | Custom HTTP demo routes | `routes` / `createEndpoint` in `src/app.config.ts` |

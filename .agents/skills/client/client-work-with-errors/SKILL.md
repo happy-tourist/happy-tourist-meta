@@ -55,7 +55,7 @@ try {
 }
 ```
 
-Applies to: `register`, `login`, `loginAnonymously`, `logout`.
+Applies to: `register`, `login`, `loginAnonymously`, `loginWithGoogle`, `logout`.
 
 - Re-throw after setting `error` so the page can skip success navigation.
 - `whenReady()` / `client.auth.onChange` are not error channels — they only sync
@@ -182,7 +182,7 @@ Use Quasar `bg-negative text-white`; keep dense. Do not add Notify plugins,
 
 | Situation | Pattern |
 |-----------|---------|
-| Auth register / login / anonymous / logout | Store sets `error`, re-throws; page `catch { /* error already in store */ }` and skips redirect |
+| Auth register / login / anonymous / Google / logout | Store sets `error`, re-throws; page `catch { /* error already in store */ }` and skips redirect |
 | Lobby create / join / play | Store sets `error`, re-throws; page `catch` + local `creating`/`joining` in `finally` |
 | Lobby room list subscribe | Store catch sets `error`, empties `rooms`, **no** re-throw |
 | GamePage mount rejoin | `joinGame(roomId)` fail → `router.replace({ name: 'lobby' })` (error may still be in store for lobby banner) |

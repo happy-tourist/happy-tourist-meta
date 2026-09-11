@@ -45,7 +45,7 @@ turn / status / players, message `move` `{ from, to }`).
 4. Respect **allowed dependency direction** (see below). Never invert layers.
 5. **Room** owns authoritative game logic and message handlers. **Schema** owns sync fields only.
 6. Keep HTTP thin: `express` hook and/or `createEndpoint` — no fat REST BFF, no invented session/Redis auth.
-7. Auth is `@colyseus/auth` (register/login/anonymous + JWT) and Room `onAuth` → `JWT.verify`. Do not invent express-session + Redis.
+7. Auth is `@colyseus/auth` (register/login/anonymous/Google + JWT) and Room `onAuth` → `JWT.verify`. Register OAuth providers in `src/config/auth.ts`. Do not invent express-session + Redis.
 8. Prefer aligning **room name**, **state schema**, and **messages** with the client rather than changing the client unilaterally.
 
 ## Folder Map
@@ -53,7 +53,8 @@ turn / status / players, message `move` `{ from, to }`).
 | Layer | Path | Role |
 |-------|------|------|
 | Entry | `src/index.ts` | `listen(app)` only |
-| Server wiring | `src/app.config.ts` | `defineServer`: `database`, `rooms`, `routes`, `express` |
+| Server wiring | `src/app.config.ts` | `defineServer`: `database`, `rooms`, `routes`, `express`; side-effect import of OAuth config |
+| OAuth config | `src/config/` | `auth.ts` — `auth.oauth.addProvider('google', …)`; no custom `onOAuthProviderCallback` in MVP |
 | Database | `src/db/` | `GameDatabase` (`index.ts`) + Drizzle user schema (`schema.ts`) |
 | Rooms | `src/rooms/` | Room handlers (`onCreate` / `onJoin` / messages / leave / dispose) |
 | Schema | `src/rooms/schema/` | `@colyseus/schema` synced state definitions |
@@ -68,7 +69,8 @@ Env templates: `.env.example`, `.env.development`, `.env.production` (do not com
 | Layer | Owns | Does not own |
 |-------|------|--------------|
 | **`index.ts`** | Process listen | Room logic, HTTP handlers, schema |
-| **`app.config.ts`** | Wire `database`, register rooms, thin `routes` / `express` (CORS first, health, dev monitor/playground) | Game rules, board mutation |
+| **`app.config.ts`** | Wire `database`, register rooms, thin `routes` / `express` (CORS first, health, dev monitor/playground); import `./config/auth.js` | Game rules, board mutation |
+| **`config/`** | OAuth provider registration (`addProvider`) | Room gate, user schema, custom OAuth callback (leave built-in) |
 | **`db/`** | SQLite GameDatabase; extend `colyseus_users` with defaults | Room messages; inventing a second auth store |
 | **`rooms/`** | Auth gate (`onAuth`), seats, turn, validate `move`, mutate state, disconnect / endgame | Raw HTTP; client-trusted board |
 | **`rooms/schema/`** | Sync fields (`board`, `currentTurn`, `status`, `players`, …) | Validation / rules / side effects |
@@ -80,15 +82,17 @@ Typical path:
 
 ```text
 index.ts → app.config.ts
-app.config.ts → db / rooms (defineRoom) / thin HTTP
+app.config.ts → db / rooms (defineRoom) / config/auth / thin HTTP
 rooms → rooms/schema (+ JWT from @colyseus/auth)
+config → @colyseus/auth (oauth.addProvider only)
 db → @colyseus/database / drizzle schema only
 ```
 
 Allowed:
 
 ```text
-app.config   →  db, rooms, colyseus tools (monitor, playground, createEndpoint)
+app.config   →  db, rooms, config/auth, colyseus tools (monitor, playground, createEndpoint)
+config       →  @colyseus/auth (addProvider; no rooms / no express)
 rooms        →  rooms/schema, @colyseus/auth (JWT), colyseus Room/Client APIs
 rooms/schema →  @colyseus/schema only
 db           →  @colyseus/database, drizzle (no rooms / no express)
@@ -117,10 +121,11 @@ Decide in this order:
 4. **User profile columns?** → `src/db/schema.ts` with `.default(...)` so `/auth/register` / `/auth/login` stay compatible; wire via `src/db/index.ts` if needed.
 5. **Thin HTTP (health, demo API)?** → `express` hook or `createEndpoint` in `app.config.ts`. CORS stays first.
 6. **Auth HTTP?** → Already from `@colyseus/auth` when `database` is set — do not reimplement `/auth/*`.
-7. **Room gate?** → static `onAuth` with `JWT.verify` on the Room class.
-8. **Test?** → `test/<Name>.test.ts` (boot `appConfig`, JWT, create/connect room).
-9. **Load script?** → `loadtest/` (update room name when registered name changes).
-10. **PM2 / CI?** → `ecosystem.config.cjs` / `.github/workflows/` only for deploy process — not game logic.
+7. **OAuth provider (Google)?** → `src/config/auth.ts` via `auth.oauth.addProvider`; side-effect import from `app.config.ts`; do not override built-in `onOAuthProviderCallback` unless product asks.
+8. **Room gate?** → static `onAuth` with `JWT.verify` on the Room class.
+9. **Test?** → `test/<Name>.test.ts` (boot `appConfig`, JWT, create/connect room).
+10. **Load script?** → `loadtest/` (update room name when registered name changes).
+11. **PM2 / CI?** → `ecosystem.config.cjs` / `.github/workflows/` only for deploy process — not game logic.
 
 ### Rooms vs schema vs HTTP — what belongs where
 
@@ -142,10 +147,11 @@ Decide in this order:
 - Extend `users` (`displayName`, `rating`, `gamesPlayed`, `gamesWon`, …) with NOT NULL-safe defaults.
 - `GameDatabase` connection string from `DATABASE_URL`.
 
-**Put in app.config / index**
+**Put in app.config / index / config**
 
 - `index.ts`: `listen` only.
-- `app.config.ts`: register rooms, attach `database`, thin routes, CORS + `/health` + dev monitor/playground.
+- `app.config.ts`: register rooms, attach `database`, thin routes, CORS + `/health` + dev monitor/playground; side-effect import `./config/auth.js`.
+- `src/config/auth.ts`: OAuth `addProvider('google', …)` only — leave built-in OAuth callback alone.
 
 ### What NOT to put
 

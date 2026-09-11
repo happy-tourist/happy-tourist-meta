@@ -3,9 +3,10 @@ name: work-with-config
 description: >-
   Use when adding, changing, reviewing, or debugging Colyseus server config:
   env loading (.env.${NODE_ENV}), secrets (AUTH_SALT / JWT_SECRET /
-  SESSION_SECRET), DATABASE_URL / PORT / NODE_ENV, src/app.config.ts
-  defineServer wiring, CORS (ALLOWED_ORIGIN, credentials), /health /hi, or
-  non-prod monitor / playground. Not for APP_NAME brand merge (not a BFF).
+  SESSION_SECRET / GOOGLE_CLIENT_*), DATABASE_URL / PORT / NODE_ENV,
+  src/app.config.ts defineServer wiring, src/config/auth.ts OAuth providers,
+  CORS (ALLOWED_ORIGIN, credentials), /health /hi, or non-prod monitor /
+  playground. Not for APP_NAME brand merge (not a BFF).
 ---
 
 # Work With Config
@@ -74,6 +75,8 @@ From `.env.example`:
 | `AUTH_SALT` | Required secret for `@colyseus/auth` |
 | `JWT_SECRET` | Required secret for JWT (room `onAuth` / auth routes) |
 | `SESSION_SECRET` | Required secret for `@colyseus/auth` sessions |
+| `GOOGLE_CLIENT_ID` | Google OAuth Web client ID (`auth.oauth.addProvider` in `src/config/auth.ts`) |
+| `GOOGLE_CLIENT_SECRET` | Google OAuth Web client secret |
 | `DATABASE_URL` | SQLite path (local `./game.db`; prod often under `/var/www/happy-tourist-server/game.db`) |
 | `NODE_ENV` | `development` / `production` — picks env file, CORS origin, monitor/playground |
 | `PORT` | Listen port (default `2567` via `@colyseus/tools` `listen`) |
@@ -85,7 +88,7 @@ Generate secrets locally with e.g. `openssl rand -base64 32`. Keep the same
 
 | Belongs in **env** | Belongs in **`app.config.ts`** |
 | --- | --- |
-| Secrets (`AUTH_SALT`, `JWT_SECRET`, `SESSION_SECRET`) | `defineServer` shape: `database`, `rooms`, `routes`, `express` |
+| Secrets (`AUTH_SALT`, `JWT_SECRET`, `SESSION_SECRET`, `GOOGLE_CLIENT_*`) | `defineServer` shape: `database`, `rooms`, `routes`, `express`; side-effect import `./config/auth.js` |
 | Contour (`NODE_ENV`, `PORT`, `DATABASE_URL`) | CORS middleware order and headers |
 | Anything that must change without a code change | `/health`, `/hi`, non-prod `monitor()` / `playground()` |
 | | Room name → room class mapping; `createEndpoint` paths |

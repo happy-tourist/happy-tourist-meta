@@ -86,7 +86,7 @@ Local defaults: `.env.development` → `localhost:2567`. Production: `.env.produ
 
 | Area | Store | SDK surface |
 |------|-------|-------------|
-| Auth | `stores/auth.ts` (setup store) | `client.auth.registerWithEmailAndPassword`, `signInWithEmailAndPassword`, `signInAnonymously`, `signOut`, `onChange` |
+| Auth | `stores/auth.ts` (setup store) | `client.auth.registerWithEmailAndPassword`, `signInWithEmailAndPassword`, `signInAnonymously`, `signInWithProvider('google')`, `signOut`, `onChange` |
 | Lobby list | `stores/game.ts` → `subscribeLobby` / `unsubscribeLobby` | `joinOrCreate('lobby', { filter })` + messages `rooms` / `+` / `-` |
 | HTTP fallback | `stores/game.ts` → `refreshRooms` | `client.http.get('/rooms/checkers')` (unused by LobbyPage) |
 | Room lifecycle | `stores/game.ts` → `createGame` / `joinGame` / `leaveGame` | `client.create` / `joinById` / `joinOrCreate`, `room.leave` |
@@ -99,14 +99,14 @@ Allowed dependency direction: `pages` → `stores` / `boot` / `components`. Keep
 
 | Store | Actions / API |
 |-------|----------------|
-| `auth` | `register`, `login`, `loginAnonymously`, `logout`, `whenReady` |
+| `auth` | `register`, `login`, `loginAnonymously`, `loginWithGoogle`, `logout`, `whenReady` |
 | `game` | `subscribeLobby`, `unsubscribeLobby`, `createGame`, `joinGame`, `leaveGame`, `sendMove` (`refreshRooms` HTTP unused) |
 
 Pages already wired:
 
 | Page | Calls |
 |------|-------|
-| `LoginPage` | `auth.register` / `login` / `loginAnonymously` |
+| `LoginPage` | `auth.register` / `login` / `loginAnonymously` / `loginWithGoogle` |
 | `LobbyPage` | `subscribeLobby` / `unsubscribeLobby`, `createGame`, `joinGame`, `leaveGame`; `auth.logout` |
 | `GamePage` | `game.joinGame(roomId)` on remount, `sendMove`, `leaveGame` |
 | Router | `auth.whenReady()` before `requiresAuth` / `guest` guards |
@@ -129,6 +129,7 @@ client.auth.onChange((data) => {
 | `registerWithEmailAndPassword(email, password, options?)` | `register` — `options` e.g. `{ name }` passed to server `onRegisterWithEmailAndPassword` |
 | `signInWithEmailAndPassword(email, password)` | `login` |
 | `signInAnonymously(options?)` | `loginAnonymously` |
+| `signInWithProvider('google')` | `loginWithGoogle` |
 | `signOut()` | `logout` |
 
 `whenReady()` resolves after the first `onChange` (session restore). Router `beforeEach` must `await auth.whenReady()` before deciding login vs lobby.

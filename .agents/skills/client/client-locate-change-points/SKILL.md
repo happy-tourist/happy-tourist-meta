@@ -72,7 +72,7 @@ Shared mutable session and realtime I/O belong in Pinia, not ad-hoc page-only `c
 
 | Concern | Store surface (typical) |
 |---------|-------------------------|
-| Auth session | `stores/auth.ts`: `register` / `login` / `loginAnonymously` / `logout` / `whenReady`; `isAuthenticated`, `displayName`; sync via `client.auth.onChange` |
+| Auth session | `stores/auth.ts`: `register` / `login` / `loginAnonymously` / `loginWithGoogle` / `logout` / `whenReady`; `isAuthenticated`, `displayName`; sync via `client.auth.onChange` |
 | Lobby room list | `stores/game.ts` `subscribeLobby` / `unsubscribeLobby` → LobbyRoom `rooms` / `+` / `-` |
 | Enter / leave room | `createGame` / `joinGame` / `leaveGame` (`CHECKERS_ROOM` / `LOBBY_ROOM`) |
 | Board sync / moves | `_attachRoom` `onStateChange`; `sendMove` → `room.send('move', { from, to })`; getters `isInRoom`, `canMove` |
@@ -94,7 +94,7 @@ Do not invent room schemas, HTTP routes, or move payloads — note the server pa
 
 ### Forms, i18n, deploy
 
-- Login / register / guest → `pages/LoginPage.vue` + `stores/auth.ts`.
+- Login / register / guest / Google → `pages/LoginPage.vue` + `stores/auth.ts`.
 - Lobby create / join / list → `pages/LobbyPage.vue` + `stores/game.ts`.
 - Board interaction / rejoin-by-`roomId` → `pages/GamePage.vue` + `stores/game.ts`.
 - Locale messages → `src/i18n/` (default `en-US`).
@@ -104,7 +104,7 @@ Do not invent room schemas, HTTP routes, or move payloads — note the server pa
 
 | Domain | Start here |
 |--------|------------|
-| Auth (email/password, anonymous, logout) | `pages/LoginPage.vue` + `stores/auth.ts`; router guards in `router/index.ts` |
+| Auth (email/password, anonymous, Google, logout) | `pages/LoginPage.vue` + `stores/auth.ts`; router guards in `router/index.ts` |
 | Lobby (list / create / join) | `pages/LobbyPage.vue` + `stores/game` `subscribeLobby` / `createGame` / `joinGame` |
 | Game board (render, move, rejoin) | `pages/GamePage.vue` + `stores/game` `sendMove` / `onStateChange` / `joinGame(roomId)` |
 | Env / deploy | `.env.*`, `env.d.ts`, `boot/colyseus.ts`, `.github/workflows/deploy.yml` |

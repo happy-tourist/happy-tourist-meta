@@ -65,6 +65,9 @@ app.use(i18n);
 export default {
   failed: 'Action failed',
   success: 'Action was successful',
+  login: {
+    google: 'Продолжить с Google', // LoginPage; catalog lives under en-US even when copy is RU
+  },
   // lobby: { title: 'Lobby' },
 };
 ```
