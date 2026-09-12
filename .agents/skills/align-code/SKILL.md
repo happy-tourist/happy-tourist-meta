@@ -45,22 +45,24 @@ description: >-
 
 ## Вход
 
+**Основной источник требований — активный OpenSpec change** в meta (`proposal` / `specs` / `design` / `tasks`). Paste и формулировки из диалога — только уточнения поверх change, не замена.
+
 Принимать (и пробрасывать в оба align):
 
-- Jira / Confluence URL, issue key, вставленный текст требований
-- опциональное имя OpenSpec change (артефакты в meta)
+- имя OpenSpec change (если пользователь назвал)
+- опционально: вставленный текст / уточнения из диалога
 
 **Резолв OpenSpec change** (один раз на весь прогон, до Align):
 
 1. Имя, переданное пользователем.
 2. Иначе — из контекста диалога, если однозначно.
 3. Иначе из meta: `openspec list --json` — автовыбор, если ровно **один** active change.
-4. Иначе при нескольких — спросить.
-5. Иначе — `OpenSpec: none` (только Jira/Confluence/paste/repo).
+4. Иначе при нескольких — спросить, какой active change использовать.
+5. Иначе при нуле active — спросить имя change или явно подтвердить audit без OpenSpec (`OpenSpec: none`, тогда только paste/диалог/repo).
 
-Объявить: `Using OpenSpec change: <name>` (или `OpenSpec: none`). То же имя передать в client- и server-align. В дочерних align это имя — **primary evidence** для осей A/C (включая краевые случаи из SC-*/design), не опциональная загрузка «если вспомнил».
+Объявить: `Using OpenSpec change: <name>` (или `OpenSpec: none`). То же имя передать в client- и server-align. В дочерних align этот change — **primary evidence** для осей A/C (включая краевые случаи из SC-*/design); paste/диалог не перекрывают артефакты change без явного решения пользователя.
 
-Если источник требований не резолвится — спросить **один раз** до шага Align (как в дочерних align). Один ответ пользователя использовать и для client, и для server.
+Если active change не резолвится и пользователь не дал fallback — спросить **один раз** до шага Align. Один ответ использовать и для client, и для server.
 
 Опционально пользователь может сузить scope: `только client` / `только server` — тогда пропустить другой пакет и отметить это в отчёте.
 
@@ -88,7 +90,7 @@ Align-Code Progress:
 
 Из корня meta: projects-map (+ local). Проверить, что client/server — git work trees.
 
-Собрать общий источник требований. OpenSpec — резолв change как в **Вход**, затем `openspec status --change "…" --json` из meta; артефакты change обязательны для Align осей A/C (краевые случаи / SC-*), не только для списка противоречий docs↔code.
+Собрать общий источник требований. **Primary = активный OpenSpec change** (резолв как в **Вход**), затем `openspec status --change "…" --json` из meta; артефакты change обязательны для Align осей A/C (краевые случаи / SC-*). Paste/диалог — вторичные уточнения, не основной канон.
 
 ### 3–4. Client
 
@@ -114,7 +116,7 @@ Client и server можно анализировать последовател�
 ```markdown
 # Align Code — отчёт
 
-Источник требований: <jira/confluence/paste/openspec/…>
+Источник требований: активный OpenSpec change <name> (+ paste/диалог только как уточнения | none + fallback)
 OpenSpec change: <name | none; passed | active | inferred>
 Scope: client + server | client-only | server-only
 

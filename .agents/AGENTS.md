@@ -64,7 +64,7 @@ OpenSpec: [`openspec/config.yaml`](../openspec/config.yaml); артефакты 
 
 | Skill | Когда |
 |-------|--------|
-| [`client-align-code`](skills/client/client-align-code/SKILL.md) | Audit ветки / диффа против требований, skills и аналогов |
+| [`client-align-code`](skills/client/client-align-code/SKILL.md) | Audit ветки / диффа против требований, skills и аналогов; реактивные/async-петли (watch → HTTP) |
 | [`client-locate-change-points`](skills/client/client-locate-change-points/SKILL.md) | Где править / куда класть новые файлы (вкл. Google auth) |
 | [`client-verify-code`](skills/client/client-verify-code/SKILL.md) | Проверка кода / compliance skills + DRY/KISS/YAGNI |
 | [`colyseus-client`](skills/client/colyseus-client/SKILL.md) | `client.http` + room messages (не axios/BFF) |
@@ -87,7 +87,7 @@ OpenSpec: [`openspec/config.yaml`](../openspec/config.yaml); артефакты 
 
 | Skill | Когда |
 |-------|--------|
-| [`server-align-code`](skills/server/server-align-code/SKILL.md) | Audit ветки / диффа против требований, skills и аналогов |
+| [`server-align-code`](skills/server/server-align-code/SKILL.md) | Audit ветки / диффа против требований, skills и аналогов; handler/lifecycle-петли |
 | [`server-locate-change-points`](skills/server/server-locate-change-points/SKILL.md) | Где править / куда класть новые файлы (вкл. `config/auth`) |
 | [`server-verify-code`](skills/server/server-verify-code/SKILL.md) | Проверка кода на соответствие skills + DRY/KISS/YAGNI |
 | [`server-work-with-auth`](skills/server/server-work-with-auth/SKILL.md) | `@colyseus/auth`, Google OAuth `addProvider`, JWT `onAuth`, userdata |

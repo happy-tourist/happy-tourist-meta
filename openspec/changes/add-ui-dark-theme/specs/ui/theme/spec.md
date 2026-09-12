@@ -1,6 +1,6 @@
 ## Purpose
 
-Управление светлой и тёмной темой UI Happy Tourist: следование теме устройства до явного выбора, локальное сохранение для гостя и серверный preference для зарегистрированных пользователей с применением при логине и при reload/restore сессии из актуального профиля БД (в том числе на другом уже залогиненном устройстве после его обновления страницы). Live-push без reload не требуется.
+Управление светлой и тёмной темой UI Happy Tourist: следование теме устройства до явного выбора, локальное сохранение для гостя и серверный preference для зарегистрированных пользователей с применением при логине и при reload/restore сессии из актуального профиля БД (в том числе на другом уже залогиненном устройстве после его обновления страницы). Live-push без reload не требуется. Restore preference HTTP MUST NOT storm (один логический restore → конечное малое число запросов).
 
 ## Traceability
 
@@ -15,6 +15,7 @@
 | SC-THEME-07 | covered-by-reuse (board visuals unchanged — no board CSS change in scope) |
 | SC-THEME-08 | implemented (server mocha GET profile after save with same JWT; client GET restore) |
 | SC-THEME-09 | implemented (server mocha + client: other device session picks up theme after its reload) |
+| SC-THEME-10 | implemented (stable App.vue watch + no auth.user replace after GET; lint+typecheck) |
 
 ## ADDED Requirements
 
@@ -94,6 +95,17 @@ When a registered (non-anonymous) user restores or reloads an authenticated sess
 - **WHEN** device B reloads or restores the session (without requiring a new login)
 - **THEN** device B applies the theme currently stored on the user profile
 - **AND** the system is not required to update device B before that reload or restore
+
+### Requirement: Theme restore does not storm preference HTTP
+
+When the client restores theme for a registered session (after `auth.ready` / identity is established), the system SHALL issue a finite small number of preference read requests for that logical restore — typically one `GET` of the profile theme. Completing the restore (including applying chrome and any in-memory userdata or local preference updates) MUST NOT by itself trigger another preference read for the same ready identity. Ignoring stale HTTP responses alone is NOT sufficient if new reads keep being started. Guest restore MUST NOT call the preference read API.
+
+#### Scenario [SC-THEME-10]: Registered restore issues a single preference read
+
+- **GIVEN** a registered (non-anonymous) user whose auth session becomes ready with a stable identity
+- **WHEN** the client performs theme restore from the user profile
+- **THEN** the preference read HTTP API is invoked a finite small number of times for that restore (typically once)
+- **AND** applying the returned theme (and any in-memory userdata or localStorage update) does not start another preference read for the same ready identity without a new identity change, sign-out, or explicit user theme action
 
 ### Requirement: Checkers board appearance is unchanged by theme
 

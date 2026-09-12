@@ -116,7 +116,7 @@ Every route renders inside:
 </q-layout>
 ```
 
-Shared theme toggle + `theme.error` banner live here (`useThemeStore`). On `auth.ready` / identity change, restore via `syncFromAuthUser` (registered → `GET /api/theme`, guest → `localStorage`) — not JWT `user.theme` alone. Do not duplicate a layout wrapper or per-page theme control when adding pages. Route-specific headers/actions stay in the page.
+Shared theme toggle + `theme.error` banner live here (`useThemeStore`). Wire restore with a stable multi-source watch — `watch([() => auth.ready, () => auth.user?.id, () => auth.user?.anonymous], …)` → `syncFromAuthUser` (registered → `GET /api/theme`, guest → `localStorage`) — not JWT `user.theme` alone, and not `watch(() => […])` (new array each run). Do **not** replace `auth.user` after GET (theme lives in the theme store; SC-THEME-10). Do not duplicate a layout wrapper or per-page theme control when adding pages. Route-specific headers/actions stay in the page.
 
 ## Router Patterns
 

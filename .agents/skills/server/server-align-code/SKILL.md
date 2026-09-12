@@ -1,6 +1,6 @@
 ---
 name: server-align-code
-description: Use when aligning branch and working-tree changes against Jira, Confluence, optional OpenSpec artifacts, repository analogues, test readiness, preservation of previous behavior, Colyseus room registration (lobby + checkers + enableRealtimeListing), @colyseus/schema board/currentTurn/status/players, JWT onAuth, room message move {from,to}, Express CORS/health endpoints, and GameDatabase/users schema consumed by sibling happy-tourist.github.io.
+description: Use when aligning branch and working-tree changes against the active OpenSpec change (primary), optional pasted clarifications, repository analogues, test readiness, preservation of previous behavior, Colyseus room registration (lobby + checkers + enableRealtimeListing), @colyseus/schema board/currentTurn/status/players, JWT onAuth, room message move {from,to}, Express CORS/health endpoints, handler/lifecycle feedback loops (message/HTTP/schema/timer storms), and GameDatabase/users schema consumed by sibling happy-tourist.github.io.
 ---
 
 # Align Code
@@ -15,12 +15,12 @@ Stack context: Colyseus 0.18 (`defineServer` / `defineRoom` via `@colyseus/tools
 
 Always complete all four:
 
-1. **Requirements fit** — code and available planning artifacts vs Jira/Confluence/AC.
+1. **Requirements fit** — code vs **активный OpenSpec change** (primary); paste/диалог только как явные уточнения.
 2. **Codebase fit** — changed behavior vs strong repository analogues.
 3. **Test readiness** — deterministic defects in reachable states before deriving tests.
 4. **Behavior preservation** — unjustified regressions vs base in refactors, shared helpers, and neighboring edits.
 
-The primary subject is the current working tree and branch diff: staged, unstaged, relevant untracked files, and commits vs base. Planning artifacts are secondary scope evidence.
+The primary subject is the current working tree and branch diff: staged, unstaged, relevant untracked files, and commits vs base. The **active OpenSpec change** is the primary requirements source; paste/dialog are secondary clarifications only.
 
 ## Hard Boundary
 
@@ -28,9 +28,11 @@ Do not edit, create, delete, format, or commit files. Do not run tests for prese
 
 ## Input And Store
 
-Accept Jira/Confluence URLs, issue keys, pasted requirements, and an optional OpenSpec change name. Ask when no requirements source can be resolved (no Jira/Confluence/paste **and** no resolvable OpenSpec change).
+**Primary:** resolve and load one **active OpenSpec change**. Accept an optional change name from the user; otherwise auto-select the single active change. Paste/dialog wording may refine AC only when it does not contradict the change (or the user explicitly overrides).
 
-OpenSpec is expected under **happy-tourist-meta** (may be absent). Resolve meta via `project-map.md` key `happy-tourist-meta` (from server: sibling `../happy-tourist-meta`). If OpenSpec/meta is unavailable, audit from Jira/Confluence and repository evidence only — do not invent specs.
+Ask when the change cannot be resolved (0 or >1 active without a clear pick, and no name given). Do not treat paste alone as a substitute for an active change unless the user confirms `OpenSpec: none`.
+
+OpenSpec lives under **happy-tourist-meta**. Resolve meta via `project-map.md` key `happy-tourist-meta` (from server: sibling `../happy-tourist-meta`). If OpenSpec/meta is unavailable and the user did not confirm fallback — ask; do not invent specs.
 
 ### Resolve OpenSpec change
 
@@ -40,26 +42,25 @@ Resolve **one** change name before Axes A–D (including edge-case / test-readin
 2. Else infer from conversation context if unambiguous.
 3. Else from meta root: `openspec list --json` — auto-select if exactly **one** active change.
 4. Else if several active changes — ask the user to pick one.
-5. Else if none — continue without OpenSpec (Jira/Confluence/repo only).
+5. Else if none — ask for a change name or explicit `OpenSpec: none` (then paste/dialog/repo only).
 
 Announce: `Using OpenSpec change: <name>` (or `OpenSpec: none`). Override: user passes another name.
 
-That change is **primary requirement evidence** for atomic checklists, Axis A, Axis C edge cases / scenarios, and docs↔code contradictions — not an optional afterthought.
+That change is **the primary requirement evidence** for atomic checklists, Axis A, Axis C edge cases / scenarios, and docs↔code contradictions — not an optional afterthought.
 
 ## Requirements Sources
 
-Load:
+Load **in this order**:
 
-- Jira description, acceptance criteria, comments, linked issues/pages, and requirement-bearing attachments;
-- Confluence page, relevant children/comments, tables, notes, callouts, footnotes, captions, mocks, and linked API/requirement pages;
-- pasted requirements as provided;
-- when a change is resolved: its OpenSpec artifacts (`proposal`, delta `specs/**/spec.md`, `design`, `tasks`) — scenarios (SC-*), acceptance wording, design decisions, and task scope.
+1. **Active OpenSpec change** (required when resolved): `proposal`, delta `specs/**/spec.md`, `design`, `tasks` — scenarios (SC-*), acceptance wording, design decisions, task scope.
+2. Optional paste / dialog clarifications that explicitly update expected behavior without inventing a parallel spec.
+3. Repository / `AGENTS.md` / strong analogues — conventions only, never as replacements for change evidence.
 
 Treat explicit prohibitions and exceptions as atomic requirements: "не возвращать", "не добавлять", "не принимать", "только для…", "кроме…", "без JWT", "stub".
 
 Auth (register / login / anonymous) and room JWT gate (`onAuth` → `JWT.verify`) are first-class. Authoritative russian-checkers rules and board truth live on the server; do not treat client local highlights as fulfilment of server AC.
 
-A tester's guess/question is only a lead. Treat a comment as clarification only when it explicitly states or updates expected behavior; record author/date or a stable reference.
+A tester's guess/question is only a lead. Treat dialog wording as clarification only when it explicitly states or updates expected behavior relative to the active change.
 
 ## Atomic Requirement Checklist
 
@@ -187,7 +188,7 @@ After resolving the change name (see **Resolve OpenSpec change**), from meta:
 openspec status --change "<name>" --json
 ```
 
-Read concrete artifact paths from the result (`proposal`, `specs`, `design`, `tasks`). Use them as requirements for **all four axes**, including Axis C edge cases and scenario IDs from delta specs. Report clear docs↔code contradictions. If no change resolved (or meta absent), audit the branch from Jira/Confluence/paste and repository evidence only — do not invent specs.
+Read concrete artifact paths from the result (`proposal`, `specs`, `design`, `tasks`). Use them as **primary** requirements for **all four axes**, including Axis C edge cases and scenario IDs from delta specs. Report clear docs↔code contradictions. If no change resolved — only after user confirms `OpenSpec: none`, audit from paste/dialog and repository evidence; otherwise stop and ask. Do not invent specs.
 
 ## Axis A — Requirements
 
@@ -258,7 +259,35 @@ Runtime facts that often create defects:
 - CORS not first or prod origin wrong → browser credentialed requests fail;
 - custom user columns without `.default(...)` → `/auth/register` / `/auth/login` NOT NULL errors;
 
-Report hard `defect` only when a reachable state deterministically causes wrong HTTP/WS payload, runtime failure, invalid schema sync, stuck room state, unsafe side effect, or contract violation.
+### Handler / lifecycle feedback loops (обязательно)
+
+Когда diff/ветка трогает `onMessage`, room lifecycle (`onJoin` / `onLeave` / `onDispose`), schema mutations, `createEndpoint` / Express handlers, timers/`setInterval`, или код, который из handler снова шлёт message / HTTP / broadcast — **отдельно** проверь, нет ли закальцованности (шторм сообщений, рекурсивных HTTP, бесконечных timer ticks). Ожидание «один inbound event → конечное малое число outbound» — дефолт, пока AC явно не требует push/polling.
+
+Для каждой такой цепочки независимо проверь:
+
+1. **Триггер** — inbound message, HTTP request, schema patch, timer, join/leave.
+2. **Outbound side effect** — `clients.send` / `broadcast`, другой `onMessage` path, HTTP call-out, DB write that re-enters the same handler, `setInterval`/`setTimeout` без clear.
+3. **Повторный вход** — может ли side effect снова попасть в тот же handler/route без нового внешнего события (self-send, webhook echo, middleware, вызывающий тот же endpoint).
+4. **Идемпотентность / guard** — dedupe key, generation, «already applied», clearInterval on dispose; отсутствие guard при доказанном re-entry → defect.
+5. **Room dispose / leave** — timers and subscriptions cleared in `onLeave`/`onDispose`; иначе накопление ticks после пустой комнаты.
+6. **Кратность** — на один client `move` / один preference POST ожидается конечный ответ/state patch, не каскад N сообщений без новых inputs.
+
+Типичные петли для флага:
+
+```text
+onMessage / HTTP → mutate / broadcast / HTTP
+  → same handler again → …   (or uncleared setInterval → storm)
+```
+
+- handler шлёт message того же type, который снова обрабатывает этот room;
+- HTTP handler внутри вызывает тот же path / middleware loop;
+- schema/`onChange`-подобный hook пишет поле, снова триггерящий тот же hook;
+- `setInterval` в `onCreate` без clear в `onDispose` → tick storm после leave;
+- retry без backoff/max на auth/DB failure внутри request path.
+
+Report as hard `[defect]` when a reachable path deterministically storms messages/HTTP/DB writes or spins a timer/handler loop. If the chain looks risky but proof is incomplete → **Warning** with the suspected cycle edges.
+
+Report hard `defect` only when a reachable state deterministically causes wrong HTTP/WS payload, runtime failure, invalid schema sync, stuck room state, unsafe side effect (including message/HTTP/timer storms), or contract violation.
 
 Each hard defect includes condition, current behavior, expected invariant/evidence, file/symbol, and minimum scenario. Verdict:
 
@@ -316,6 +345,7 @@ When a changed hunk touches `onAuth`, `src/db/schema.ts`, CORS middleware, `/hea
 4. **Listing alignment** — `GET /rooms/<name>` still matches registered room key.
 5. **Tests vs runtime** — a schema only asserted in isolation does not prove room wiring; if `app.config` stops registering the room, report even if unit-like stubs pass.
 6. **Deploy** — rsync excludes, `pm2 reload`, and env-on-server-only assumptions not silently broken when AC touches ops.
+7. **No handler storms** — thin preference/auth HTTP and room messages stay one-shot per request/event; no self-reentry or uncleared timers (see **Handler / lifecycle feedback loops**).
 
 Typical regression patterns to flag:
 
@@ -323,9 +353,10 @@ Typical regression patterns to flag:
 - CORS moved after other middleware or prod origin dropped;
 - user column default removed → register breaks;
 - health body shape changed while probes expect `{ status, uptime }`;
-- test still boots old room name after registration rename.
+- test still boots old room name after registration rename;
+- new `/api/*` or `onMessage` path that re-invokes itself or leaves a room timer running after dispose.
 
-Report as `regression` or `defect` when consumers deterministically lose auth, CORS, listing, or schema sync after the change. Name the field/room/message/endpoint, before/after call sites, and consumers (client and/or `test/`).
+Report as `regression` or `defect` when consumers deterministically lose auth, CORS, listing, or schema sync after the change, or when a reachable path storms messages/HTTP. Name the field/room/message/endpoint, before/after call sites, and consumers (client and/or `test/`).
 
 ## Severity
 
@@ -346,6 +377,8 @@ Examples:
 - Ambiguous CR wording that was misread once already → **Warning** with both readings, ask for confirmation rather than hard `missing`.
 - AC demands live LobbyRoom listing and server omits `lobby` / `.enableRealtimeListing()` → hard `[missing]` / `[code-only]` vs client contract as evidenced.
 - Scaffold-only state while AC demands board/turn/status/players → hard `[missing]` / `[docs-only]`; do not treat scaffold property as fulfilment.
+- `onMessage` / HTTP handler re-enters itself (or uncleared `setInterval` after dispose) and storms outbound work → hard `[defect]`.
+- Suspected re-entry without a proven storm path → **Warning** with cycle edges.
 
 Hard sections below still omit when empty. **Warnings** and **Recommendations** always appear; if empty, a single line `- нет`.
 
@@ -360,7 +393,7 @@ Write in Russian.
 - Готовность к тестам: READY | BLOCKED — <основание; только hard defect>
 - Регрессии: нет | N — <основание; только hard>
 - Режим: requirements-only | post-propose | in-progress
-- Источник: <source>
+- Источник: активный OpenSpec change <name> (+ уточнения | none + fallback)
 - OpenSpec change: <name | none; passed | active | inferred>
 - Работа в ветке: <staged / unstaged / untracked / commits>
 
@@ -387,6 +420,9 @@ Write in Russian.
 
 ## Room / schema / JWT / move
 - [regression|defect] <room name|schema field|onAuth|message type/payload|turn/status; before/after; consumers; why chain breaks>
+
+## Handler / lifecycle-петли
+- [defect|warning] <trigger → outbound → re-entry / uncleared timer; expected 1 effect vs storm; file/symbol>
 
 ## Предупреждения
 - [warning] <risk / ambiguity / likely gap; evidence; what would promote it to hard>

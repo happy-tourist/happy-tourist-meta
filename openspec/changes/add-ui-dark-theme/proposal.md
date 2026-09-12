@@ -1,6 +1,6 @@
 ## Why
 
-Игроки ожидают тёмную тему и сохранение выбора между сессиями. Нужны тема устройства по умолчанию, явный выбор light/dark и синхронизация для зарегистрированных пользователей. После сохранения темы reload (в том числе на другом уже залогиненном устройстве) не должен возвращать устаревшее значение из JWT — нужна актуальная тема из профиля БД без повторного логина.
+Игроки ожидают тёмную тему и сохранение выбора между сессиями. Нужны тема устройства по умолчанию, явный выбор light/dark и синхронизация для зарегистрированных пользователей. После сохранения темы reload (в том числе на другом уже залогиненном устройстве) не должен возвращать устаревшее значение из JWT — нужна актуальная тема из профиля БД без повторного логина. Текущий client restore через `GET /api/theme` при смене `auth.ready` / identity зацикливается: после ответа патчится `auth.user`, watch снова дергает GET — ожидается **один** запрос на restore, а не шторм.
 
 ## What Changes
 
@@ -9,13 +9,14 @@
 - Гость (anonymous): preference только на устройстве (локально).
 - Зарегистрированный (email / Google): preference в профиле пользователя в БД; сохранение на сервере; подтягивание при логине и при reload/restore сессии из профиля (не только из устаревших JWT claims).
 - Уже открытая сессия на другом устройстве получает новую тему после **обновления страницы** (без re-login и без live-push).
+- **Fix:** restore темы для registered не должен повторно вызывать preference HTTP из‑за in-memory патча userdata / нестабильного watch source — один логический restore → конечное малое число запросов (обычно один GET).
 - Доска шашек и правила игры не меняются.
 
 ## Scope
 
 - **Capability ID:** `ui/theme` (новый домен UI preferences; согласован в explore).
-- **Пакеты:** client и server.
-- **Client:** страницы Login / Lobby / Game; guest vs authenticated; общая шапка с переключателем; restore/reload registered → тема из профиля.
+- **Пакеты:** client и server (серверный контракт GET/POST без изменений по этому багу; фикс — client wiring).
+- **Client:** страницы Login / Lobby / Game; guest vs authenticated; общая шапка с переключателем; restore/reload registered → тема из профиля **без request storm**.
 - **Server:** поле preference в user store; thin HTTP сохранения и **чтения** актуальной темы из профиля (JWT для auth, значение theme — из БД при read).
 - **Контракт:** HTTP preference (+ userdata при login); room `checkers` / move / board **без изменений**.
 
@@ -27,12 +28,13 @@
 - Сохранение темы гостя в БД и кросс-девайс для anonymous.
 - PWA `theme-color`, системные уведомления, email-шаблоны.
 - Изменение auth flows (Google / email / anonymous) кроме поля темы в профиле / userdata и read профиля.
+- Изменение серверного API `GET`/`POST /api/theme` ради этого бага.
 
 ## Capabilities
 
 ### New Capabilities
 
-- `ui/theme`: выбор и применение light/dark (default — тема устройства); persist для guest локально; для зарегистрированных — в профиле БД, при логине и при reload/restore из актуального профиля.
+- `ui/theme`: выбор и применение light/dark (default — тема устройства); persist для guest локально; для зарегистрированных — в профиле БД, при логине и при reload/restore из актуального профиля; restore без зацикленных preference HTTP.
 
 ### Modified Capabilities
 
@@ -40,9 +42,9 @@
 
 ## Impact
 
-- Client SPA (Quasar Dark, шапка, preference sync, restore via profile read).
-- Server: колонка user profile + HTTP save/read темы; login userdata по-прежнему может содержать theme.
-- Docs/skills после реализации: client styles / stores / server DB+routes (check-changes).
+- Client SPA (Quasar Dark, шапка, preference sync, restore via profile read; разрыв reactive loop watch → GET → patch auth).
+- Server: колонка user profile + HTTP save/read темы; login userdata по-прежнему может содержать theme (без изменений API для этого фикса).
+- Docs/skills после реализации: client styles / stores / align feedback-loops (check-changes).
 - Room protocol и gameplay не затрагиваются.
 
 ## References
@@ -50,4 +52,4 @@
 - `docs/projects-map.md` — пути client/server.
 - `../happy-tourist.github.io/AGENTS.md` — client UI / auth.
 - `../happy-tourist-server/AGENTS.md` — server auth / DB.
-- Explore: Quasar Dark; guest = local only; registered = DB; header toggle; unset → device; reload sync from profile (не JWT-only).
+- Explore: Quasar Dark; guest = local only; registered = DB; header toggle; unset → device; reload sync from profile (не JWT-only); bug = watch array source + `auth.user = {…}` после GET.

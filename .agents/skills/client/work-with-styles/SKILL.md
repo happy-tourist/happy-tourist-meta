@@ -51,10 +51,10 @@ to auto in v1).
 |---------|----------|------|
 | Early apply | Boot reads `localStorage` key `ht-theme` and calls `Dark.set` | `src/boot/theme.ts` |
 | Guest / signed out | Persist explicit choice in `localStorage` only | `writeStoredTheme` / `readStoredTheme` |
-| Registered restore | On `auth.ready` / identity change: async `client.http.get('/api/theme')` and apply; **not** JWT `user.theme` alone after reload (claims may be stale); align device copy (`writeStoredTheme` or `clearStoredTheme` when profile unset → auto); ignore stale GET via generation counter; patch in-memory userdata for display; GET fail → keep boot/`localStorage`, do not fall back to JWT-only | `stores/theme.ts` `syncFromAuthUser` |
-| Registered save | Toggle → `client.http.post('/api/theme', { body: { theme } })`; also write `localStorage` (flash / device copy); failures → store `error` + `q-banner` in `App.vue` | `stores/theme.ts` `toggle` |
+| Registered restore | On `auth.ready` / identity change: async `client.http.get('/api/theme')` and apply; **not** JWT `user.theme` alone after reload (claims may be stale); align device copy (`writeStoredTheme` or `clearStoredTheme` when profile unset → auto); ignore stale GET via generation counter; **do not** replace `auth.user` after GET (theme lives in theme store — SC-THEME-10); GET fail → keep boot/`localStorage`, do not fall back to JWT-only | `stores/theme.ts` `syncFromAuthUser` |
+| Registered save | Toggle → `client.http.post('/api/theme', { body: { theme } })`; also write `localStorage` (flash / device copy); optional in-memory `auth.user.theme` patch after POST (watch must not depend on `user.theme`); failures → store `error` + `q-banner` in `App.vue` | `stores/theme.ts` `toggle` |
 | Header control | Shared `q-header` + `q-btn` icons `dark_mode` / `light_mode` | `App.vue` |
-| Auth wiring | `App.vue` watches `auth.ready` + user id / anonymous (not in-memory `user.theme` patches) → `theme.syncFromAuthUser` | do not call HTTP from page templates |
+| Auth wiring | `App.vue`: `watch([() => auth.ready, () => auth.user?.id, () => auth.user?.anonymous], …)` — stable multi-source (not `() => […]` which allocates a new array each run); not on `user.theme` → `theme.syncFromAuthUser` | do not call HTTP from page templates |
 | Board | Unchanged — `.cell.dark` is a **square color**, not app Dark mode | `GamePage.vue` scoped CSS |
 
 `AuthUser` may include optional `theme?: string | null` from userdata (login /
@@ -277,6 +277,9 @@ prefer the login → lobby → game flow for new UI.
 - Building a custom CSS theme system instead of Quasar `Dark`.
 - Calling theme GET/POST from page templates, or saving guest theme to the server.
 - Restoring registered theme from JWT `user.theme` alone after reload (use GET).
+- `watch(() => [ready, id, anonymous])` + replacing `auth.user` after GET →
+  preference GET storm (SC-THEME-10); use stable multi-source watch and keep
+  theme in the theme store after restore.
 - Using `text-grey-7` for secondary chrome (poor contrast in dark) — prefer
   `text-muted`.
 - Changing board cell/piece CSS when toggling app Dark mode.

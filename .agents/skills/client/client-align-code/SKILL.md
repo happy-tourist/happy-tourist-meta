@@ -1,6 +1,6 @@
 ---
 name: client-align-code
-description: Use when aligning branch and working-tree changes against Jira, Confluence, optional OpenSpec artifacts, repository analogues, test readiness, preservation of previous behavior, Vue 3 props/emits/slots, Pinia auth/game store public surface, Colyseus room protocol (move / board / currentTurn / status / players), hash-router requiresAuth/guest guards, and Quasar error UX (store error + q-banner).
+description: Use when aligning branch and working-tree changes against the active OpenSpec change (primary), optional pasted clarifications, repository analogues, test readiness, preservation of previous behavior, Vue 3 props/emits/slots, Pinia auth/game/theme store public surface, reactive/async feedback loops (watch → HTTP/SDK → mutate watched state), Colyseus room protocol (move / board / currentTurn / status / players), hash-router requiresAuth/guest guards, and Quasar error UX (store error + q-banner).
 ---
 
 # Align Code
@@ -15,12 +15,12 @@ Stack context: Vue 3 `<script setup>`, Quasar 2, Pinia 4 (`auth` setup store, `g
 
 Always complete all four:
 
-1. **Requirements fit** — code and available planning artifacts vs Jira/Confluence/AC.
+1. **Requirements fit** — code vs **активный OpenSpec change** (primary); paste/диалог только как явные уточнения.
 2. **Codebase fit** — changed behavior vs strong repository analogues.
 3. **Test readiness** — deterministic defects in reachable states before deriving tests.
 4. **Behavior preservation** — unjustified regressions vs base in refactors, shared helpers, and neighboring edits.
 
-The primary subject is the current working tree and branch diff: staged, unstaged, relevant untracked files, and commits vs base. Planning artifacts are secondary scope evidence.
+The primary subject is the current working tree and branch diff: staged, unstaged, relevant untracked files, and commits vs base. The **active OpenSpec change** is the primary requirements source; paste/dialog are secondary clarifications only.
 
 ## Hard Boundary
 
@@ -28,9 +28,11 @@ Do not edit, create, delete, format, or commit files. Do not run tests for prese
 
 ## Input And Store
 
-Accept Jira/Confluence URLs, issue keys, pasted requirements, and an optional OpenSpec change name. Ask when no requirements source can be resolved (no Jira/Confluence/paste **and** no resolvable OpenSpec change).
+**Primary:** resolve and load one **active OpenSpec change**. Accept an optional change name from the user; otherwise auto-select the single active change. Paste/dialog wording may refine AC only when it does not contradict the change (or the user explicitly overrides).
 
-OpenSpec is expected under **happy-tourist-meta** (may be absent). Resolve meta via `project-map.md` key `happy-tourist-meta` (from client: sibling `../happy-tourist-meta`). If OpenSpec/meta is unavailable, audit from Jira/Confluence and repository evidence only — do not invent specs.
+Ask when the change cannot be resolved (0 or >1 active without a clear pick, and no name given). Do not treat paste alone as a substitute for an active change unless the user confirms `OpenSpec: none`.
+
+OpenSpec lives under **happy-tourist-meta**. Resolve meta via `project-map.md` key `happy-tourist-meta` (from client: sibling `../happy-tourist-meta`). If OpenSpec/meta is unavailable and the user did not confirm fallback — ask; do not invent specs.
 
 ### Resolve OpenSpec change
 
@@ -40,26 +42,25 @@ Resolve **one** change name before Axes A–D (including edge-case / test-readin
 2. Else infer from conversation context if unambiguous.
 3. Else from meta root: `openspec list --json` — auto-select if exactly **one** active change.
 4. Else if several active changes — ask the user to pick one.
-5. Else if none — continue without OpenSpec (Jira/Confluence/repo only).
+5. Else if none — ask for a change name or explicit `OpenSpec: none` (then paste/dialog/repo only).
 
 Announce: `Using OpenSpec change: <name>` (or `OpenSpec: none`). Override: user passes another name.
 
-That change is **primary requirement evidence** for atomic checklists, Axis A, Axis C edge cases / scenarios, and docs↔code contradictions — not an optional afterthought.
+That change is **the primary requirement evidence** for atomic checklists, Axis A, Axis C edge cases / scenarios, and docs↔code contradictions — not an optional afterthought.
 
 ## Requirements Sources
 
-Load:
+Load **in this order**:
 
-- Jira description, acceptance criteria, comments, linked issues/pages, and requirement-bearing attachments;
-- Confluence page, relevant children/comments, tables, notes, callouts, footnotes, captions, mocks, and linked API/requirement pages;
-- pasted requirements as provided;
-- when a change is resolved: its OpenSpec artifacts (`proposal`, delta `specs/**/spec.md`, `design`, `tasks`) — scenarios (SC-*), acceptance wording, design decisions, and task scope.
+1. **Active OpenSpec change** (required when resolved): `proposal`, delta `specs/**/spec.md`, `design`, `tasks` — scenarios (SC-*), acceptance wording, design decisions, task scope.
+2. Optional paste / dialog clarifications that explicitly update expected behavior without inventing a parallel spec.
+3. Repository / `AGENTS.md` / strong analogues — conventions only, never as replacements for change evidence.
 
 Treat explicit prohibitions and exceptions as atomic requirements: "не отображать", "не добавлять", "скрыть", "только для…", "кроме…".
 
 Auth/guest vs registered flows and route meta (`requiresAuth` / `guest`) are first-class. Realtime board truth lives on the server; client local move highlights in `GamePage` are UI hints only — do not treat them as authoritative rules.
 
-A tester's guess/question is only a lead. Treat a comment as clarification only when it explicitly states or updates expected behavior; record author/date or a stable reference.
+A tester's guess/question is only a lead. Treat dialog wording as clarification only when it explicitly states or updates expected behavior relative to the active change.
 
 ## Atomic Requirement Checklist
 
@@ -157,7 +158,7 @@ After resolving the change name (see **Resolve OpenSpec change**), from meta:
 openspec status --change "<name>" --json
 ```
 
-Read concrete artifact paths from the result (`proposal`, `specs`, `design`, `tasks`). Use them as requirements for **all four axes**, including Axis C edge cases and scenario IDs from delta specs. Report clear docs↔code contradictions. If no change resolved (or meta absent), audit the branch from Jira/Confluence/paste and repository evidence only.
+Read concrete artifact paths from the result (`proposal`, `specs`, `design`, `tasks`). Use them as **primary** requirements for **all four axes**, including Axis C edge cases and scenario IDs from delta specs. Report clear docs↔code contradictions. If no change resolved — only after user confirms `OpenSpec: none`, audit from paste/dialog and repository evidence; otherwise stop and ask.
 
 ## Axis A — Requirements
 
@@ -184,7 +185,7 @@ Find strong untouched analogues for the same domain/flow. Prefer same layer:
 |---------|---------|
 | Pages | `src/pages/*Page.vue` (Login / Lobby / Game) |
 | Shared widgets | `src/components/*` |
-| Pinia | `src/stores/auth.ts`, `src/stores/game.ts` |
+| Pinia | `src/stores/auth.ts`, `src/stores/theme.ts`, `src/stores/game.ts` |
 | Colyseus client | `src/boot/colyseus.ts` |
 | Router / guards | `src/router/routes.ts`, `src/router/index.ts` |
 | i18n | `src/boot/i18n.ts`, `src/i18n/*` |
@@ -223,7 +224,34 @@ Runtime facts that often create defects:
 - `GamePage` rejoins by `roomId` if Pinia lost the room; failed rejoin → lobby;
 - local board highlights are UI-only; server state wins on `onStateChange`.
 
-Report hard `defect` only when a reachable state deterministically causes wrong UI, runtime failure, invalid value, stuck state, unsafe side effect, or contract violation.
+### Reactive / async feedback loops (обязательно)
+
+Когда diff/ветка трогает `watch` / `watchEffect`, boot sync, Pinia action с `client.http.*` / `client.auth.*` / `room.send`, или мутацию store-полей из ответа async — **отдельно** проверь, нет ли закальцованности (повторный шторм запросов / эффектов). Ожидание «один restore / один save на событие» — дефолт, пока AC явно не требует polling.
+
+Для каждой такой цепочки независимо проверь:
+
+1. **Триггер** — что именно запускает эффект (`watch` source, `immediate`, `onChange`, route enter).
+2. **Side effect** — какой outbound I/O (`client.http.get/post`, auth, `room.send`) или тяжёлая работа внутри.
+3. **Мутация watched-состояния** — пишет ли успех/ошибка в поля, от которых зависит тот же `watch` / `watchEffect` (прямо или через новый объект `user = { ...user }`).
+4. **Сравнение source** — getter, возвращающий **новый** массив/объект каждый раз (`() => [a, b]`), при любом invalidate даёт «новое» значение по ссылке даже при тех же примитивах → callback снова; предпочтительнее `watch([() => a, () => b], …)` или примитивный/строковый ключ.
+5. **Guard** — есть ли in-flight / generation / «уже синкнули для этого identity»; generation, который только игнорирует stale **ответы**, но не блокирует **новые** вызовы, **не** разрывает петлю.
+6. **Кратность** — на один логический event (reload, login, identity change) ожидается конечное малое число запросов (обычно 1); бесконечный или «пачка подряд» без нового user action → hard `defect`.
+
+Типичные петли для флага:
+
+```text
+watch(auth fields) → GET/POST → patch auth.user / preference
+  → watch again → GET/POST again → …
+```
+
+- `watch(() => [ready, user?.id, …])` + после ответа `auth.user = { ...auth.user, theme }` (или любая замена watched object);
+- `watchEffect` читает store A, пишет в A/B, что снова инвалидирует effect;
+- subscribe/listener без unsub + повторный mount → накопление handlers и дубль I/O;
+- retry/error path, который снова ставит то же reactive условие без backoff/stop.
+
+Report as hard `[defect]` when a reachable path deterministically storms HTTP/SDK/room messages or spins the effect loop. If the chain looks risky but proof is incomplete → **Warning** with the suspected cycle edges.
+
+Report hard `defect` only when a reachable state deterministically causes wrong UI, runtime failure, invalid value, stuck state, unsafe side effect (including request/effect storms), or contract violation.
 
 Each hard defect includes condition, current behavior, expected invariant/evidence, file/symbol, and minimum scenario. Verdict:
 
@@ -269,13 +297,14 @@ Report as `regression` or `defect` when old call sites deterministically stop re
 
 This SPA wires cross-tree contracts through Pinia stores, the Colyseus client/room protocol, and router meta. Treat them as public API of the same risk class as props.
 
-When a changed hunk touches `stores/auth`, `stores/game`, `boot/colyseus`, room `send`/`onStateChange`, or `router` meta/guards, independently verify:
+When a changed hunk touches `stores/auth`, `stores/theme`, `stores/game`, `boot/colyseus`, `boot/theme`, room `send`/`onStateChange`, App-level `watch` on auth, or `router` meta/guards, independently verify:
 
-1. **Pinia still wired** — `auth` setup-store exports (`register` / `login` / `loginAnonymously` / `logout` / `whenReady` / `isAuthenticated` / `displayName` / `error` / …) and `game` options-store actions/getters (`subscribeLobby` / `unsubscribeLobby` / `createGame` / `joinGame` / `leaveGame` / `sendMove` / `isInRoom` / `canMove` / …) still match callers; renamed action with old call sites is a regression.
+1. **Pinia still wired** — `auth` setup-store exports (`register` / `login` / `loginAnonymously` / `logout` / `whenReady` / `isAuthenticated` / `displayName` / `error` / …), `theme` (`syncFromAuthUser` / `toggle` / …), and `game` options-store actions/getters (`subscribeLobby` / `unsubscribeLobby` / `createGame` / `joinGame` / `leaveGame` / `sendMove` / `isInRoom` / `canMove` / …) still match callers; renamed action with old call sites is a regression.
 2. **Room protocol** — message type `'move'` with `{ from, to }` (`from`/`to`: `{ row, col }`); state fields `board`, `currentTurn`, `status`, `players[sessionId].color`; room names `CHECKERS_ROOM = 'checkers'`, `LOBBY_ROOM = 'lobby'`; live listing via LobbyRoom subscribe (HTTP `refreshRooms` unused fallback only).
 3. **Auth lifecycle** — `client.auth.onChange` drives `token`/`user`/`ready`; token key `colyseus-auth-token`; protected routes wait for `whenReady()`.
-4. **Route meta** — `/login` has `meta.guest`; `/lobby` and `/game/:roomId` have `meta.requiresAuth`; hash mode (`/#/…`). Removing or flipping meta without AC is `extra` / `missing`.
-5. **Error UX** — failures land in store `error` and pages show `q-banner`; do not expect SHOW_DIALOG / axios interceptors / brand profiles (absent in this app).
+4. **Theme / preference sync** — registered restore via profile HTTP must not re-enter on every in-memory userdata patch; guest stays localStorage-only; Colyseus HTTP only from store (see **Reactive / async feedback loops**).
+5. **Route meta** — `/login` has `meta.guest`; `/lobby` and `/game/:roomId` have `meta.requiresAuth`; hash mode (`/#/…`). Removing or flipping meta without AC is `extra` / `missing`.
+6. **Error UX** — failures land in store `error` and pages show `q-banner`; do not expect SHOW_DIALOG / axios interceptors / brand profiles (absent in this app).
 
 Typical regression patterns to flag:
 
@@ -284,9 +313,10 @@ Typical regression patterns to flag:
 - `onStateChange` stops mapping `board` / turn / status / color;
 - guard no longer awaits `whenReady()` or ignores `requiresAuth`/`guest`;
 - `leaveGame` / rejoin path breaks refresh recovery;
-- shared util return shape changed; callers assume old shape.
+- shared util return shape changed; callers assume old shape;
+- theme/auth sync watch storms `GET`/`POST` after patching the same watched user object.
 
-Report as `regression` or `defect` when consumers deterministically lose state, send an invalid move, skip auth gates, or hide/show errors incorrectly. Name the store key / message type / route meta field and consumer paths.
+Report as `regression` or `defect` when consumers deterministically lose state, send an invalid move, skip auth gates, hide/show errors incorrectly, or storm preference/auth HTTP. Name the store key / message type / route meta field and consumer paths.
 
 ## Severity
 
@@ -306,6 +336,8 @@ Examples:
 - OpenSpec `tasks.md` still unchecked while code exists → **Recommendation** (docs sync), not hard requirements gap.
 - Ambiguous CR wording that was misread once already → **Warning** with both readings, ask for confirmation rather than hard `missing`.
 - AC forbids unauthenticated lobby access and route loses `requiresAuth` → hard `[extra]` / `[missing]` gating as appropriate.
+- `watch` on auth identity fires `GET /api/theme`, then success replaces `auth.user` and re-triggers the same watch → hard `[defect]` (request storm / feedback loop).
+- Watch source returns a fresh array each run and any invalidate of deps re-fires I/O even when primitives unchanged → hard `[defect]` when that I/O is proven; otherwise **Warning**.
 
 Hard sections below still omit when empty. **Warnings** and **Recommendations** always appear; if empty, a single line `- нет`.
 
@@ -320,7 +352,7 @@ Write in Russian.
 - Готовность к тестам: READY | BLOCKED — <основание; только hard defect>
 - Регрессии: нет | N — <основание; только hard>
 - Режим: requirements-only | post-propose | in-progress
-- Источник: <source>
+- Источник: активный OpenSpec change <name> (+ уточнения | none + fallback)
 - OpenSpec change: <name | none; passed | active | inferred>
 - Работа в ветке: <staged / unstaged / untracked / commits>
 
@@ -347,6 +379,9 @@ Write in Russian.
 
 ## Pinia / Colyseus / маршруты
 - [regression|defect] <action|getter|message|state field|route meta; before/after; consumers; why broken>
+
+## Реактивные / async-петли
+- [defect|warning] <trigger → side effect → mutated watched state → re-trigger; expected 1 call vs storm; file/symbol>
 
 ## Предупреждения
 - [warning] <risk / ambiguity / likely gap; evidence; what would promote it to hard>

@@ -80,7 +80,7 @@ Use a store for shared domain data, realtime session, or anything the router/oth
 | Store | Owns | Typical consumers |
 |-------|------|-------------------|
 | **auth** | `user`, `token`, `loading`, `error`, `ready`; `isAuthenticated`, `displayName`; register/login/anonymous/Google/`logout`/`whenReady` | `LoginPage`, router `beforeEach`, `LobbyPage` logout/header, `App.vue` theme sync |
-| **theme** | Quasar Dark `preference`, `error`; async `syncFromAuthUser` (GET restore + generation + `clearStoredTheme` when unset), `toggle` (guest `localStorage` `ht-theme`; registered `get` ≠ JWT-only, `post` on toggle) | `App.vue` header toggle + auth identity watch |
+| **theme** | Quasar Dark `preference`, `error`; async `syncFromAuthUser` (GET restore + generation + `clearStoredTheme` when unset; **no** `auth.user` replace after GET), `toggle` (guest `localStorage` `ht-theme`; registered `get` ≠ JWT-only, `post` on toggle may patch `user.theme`) | `App.vue` header toggle + stable auth identity watch |
 | **game** | lobby `rooms`/`lobbyRoom`/`listing`; active `room`/`roomId`; `board`, `myColor`, `currentTurn`, `status`, `error`; subscribe/unsubscribe / create/join/leave/`sendMove` | `LobbyPage`, `GamePage` |
 | **counter** | scaffold only | none in product flow — ignore unless cleaning scaffold |
 
@@ -89,7 +89,7 @@ Use a store for shared domain data, realtime session, or anything the router/oth
 - **auth** owns Colyseus Auth only (`client.auth.*`, token sync via `onChange`). It does not create rooms, send moves, or call Dark/`GET|POST /api/theme`.
 - **theme** owns chrome Dark preference and preference HTTP (`client.http.get('/api/theme')` on restore, `post` on toggle). Wired from `App.vue`; does not own auth session or rooms. See `work-with-styles`.
 - **game** owns room listing, room lifecycle, board snapshot from `onStateChange`, and `room.send('move', …)`. It does not call `client.auth` or theme APIs.
-- Cross-cutting: router awaits `useAuthStore().whenReady()` then enforces `requiresAuth` / `guest`. `App.vue` watches `auth.ready` + user id / anonymous → `theme.syncFromAuthUser` (GET restore; not JWT `user.theme`-only). Game pages assume auth already passed.
+- Cross-cutting: router awaits `useAuthStore().whenReady()` then enforces `requiresAuth` / `guest`. `App.vue` uses `watch([() => auth.ready, () => auth.user?.id, () => auth.user?.anonymous], …)` → `theme.syncFromAuthUser` (GET restore; not JWT `user.theme`-only). Do **not** use `watch(() => [ready, id, anonymous])` (new array each run) or replace `auth.user` after GET — that storms `GET /api/theme` (SC-THEME-10). POST toggle may patch `auth.user.theme` because the watch does not depend on it. Game pages assume auth already passed.
 - Board cell values (server): `0` empty, `1` white, `2` black, `3` white king, `4` black king. Room constants: `CHECKERS_ROOM = 'checkers'`, `LOBBY_ROOM = 'lobby'`.
 
 ### Decision checklist
@@ -272,6 +272,9 @@ Dependency direction: `pages` → `stores` / `boot` / `components`. Keep Colyseu
 - Treat local board highlights as game truth — server state wins.
 - Mix auth session concerns into `game` or room lifecycle into `auth`.
 - Forget HMR `acceptHMRUpdate` on new stores.
+- After theme GET, replace `auth.user` only to set `theme` — feeds the App
+  restore watch and storms preference HTTP; keep applied theme in `theme`
+  store; use a stable multi-source `watch([...sources])`.
 
 ## Common Mistakes
 

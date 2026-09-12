@@ -16,7 +16,7 @@ Stack: Vue 3 Composition API / `<script setup>`, Quasar 2, Pinia 4, TypeScript, 
 
 Sibling server: `../happy-tourist-server`. Coordinate room name, state schema, and message protocol with that package.
 
-There is **no** axios layer and **no** BFF. Live lobby uses `LobbyRoom` WebSocket messages; gameplay uses room WebSocket messages. HTTP `client.http` remains only as an unused listing fallback.
+There is **no** axios layer and **no** BFF. Live lobby uses `LobbyRoom` WebSocket messages; gameplay uses room WebSocket messages. HTTP `client.http` is used for registered theme preference (`GET`/`POST` `/api/theme` in `stores/theme`); lobby listing still prefers live LobbyRoom (`GET /rooms/checkers` remains unused fallback).
 
 ## Quick Reference
 

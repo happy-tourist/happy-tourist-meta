@@ -74,7 +74,7 @@ Shared mutable session and realtime I/O belong in Pinia, not ad-hoc page-only `c
 | Concern | Store surface (typical) |
 |---------|-------------------------|
 | Auth session | `stores/auth.ts`: `register` / `login` / `loginAnonymously` / `loginWithGoogle` / `logout` / `whenReady`; `isAuthenticated`, `displayName`; optional `user.theme`; sync via `client.auth.onChange` |
-| UI theme (chrome Dark) | `stores/theme.ts`: `syncFromAuthUser` / `toggle`; guest `localStorage` (`ht-theme`); registered `client.http.get('/api/theme')` restore (≠ JWT-only) + `post` on toggle; wired from `App.vue` |
+| UI theme (chrome Dark) | `stores/theme.ts`: `syncFromAuthUser` / `toggle`; guest `localStorage` (`ht-theme`); registered `client.http.get('/api/theme')` restore (≠ JWT-only; **no** `auth.user` replace after GET) + `post` on toggle; `App.vue` stable `watch([() => auth.ready, () => auth.user?.id, () => auth.user?.anonymous], …)` (SC-THEME-10) |
 | Lobby room list | `stores/game.ts` `subscribeLobby` / `unsubscribeLobby` → LobbyRoom `rooms` / `+` / `-` |
 | Enter / leave room | `createGame` / `joinGame` / `leaveGame` (`CHECKERS_ROOM` / `LOBBY_ROOM`) |
 | Board sync / moves | `_attachRoom` `onStateChange`; `sendMove` → `room.send('move', { from, to })`; getters `isInRoom`, `canMove` |

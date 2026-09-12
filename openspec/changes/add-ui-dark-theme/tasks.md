@@ -34,3 +34,10 @@
 
 - [x] 6.1 Обновить skills routes/styles/stores (GET `/api/theme`, restore ≠ JWT-only) по факту диффа; при необходимости sibling AGENTS
 - [x] 6.2 Из корня meta: `openspec validate add-ui-dark-theme`; sync/archive — по отдельной просьбе
+
+## 7. Client — break restore GET storm (SC-THEME-10)
+
+- [x] 7.1 Прочитать `design.md` (D9), `specs/ui/theme/spec.md` (SC-THEME-10) и текущие `../happy-tourist.github.io/src/App.vue`, `src/stores/theme.ts` — зафиксировать петлю watch → GET → patch `auth.user`
+- [x] 7.2 Стабилизировать trigger restore: `watch` по примитивам/массиву источников (не getter с новым массивом каждый раз); после GET не заменять `auth.user` ради `theme` (тема в theme store); POST toggle может патчить userdata без повторного GET (SC-THEME-10)
+- [x] 7.3 Вручную/DevTools: registered session ready → один (или конечное малое число) `GET /api/theme`, без пачки после apply; guest без GET; в `../happy-tourist.github.io`: `npm run lint` и `npm run typecheck`; при падении — починить
+- [x] 7.4 Обновить client skills stores/styles (и при необходимости align) по факту фикса петли; из корня meta: `openspec validate add-ui-dark-theme`

@@ -56,11 +56,11 @@ it does **not** allow skipping skills from this list.
 |-------|---------|
 | `colyseus-client` | `client.http`, room messages, Colyseus Client |
 | `client-work-with-errors` | store error + `q-banner`, room `onError` |
-| `work-with-stores` | Pinia auth/game |
+| `work-with-stores` | Pinia auth/theme/game |
 | `work-with-forms` | LoginPage `q-form` |
-| `work-with-pages` | routes + guards |
+| `work-with-pages` | routes + guards; App theme shell watch |
 | `client-work-with-structure` | pages/boot/stores layout |
-| `work-with-styles` | Quasar variables + board CSS |
+| `work-with-styles` | Quasar Dark + `/api/theme` + board CSS |
 | `client-work-with-auth` | Colyseus Auth |
 | `work-with-localization` | vue-i18n boot |
 | `work-with-lobby` | live LobbyRoom subscribe / leave before enter / create/join |
@@ -232,12 +232,12 @@ Apply always; sibling skills win when they exist and conflict on a detail.
 ### Language and architecture
 
 - **TypeScript** + **Vue 3** SFCs with **Composition API** / `<script setup>`.
-- **Pinia** for application state (`stores/auth`, `stores/game`); do not add a
-  parallel Vuex or ad-hoc global reactive singleton for game/auth.
+- **Pinia** for application state (`stores/auth`, `stores/theme`, `stores/game`); do not add a
+  parallel Vuex or ad-hoc global reactive singleton for game/auth/theme.
 - **Quasar 2** components and theming (`q-page`, `q-card`, `q-btn`, `q-form`,
   `q-banner`, …); prefer Quasar patterns already used on Login/Lobby/Game pages.
 - Dependency direction: `pages` → `stores` / `boot` / `components`. Keep
-  Colyseus I/O inside Pinia stores (`auth`, `game`) rather than scattering
+  Colyseus I/O inside Pinia stores (`auth`, `theme`, `game`) rather than scattering
   `client.*` calls across many components.
 - Prefer the login / lobby / game flow over scaffold leftovers
   (`EssentialLink.vue`, `example-store.ts`, unused `pages/index*`).
@@ -270,10 +270,12 @@ Apply always; sibling skills win when they exist and conflict on a detail.
 ### Errors and async
 
 - Auth/game actions catch errors into store `error` string; pages show
-  `q-banner`.
+  `q-banner`. Theme save/restore failures use `theme.error` + `App.vue` banner.
 - Do not swallow errors with empty `catch` (except established room-leave
   closed-room swallow in `leaveGame`).
 - `GamePage` rejoins by `roomId` if Pinia lost the room; failed rejoin → lobby.
+- Theme restore: stable multi-source `watch` in `App.vue`; after GET keep theme
+  in `theme` store — do not replace `auth.user` (SC-THEME-10 request storm).
 
 ### Env and deploy
 
@@ -284,6 +286,8 @@ Apply always; sibling skills win when they exist and conflict on a detail.
 
 ### UI / i18n / styles
 
+- Chrome Dark: Quasar `Dark` + `boot/theme` + `stores/theme` + `App.vue` header;
+  guest `localStorage` (`ht-theme`); registered `GET`/`POST` `/api/theme`.
 - Theme Sass in `src/css/quasar.variables.scss`; global styles in
   `src/css/app.scss`.
 - i18n via boot `i18n` + `vue-i18n` (default locale `en-US`).
@@ -350,6 +354,7 @@ Use only to decide **where to look harder**, never to drop a skill from Always i
 |----------------------|----------------|
 | `src/boot/colyseus.ts`, `client.http`, room `send` / `onStateChange` | `colyseus-client`, `work-with-rooms` |
 | `stores/auth.ts`, LoginPage auth flows | `client-work-with-auth`, `work-with-forms` |
+| `stores/theme.ts`, `App.vue` theme watch / toggle | `work-with-styles`, `work-with-stores`, `work-with-pages` |
 | `stores/game.ts`, LobbyPage | `work-with-lobby`, `work-with-stores` |
 | `GamePage`, board CSS / move UI | `work-with-game-board`, `work-with-styles` |
 | `src/router/**`, route meta / guards | `work-with-pages` |
@@ -357,7 +362,7 @@ Use only to decide **where to look harder**, never to drop a skill from Always i
 | store `error`, `q-banner`, room `onError` | `client-work-with-errors` |
 | `src/i18n/**`, boot `i18n` | `work-with-localization` |
 | `.env*`, `env.d.ts`, `quasar.config.ts`, `.github/workflows/**` | `work-with-env-deploy` |
-| `src/css/**`, Quasar variables, board styles | `work-with-styles` |
+| `src/css/**`, Quasar variables, board styles, Dark boot | `work-with-styles` |
 | `*.vue` block/attribute order | Vue Style Guide |
 
 ## High-signal checks (examples, not a full rulebook)
@@ -367,9 +372,12 @@ Reminders to **open the skill** (or Built-in) — skill text wins.
 - **Colyseus**: shared Client from boot; HTTP via `client.http`; moves via
   `send('move')`; I/O in Pinia stores.
 - **Auth**: `client.auth` + `stores/auth`; guards wait for `whenReady()`.
+- **Theme**: Quasar Dark + `stores/theme`; registered GET restore ≠ JWT-only;
+  stable App `watch([() => ready, () => id, () => anonymous])`; no `auth.user`
+  replace after GET (SC-THEME-10).
 - **Lobby/rooms**: live LobbyRoom `subscribeLobby`; create/join/leave through `stores/game`.
 - **Board**: render server state; `canMove` gates sends; cell values 0–4.
-- **Errors**: store `error` + `q-banner`; no empty `catch`.
+- **Errors**: store `error` + `q-banner` (theme → `App.vue`); no empty `catch`.
 - **Env/deploy**: `VITE_*`, hash router, GH Pages SPA build.
 - **Vue SFC order** (soft): `<template>` → `<script setup>` → `<style>`.
 - **DRY/KISS/YAGNI**: conflict order — skills → YAGNI → KISS → DRY; one fix per hunk.

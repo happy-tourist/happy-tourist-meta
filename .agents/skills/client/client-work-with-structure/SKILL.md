@@ -189,7 +189,7 @@ Registered in `quasar.config.ts` boot array: `theme`, `i18n`, `colyseus` (+ `fra
 
 **Game** — `GamePage` binds board from `useGameStore`, sends moves via `sendMove`, rejoins by `roomId` on refresh; local move highlights are UI-only.
 
-**App shell** — `App.vue` hosts `q-layout` → theme `q-header` → `router-view`; watches `auth.ready` + user id / anonymous → async `theme.syncFromAuthUser` (GET restore for registered); shows `theme.error` banner.
+**App shell** — `App.vue` hosts `q-layout` → theme `q-header` → `router-view`; stable `watch([() => auth.ready, () => auth.user?.id, () => auth.user?.anonymous], …)` → `theme.syncFromAuthUser` (GET restore for registered; do not replace `auth.user` after GET); shows `theme.error` banner.
 
 **Boot** — `theme.ts` applies early Dark (`readStoredTheme` / `clearStoredTheme`); `colyseus.ts` exports singleton `client`; stores import them.
 
