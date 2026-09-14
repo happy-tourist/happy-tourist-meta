@@ -222,6 +222,21 @@ Runtime facts that often create defects:
 - `GamePage` rejoins by `roomId` if Pinia lost the room; failed rejoin → lobby;
 - Game board is static client layout; no `canMove` / `sendMove` until rules land.
 
+### Tourist board CSS sizing (обязательно при касании Game board)
+
+Когда diff/ветка трогает `GamePage.vue` board CSS / layout (`tourist-board`, `grid-template-*`, `--tile`, tile chrome) — **отдельно** проверь, что тайлы получают ненулевую высоту на типичном viewport (контейнер с `width: 100%` и **auto** height).
+
+Инвариант (SC-BOARD-02/03 / design D3): сторона тайла ≤ 60px, gap 6, radius 12; на узком экране доска тянется по ширине content area; клетки **квадратные** (высота = ширина трека).
+
+Для `.tourist-board` независимо проверь:
+
+1. **Ось rows** — чем задана высота рядов (`grid-template-rows` / `grid-auto-rows` / явный `height` на `.tile`).
+2. **Резолв `%`** — если размер ряда/тайла зависит от `%` (в т.ч. через `--tile: … calc((100% − …) / 10)`), `%` для **block axis** считается от **высоты** контейнера; при `height: auto` это **0** → все тайлы высотой 0 (невидимое поле).
+3. **Safe patterns** — `aspect-ratio: 1` на доске + `repeat(10, 1fr)` по обеим осям; или ширина от контейнера + `aspect-ratio: 1` на клетке **без** `%`-высоты рядов. Cap max tile 60px через `max-width: calc(10 * 60px + 9 * 6px)` (или эквивалент).
+4. **Unsafe patterns** — `grid-template-rows` / `height` тайла из `var(--tile)` / `min(60px, calc((100% − …) / N))`, когда тот же `%` должен работать и для rows при auto-height родителя.
+
+Report hard `[defect]` when Game board CSS deterministically collapses tile/row height to 0 (or equivalent invisible board) on a reachable Game screen. If sizing looks risky but proof is incomplete → **Warning** with the suspected `%` / auto-height edge.
+
 ### Reactive / async feedback loops (обязательно)
 
 Когда diff/ветка трогает `watch` / `watchEffect`, boot sync, Pinia action с `client.http.*` / `client.auth.*` / `room.send`, или мутацию store-полей из ответа async — **отдельно** проверь, нет ли закальцованности (повторный шторм запросов / эффектов). Ожидание «один restore / один save на событие» — дефолт, пока AC явно не требует polling.
@@ -336,6 +351,7 @@ Examples:
 - AC forbids unauthenticated lobby access and route loses `requiresAuth` → hard `[extra]` / `[missing]` gating as appropriate.
 - `watch` on auth identity fires `GET /api/theme`, then success replaces `auth.user` and re-triggers the same watch → hard `[defect]` (request storm / feedback loop).
 - Watch source returns a fresh array each run and any invalidate of deps re-fires I/O even when primitives unchanged → hard `[defect]` when that I/O is proven; otherwise **Warning**.
+- `GamePage` `.tourist-board` sets `grid-template-rows` from `--tile` with `100%` while the board has auto height → hard `[defect]` (tile height 0 / invisible board).
 
 Hard sections below still omit when empty. **Warnings** and **Recommendations** always appear; if empty, a single line `- нет`.
 
@@ -380,6 +396,9 @@ Write in Russian.
 
 ## Реактивные / async-петли
 - [defect|warning] <trigger → side effect → mutated watched state → re-trigger; expected 1 call vs storm; file/symbol>
+
+## Tourist board CSS (высота тайлов)
+- [defect|warning] <% / auto-height → rows 0 | safe aspect-ratio+fr; file/selector; SC-BOARD / D3>
 
 ## Предупреждения
 - [warning] <risk / ambiguity / likely gap; evidence; what would promote it to hard>

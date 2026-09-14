@@ -31,7 +31,7 @@
 
 ### D3 — Размеры
 
-- CSS-переменные: `--tile: min(60px, calc((100% - 9 * 6px) / 10))` (или эквивалент), `--gap: 6px`, `border-radius: 12px`.
+- Сетка: `aspect-ratio: 1` на контейнере + `repeat(10, 1fr)` по осям (не `%` высоты — иначе rows = 0); `max-width: calc(10 * 60px + 9 * 6px)` → max tile 60px; `--gap: 6px`, `border-radius: 12px`.
 - Контейнер поля: `width: 100%` в content area Game; на узком экране edge-to-edge относительно page content; на широком — естественный cap через max tile 60px.
 - Цвета: start зелёный, task коричневый, center жёлтый — фиксированные fills, не зависят от Quasar Dark; фон дыр = фон страницы.
 

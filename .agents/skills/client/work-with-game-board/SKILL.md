@@ -31,8 +31,8 @@ Product: настольная игра «Счастливый турист». Th
 
 - Grid: **10×10** sparse; empty corners are holes (no tile element; page background shows through).
 - Kinds: `start` (green), `task` (brown), `center` (yellow).
-- CSS vars on `.tourist-board`: `--tile: min(60px, calc((100% - 9 * var(--gap)) / 10))`, `--gap: 6px`; `border-radius: 12px` on tiles.
-- Container: full width of Game content; mobile edge-to-edge relative to page content; wide screens capped by max tile 60px.
+- `.tourist-board`: `width: 100%`, `max-width: calc(10 * 60px + 9 * 6px)`, `aspect-ratio: 1`, `gap: 6px`, `grid-template-*: repeat(10, 1fr)`; tile `border-radius: 12px`. Do **not** size rows with `%` of auto height (tracks collapse to 0).
+- Container: full width of Game content; mobile edge-to-edge relative to page content; wide screens capped by max tile 60px (via board max-width + square aspect).
 - Tile colors are **fixed fills**, independent of Quasar Dark chrome (see `work-with-styles` / theme specs).
 
 Tiles are non-interactive `div`s — not `button`s, no `@click`, no selection/target classes.
