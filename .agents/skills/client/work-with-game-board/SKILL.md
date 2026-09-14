@@ -1,135 +1,69 @@
 ---
 name: work-with-game-board
 description: >-
-  Use when creating, changing, reviewing, or debugging the checkers board UI and
-  moves in the happy-tourist client — GamePage cell rendering, piece selection,
-  local move highlights, canMove, sendMove / room.send('move'), or board
-  CellValue encoding.
+  Use when creating, changing, reviewing, or debugging the static tourist board
+  UI in the happy-tourist client — GamePage CSS Grid layout, tile kinds
+  (start/task/center), sizes/colors, sparse holes, or non-interactive board
+  rendering for room tourist.
 ---
 
 # Work With Game Board
 
-Use this skill for the checkers **board UI and move UX** in the Vue 3 Quasar client (`happy-tourist.github.io`).
+Use this skill for the **static tourist board UI** on Game in the Vue 3 Quasar client (`happy-tourist.github.io`).
 
-Board truth is SERVER; client highlights are UI hints only. Do not invent alternate move protocols without server sync.
+Product: настольная игра «Счастливый турист». The board is **non-interactive** (no piece selection, targets, or `sendMove`). Game rules and synced board authority come later on the server (`work-with-game`).
 
 ## Overview
 
 | Surface | Path | Role |
 | --- | --- | --- |
-| Game page | `src/pages/GamePage.vue` | 8×8 board, selection, local targets, click → `sendMove` |
-| Game store | `src/stores/game.ts` | `board`, `myColor`, `currentTurn`, `status`, `canMove`, `sendMove` |
+| Game page | `src/pages/GamePage.vue` | Static CSS Grid tourist field; status label; leave → lobby |
+| Game store | `src/stores/game.ts` | Room join/leave / lobby wiring (`TOURIST_ROOM`); not board geometry |
 
 | Concern | Location |
 | --- | --- |
-| Cell / board types | `CellValue`, `Board` in `stores/game.ts` |
-| Turn gate | getter `canMove` |
-| Wire protocol | `sendMove` → `room.send('move', { from, to })` |
-| Local UI state | `selected` / `targets` refs in `GamePage` |
+| Layout constant | `LAYOUT` string grid in `GamePage.vue` (`.` hole, `1` start, `*` task, `7` center) |
+| Tile build | `buildBoardTiles()` → non-button `div.tile` with `gridColumn` / `gridRow` |
+| Center | One element with `span 2` / `span 2` (solid 2×2), not four cells |
+| Room enter | Out of scope — see `work-with-lobby` / `work-with-rooms` |
 
-Room join / leave / lobby listing are out of scope unless they affect board state sync.
+## Layout And Tiles
 
-## Cell Values
+- Grid: **10×10** sparse; empty corners are holes (no tile element; page background shows through).
+- Kinds: `start` (green), `task` (brown), `center` (yellow).
+- CSS vars on `.tourist-board`: `--tile: min(60px, calc((100% - 9 * var(--gap)) / 10))`, `--gap: 6px`; `border-radius: 12px` on tiles.
+- Container: full width of Game content; mobile edge-to-edge relative to page content; wide screens capped by max tile 60px.
+- Tile colors are **fixed fills**, independent of Quasar Dark chrome (see `work-with-styles` / theme specs).
 
-| Value | Meaning |
-| --- | --- |
-| `0` | empty |
-| `1` | white |
-| `2` | black |
-| `3` | white king |
-| `4` | black king |
+Tiles are non-interactive `div`s — not `button`s, no `@click`, no selection/target classes.
 
-Type: `CellValue = 0 | 1 | 2 | 3 | 4`. Board: `CellValue[][]` (8×8).
+## Authority
 
-Piece CSS classes on GamePage:
+- Board **geometry** is a client constant for this phase; server does not sync the tourist layout yet.
+- Do not reintroduce legacy draughts CellValue `0…4`, `getTargets`, `selected` / `targets`, or `sendMove` on Game.
+- When rules land, coordinate wire protocol with server `work-with-game` — do not invent a second client-only rules engine.
 
-- white: `1` or `3`
-- black: `2` or `4`
-- king: `3` or `4`
+## GamePage Responsibilities
 
-## Authority And Protocol
-
-- Server state (`room.onStateChange`) owns `board`, `currentTurn`, `status`, and `players[sessionId].color`.
-- Client may highlight possible landing squares via `getTargets` — that is a **hint**, not legal-move enforcement.
-- Only move message today: `room.send('move', { from, to })` where `from` / `to` are `{ row, col }`.
-- Do not invent alternate move protocols without server sync (no extra message types, payloads, or optimistic board mutation as source of truth).
-
-## canMove
-
-Getter in `stores/game.ts`:
-
-```ts
-canMove: (state) =>
-  state.status === 'playing' && state.myColor !== null && state.currentTurn === state.myColor,
-```
-
-Meaning: `status===playing && myColor && currentTurn===myColor`.
-
-Use `game.canMove` to:
-
-- Gate clicks in `onCellClick` (`if (!game.canMove) return`).
-- Drive turn copy (“Ваш ход” / “Ход соперника”).
-- Apply board disabled class when `!canMove`.
-
-## sendMove
-
-```ts
-sendMove(from: { row: number; col: number }, to: { row: number; col: number }) {
-  if (!this.room) {
-    return;
-  }
-  this.room.send('move', { from, to });
-}
-```
-
-Flow: `sendMove(from, to)` → `room.send('move', { from, to })`.
-
-Page clears `selected` / `targets` after calling `sendMove`. Board updates arrive via `onStateChange`, not from local rewrite.
-
-## Local Selection And Highlights
-
-Page-local refs (not in Pinia):
-
-```ts
-const selected = ref<{ row: number; col: number } | null>(null);
-const targets = ref<Array<{ row: number; col: number }>>([]);
-```
-
-| Helper | Role |
-| --- | --- |
-| `isOwnPiece` | Own color only (white: 1/3, black: 2/4) |
-| `getTargets` | Client-side hint: quiet steps + single-jump captures (russian checkers, simplified) |
-| `isTarget` | Whether cell is in `targets` |
-| `onCellClick` | Select own piece → retarget / deselect → if target, `sendMove` |
-
-`selected` / `targets` local refs; `getTargets` is client-side hint. Recompute targets on deep `watch` of `game.board` while something is selected. Clear both on unmount.
-
-Template classes:
-
-- `.selected` on the chosen cell
-- `.target` when `isTarget(r, c)`
-- `.board.disabled` when `!game.canMove` (`opacity: 0.92`)
-
-## Click Flow
-
-1. If `!canMove` → ignore.
-2. No selection → select only if `isOwnPiece`; set `targets = getTargets(...)`.
-3. Click same cell → clear selection.
-4. Click another own piece → reselect + new targets.
-5. Click non-target → ignore.
-6. Click target → `game.sendMove(selected, { row, col })`, then clear selection.
+- Render `boardTiles` from `LAYOUT`.
+- Show connection/status copy (neutral until rules exist).
+- Leave → store `leaveGame` + navigate lobby; rejoin by `roomId` on refresh via store.
 
 ## Do
 
-- Keep Colyseus I/O in `stores/game` (`sendMove`); page only calls the store.
-- Treat `getTargets` as optional UX; server may reject illegal moves.
-- Preserve cell encoding `0…4` and `{ from, to }` move shape unless server schema changes in lockstep.
-- Disable interaction visually and logically via `canMove`.
+- Keep layout in one client constant; center as a single 2×2 grid area.
+- Preserve max tile 60px, gap 6, radius 12, hole = page background.
+- Keep Colyseus I/O in `stores/game`; page does not call `client.*` for board.
 
 ## Don't
 
-- Mutate `game.board` locally to “apply” a move — wait for server state.
-- Bypass `canMove` or send moves when not the player’s turn.
-- Invent alternate move protocols without server sync.
-- Move `selected` / `targets` into the store unless shared UI needs them.
-- Duplicate full rules engine on the client as authority.
+- Add click handlers, move highlights, or piece rendering from the old draughts UX.
+- Depend tile fills on Quasar Dark / theme preference.
+- Sync or invent server board encoding for the static layout without a product change.
+- Put lobby subscribe/create/join logic into the board skill — use `work-with-lobby`.
+
+## Related
+
+- Server rules (later): `.agents/skills/server/work-with-game/SKILL.md`
+- Lobby / room name: `.agents/skills/client/work-with-lobby/SKILL.md`
+- Styles / theme chrome: `.agents/skills/client/work-with-styles/SKILL.md`

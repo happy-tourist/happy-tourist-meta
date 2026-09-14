@@ -1,6 +1,6 @@
 ---
 name: server-locate-change-points
-description: Finds files and exact places that need to be changed or where new files should be added in the happy-tourist Colyseus checkers server based on a task description. Use when the user asks to analyze a task, locate implementation points, find affected files, or identify where changes should be made without editing code.
+description: Finds files and exact places that need to be changed or where new files should be added in the happy-tourist Colyseus tourist server based on a task description. Use when the user asks to analyze a task, locate implementation points, find affected files, or identify where changes should be made without editing code.
 ---
 
 # Locate Change Points
@@ -44,16 +44,15 @@ Prefer not editing `src/index.ts` unless self-hosting / listen details require i
 
 ### Client contract gaps (current scaffold)
 
-The sibling client already assumes a checkers contract; server is still scaffold. When locating change points for gameplay/lobby, prefer aligning server to client rather than inventing a parallel protocol.
+The sibling client already assumes a tourist contract; server is still scaffold. When locating change points for gameplay/lobby, prefer aligning server to client rather than inventing a parallel protocol.
 
 | Client expectation | Server today |
 |--------------------|--------------|
-| Room type name `checkers` | Registered as `checkers` in `app.config.ts` with `.enableRealtimeListing()` |
-| Live lobby (`LobbyRoom`) | `lobby: defineRoom(LobbyRoom)` — client filters `name: checkers` |
-| State: `board`, `currentTurn`, `status`, `players[sessionId].color` | Scaffold `MyRoomState` (`mySynchronizedProperty`) |
-| Message `move` `{ from, to }` | Not implemented yet |
-| Cell values `0`–`4` (empty / white / black / kings) | Not implemented yet |
-| Lobby `GET /rooms/checkers` | Available (HTTP fallback; UI uses live LobbyRoom) |
+| Room type name `tourist` | Registered as `tourist` in `app.config.ts` with `.enableRealtimeListing()` |
+| Live lobby (`LobbyRoom`) | `lobby: defineRoom(LobbyRoom)` — client filters `name: tourist` |
+| Static tourist board on Game | Client-only layout; server does not sync tile geometry yet |
+| Synced rules state / game messages | Scaffold `MyRoomState` (`mySynchronizedProperty`); rules later |
+| Lobby `GET /rooms/tourist` | Available (HTTP fallback; UI uses live LobbyRoom) |
 
 ### HTTP surface (today)
 
@@ -80,7 +79,7 @@ Use these rules to pick the layer before naming files.
 | If the change is… | Prefer |
 |-------------------|--------|
 | New or changed HTTP path (health, demo API, custom Express) | `src/app.config.ts` — `routes` (`createEndpoint`) and/or `express(app)` middleware |
-| Lobby room listing by name | Register `lobby` + `checkers` with `.enableRealtimeListing()`; HTTP `GET /rooms/:roomName` is fallback only |
+| Lobby room listing by name | Register `lobby` + `tourist` with `.enableRealtimeListing()`; HTTP `GET /rooms/:roomName` is fallback only |
 | Realtime gameplay intent (move, resign, rematch, chat) | Room message handler in `src/rooms/MyRoom.ts` (`this.onMessage(...)`), not a new HTTP route |
 | Synced board / turn / status / player seats visible to clients | `@colyseus/schema` in `src/rooms/schema/MyRoomState.ts` (+ room code that mutates state) |
 | Authoritative rules / validation of moves | Room handler (`MyRoom.ts`); do not trust client board state |
@@ -120,12 +119,12 @@ Use these rules to pick the layer before naming files.
 
 | Domain | Start here |
 |--------|------------|
-| Room registration / lobby name | `src/app.config.ts` `rooms` (`lobby` + `checkers` + `.enableRealtimeListing()`) |
+| Room registration / lobby name | `src/app.config.ts` `rooms` (`lobby` + `tourist` + `.enableRealtimeListing()`) |
 | Auth to rooms | `MyRoom.onAuth` + `@colyseus/auth` JWT; secrets in `.env.*` |
 | Google OAuth provider | `src/config/auth.ts` + side-effect import from `app.config.ts`; `GOOGLE_CLIENT_*` in `.env.*` |
 | User profile columns | `src/db/schema.ts` + `src/db/index.ts` |
-| Game state sync | `src/rooms/schema/MyRoomState.ts` |
-| Moves / match flow | `src/rooms/MyRoom.ts` messages + lifecycle; align with client `move` / board cells `0`–`4` |
+| Game state sync | `src/rooms/schema/MyRoomState.ts` (scaffold; product fields later) |
+| Match flow / game messages | `src/rooms/MyRoom.ts` lifecycle + future `onMessage`; align with client when rules land |
 | HTTP health / CORS / demo API | `src/app.config.ts` express + routes |
 | Tests | `test/MyRoom.test.ts`, `test/theme.test.ts`, … |
 | Loadtest | `loadtest/example.ts` |
@@ -135,14 +134,14 @@ Use these rules to pick the layer before naming files.
 
 1. Read the task statement carefully and extract:
    - target feature or behavior;
-   - entities (auth, lobby rooms, board/state, move messages, profile/DB, HTTP health, deploy/env);
+   - entities (auth, lobby rooms, board/state, game messages, profile/DB, HTTP health, deploy/env);
    - whether the task changes existing behavior or adds a new flow;
-   - whether the client contract (room name `checkers`, state shape, `move`, `/rooms/checkers`) is involved.
+   - whether the client contract (room name `tourist`, static board today, future sync/messages, `/rooms/tourist`) is involved.
 
 2. Search the codebase by domain terms from the task:
-   - room name / registration (`lobby`, `checkers`, `LobbyRoom`, `enableRealtimeListing`, `defineRoom`, `rooms:`);
+   - room name / registration (`lobby`, `tourist`, `LobbyRoom`, `enableRealtimeListing`, `defineRoom`, `rooms:`);
    - room hooks (`onAuth`, `onCreate`, `onJoin`, `onLeave`, `onDispose`, `onMessage`);
-   - schema symbols (`MyRoomState`, `Schema`, `type`, `MapSchema`, board/turn/status/players);
+   - schema symbols (`MyRoomState`, `schema`, `t`, `MapSchema`, product sync fields when present);
    - auth (`JWT.verify`, `@colyseus/auth`, `AUTH_SALT`, `JWT_SECRET`);
    - DB (`GameDatabase`, `users`, `displayName`, `rating`, `gamesPlayed`, `gamesWon`, `theme`);
    - HTTP (`/health`, `/hi`, `/api/hello`, `GET|POST /api/theme`, `createEndpoint`, CORS, `monitor`, `playground`);

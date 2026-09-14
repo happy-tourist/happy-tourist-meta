@@ -55,7 +55,7 @@ to auto in v1).
 | Registered save | Toggle → `client.http.post('/api/theme', { body: { theme } })`; also write `localStorage` (flash / device copy); optional in-memory `auth.user.theme` patch after POST (watch must not depend on `user.theme`); failures → store `error` + `q-banner` in `App.vue` | `stores/theme.ts` `toggle` |
 | Header control | Shared `q-header` + `q-btn` icons `dark_mode` / `light_mode` | `App.vue` |
 | Auth wiring | `App.vue`: `watch([() => auth.ready, () => auth.user?.id, () => auth.user?.anonymous], …)` — stable multi-source (not `() => […]` which allocates a new array each run); not on `user.theme` → `theme.syncFromAuthUser` | do not call HTTP from page templates |
-| Board | Unchanged — `.cell.dark` is a **square color**, not app Dark mode | `GamePage.vue` scoped CSS |
+| Board | Unchanged — tourist tile fills are **fixed colors**, not app Dark mode | `GamePage.vue` scoped CSS (`.tourist-board` / `.tile-*`) |
 
 `AuthUser` may include optional `theme?: string | null` from userdata (login /
 display); restore after reload must use **GET** `/api/theme`, not JWT claims
@@ -105,7 +105,7 @@ $warning: #f2c037;
 These feed Quasar component colors and helpers such as `bg-negative`,
 `text-white`, `color="primary"`. Change branding here first; avoid scattering
 matching hex values across templates unless the UI is intentionally outside the
-Quasar palette (checkers board wood tones, piece gradients).
+Quasar palette (board wood tones, piece gradients).
 
 ## Global CSS
 
@@ -162,46 +162,29 @@ Custom CSS lives **inline in the SFC** with `scoped`, not in a sibling
 Layout/spacing still uses Quasar classes (`q-pa-md`, `q-gutter-md`,
 `flex flex-center`). Scoped CSS only constrains card width.
 
-### Checkers board (`GamePage.vue`)
+### Tourist board (`GamePage.vue`)
 
-Board UI is custom (not Quasar widgets). Keep selectors local and class-driven:
+Board UI is custom CSS Grid (not Quasar widgets). Keep selectors local and class-driven:
 
 | Class | Role |
 |-------|------|
-| `.game-header` | Cap header width (`max-width: 480px`) |
-| `.board` | Wood-framed grid container; max width `min(90vw, 480px)` |
-| `.board.disabled` | Slight opacity when `!game.canMove` |
-| `.board-row` | 8-column CSS grid |
-| `.cell` / `.light` / `.dark` | Square buttons; cream `#f0d9b5` / brown `#b58863` |
-| `.cell.selected` | Yellow outline (`#ffeb3b`) for selected piece |
-| `.cell.target::after` | Green move-hint dot |
-| `.piece` / `.white` / `.black` / `.king` | Circular piece + king crown `♛` |
+| `.game-header` | Cap header width to board max (`calc(10 * 60px + 9 * 6px)`) |
+| `.tourist-board` | 10×10 CSS Grid; `--tile` / `--gap` / `--radius`; transparent holes |
+| `.tile` | Rounded tile (`border-radius: var(--radius)`) |
+| `.tile-start` | Green start tile (`#4caf50`) |
+| `.tile-task` | Brown task tile (`#8d6e63`) |
+| `.tile-center` | Yellow center (`#ffeb3b`); one element with `span 2` / `span 2` |
 
-Template wires state via classes:
-
-```html
-<div class="board" :class="{ disabled: !game.canMove }">
-  <button
-    class="cell"
-    :class="[
-      (r + c) % 2 === 0 ? 'light' : 'dark',
-      { selected: selected?.row === r && selected?.col === c },
-      { target: isTarget(r, c) },
-    ]"
-  >
-    <span v-if="cell" class="piece" :class="pieceClass(cell)" />
-  </button>
-</div>
-```
+Tiles are non-interactive `div`s — no `.cell` / piece / selection / target classes from the old draughts UX.
 
 When editing board visuals:
 
-- Prefer adjusting existing classes over new global CSS.
-- Keep move highlights as UI hints only (server remains source of truth).
-- Preserve dark-square playable cells and aspect-ratio squares.
+- Prefer adjusting existing tourist classes over new global CSS.
+- Preserve max tile 60px, gap 6, radius 12; holes show page background.
 - Do not replace the board with Quasar grid components unless explicitly asked.
-- Do **not** retune cell/piece colors for app Dark mode — chrome theme must not
-  change gameplay board look (`.cell.dark` ≠ Quasar Dark).
+- Do **not** retune tile fills for app Dark mode — chrome theme must not
+  change the tourist board look.
+- See `work-with-game-board` for layout constant / center span rules.
 
 ## Template Utilities And Color Props
 
@@ -282,8 +265,8 @@ prefer the login → lobby → game flow for new UI.
   theme in the theme store after restore.
 - Using `text-grey-7` for secondary chrome (poor contrast in dark) — prefer
   `text-muted`.
-- Changing board cell/piece CSS when toggling app Dark mode.
-- Confusing `.cell.dark` (board square) with Quasar `body--dark`.
+- Changing tourist tile fills when toggling app Dark mode.
+- Confusing tile class colors with Quasar `body--dark`.
 - Moving board CSS into `app.scss` or a shared tokens file when scoped
   `GamePage` styles already own it.
 - Hardcoding Quasar palette hex on `q-btn` / banners instead of

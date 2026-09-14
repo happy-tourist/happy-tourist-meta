@@ -9,7 +9,7 @@ description: >-
 
 # Work With Env And Deploy
 
-Use this skill for **env vars**, **PM2**, and **VPS deploy via GitHub Actions** of the Colyseus checkers server (`happy-tourist-server`).
+Use this skill for **env vars**, **PM2**, and **VPS deploy via GitHub Actions** of the Colyseus tourist server (`happy-tourist-server`).
 
 Skills path for now: `.agents/skills/server/` in this repo (canonical copy may later live under `happy-tourist-meta`). Runtime paths below are relative to this server repo root; sibling client is `../happy-tourist.github.io` (deploys to GitHub Pages separately).
 

@@ -48,7 +48,7 @@ tests; fix failures before claiming done.
 
 | Subject | Test path |
 |---------|-----------|
-| `src/rooms/MyRoom.ts` (or `CheckersRoom`) | `test/MyRoom.test.ts` (or `test/CheckersRoom.test.ts`) |
+| `src/rooms/MyRoom.ts` (or `TouristRoom` if renamed) | `test/MyRoom.test.ts` (match room module name) |
 | Room schema / messages covered with room | Same room test file (or `test/<Room>.messages.test.ts` if large) |
 | HTTP helpers (`/health`, `/rooms/:name`) | `test/http.test.ts` or next to the feature under test |
 | Preference HTTP (`GET`/`POST /api/theme`) | `test/theme.test.ts` (auth reject + persist/login + GET after POST same JWT + cross-device older JWT) |
@@ -66,7 +66,7 @@ import appConfig from "../src/app.config.js";
 ## Workflow
 
 1. Read the SUT (room, schema, `app.config` room registration, HTTP surface)
-   and note registered room names (`lobby` + `checkers`).
+   and note registered room names (`lobby` + `tourist`).
 2. Produce a test plan with two sections: **What needs to be mocked / stubbed**
    and **What to verify**.
 3. Place or extend a file under `test/` as `*.test.ts`, following the harness
@@ -105,9 +105,9 @@ Use these categories only when the SUT has relevant behavior:
 - Messages: `client.send("move", { from, to })` — legal move updates board;
   illegal move leaves state unchanged (and/or sends an error message if the
   room defines one).
-- Listing: live LobbyRoom — after `createRoom("checkers")`, lobby client
+- Listing: live LobbyRoom — after `createRoom("tourist")`, lobby client
   receives `+`; after dispose, receives `-` (SC-LOBBY-02/03). HTTP
-  `GET /rooms/checkers` remains optional fallback.
+  `GET /rooms/tourist` remains optional fallback.
 - Preference HTTP: `GET`/`POST /api/theme` — unauthenticated / anonymous rejected;
   registered JWT persists `theme`, returns it on next login, `GET` returns
   profile after POST with the same JWT without re-login, and an older session
@@ -132,7 +132,7 @@ Verify move (when implemented):
 - Wrong turn / empty from / occupied to: state unchanged
 
 Verify live lobby listing:
-- joinOrCreate("lobby", { filter: { name: "checkers" } }); createRoom("checkers") → lobby receives +
+- joinOrCreate("lobby", { filter: { name: "tourist" } }); createRoom("tourist") → lobby receives +
 - room.disconnect() → lobby receives -
 
 Verify theme preference HTTP:
@@ -163,7 +163,7 @@ describe("testing your Colyseus app", () => {
     const token = await JWT.sign({ id: 1, username: "test" });
     colyseus.sdk.auth.token = token;
 
-    const room = await colyseus.createRoom("checkers", {});
+    const room = await colyseus.createRoom("tourist", {});
     const client1 = await colyseus.connectTo(room);
 
     assert.strictEqual(client1.sessionId, room.clients[0].sessionId);
@@ -171,7 +171,7 @@ describe("testing your Colyseus app", () => {
 });
 ```
 
-Always use `createRoom("checkers", …)` matching `app.config.ts`. Include lobby live-list cases when changing listing / metadata.
+Always use `createRoom("tourist", …)` matching `app.config.ts`. Include lobby live-list cases when changing listing / metadata.
 
 ### onAuth failure
 
@@ -202,10 +202,10 @@ Server is authoritative; never assert by trusting a client-only board copy.
 
 ### Live lobby listing (SC-LOBBY-02 / SC-LOBBY-03)
 
-- Client lobby uses Colyseus built-in `LobbyRoom` with filter `name: checkers`.
+- Client lobby uses Colyseus built-in `LobbyRoom` with filter `name: tourist`.
 - Tests: `joinOrCreate("lobby", { filter })`, wait for `+` on create and `-` on dispose.
-- `createRoom("checkers", …)` and loadtest `--room checkers` must match `app.config.ts`.
-- HTTP `GET /rooms/checkers` is optional fallback coverage, not the primary UI path.
+- `createRoom("tourist", …)` and loadtest `--room tourist` must match `app.config.ts`.
+- HTTP `GET /rooms/tourist` is optional fallback coverage, not the primary UI path.
 
 ## Test File Structure
 
@@ -234,7 +234,7 @@ describe("MyRoom", () => {
     const token = await JWT.sign({ id: 1, username: "test" });
     colyseus.sdk.auth.token = token;
 
-    const room = await colyseus.createRoom("checkers", {});
+    const room = await colyseus.createRoom("tourist", {});
     const client = await colyseus.connectTo(room);
 
     assert.strictEqual(client.sessionId, room.clients[0].sessionId);
@@ -250,7 +250,7 @@ Conventions:
 - Always `boot` once per suite, `cleanup` in `beforeEach`, `shutdown` in
   `after`.
 - Use `assert` / `assert.strictEqual` / `assert.rejects` — not Jest `expect`.
-- Room name in tests must match `app.config.ts` (`checkers`).
+- Room name in tests must match `app.config.ts` (`tourist`).
 
 ## Helpers (optional, keep in-file)
 
@@ -279,7 +279,7 @@ default is a single `SKILL.md` and in-file helpers — no separate md required.
   present).
 - File is `test/**/*.test.ts` with relative imports to `src/**/*.js`.
 - Harness: `boot` → `cleanup` → `shutdown`; JWT via `@colyseus/auth`.
-- Room name matches `app.config.ts` registration (`checkers`; also cover `lobby` live-list when changing listing).
+- Room name matches `app.config.ts` registration (`tourist`; also cover `lobby` live-list when changing listing).
 - No Jest / babel / Vitest APIs or config files.
 - Ran `npm test` from the server package root; failures fixed before claiming done.
 
@@ -297,7 +297,7 @@ expect(x).toBe(y);
 // Skipping JWT when room uses onAuth
 // colyseus.connectTo(room) without colyseus.sdk.auth.token
 
-// Hard-coding a room name that does not match app.config.ts (`checkers` / `lobby`)
+// Hard-coding a room name that does not match app.config.ts (`tourist` / `lobby`)
 // without updating registration + tests + loadtest together
 
 // Skipping npm test after adding or changing tests

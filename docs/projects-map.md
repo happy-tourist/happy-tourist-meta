@@ -1,6 +1,6 @@
 # Карта проектов: сервис → sibling-репозиторий
 
-Канон соответствия сервисов экосистемы Happy Tourist (онлайн-шашки) путям в workspace разработчика. Исходный код **не** хранится в `happy-tourist-meta` — клонируется рядом (siblings `happy-tourist.github.io` и `happy-tourist-server`). Локальные отклонения путей — в [`projects-map.local.yaml`](../projects-map.local.yaml) (см. ниже).
+Канон соответствия сервисов экосистемы Happy Tourist (настольная игра «Счастливый турист») путям в workspace разработчика. Исходный код **не** хранится в `happy-tourist-meta` — клонируется рядом (siblings `happy-tourist.github.io` и `happy-tourist-server`). Локальные отклонения путей — в [`projects-map.local.yaml`](../projects-map.local.yaml) (см. ниже).
 
 См. также: [README.md](README.md) (оглавление docs), пакетные [`../happy-tourist.github.io/AGENTS.md`](../happy-tourist.github.io/AGENTS.md) и [`../happy-tourist-server/AGENTS.md`](../happy-tourist-server/AGENTS.md).
 
@@ -19,7 +19,7 @@
 
 | Сервис | Роль | Git-репозиторий | Путь исходников | Документация / контекст |
 |--------|------|-----------------|-----------------|-------------------------|
-| **Client** | Vue 3 + Quasar SPA (шашки) | `happy-tourist.github.io` | `../happy-tourist.github.io/` | runtime: `../happy-tourist.github.io/AGENTS.md`; skills: `.agents/skills/client/` в meta |
+| **Client** | Vue 3 + Quasar SPA («Счастливый турист») | `happy-tourist.github.io` | `../happy-tourist.github.io/` | runtime: `../happy-tourist.github.io/AGENTS.md`; skills: `.agents/skills/client/` в meta |
 | **Server** | Colyseus rooms + auth + HTTP | `happy-tourist-server` | `../happy-tourist-server/` | runtime: `../happy-tourist-server/AGENTS.md`; skills: `.agents/skills/server/` в meta |
 
 Runtime-код и пакетные `AGENTS.md` живут **в sibling-репозиториях**. Client/server skills и OpenSpec — в **happy-tourist-meta** (`.agents/skills/client/`, `.agents/skills/server/`, `openspec/`).

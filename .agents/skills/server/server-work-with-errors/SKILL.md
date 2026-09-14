@@ -2,10 +2,10 @@
 name: server-work-with-errors
 description: >-
   Use when adding, changing, reviewing, or debugging error handling in the
-  happy-tourist Colyseus checkers server — JWT onAuth failures, invalid room
-  moves / messages, HTTP /health and createEndpoint responses, console lifecycle
-  logging, or aligning actionable move failures with the client store error +
-  q-banner UX.
+  happy-tourist Colyseus tourist server — JWT onAuth failures, invalid room
+  messages (when rules land), HTTP /health and createEndpoint responses, console
+  lifecycle logging, or aligning actionable game failures with the client store
+  error + q-banner UX.
 ---
 
 # Work With Errors
@@ -25,7 +25,7 @@ Runtime `src/…` paths are relative to **this repository root**. Sibling client
 
 Related skills (by name only — load when that area is in scope):
 `server-work-with-auth`, `work-with-rooms`, `work-with-messages`,
-`work-with-checkers`, `work-with-routes`, `work-with-middleware`,
+`work-with-game`, `work-with-routes`, `work-with-middleware`,
 `server-work-with-structure`, `server-work-with-test`. Sibling client:
 `client-work-with-errors`.
 
@@ -78,11 +78,11 @@ static async onAuth(token: string, _options: any, _context: any) {
 Authoritative rules live on the server. **Never trust** client board state or
 “this move is legal” claims.
 
-### Preferred approach (align with scaffold + intended checkers)
+### Preferred approach (align with scaffold + intended tourist)
 
 When implementing `move` `{ from, to }`:
 
-1. **Validate** in the message handler (turn, color ownership, russian-checkers rules).
+1. **Validate** in the message handler (turn, color ownership, russian-tourist rules).
 2. On failure: **do not mutate** synced state.
 3. **Notify the offending client** with a short human-readable message:
 
@@ -90,7 +90,7 @@ When implementing `move` `{ from, to }`:
 this.onMessage("move", (client, message) => {
   const result = tryApplyMove(/* … */);
   if (!result.ok) {
-    console.warn(`[checkers] move rejected ${client.sessionId}: ${result.reason}`);
+    console.warn(`[tourist] move rejected ${client.sessionId}: ${result.reason}`);
     client.send("error", { message: result.reason });
     return;
   }
@@ -101,7 +101,7 @@ this.onMessage("move", (client, message) => {
 Why `client.send("error", { message })` (not silent ignore, not `throw` in the handler):
 
 - Client UX is store `error: string | null` + `q-banner` (`client-work-with-errors`).
-- `sendMove` today has no local try/catch; illegal moves need a **server → client**
+- Game action errors (when rules land) need a **server → client**
   message the game store can listen for and assign to `game.error`.
 - Throwing inside an `onMessage` handler is a poor fit for expected rule violations
   (noise, possible disconnect semantics). Reserve hard failures for auth / fatal room
@@ -119,7 +119,7 @@ another name — then match the client.
 |-----------|---------|
 | Malformed payload / wrong shape / wrong types | Log + return (optional short `error` send) |
 | Not this player's turn / not their color | `client.send("error", { message })` |
-| Illegal checkers move (rules) | Same — actionable `message` |
+| Illegal tourist move (rules) | Same — actionable `message` |
 | Duplicate / spam after disconnect | Log + ignore |
 | Auth at join | Throw from `onAuth` (scaffold) |
 | Fatal room inconsistency | Log `console.error`; end match / dispose rather than sync lying state |
@@ -147,7 +147,7 @@ Do not add a global “map every err to errorCode” BFF-style middleware.
 Today rooms use prefixed `console.log` in lifecycle (`onCreate` / `onJoin` /
 `onLeave` / `onDispose`). Prefer that style:
 
-- Prefix with room name/tag: `[MyRoom]`, later `[checkers]`.
+- Prefix with room name/tag: `[MyRoom]`, later `[tourist]`.
 - `console.warn` for rejected moves / soft failures.
 - `console.error` for unexpected exceptions / corrupt state.
 - Include `sessionId` when the failure is client-specific.
@@ -169,22 +169,22 @@ unless there is an explicit decision to add observability.
 
 - Porting `ServiceError` + `{ errorCode, errorMessage }` BFF envelopes into this server.
 - Catching `JWT.verify` and allowing join anyway.
-- Trusting client board / move legality and only “syncing what they sent”.
-- Silently dropping illegal `move` with no client feedback (banner stays empty).
-- Throwing on every illegal move and disconnecting the player.
+- Trusting client board / action legality and only “syncing what they sent”.
+- Silently dropping illegal game actions with no client feedback (banner stays empty) once rules exist.
+- Throwing on every illegal action and disconnecting the player.
 - Building a global Express error middleware for `/health` and demo routes.
 - Adding pino/Prometheus solely to mirror another project.
 - Putting Russian/English copy only in server logs while sending empty or coded
   payloads the client cannot show in `q-banner`.
-- Changing room name / move protocol without coordinating the client
-  (`checkers`, `move`, board cells `0`–`4`).
+- Changing room name / future message protocol without coordinating the client
+  (`tourist`; lockstep when rules land).
 
 ## Key Files
 
 | Path | Role |
 |------|------|
-| `src/rooms/MyRoom.ts` | `onAuth` JWT gate; lifecycle logs; future `move` handler |
-| `src/rooms/schema/MyRoomState.ts` | Synced state — mutate only after valid moves |
+| `src/rooms/MyRoom.ts` | `onAuth` JWT gate; lifecycle logs; future game message handlers |
+| `src/rooms/schema/MyRoomState.ts` | Synced state — mutate only after valid actions |
 | `src/app.config.ts` | Rooms, `createEndpoint`, `/health`, CORS |
 | `src/db/schema.ts` | User defaults (auth register/login MUST NOT fail on NOT NULL) |
 | `test/MyRoom.test.ts` | JWT connect happy path; extend for reject cases |

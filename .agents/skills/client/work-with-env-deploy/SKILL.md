@@ -9,7 +9,7 @@ description: >-
 
 # Work With Env And Deploy
 
-Use this skill for **env vars**, **hash routing**, and **GitHub Pages deploy** of the Vue 3 Quasar checkers client (`happy-tourist.github.io`).
+Use this skill for **env vars**, **hash routing**, and **GitHub Pages deploy** of the Vue 3 Quasar tourist client (`happy-tourist.github.io`).
 
 Deploy target: GitHub Pages **user/org site at domain root**. Router mode is **hash** so deep links work without a history fallback.
 

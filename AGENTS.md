@@ -1,6 +1,6 @@
 # AGENTS.md — happy-tourist-meta
 
-Метарепозиторий экосистемы Happy Tourist (онлайн-шашки): каноническая документация и skills для AI-агентов.  
+Метарепозиторий экосистемы Happy Tourist (настольная игра «Счастливый турист»): каноническая документация и skills для AI-агентов.  
 **Runtime-код здесь не живёт** — исходники в sibling-репозиториях `../happy-tourist.github.io` (client) и `../happy-tourist-server` (server).
 
 Подробный индекс docs и skills: [`.agents/AGENTS.md`](.agents/AGENTS.md).

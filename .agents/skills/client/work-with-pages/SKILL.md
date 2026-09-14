@@ -198,9 +198,9 @@ If an old path changes, keep a redirect in `routes.ts`:
 | Auth | `LoginPage` | `stores/auth`; `meta.guest` |
 | Theme (chrome Dark) | `App.vue` header | `stores/theme` + `boot/theme` |
 | Lobby / rooms | `LobbyPage` | `stores/game.subscribeLobby`, create/join; `meta.requiresAuth` |
-| Game session | `GamePage` | `stores/game` board/move/leave; route param `roomId`; `meta.requiresAuth` |
+| Game session | `GamePage` | `stores/game` leave/rejoin; static tourist board; route param `roomId`; `meta.requiresAuth` |
 
-Room protocol and board truth live on the server (`../happy-tourist-server`); the client renders state and sends `move`.
+Room name `tourist` + live lobby align with `../happy-tourist-server`; Game board is static client UI until rules land.
 
 ## Verification and Final Response
 

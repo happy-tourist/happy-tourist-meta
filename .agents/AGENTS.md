@@ -1,6 +1,6 @@
 # Индекс агента — happy-tourist-meta
 
-Канонический каталог документации и skills для AI-агентов в метарепозитории Happy Tourist (онлайн-шашки).
+Канонический каталог документации и skills для AI-агентов в метарепозитории Happy Tourist (настольная игра «Счастливый турист»).
 
 Краткие always-on инструкции (Cursor): [`AGENTS.md`](../AGENTS.md) в корне репозитория.
 
@@ -74,11 +74,11 @@ OpenSpec: [`openspec/config.yaml`](../openspec/config.yaml); артефакты 
 | [`work-with-forms`](skills/client/work-with-forms/SKILL.md) | LoginPage `q-form` / guest + Google buttons |
 | [`work-with-pages`](skills/client/work-with-pages/SKILL.md) | Routes + guards login/lobby/game; App theme header |
 | [`work-with-stores`](skills/client/work-with-stores/SKILL.md) | Pinia `auth` / `theme` / `game` |
-| [`work-with-styles`](skills/client/work-with-styles/SKILL.md) | Quasar Dark + GET/POST `/api/theme`, header, muted chrome, board CSS |
+| [`work-with-styles`](skills/client/work-with-styles/SKILL.md) | Quasar Dark + GET/POST `/api/theme`, header, muted chrome, tourist board CSS |
 | [`work-with-localization`](skills/client/work-with-localization/SKILL.md) | vue-i18n boot |
 | [`work-with-lobby`](skills/client/work-with-lobby/SKILL.md) | Live LobbyRoom subscribe, leave before enter, create / join / joinOrCreate |
 | [`work-with-rooms`](skills/client/work-with-rooms/SKILL.md) | Room lifecycle, `onStateChange` / `onLeave` |
-| [`work-with-game-board`](skills/client/work-with-game-board/SKILL.md) | Board, `send('move')`, highlights, `canMove` |
+| [`work-with-game-board`](skills/client/work-with-game-board/SKILL.md) | Static tourist board (no move UX) |
 | [`work-with-env-deploy`](skills/client/work-with-env-deploy/SKILL.md) | `VITE_*`, hash router, GitHub Pages |
 
 #### Server-wide skills (`.agents/skills/server/`)
@@ -91,13 +91,13 @@ OpenSpec: [`openspec/config.yaml`](../openspec/config.yaml); артефакты 
 | [`server-locate-change-points`](skills/server/server-locate-change-points/SKILL.md) | Где править / куда класть новые файлы (вкл. `config/auth`) |
 | [`server-verify-code`](skills/server/server-verify-code/SKILL.md) | Проверка кода на соответствие skills + DRY/KISS/YAGNI |
 | [`server-work-with-auth`](skills/server/server-work-with-auth/SKILL.md) | `@colyseus/auth`, Google OAuth `addProvider`, JWT `onAuth`, userdata |
-| [`server-work-with-errors`](skills/server/server-work-with-errors/SKILL.md) | Auth/move failures, HTTP health, client-facing errors |
+| [`server-work-with-errors`](skills/server/server-work-with-errors/SKILL.md) | Auth/game failures, HTTP health, client-facing errors |
 | [`server-work-with-structure`](skills/server/server-work-with-structure/SKILL.md) | rooms / schema / db / config / app.config placement |
 | [`server-work-with-test`](skills/server/server-work-with-test/SKILL.md) | mocha + `@colyseus/testing` (rooms + `GET|POST /api/theme`) |
 | [`work-with-rooms`](skills/server/work-with-rooms/SKILL.md) | Room lifecycle, registration, seats |
-| [`work-with-schema`](skills/server/work-with-schema/SKILL.md) | `@colyseus/schema` board/turn/status/players |
-| [`work-with-messages`](skills/server/work-with-messages/SKILL.md) | Room `move` `{ from, to }` |
-| [`work-with-checkers`](skills/server/work-with-checkers/SKILL.md) | Авторитетные правила русских шашек |
+| [`work-with-schema`](skills/server/work-with-schema/SKILL.md) | `@colyseus/schema` sync (scaffold today; product fields later) |
+| [`work-with-messages`](skills/server/work-with-messages/SKILL.md) | Room messages (none for static board; add with rules) |
+| [`work-with-game`](skills/server/work-with-game/SKILL.md) | Авторитетные правила настольной игры (later); room `tourist` |
 | [`work-with-routes`](skills/server/work-with-routes/SKILL.md) | HTTP `createEndpoint` / thin routes (incl. `GET|POST /api/theme`) |
 | [`work-with-middleware`](skills/server/work-with-middleware/SKILL.md) | CORS, `/health`, monitor/playground |
 | [`work-with-config`](skills/server/work-with-config/SKILL.md) | env, secrets, OAuth `config/auth`, `defineServer` |

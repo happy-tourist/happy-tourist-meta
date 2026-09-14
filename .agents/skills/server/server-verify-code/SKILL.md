@@ -3,7 +3,7 @@ name: server-verify-code
 description: >-
   Use when the user asks to verify code, check skill compliance, audit a branch
   diff vs master/main/merge-base, audit local diffs, or after implementing a
-  change in the happy-tourist Colyseus checkers server. Also when checking
+  change in the happy-tourist Colyseus tourist server. Also when checking
   defineServer wiring, room/schema/message contracts, auth/JWT, CORS, DB user
   defaults, or DRY / KISS / YAGNI balance on changed server files. Reports
   three tiers: Violations, Warnings, Recommendations.
@@ -65,8 +65,8 @@ it does **not** allow skipping skills from this list.
 | `work-with-middleware` | Express middleware order (CORS first, monitor/playground) |
 | `work-with-rooms` | room handlers (`onCreate` / `onJoin` / `onLeave` / `onDispose`) |
 | `work-with-schema` | `@colyseus/schema` synced state |
-| `work-with-messages` | room message handlers (`move`, …) |
-| `work-with-checkers` | russian checkers rules, board cells `0`–`4`, turn/status |
+| `work-with-messages` | room message handlers (none for static board; later) |
+| `work-with-game` | board game «Счастливый турист» rules (later); room `tourist` |
 | `work-with-database` | `GameDatabase`, drizzle `users` schema defaults |
 | `work-with-env-deploy` | `.env*`, secrets, PM2, GitHub Actions deploy |
 | `work-with-loadtest` | `@colyseus/loadtest` scripts under `loadtest/` |
@@ -220,19 +220,18 @@ Sibling client (`../happy-tourist.github.io`) assumes:
 
 | Client expectation | Server should provide |
 |--------------------|------------------------|
-| Room type name `checkers` | Register room as `checkers` (+ `lobby` + `.enableRealtimeListing()`) |
-| State: `board`, `currentTurn`, `status`, `players[sessionId].color` | Matching `@colyseus/schema` state |
-| Message `move` `{ from, to }` | Authoritative handler; no trust of client board |
-| Cell values `0`–`4` | empty / white / black / white king / black king |
-| Live lobby (`LobbyRoom`) | `lobby` registered; checkers has realtime listing |
+| Room type name `tourist` | Register room as `tourist` (+ `lobby` + `.enableRealtimeListing()`) |
+| Static tourist board on Game | Client-only layout; no tile geometry sync required in this phase |
+| Synced rules state / game messages | Scaffold OK; fill when rules land |
+| Live lobby (`LobbyRoom`) | `lobby` registered; tourist has realtime listing |
 
 Prefer aligning room name, schema, and messages with the client rather than
 changing the client unilaterally.
 
-**Violations when:** new gameplay ships under a room name / state shape / move
+**Violations when:** new gameplay ships under a room name / state shape / message
 payload that breaks the client contract without an explicit coordinated client
 change. **Warnings when:** scaffold leftovers (`mySynchronizedProperty`) remain
-while checkers product code is being implemented beside them without a clear
+while tourist product code is being implemented beside them without a clear
 migration path.
 
 ### Auth and rooms
@@ -251,13 +250,12 @@ of verified auth userdata.
 
 ### Authoritative gameplay
 
-- Board truth and russian checkers rules live on the **server**.
-- Clients send move **intents** (`move` with `{ from, to }`); server validates
-  and updates synced state.
-- Do not trust client-supplied board arrays, turn, or status as source of truth.
+- Once rules exist, board-game truth for «Счастливый турист» lives on the **server**.
+- Today there are **no** Game action messages; client shows a static board.
+- Do not trust client-supplied layout/state as source of truth when rules land.
 
-**Violations when:** server applies client board snapshots; skips rule checks;
-or lets the client set `currentTurn` / `status` / opponent pieces.
+**Violations when:** server applies client board snapshots as truth; or invents
+legacy draughts `move`/`0`–`4` encoding as product without a coordinated change.
 
 ### Database / users schema
 
@@ -278,7 +276,7 @@ Typical paths:
 ```text
 HTTP auth → @colyseus/auth + GameDatabase / users schema
 Matchmaking → Colyseus room create/join + GET /rooms/:roomName
-Gameplay → Room handler + schema state ← client onStateChange / send('move')
+Gameplay (later) → Room handler + schema state ← client onStateChange / game messages
 Express → CORS → /health (+ optional monitor/playground)
 ```
 
@@ -290,7 +288,7 @@ Express → CORS → /health (+ optional monitor/playground)
 | Rooms | `src/rooms/` | lifecycle, `onAuth`, messages, rules |
 | Schema | `src/rooms/schema/` | synced state definitions |
 
-**Do not:** invert layers (e.g. schema importing Express routes); put checkers
+**Do not:** invert layers (e.g. schema importing Express routes); put tourist
 rules only on the client; scatter a second HTTP auth implementation beside
 `@colyseus/auth`.
 
@@ -368,8 +366,8 @@ Use only to decide **where to look harder**, never to drop a skill from Always i
 | Change / path signals | Look harder at |
 |----------------------|----------------|
 | `src/app.config.ts`, `src/index.ts` | Server conventions (`defineServer`, CORS order, room registration) |
-| `src/rooms/**` | `work-with-rooms`, `work-with-messages`, `work-with-checkers`, auth `onAuth` |
-| `src/rooms/schema/**` | `work-with-schema`, client board/turn/status contract |
+| `src/rooms/**` | `work-with-rooms`, `work-with-messages`, `work-with-game`, auth `onAuth` |
+| `src/rooms/schema/**` | `work-with-schema`, client sync contract (scaffold today) |
 | `src/db/**` | `work-with-database`, users defaults |
 | auth / JWT / `@colyseus/auth` | `server-work-with-auth` |
 | custom `/api/**`, `createEndpoint` | `work-with-routes` |
@@ -385,9 +383,9 @@ Reminders to **open the skill** (or Built-in) — skill text wins.
 
 - **defineServer**: rooms/DB/routes/Express in `app.config.ts`; prefer not editing `index.ts`.
 - **CORS**: first middleware; prod `https://happy-tourist.github.io` + credentials.
-- **Room contract**: name `checkers`; state board/turn/status/players; `move` `{ from, to }`; cells `0`–`4`.
+- **Room contract**: name `tourist`; live `lobby`; static client board; synced rules/messages later.
 - **Auth**: JWT in `onAuth`; `@colyseus/auth` + DB user store.
-- **Rules**: authoritative on server; never trust client board.
+- **Rules**: authoritative on server when they land; never trust client board.
 - **DB**: user column `.default(...)` for register/login.
 - **Tooling**: run `npm test` / `npm run build` from the server package root.
 - **DRY/KISS/YAGNI**: conflict order — skills → YAGNI → KISS → DRY; one fix per hunk.
@@ -399,7 +397,7 @@ when wording mixes levels, pick the strongest that still applies.
 
 | Tier | When | Skill wording cues (examples) |
 |------|------|-------------------------------|
-| **Violations** | Hard break of a required pattern / contract | Do / Don't, Must, Never, Always, Hard Rules, missing `onAuth`, client board trust, CORS order, breaking `checkers` contract |
+| **Violations** | Hard break of a required pattern / contract | Do / Don't, Must, Never, Always, Hard Rules, missing `onAuth`, client board trust, CORS order, breaking `tourist` contract |
 | **Warnings** | Preferred pattern clearly fits; allowed exception does **not** apply | Prefer, Should, “use X instead of Y” when X fits |
 | **Recommendations** | Soft tidy / style / optional polish | usually, Soft, import grouping, optional analogue consistency, mild DRY/KISS |
 

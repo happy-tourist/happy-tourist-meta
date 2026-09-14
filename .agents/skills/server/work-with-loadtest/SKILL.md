@@ -18,7 +18,7 @@ Skills path for now: `.agents/skills/server/` in this repo (canonical copy may l
 | Piece | Path / command | Role |
 |-------|----------------|------|
 | Script | `loadtest/example.ts` | Per-client bot: `Client` → `joinOrCreate` → listeners → `cli(main)` |
-| npm | `npm run loadtest` | `tsx loadtest/example.ts --room checkers --numClients 2` |
+| npm | `npm run loadtest` | `tsx loadtest/example.ts --room tourist --numClients 2` |
 | Room under test | `src/app.config.ts` `rooms` | Must match `--room` / script default |
 | Auth gate | `src/rooms/MyRoom.ts` `onAuth` | `JWT.verify(token)` — joins fail without a valid token |
 | Mirror in tests | `test/MyRoom.test.ts` | Sets `colyseus.sdk.auth.token` before connect |
@@ -38,9 +38,9 @@ Do not remove `cli(main)`. Prefer extending `main` (messages, moves, auth) over 
 
 ## Room Name
 
-Registered playable room is **`checkers`** (with `lobby` for live listing). Keep loadtest in sync:
+Registered playable room is **`tourist`** (with `lobby` for live listing). Keep loadtest in sync:
 
-1. `package.json` → `"loadtest": "tsx loadtest/example.ts --room checkers --numClients 2"`.
+1. `package.json` → `"loadtest": "tsx loadtest/example.ts --room tourist --numClients 2"`.
 2. Any hardcoded room string in `loadtest/` must match.
 3. Keep loadtest `--room` in sync with `rooms` keys in `src/app.config.ts` and with `test/MyRoom.test.ts`.
 
@@ -126,4 +126,4 @@ If `onAuth` is relaxed or bypassed in a branch, document that in the change; def
 - [ ] Server listening on the endpoint loadtest will use
 - [ ] `--room` matches registered room name
 - [ ] JWT attached if `onAuth` verifies tokens
-- [ ] `numClients` sensible for room `maxClients` (intended checkers: 2 per match — many clients → many rooms via `joinOrCreate`)
+- [ ] `numClients` sensible for room `maxClients` (intended tourist: 2 per match — many clients → many rooms via `joinOrCreate`)

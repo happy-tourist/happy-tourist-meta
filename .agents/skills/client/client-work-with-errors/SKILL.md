@@ -73,7 +73,7 @@ this.error = null;
 
 try {
   const lobby = await client.joinOrCreate(LOBBY_ROOM, {
-    filter: { name: CHECKERS_ROOM },
+    filter: { name: TOURIST_ROOM },
   });
   this.lobbyRoom = lobby;
   lobby.onMessage('rooms', (rooms) => { this.rooms = rooms ?? []; });
@@ -98,7 +98,7 @@ this.status = 'connecting';
 this.error = null;
 
 try {
-  await this._leaveCheckersRoom(); // keep lobby live during attempt
+  await this._leaveTouristRoom(); // keep lobby live during attempt
   const room = await connect();
   await this.unsubscribeLobby(); // SC-LOBBY-05 — only on success
   this._attachRoom(room);
@@ -139,10 +139,11 @@ if (room) {
 
 Swallow leave errors on purpose. Do not set `error` here.
 
-### Moves (`sendMove`)
+### Game messages (later)
 
-No try/catch — early return if `!this.room`. Invalid moves are server-side; do not
-wrap `room.send` in local error UX unless product requirements change.
+No Game `room.send` today (static board). When rules land, early-return if
+`!this.room`; illegal actions are server-side — do not invent local move UX
+error handling unless product requirements change.
 
 ## Display Surfaces
 
@@ -280,7 +281,7 @@ setting `error`. Document with a short comment.
 
 - Shared client: `src/boot/colyseus.ts` — `new Client(import.meta.env.VITE_COLYSEUS_URL)`.
 - Auth: `client.auth.*` (SDK), not `@colyseus/auth` in the browser.
-- Lobby HTTP: `client.http.get('/rooms/checkers')` — treat like any other promise;
+- Lobby HTTP: `client.http.get('/rooms/tourist')` — treat like any other promise;
   normalize with `e instanceof Error ? e.message : String(e)`.
 - Keep Colyseus I/O in stores; pages should not call `client.*` for errors/display.
 

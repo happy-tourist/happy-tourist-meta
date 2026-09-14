@@ -12,7 +12,7 @@ description: >-
 # Work With Config
 
 Use this skill for **server-side** configuration in `happy-tourist-server`
-(Colyseus multiplayer backend for russian checkers).
+(Colyseus multiplayer backend for board game «Счастливый турист»).
 
 There is **no** `config.js` + `APP_NAME` brand merge (unlike Express BFF
 packages). Runtime wiring lives in `src/app.config.ts`; contour values and
@@ -41,7 +41,7 @@ Sibling client: `../happy-tourist.github.io` (GitHub Pages origin
 | Env load | `@colyseus/tools` loads `.env.${NODE_ENV}` if present, else `.env` |
 | Secrets / contour | Env only — document in `.env.example`; never hardcode |
 | Server wiring | `defineServer({ database, rooms, routes, express })` in `src/app.config.ts` |
-| Room registration | `rooms: { lobby: defineRoom(LobbyRoom), checkers: defineRoom(MyRoom).enableRealtimeListing() }` |
+| Room registration | `rooms: { lobby: defineRoom(LobbyRoom), tourist: defineRoom(MyRoom).enableRealtimeListing() }` |
 | Thin HTTP API | `createRouter` + `createEndpoint` (e.g. `GET /api/hello`) |
 | CORS | `ALLOWED_ORIGIN` prod string / else `true`; **first** middleware; credentials `true` |
 | Health / smoke | `GET /health`, `GET /hi` in `express` hook |
@@ -64,7 +64,7 @@ Rules:
 1. Locally prefer `.env.development` / `.env.production` copied from `.env.example`.
 2. Production secrets stay on the server (or secret store) — do **not** commit real values; CI rsync excludes `.env*`.
 3. Read `process.env` at wiring sites (`app.config.ts`, tools listen). Do not invent a second dotenv/`config.js` layer.
-4. No brand blocks: one package, one checkers product — contour differences are env-only (`NODE_ENV`, URLs/secrets, `DATABASE_URL`, `PORT`).
+4. No brand blocks: one package, one tourist board-game product — contour differences are env-only (`NODE_ENV`, URLs/secrets, `DATABASE_URL`, `PORT`).
 
 ## Env Vars
 
@@ -105,7 +105,7 @@ const server = defineServer({
   database: db, // enables @colyseus/auth HTTP + user store
   rooms: {
     lobby: defineRoom(LobbyRoom),
-    checkers: defineRoom(MyRoom).enableRealtimeListing(),
+    tourist: defineRoom(MyRoom).enableRealtimeListing(),
   },
   routes: createRouter({
     api_hello: createEndpoint("/api/hello", { method: "GET" }, async () => {
@@ -175,7 +175,7 @@ hand-rolled in the express hook. Colyseus also exposes room listing
 ### 2. New room or rename for client contract
 
 1. Register in `rooms` inside `defineServer`.
-2. Prefer client-aligned name `checkers` when implementing the real game.
+2. Prefer client-aligned name `tourist` when implementing the real game.
 3. Update tests / loadtest `--room` flags to match.
 
 ### 3. New thin HTTP endpoint

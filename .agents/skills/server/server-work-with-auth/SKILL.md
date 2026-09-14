@@ -5,7 +5,7 @@ description: >-
   @colyseus/auth HTTP routes, Google OAuth addProvider, AUTH_SALT / JWT_SECRET /
   SESSION_SECRET / GOOGLE_CLIENT_*, users schema defaults, MyRoom.onAuth
   JWT.verify, register/login/anonymous/Google → JWT → room join, or auth
-  userdata in onJoin for this Colyseus checkers server.
+  userdata in onJoin for this Colyseus tourist server.
 ---
 
 # Work With Auth

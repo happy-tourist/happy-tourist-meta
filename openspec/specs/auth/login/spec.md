@@ -14,7 +14,7 @@
 | SC-AUTH-04 | covered-by-reuse (existing token restore via SDK `colyseus-auth-token` + `whenReady`) |
 | SC-AUTH-05 | pending (needs cancel/fail path check outside tasks; error UI covered by code) |
 | SC-AUTH-06 | covered-by-reuse (existing email/password + anonymous paths unchanged) |
-| SC-AUTH-07 | pending (needs Google JWT → join `checkers` smoke outside tasks) |
+| SC-AUTH-07 | pending (needs Google JWT → join `tourist` smoke outside tasks) |
 
 ## Requirements
 
@@ -85,6 +85,6 @@ The Login screen SHALL continue to support email/password register and login and
 #### Scenario [SC-AUTH-07]: Google JWT joins game room
 
 - **GIVEN** the user is authenticated via Google with a valid JWT
-- **WHEN** the client joins or creates a `checkers` room
+- **WHEN** the client joins or creates a `tourist` room
 - **THEN** the server accepts the connection through the existing JWT room auth gate
 - **AND** does not require a separate Google-specific room credential

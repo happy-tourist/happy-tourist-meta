@@ -1,11 +1,11 @@
 ---
 name: client-align-code
-description: Use when aligning branch and working-tree changes against the active OpenSpec change (primary), optional pasted clarifications, repository analogues, test readiness, preservation of previous behavior, Vue 3 props/emits/slots, Pinia auth/game/theme store public surface, reactive/async feedback loops (watch → HTTP/SDK → mutate watched state), Colyseus room protocol (move / board / currentTurn / status / players), hash-router requiresAuth/guest guards, and Quasar error UX (store error + q-banner).
+description: Use when aligning branch and working-tree changes against the active OpenSpec change (primary), optional pasted clarifications, repository analogues, test readiness, preservation of previous behavior, Vue 3 props/emits/slots, Pinia auth/game/theme store public surface, reactive/async feedback loops (watch → HTTP/SDK → mutate watched state), Colyseus room protocol (tourist room / lobby / status; game messages later), hash-router requiresAuth/guest guards, and Quasar error UX (store error + q-banner).
 ---
 
 # Align Code
 
-Perform a read-only code alignment audit for the Vue 3 Quasar checkers SPA (`happy-tourist.github.io`) and report findings in Russian across three tiers: hard gaps, warnings, and recommendations.
+Perform a read-only code alignment audit for the Vue 3 Quasar tourist SPA (`happy-tourist.github.io`) and report findings in Russian across three tiers: hard gaps, warnings, and recommendations.
 
 Stack context: Vue 3 `<script setup>`, Quasar 2, Pinia 4 (`auth` setup store, `game` options store), `@colyseus/sdk` 0.18, vue-router 5 hash mode, vue-i18n 11, TypeScript. Contract surface: Colyseus Auth + room messages via `client` from `src/boot/colyseus.ts`; live lobby via LobbyRoom (`subscribeLobby`); sibling server `../happy-tourist-server`.
 
@@ -58,7 +58,7 @@ Load **in this order**:
 
 Treat explicit prohibitions and exceptions as atomic requirements: "не отображать", "не добавлять", "скрыть", "только для…", "кроме…".
 
-Auth/guest vs registered flows and route meta (`requiresAuth` / `guest`) are first-class. Realtime board truth lives on the server; client local move highlights in `GamePage` are UI hints only — do not treat them as authoritative rules.
+Auth/guest vs registered flows and route meta (`requiresAuth` / `guest`) are first-class. Game rules live on the server when they land; today Game shows a **static** tourist board — do not treat local layout as authoritative rules.
 
 A tester's guess/question is only a lead. Treat dialog wording as clarification only when it explicitly states or updates expected behavior relative to the active change.
 
@@ -67,7 +67,7 @@ A tester's guess/question is only a lead. Treat dialog wording as clarification 
 For every stated field, independently verify:
 
 - displayed vs intentionally hidden;
-- source/path and transformation (e.g. board cell `0|1|2|3|4`, color labels, displayName);
+- source/path and transformation (e.g. room `status` labels, displayName, theme preference);
 - requiredness;
 - type and format;
 - allowed range, sign, precision, and length;
@@ -82,7 +82,7 @@ For every request / realtime action, independently verify:
 1. triggering UI action and timing;
 2. required warning or blocking confirmation when AC demands it (this app has no global dialog registry — confirm via Quasar dialog/`q-dialog` if specified);
 3. transport: Colyseus Auth method, LobbyRoom messages (`rooms` / `+` / `-`), or `room.send` message type;
-4. every path/query parameter (e.g. lobby filter `name: checkers`, `joinById(roomId)`);
+4. every path/query parameter (e.g. lobby filter `name: tourist`, `joinById(roomId)`);
 5. every body / options / message payload field, nesting, requiredness, value, and source;
 6. actual argument order into store actions / SDK calls;
 7. event wiring (`@click` / `emit` / store action / router `push`);
@@ -106,12 +106,12 @@ await router.push({ name: 'lobby' });
 // failures: auth.error → q-banner
 ```
 
-Example shape (move):
+Example shape (game enter / static board):
 
 ```ts
-// GamePage → game.sendMove → room.send('move', { from, to })
-game.sendMove({ row, col }, { row, col });
-// board truth: room.onStateChange → board / currentTurn / status / players[sessionId].color
+// LobbyPage → game.createGame / joinGame → navigate Game
+// GamePage → static tourist LAYOUT tiles (no room.send for board UX today)
+// optional: room.onStateChange → status
 ```
 
 Example shape (lobby list):
@@ -123,7 +123,7 @@ await game.subscribeLobby();
 
 Method presence or "looks compatible" alone is insufficient. Track each contract fact separately so one correct component cannot hide another mismatch.
 
-The client↔server contract is Colyseus Auth + room type `checkers` + live `lobby` (LobbyRoom + `.enableRealtimeListing()`) + message `move` `{ from, to }` and state `board` / `currentTurn` / `status` / `players`. When CR/docs/server and client disagree, report `code-only` / contradiction with both sides named (`src/stores/*` vs `../happy-tourist-server`).
+The client↔server contract is Colyseus Auth + room type `tourist` + live `lobby` (LobbyRoom + `.enableRealtimeListing()`) + static Game board (no Game messages yet; synced rules fields deferred). When CR/docs/server and client disagree, report `code-only` / contradiction with both sides named (`src/stores/*` vs `../happy-tourist-server`).
 
 A toast / silent catch is not blocking confirmation. When confirmation is required, wait for explicit approval; cancel/close must not perform the mutating action. With analogue-only evidence, require only what the analogue proves.
 
@@ -173,7 +173,7 @@ Report hard gaps only as:
 
 Ambiguous CR wording, unresolved Open Questions, or unproven leans → **Warnings**, not hard omissions.
 
-Wrong field source/constraint, missing `move` payload field, wrong Auth/HTTP/room API, absent confirm, incorrect event wiring, broken `requiresAuth`/`guest` gating, or client inventing rules the server owns are explicit omissions.
+Wrong field source/constraint, wrong Auth/HTTP/room API, absent confirm, incorrect event wiring, broken `requiresAuth`/`guest` gating, or client inventing rules the server owns are explicit omissions.
 
 Score **Постановка: N/10** only from hard omissions (`missing` / `docs-only` / `code-only` / `extra`), not from Warnings or Recommendations.
 
@@ -211,18 +211,16 @@ Use evidence in this order:
 1. explicit requirements — including the **resolved OpenSpec change** (delta specs scenarios/SC-*, design constraints, task acceptance) when present; do not skip change artifacts and invent generic edge cases instead;
 2. Pinia action/getter contracts, Colyseus message/state shape, props/`emit` contracts, validators;
 3. strong analogues;
-4. deterministic runtime semantics (auth ready gate, room leave/rejoin, `canMove`).
+4. deterministic runtime semantics (auth ready gate, room leave/rejoin, static Game board).
 
-For reachable behavior, examine permitted empty/null/zero/false states, constrained numeric/string boundaries, initial/loading/success/empty/error/retry states, repeated actions, async cleanup, board cell mapping (`0` empty, `1` white, `2` black, `3` white king, `4` black king), conditional rendering by auth/room status, `q-banner` visibility, and validation-vs-handler mismatches — **and** every edge/negative path named or implied by the resolved change's specs/design (e.g. empty lobby snapshot, subscribe/unsubscribe, leave-before-enter).
+For reachable behavior, examine permitted empty/null/zero/false states, constrained numeric/string boundaries, initial/loading/success/empty/error/retry states, repeated actions, async cleanup, tourist board layout rendering, conditional rendering by auth/room status, `q-banner` visibility, and validation-vs-handler mismatches — **and** every edge/negative path named or implied by the resolved change's specs/design (e.g. empty lobby snapshot, subscribe/unsubscribe, leave-before-enter).
 
 Runtime facts that often create defects:
 
 - router `beforeEach` awaits `auth.whenReady()` then enforces `requiresAuth` / `guest`;
-- `canMove` requires `status === 'playing'` and `currentTurn === myColor`;
-- `sendMove` no-ops when `room` is null;
 - `leaveGame` swallows leave errors on already-closed rooms;
 - `GamePage` rejoins by `roomId` if Pinia lost the room; failed rejoin → lobby;
-- local board highlights are UI-only; server state wins on `onStateChange`.
+- Game board is static client layout; no `canMove` / `sendMove` until rules land.
 
 ### Reactive / async feedback loops (обязательно)
 
@@ -299,8 +297,8 @@ This SPA wires cross-tree contracts through Pinia stores, the Colyseus client/ro
 
 When a changed hunk touches `stores/auth`, `stores/theme`, `stores/game`, `boot/colyseus`, `boot/theme`, room `send`/`onStateChange`, App-level `watch` on auth, or `router` meta/guards, independently verify:
 
-1. **Pinia still wired** — `auth` setup-store exports (`register` / `login` / `loginAnonymously` / `logout` / `whenReady` / `isAuthenticated` / `displayName` / `error` / …), `theme` (`syncFromAuthUser` / `toggle` / …), and `game` options-store actions/getters (`subscribeLobby` / `unsubscribeLobby` / `createGame` / `joinGame` / `leaveGame` / `sendMove` / `isInRoom` / `canMove` / …) still match callers; renamed action with old call sites is a regression.
-2. **Room protocol** — message type `'move'` with `{ from, to }` (`from`/`to`: `{ row, col }`); state fields `board`, `currentTurn`, `status`, `players[sessionId].color`; room names `CHECKERS_ROOM = 'checkers'`, `LOBBY_ROOM = 'lobby'`; live listing via LobbyRoom subscribe (HTTP `refreshRooms` unused fallback only).
+1. **Pinia still wired** — `auth` setup-store exports (`register` / `login` / `loginAnonymously` / `logout` / `whenReady` / `isAuthenticated` / `displayName` / `error` / …), `theme` (`syncFromAuthUser` / `toggle` / …), and `game` options-store actions/getters (`subscribeLobby` / `unsubscribeLobby` / `createGame` / `joinGame` / `leaveGame` / `isInRoom` / …) still match callers; renamed action with old call sites is a regression.
+2. **Room protocol** — room names `TOURIST_ROOM = 'tourist'`, `LOBBY_ROOM = 'lobby'`; live listing via LobbyRoom subscribe (HTTP `refreshRooms` unused fallback only); Game messages / synced board fields deferred until rules land (do not require draughts `move` / cells `0`–`4`).
 3. **Auth lifecycle** — `client.auth.onChange` drives `token`/`user`/`ready`; token key `colyseus-auth-token`; protected routes wait for `whenReady()`.
 4. **Theme / preference sync** — registered restore via profile HTTP must not re-enter on every in-memory userdata patch; guest stays localStorage-only; Colyseus HTTP only from store (see **Reactive / async feedback loops**).
 5. **Route meta** — `/login` has `meta.guest`; `/lobby` and `/game/:roomId` have `meta.requiresAuth`; hash mode (`/#/…`). Removing or flipping meta without AC is `extra` / `missing`.
@@ -309,14 +307,14 @@ When a changed hunk touches `stores/auth`, `stores/theme`, `stores/game`, `boot/
 Typical regression patterns to flag:
 
 - store action/getter renamed but pages still call old names;
-- `send('move', …)` payload shape drift vs server / `GamePage`;
-- `onStateChange` stops mapping `board` / turn / status / color;
+- reintroducing draughts `sendMove` / `canMove` / cell encoding without a product change;
+- `onStateChange` regresses leave/rejoin or invents unsynced authority on the client;
 - guard no longer awaits `whenReady()` or ignores `requiresAuth`/`guest`;
 - `leaveGame` / rejoin path breaks refresh recovery;
 - shared util return shape changed; callers assume old shape;
 - theme/auth sync watch storms `GET`/`POST` after patching the same watched user object.
 
-Report as `regression` or `defect` when consumers deterministically lose state, send an invalid move, skip auth gates, hide/show errors incorrectly, or storm preference/auth HTTP. Name the store key / message type / route meta field and consumer paths.
+Report as `regression` or `defect` when consumers deterministically lose state, skip auth gates, hide/show errors incorrectly, or storm preference/auth HTTP. Name the store key / message type / route meta field and consumer paths.
 
 ## Severity
 

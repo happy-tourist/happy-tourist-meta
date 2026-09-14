@@ -2,7 +2,7 @@
 name: colyseus-client
 description: >-
   Use when adding, changing, or reviewing Colyseus client I/O in the
-  happy-tourist checkers SPA: Client singleton from src/boot/colyseus.ts,
+  happy-tourist tourist SPA: Client singleton from src/boot/colyseus.ts,
   LobbyRoom live listing (subscribeLobby), room create/join/leave,
   room.send move messages, client.auth register/sign-in/sign-out, Pinia
   auth/game stores, or VITE_COLYSEUS_URL / VITE_API_URL env wiring.
@@ -10,13 +10,13 @@ description: >-
 
 # Colyseus Client
 
-Use this skill when adding or changing realtime / HTTP I/O in the **checkers client** (`happy-tourist.github.io`).
+Use this skill when adding or changing realtime / HTTP I/O in the **tourist client** (`happy-tourist.github.io`).
 
 Stack: Vue 3 Composition API / `<script setup>`, Quasar 2, Pinia 4, TypeScript, `@colyseus/sdk` 0.18.
 
 Sibling server: `../happy-tourist-server`. Coordinate room name, state schema, and message protocol with that package.
 
-There is **no** axios layer and **no** BFF. Live lobby uses `LobbyRoom` WebSocket messages; gameplay uses room WebSocket messages. HTTP `client.http` is used for registered theme preference (`GET`/`POST` `/api/theme` in `stores/theme`); lobby listing still prefers live LobbyRoom (`GET /rooms/checkers` remains unused fallback).
+There is **no** axios layer and **no** BFF. Live lobby uses `LobbyRoom` WebSocket messages; gameplay uses room WebSocket messages. HTTP `client.http` is used for registered theme preference (`GET`/`POST` `/api/theme` in `stores/theme`); lobby listing still prefers live LobbyRoom (`GET /rooms/tourist` remains unused fallback).
 
 ## Quick Reference
 
@@ -26,12 +26,12 @@ There is **no** axios layer and **no** BFF. Live lobby uses `LobbyRoom` WebSocke
 | Prefer import | `import { client } from '@/boot/colyseus'` (also `$colyseus` on `globalProperties`) |
 | Where I/O lives | Pinia stores only: `stores/auth.ts`, `stores/theme.ts` (preference HTTP), `stores/game.ts` |
 | Pages | Call store actions; do not call `client.*` from pages/components |
-| Live lobby list | `subscribeLobby` → `joinOrCreate(LOBBY_ROOM, { filter: { name: CHECKERS_ROOM } })` + `rooms` / `+` / `-` |
-| HTTP fallback | `refreshRooms` → `client.http.get('/rooms/checkers')` — unused by LobbyPage; **not** `getAvailableRooms` |
+| Live lobby list | `subscribeLobby` → `joinOrCreate(LOBBY_ROOM, { filter: { name: TOURIST_ROOM } })` + `rooms` / `+` / `-` |
+| HTTP fallback | `refreshRooms` → `client.http.get('/rooms/tourist')` — unused by LobbyPage; **not** `getAvailableRooms` |
 | Theme preference | `stores/theme.ts` → registered `client.http.get('/api/theme')` restore (≠ JWT-only) + `post('/api/theme', { body: { theme } })` on toggle; guest uses `localStorage` only |
-| Room names | `CHECKERS_ROOM = 'checkers'`; `LOBBY_ROOM = 'lobby'` in `stores/game.ts` |
+| Room names | `TOURIST_ROOM = 'tourist'`; `LOBBY_ROOM = 'lobby'` in `stores/game.ts` |
 | Connect | `client.create` / `joinById` / `joinOrCreate` via game store actions |
-| Moves | `room.send('move', { from, to })` via `sendMove` |
+| Game messages | Deferred until rules land |
 | Auth | `client.auth` — register / signIn / signOut / `onChange`; token key `colyseus-auth-token` |
 | Env | `VITE_COLYSEUS_URL`, `VITE_API_URL` (typed in `env.d.ts`) |
 | Errors | Store `error` string; pages show `q-banner` |
@@ -47,13 +47,13 @@ There is **no** axios layer and **no** BFF. Live lobby uses `LobbyRoom` WebSocke
 | Keep Colyseus I/O inside Pinia (`auth`, `theme`, `game`) | Scatter `client.http` / `client.create` / `room.send` across components |
 | List rooms via `subscribeLobby` (LobbyRoom `rooms` / `+` / `-`) | Poll `setInterval` + HTTP, or use `client.getAvailableRooms` |
 | Restore/save registered theme via `stores/theme` → `GET`/`POST` `/api/theme` | Theme HTTP from page templates; JWT-only restore after reload; save guest theme to the server |
-| Use `CHECKERS_ROOM` / `LOBBY_ROOM` constants | Hardcode room names in multiple places or invent names without the server |
+| Use `TOURIST_ROOM` / `LOBBY_ROOM` constants | Hardcode room names in multiple places or invent names without the server |
 | Enter rooms via `createGame` / `joinGame` (`_enterRoom`) | Duplicate connect + `onStateChange` wiring in pages |
-| Send moves with `sendMove` → `room.send('move', { from, to })` | Invent other message names without coordinating with the server |
+| Keep room I/O in Pinia `game` store | Invent Game move UX without `work-with-game-board` / server rules |
 | Auth via `client.auth.*` in `stores/auth` | Import `@colyseus/auth` on the client (that package is **server-side**) |
 | Catch into store `error`; clear loading in `finally` | Leave `listing` / `loading` stuck on reject |
 | Pages → stores → `client` | Pages → `client` directly |
-| Change contracts with `../happy-tourist-server` | Assume board/turn/status shape without checking server schema |
+| Change contracts with `../happy-tourist-server` | Invent synced board/turn/move shapes without a rules change |
 
 ## Client singleton
 
@@ -90,9 +90,9 @@ Local defaults: `.env.development` → `localhost:2567`. Production: `.env.produ
 |------|-------|-------------|
 | Auth | `stores/auth.ts` (setup store) | `client.auth.registerWithEmailAndPassword`, `signInWithEmailAndPassword`, `signInAnonymously`, `signInWithProvider('google')`, `signOut`, `onChange` |
 | Lobby list | `stores/game.ts` → `subscribeLobby` / `unsubscribeLobby` | `joinOrCreate('lobby', { filter })` + messages `rooms` / `+` / `-` |
-| HTTP fallback | `stores/game.ts` → `refreshRooms` | `client.http.get('/rooms/checkers')` (unused by LobbyPage) |
+| HTTP fallback | `stores/game.ts` → `refreshRooms` | `client.http.get('/rooms/tourist')` (unused by LobbyPage) |
 | Room lifecycle | `stores/game.ts` → `createGame` / `joinGame` / `leaveGame` | `client.create` / `joinById` / `joinOrCreate`, `room.leave` |
-| Moves | `stores/game.ts` → `sendMove` | `room.send('move', { from, to })` |
+| Game board UI | `pages/GamePage.vue` | Static tourist layout (no sendMove) |
 | Live state | `stores/game.ts` → `_attachRoom` | `room.onStateChange`, `onError`, `onLeave` |
 
 Allowed dependency direction: `pages` → `stores` / `boot` / `components`. Keep all `client.*` and `room.*` I/O in stores.
@@ -102,7 +102,7 @@ Allowed dependency direction: `pages` → `stores` / `boot` / `components`. Keep
 | Store | Actions / API |
 |-------|----------------|
 | `auth` | `register`, `login`, `loginAnonymously`, `loginWithGoogle`, `logout`, `whenReady` |
-| `game` | `subscribeLobby`, `unsubscribeLobby`, `createGame`, `joinGame`, `leaveGame`, `sendMove` (`refreshRooms` HTTP unused) |
+| `game` | `subscribeLobby`, `unsubscribeLobby`, `createGame`, `joinGame`, `leaveGame` (`refreshRooms` HTTP unused) |
 
 Pages already wired:
 
@@ -110,7 +110,7 @@ Pages already wired:
 |------|-------|
 | `LoginPage` | `auth.register` / `login` / `loginAnonymously` / `loginWithGoogle` |
 | `LobbyPage` | `subscribeLobby` / `unsubscribeLobby`, `createGame`, `joinGame`, `leaveGame`; `auth.logout` |
-| `GamePage` | `game.joinGame(roomId)` on remount, `sendMove`, `leaveGame` |
+| `GamePage` | `game.joinGame(roomId)` on remount, static board, `leaveGame` |
 | Router | `auth.whenReady()` before `requiresAuth` / `guest` guards |
 
 ## Auth (`client.auth`)
@@ -159,86 +159,76 @@ Primary path — `subscribeLobby` / `unsubscribeLobby` (see `work-with-lobby`):
 
 ```ts
 const lobby = await client.joinOrCreate(LOBBY_ROOM, {
-  filter: { name: CHECKERS_ROOM },
+  filter: { name: TOURIST_ROOM },
 });
 lobby.onMessage('rooms', (rooms) => { this.rooms = rooms ?? []; });
 lobby.onMessage('+', ([roomId, room]) => { /* upsert */ });
 lobby.onMessage('-', (roomId) => { /* remove */ });
 ```
 
-- Room constants: `LOBBY_ROOM = 'lobby'`, `CHECKERS_ROOM = 'checkers'`.
+- Room constants: `LOBBY_ROOM = 'lobby'`, `TOURIST_ROOM = 'tourist'`.
 - `listing` flag during subscribe connect; clear in `finally`.
 - LobbyPage: `onMounted` → `subscribeLobby`; `onUnmounted` → `unsubscribeLobby`. **No** `setInterval` poll.
-- After successful checkers connect, `_enterRoom` calls `unsubscribeLobby` (failed enter keeps lobby live).
+- After successful tourist connect, `_enterRoom` calls `unsubscribeLobby` (failed enter keeps lobby live).
 
 ### HTTP fallback (unused by LobbyPage)
 
 `getAvailableRooms` was **removed** in Colyseus SDK 0.16+. `refreshRooms` still exists as unused HTTP fallback:
 
 ```ts
-const { data } = await client.http.get(`/rooms/${CHECKERS_ROOM}`);
+const { data } = await client.http.get(`/rooms/${TOURIST_ROOM}`);
 this.rooms = (data ?? []) as RoomAvailable<GameRoomMeta>[];
 ```
 
-Do **not** wire LobbyPage back to HTTP poll. Coordinate listing-shape / server registration with `../happy-tourist-server` (`lobby` + `checkers` + `.enableRealtimeListing()`).
+Do **not** wire LobbyPage back to HTTP poll. Coordinate listing-shape / server registration with `../happy-tourist-server` (`lobby` + `tourist` + `.enableRealtimeListing()`).
 
 ## Rooms: create / join / leave
 
 Room type constants:
 
 ```ts
-export const CHECKERS_ROOM = 'checkers';
+export const TOURIST_ROOM = 'tourist';
 export const LOBBY_ROOM = 'lobby';
 ```
 
 | Intent | Store | SDK |
 |--------|-------|-----|
-| New room | `createGame(options?)` | `client.create(CHECKERS_ROOM, options)` |
+| New room | `createGame(options?)` | `client.create(TOURIST_ROOM, options)` |
 | Join by id | `joinGame(roomId, options?)` | `client.joinById(roomId, options)` |
-| Join or create | `joinGame()` (no id) | `client.joinOrCreate(CHECKERS_ROOM, options)` |
+| Join or create | `joinGame()` (no id) | `client.joinOrCreate(TOURIST_ROOM, options)` |
 | Leave | `leaveGame()` | `room.leave()` (errors swallowed if already closed) |
 
 All connect paths go through `_enterRoom`:
 
 1. Set `status = 'connecting'`, clear `error`.
-2. `await _leaveCheckersRoom()` to detach any previous checkers room (lobby stays live during the attempt).
+2. `await _leaveTouristRoom()` to detach any previous tourist room (lobby stays live during the attempt).
 3. `await connect()`, then `unsubscribeLobby()` on success, then `_attachRoom(room)`.
 4. On failure: `status = 'idle'`, set `error`, rethrow (lobby subscription remains).
 
 ### State sync (`_attachRoom`)
 
-Expected server state fields:
+**Today** — map optional room `status` only. Synced board / turn / seats and Game messages are deferred until rules land.
 
 | Field | Meaning |
 |-------|---------|
-| `board` | `CellValue[][]` — `0` empty, `1` white, `2` black, `3` white king, `4` black king |
-| `currentTurn` | `'white' \| 'black'` |
-| `status` | `'waiting' \| 'playing' \| 'finished'` |
-| `players[sessionId].color` | Local player's color |
+| `status` (optional) | `'waiting' \| 'playing' \| 'finished'` |
 
 Wire once in the store:
 
 ```ts
-room.onStateChange((state) => { /* map board, turn, status, myColor */ });
+room.onStateChange((state) => {
+  const s = state as { status?: 'waiting' | 'playing' | 'finished' };
+  if (s.status) this.status = s.status;
+});
 room.onError((_code, message) => { this.error = message || 'Room error'; });
 room.onLeave(() => { this._resetRoomState(); });
 ```
 
-`GamePage` may call `joinGame(roomId)` again if Pinia lost the room after refresh; failed rejoin → navigate to lobby. Local move highlights on the page are **UI hints only** — board truth is server state.
+`GamePage` may call `joinGame(roomId)` again if Pinia lost the room after refresh; failed rejoin → navigate to lobby. Board geometry is a **client constant** (`work-with-game-board`), not synced state.
 
-## Messages: moves
+## Messages: game actions
 
-```ts
-sendMove(from: { row: number; col: number }, to: { row: number; col: number }) {
-  if (!this.room) return;
-  this.room.send('move', { from, to });
-}
-```
-
-- Message type: `'move'`.
-- Payload: `{ from: { row, col }, to: { row, col } }`.
-- Gate UI with getter `canMove` (`status === 'playing'` and `currentTurn === myColor`).
-- Do not add new message types without updating the server room handler.
+**None today** for the static tourist board. When rules land, add `room.send(...)` helpers in the game store with server `onMessage` lockstep — do not treat legacy draughts `move` `{ from, to }` as current product canon.
 
 ## Loading and errors
 
@@ -265,7 +255,7 @@ async subscribeLobby() {
   this.error = null;
   try {
     const lobby = await client.joinOrCreate(LOBBY_ROOM, {
-      filter: { name: CHECKERS_ROOM },
+      filter: { name: TOURIST_ROOM },
     });
     this.lobbyRoom = lobby;
     lobby.onMessage('rooms', (rooms) => { this.rooms = rooms ?? []; });
@@ -296,14 +286,15 @@ await router.push({ name: 'game', params: { roomId: room.roomId } });
 
 Catch at the page only if you need extra UI beyond `game.error`.
 
-### Send move from GamePage
+### Static board on GamePage
 
 ```ts
-if (!game.canMove) return;
-game.sendMove(selected.value, { row, col });
+// GamePage renders LAYOUT tiles; no room.send for board UX today
+await game.leaveGame();
+await router.push({ name: 'lobby' });
 ```
 
-Do not optimistically rewrite `game.board` as source of truth; wait for `onStateChange`.
+Do not invent client-only move protocols; wait for product rules + server lockstep.
 
 ### Auth form submit
 
@@ -318,12 +309,12 @@ Show `auth.error` in a `q-banner`. Router already blocks until `whenReady()`.
 
 | Mistake | Fix |
 |---------|-----|
-| `client.getAvailableRooms('checkers')` or LobbyPage HTTP poll | Live LobbyRoom `subscribeLobby`; HTTP only as unused `refreshRooms` fallback |
+| `client.getAvailableRooms('tourist')` or LobbyPage HTTP poll | Live LobbyRoom `subscribeLobby`; HTTP only as unused `refreshRooms` fallback |
 | `import … from '@colyseus/auth'` in the SPA | Use `client.auth` from `@colyseus/sdk` |
 | Calling `client.create` / `room.send` in a page | Add/extend actions on `useGameStore` |
 | Second `new Client(...)` | Reuse singleton from `@/boot/colyseus` |
-| Treating local highlight path as game rules | Server validates moves; client only sends `{ from, to }` |
-| Hardcoding room name in pages | Use `CHECKERS_ROOM` / `LOBBY_ROOM` from `stores/game` |
+| Treating GamePage layout as authoritative rules | Static board is UI only; rules land later on the server |
+| Hardcoding room name in pages | Use `TOURIST_ROOM` / `LOBBY_ROOM` from `stores/game` |
 | Leaving `listing` / `loading` true after error | Always `finally` |
 | Skipping `whenReady` in router | Await before `requiresAuth` / `guest` redirects |
 | Inventing axios/BFF helpers | Stay on LobbyRoom + room messages (`client.http` only if needed) |
@@ -333,10 +324,10 @@ Show `auth.error` in a `q-banner`. Router already blocks until `whenReady()`.
 
 1. Belongs in `stores/auth` or `stores/game` (not a page).
 2. Uses shared `client` from `@/boot/colyseus`.
-3. Lobby list: LobbyRoom subscribe; rooms: `create` / `joinById` / `joinOrCreate`; messages: `room.send`. HTTP only as unused fallback.
-4. Room types use `CHECKERS_ROOM` / `LOBBY_ROOM`.
+3. Lobby list: LobbyRoom subscribe; rooms: `create` / `joinById` / `joinOrCreate`; Game `room.send` only when rules exist. HTTP only as unused fallback.
+4. Room types use `TOURIST_ROOM` / `LOBBY_ROOM`.
 5. Loading flag cleared in `finally`; failures set store `error`.
-6. State fields / message payload match `../happy-tourist-server`.
+6. Future state fields / message payloads match `../happy-tourist-server` (lockstep).
 7. Pages only call store actions and bind store state.
 8. Run `npm run lint` / `npm run typecheck` from the client package root (and `quasar dev` if needed for smoke); fix failures before claiming done.
 
@@ -344,4 +335,4 @@ Show `auth.error` in a `q-banner`. Router already blocks until `whenReady()`.
 
 - Client overview: `AGENTS.md` in this repo (auth, lobby, game, env, deploy).
 - Lobby details: `.agents/skills/client/work-with-lobby/SKILL.md`
-- Sibling server: `../happy-tourist-server` — `lobby` + `checkers` + `.enableRealtimeListing()`.
+- Sibling server: `../happy-tourist-server` — `lobby` + `tourist` + `.enableRealtimeListing()`.

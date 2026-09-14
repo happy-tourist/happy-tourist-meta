@@ -1,6 +1,6 @@
 ---
 name: client-locate-change-points
-description: Finds files and exact places that need to be changed or where new files should be added in the happy-tourist Vue 3 checkers client based on a task description. Use when the user asks to analyze a task, locate implementation points, find affected files, or identify where changes should be made without editing code.
+description: Finds files and exact places that need to be changed or where new files should be added in the happy-tourist Vue 3 tourist client based on a task description. Use when the user asks to analyze a task, locate implementation points, find affected files, or identify where changes should be made without editing code.
 ---
 
 # Locate Change Points
@@ -76,8 +76,8 @@ Shared mutable session and realtime I/O belong in Pinia, not ad-hoc page-only `c
 | Auth session | `stores/auth.ts`: `register` / `login` / `loginAnonymously` / `loginWithGoogle` / `logout` / `whenReady`; `isAuthenticated`, `displayName`; optional `user.theme`; sync via `client.auth.onChange` |
 | UI theme (chrome Dark) | `stores/theme.ts`: `syncFromAuthUser` / `toggle`; guest `localStorage` (`ht-theme`); registered `client.http.get('/api/theme')` restore (≠ JWT-only; **no** `auth.user` replace after GET) + `post` on toggle; `App.vue` stable `watch([() => auth.ready, () => auth.user?.id, () => auth.user?.anonymous], …)` (SC-THEME-10) |
 | Lobby room list | `stores/game.ts` `subscribeLobby` / `unsubscribeLobby` → LobbyRoom `rooms` / `+` / `-` |
-| Enter / leave room | `createGame` / `joinGame` / `leaveGame` (`CHECKERS_ROOM` / `LOBBY_ROOM`) |
-| Board sync / moves | `_attachRoom` `onStateChange`; `sendMove` → `room.send('move', { from, to })`; getters `isInRoom`, `canMove` |
+| Enter / leave room | `createGame` / `joinGame` / `leaveGame` (`TOURIST_ROOM` / `LOBBY_ROOM`) |
+| Room attach | `_attachRoom` `onStateChange` / `onLeave`; getter `isInRoom` |
 | Errors / loading flags | store `error` / `loading` / `listing`; pages show `q-banner`; theme save fail → `App.vue` banner |
 
 Local page state is fine for ephemeral UI (selected cell, form fields) that never leave that page. Game rules and board truth live on the server; client highlights are UI hints only.
@@ -108,12 +108,12 @@ Do not invent room schemas, HTTP routes, or move payloads — note the server pa
 |--------|------------|
 | Auth (email/password, anonymous, Google, logout) | `pages/LoginPage.vue` + `stores/auth.ts`; router guards in `router/index.ts` |
 | Lobby (list / create / join) | `pages/LobbyPage.vue` + `stores/game` `subscribeLobby` / `createGame` / `joinGame` |
-| Game board (render, move, rejoin) | `pages/GamePage.vue` + `stores/game` `sendMove` / `onStateChange` / `joinGame(roomId)` |
+| Game board (static layout, rejoin) | `pages/GamePage.vue` + `stores/game` `onStateChange` / `joinGame(roomId)` |
 | Env / deploy | `.env.*`, `env.d.ts`, `boot/colyseus.ts`, `.github/workflows/deploy.yml` |
 | Theme / layout chrome | `App.vue` header + `stores/theme` + `boot/theme` + `css/*` (board CSS ≠ app Dark) |
 | i18n copy | `src/i18n/`, boot `i18n` |
 
-Board cell values from server: `0` empty, `1` white, `2` black, `3` white king, `4` black king. Expected state: `board`, `currentTurn`, `status`, `players[sessionId].color`.
+Today: static tourist board on GamePage. Expected synced rules state — deferred. Room name `tourist`.
 
 ## Workflow
 
@@ -125,8 +125,8 @@ Board cell values from server: `0` empty, `1` white, `2` black, `3` white king, 
 
 2. Search by domain terms:
    - route paths and page names (`login`, `lobby`, `game`);
-   - store names and actions (`register`, `login`, `subscribeLobby`, `unsubscribeLobby`, `createGame`, `joinGame`, `sendMove`, `leaveGame`);
-   - Colyseus symbols (`CHECKERS_ROOM`, `LOBBY_ROOM`, `client.auth`, `onStateChange`, `room.send`);
+   - store names and actions (`register`, `login`, `subscribeLobby`, `unsubscribeLobby`, `createGame`, `joinGame`, `leaveGame`);
+   - Colyseus symbols (`TOURIST_ROOM`, `LOBBY_ROOM`, `client.auth`, `onStateChange`, `room.send`);
    - env keys (`VITE_COLYSEUS_URL`, `VITE_API_URL`);
    - user-visible strings in pages and `src/i18n/`.
 

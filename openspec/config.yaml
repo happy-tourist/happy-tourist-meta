@@ -36,7 +36,7 @@ context: |
   if unresolved, ask user for absolute happy-tourist-meta path.
   Runtime: два sibling Git-репозитория (не monorepo).
 
-  Проект: Happy Tourist — онлайн-шашки (realtime multiplayer) в браузере.
+  Проект: Happy Tourist — настольная игра «Счастливый турист» (realtime multiplayer) в браузере.
   Домены: auth (register/login/anonymous), lobby (rooms list/create/join), game (board, move, turn/status).
 
   Skills roots: .agents/skills/client/ (UI), .agents/skills/server/ (Colyseus),
@@ -63,9 +63,9 @@ context: |
   - Main spec: openspec/specs/<capability-id>/spec.md
   - <capability-id> — продуктовый путь (auth/login, lobby/rooms, game/board, game/move, …)
     из Business Entities в sibling AGENTS.md; неизвестный домен — согласовать ID в proposal, не выдумывать.
-  - ЗАПРЕЩЕНО: папка spec = номер задачи / имя change (specs/ht-123/, specs/add-checkers-room/).
-  - Пример: задача про ход шашки → change add-checkers-move, delta specs/game/move/spec.md.
-  - Контракт client↔server (room name `checkers`, state board/currentTurn/status/players, message `move`)
+  - ЗАПРЕЩЕНО: папка spec = номер задачи / имя change (specs/ht-123/, specs/add-tourist-room/).
+  - Пример: задача про ход в игре → change add-tourist-move, delta specs/game/move/spec.md.
+  - Контракт client↔server (room name `tourist`; synced rules/messages — when rules land)
     менять согласованно в обоих siblings.
 
   --- Client (projects-map ключ client → ../happy-tourist.github.io/) ---
@@ -86,7 +86,7 @@ context: |
   @colyseus/schema, Express 5 middleware (CORS, /health), Drizzle + SQLite (GameDatabase),
   mocha + @colyseus/testing, Node >= 22.
   Слои: app.config (defineServer) → rooms / schema / db; HTTP thin; правила игры авторитетны в room.
-  Целевой контракт с client: room `checkers`, state board/currentTurn/status/players, message `move` {from,to}.
+  Целевой контракт с client: room `tourist`; статичное поле на Game; rules/messages — later.
 
 # -----------------------------------------------------------------------------
 # applyContextFiles — обязательные файлы при /opsx-apply
@@ -167,7 +167,7 @@ rules:
     - 'Client — Forms: q-form / q-input rules; errors: store error + q-banner'
     - 'Server — Слои: app.config → rooms / schema / db; Express middleware thin; rules authoritative in room'
     - 'Server — Auth: JWT.verify в onAuth; users schema defaults совместимы с /auth/register|/auth/login'
-    - 'Server — Align room name `checkers` и state/message с client, не менять client unilaterally'
+    - 'Server — Align room name `tourist` и будущий state/message с client, не менять client unilaterally'
     - 'Конкретные файлы, функции, точки врезки в существующий flow'
     - 'Технические prerequisite и блокеры из explore'
     - 'Не дублировать чеклист tasks.md — ссылка на tasks'

@@ -109,12 +109,13 @@ When the client restores theme for a registered session (after `auth.ready` / id
 - **THEN** the preference read HTTP API is invoked a finite small number of times for that restore (typically once)
 - **AND** applying the returned theme (and any in-memory userdata or localStorage update) does not start another preference read for the same ready identity without a new identity change, sign-out, or explicit user theme action
 
-### Requirement: Checkers board appearance is unchanged by theme
+### Requirement: Tourist board appearance is unchanged by theme
 
-Changing the application chrome theme MUST NOT alter the checkers board cell colors, piece visuals, or move-hint styling defined for gameplay.
+Changing the application chrome theme MUST NOT alter the tourist board tile colors (start, task, and center fills). Board holes MUST continue to show the Game screen page background under the active light or dark chrome.
 
 #### Scenario [SC-THEME-07]: Board looks the same in light and dark chrome
 
-- **GIVEN** the user is on the Game screen with a visible board
+- **GIVEN** the user is on the Game screen with a visible tourist board
 - **WHEN** the chrome theme is switched between light and dark
-- **THEN** board squares, pieces, and move hints keep their existing gameplay visuals
+- **THEN** start, task, and center tile colors keep their gameplay fills
+- **AND** board holes remain visually aligned with the current page background

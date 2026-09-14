@@ -4,7 +4,7 @@ description: >-
   Use when adding, changing, reviewing, or debugging client authentication:
   LoginPage register/login/anonymous guest/Google one-click, Pinia auth store,
   client.auth from @colyseus/sdk, colyseus-auth-token, whenReady, router
-  requiresAuth / guest guards, or logout in this Quasar Vue 3 checkers SPA.
+  requiresAuth / guest guards, or logout in this Quasar Vue 3 tourist SPA.
 ---
 
 # Work With Auth

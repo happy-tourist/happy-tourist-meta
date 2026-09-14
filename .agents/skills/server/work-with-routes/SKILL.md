@@ -42,10 +42,10 @@ Configure HTTP in `src/app.config.ts`. Prefer not editing `src/index.ts`
 
 | Do | Don't |
 |----|--------|
-| Keep handlers thin (JSON / plain text, no board rules) | Put checkers move validation or board mutation in HTTP |
+| Keep handlers thin (JSON / plain text, no board rules) | Put tourist move validation or board mutation in HTTP |
 | Add demo/API-style endpoints via `createEndpoint` in `routes` | Invent a second Express router tree or BFF layer |
 | Put ops smoke checks (`/health`, `/hi`) in the `express` hook | Duplicate `/auth/*` or reinvent JWT login as custom Express routes |
-| Align registered room name (`checkers`) with client / HTTP path | Assume listing works for a room key the client does not use |
+| Align registered room name (`tourist`) with client / HTTP path | Assume listing works for a room key the client does not use |
 | Keep success bodies simple (`{ ... }` or plain text) | Invent `{ errorCode, errorMessage }` BFF envelopes (not used here) |
 | Leave CORS first in `express` (credentials + GitHub Pages origin) | Mount game state behind REST “for convenience” |
 
@@ -110,7 +110,7 @@ Do **not** hand-roll register/login/anonymous in Express. With `database` on
 
 ### Lobby listing vs room registration
 
-Live client lobby uses `lobby` + `checkers` with `.enableRealtimeListing()` (`work-with-rooms`). HTTP `GET /rooms/checkers` remains available as fallback for the same registered name — do not reintroduce `my_room`.
+Live client lobby uses `lobby` + `tourist` with `.enableRealtimeListing()` (`work-with-rooms`). HTTP `GET /rooms/tourist` remains available as fallback for the same registered name — do not reintroduce `my_room`.
 
 ## Layering
 
@@ -143,7 +143,7 @@ handler → mutate synced state. Not `POST /api/move`.
    - Thin JSON API / demo → `createEndpoint` inside `createRouter` in `app.config.ts`.
    - Ops / health / middleware-adjacent → `express(app)` hook.
 3. Do **not** add captcha/session Redis guards. Auth is Colyseus JWT + `/auth/*`.
-4. Keep the handler short; no Drizzle board writes, no checkers rules.
+4. Keep the handler short; no Drizzle board writes, no tourist rules.
 5. Match existing response style (simple JSON or plain text).
 6. If the client will call it, align path/method/body with `../happy-tourist.github.io` (or document that it is server-only smoke).
 7. Run `npm run build` from the server package root when useful; smoke `/health` locally when a dev server is running; fix failures before claiming done.
@@ -158,13 +158,13 @@ Do **not** create `src/app/routes/routes.js`-style BFF trees, mappers, or Soap/a
 | Reimplementing `/auth/register` in Express | Rely on `@colyseus/auth` + `database` |
 | Copying cookie `checkSession` / `createError` BFF envelopes | Not this stack — JWT + thin JSON |
 | Putting CORS after routes | Keep CORS first in `express` |
-| Expecting listing for a room key the client does not use | Keep registration as `checkers` (+ live `lobby`) |
+| Expecting listing for a room key the client does not use | Keep registration as `tourist` (+ live `lobby`) |
 | Fat handlers with DB game stats “because HTTP is easy” | Prefer room lifecycle / dedicated thin endpoint only if product asks |
 
 ## Checklist for a new or changed route
 
 1. Path lives in `src/app.config.ts` (`routes` and/or `express`) — not a new router package.
-2. Handler is thin; no authoritative checkers logic.
+2. Handler is thin; no authoritative tourist logic.
 3. Correct surface chosen (`createEndpoint` vs `express`).
 4. No duplicate of `/auth/*` or room listing.
 5. Response shape matches nearby endpoints.

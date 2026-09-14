@@ -3,7 +3,7 @@ name: client-verify-code
 description: >-
   Use when the user asks to verify code, check skill compliance, audit a branch
   diff vs master/main/merge-base, audit local diffs, or after implementing a
-  change in the happy-tourist checkers Vue 3 client. Also when checking Vue
+  change in the happy-tourist tourist Vue 3 client. Also when checking Vue
   Style Guide soft SFC order, or DRY / KISS / YAGNI balance on changed files.
   Reports three tiers: Violations, Warnings, Recommendations.
 ---
@@ -60,12 +60,12 @@ it does **not** allow skipping skills from this list.
 | `work-with-forms` | LoginPage `q-form` |
 | `work-with-pages` | routes + guards; App theme shell watch |
 | `client-work-with-structure` | pages/boot/stores layout |
-| `work-with-styles` | Quasar Dark + `/api/theme` + board CSS |
+| `work-with-styles` | Quasar Dark + `/api/theme` + tourist board CSS |
 | `client-work-with-auth` | Colyseus Auth |
 | `work-with-localization` | vue-i18n boot |
 | `work-with-lobby` | live LobbyRoom subscribe / leave before enter / create/join |
 | `work-with-rooms` | Room lifecycle |
-| `work-with-game-board` | board, moves, `canMove` |
+| `work-with-game-board` | Static tourist board (no move UX) |
 | `work-with-env-deploy` | `VITE_*`, hash router, GH Pages |
 
 If a new code skill appears under `.agents/skills/client/` (same kind: how to
@@ -248,15 +248,13 @@ Apply always; sibling skills win when they exist and conflict on a detail.
   (`new Client(import.meta.env.VITE_COLYSEUS_URL)`). Prefer importing `client`
   from `@/boot/colyseus` in script (not only `$colyseus`).
 - **No axios layer** — auth and rooms go through the Colyseus SDK client.
-- Lobby listing: `client.http.get('/rooms/checkers')` (not removed
+- Lobby listing: `client.http.get('/rooms/tourist')` (not removed
   `getAvailableRooms`).
-- Room type constant `CHECKERS_ROOM = 'checkers'` in `stores/game`.
+- Room type constant `TOURIST_ROOM = 'tourist'` in `stores/game`.
 - Room lifecycle: `create` / `joinById` / `joinOrCreate`, `onStateChange`,
-  `send('move')`, `leave`.
-- Move payload: `{ from, to }`. Board truth and rules live on the server;
-  client highlights are UI hints only.
-- Board cell values: `0` empty, `1` white, `2` black, `3` white king,
-  `4` black king.
+  `leave` (Game messages when rules land).
+- GamePage: static tourist board; no client-invented move protocol.
+- Synced board/rules encoding — deferred until product rules land.
 
 ### Auth and routing
 
@@ -297,7 +295,7 @@ Apply always; sibling skills win when they exist and conflict on a detail.
 
 | Tier | Examples |
 |------|----------|
-| **Violations** | Ad-hoc axios / second HTTP client; Colyseus I/O scattered outside stores; empty `catch` on auth/game; history router without request; inventing move protocol / board truth on client |
+| **Violations** | Ad-hoc axios / second HTTP client; Colyseus I/O scattered outside stores; empty `catch` on auth/game; history router without request; inventing game rules / board authority on client |
 | **Warnings** | Importing only `$colyseus` when `@/boot/colyseus` fits; wiring LobbyPage back to HTTP `refreshRooms` poll; hardcoding env URLs; expanding scaffold leftovers instead of login/lobby/game |
 | **Recommendations** | Vue SFC block order; minor formatting / import tidy; mild DRY/KISS polish |
 
@@ -369,14 +367,14 @@ Use only to decide **where to look harder**, never to drop a skill from Always i
 
 Reminders to **open the skill** (or Built-in) — skill text wins.
 
-- **Colyseus**: shared Client from boot; HTTP via `client.http`; moves via
-  `send('move')`; I/O in Pinia stores.
+- **Colyseus**: shared Client from boot; HTTP via `client.http`; Game `room.send`
+  only when rules exist; I/O in Pinia stores.
 - **Auth**: `client.auth` + `stores/auth`; guards wait for `whenReady()`.
 - **Theme**: Quasar Dark + `stores/theme`; registered GET restore ≠ JWT-only;
   stable App `watch([() => ready, () => id, () => anonymous])`; no `auth.user`
   replace after GET (SC-THEME-10).
 - **Lobby/rooms**: live LobbyRoom `subscribeLobby`; create/join/leave through `stores/game`.
-- **Board**: render server state; `canMove` gates sends; cell values 0–4.
+- **Board**: static tourist CSS Grid on GamePage; no `canMove` / draughts cells.
 - **Errors**: store `error` + `q-banner` (theme → `App.vue`); no empty `catch`.
 - **Env/deploy**: `VITE_*`, hash router, GH Pages SPA build.
 - **Vue SFC order** (soft): `<template>` → `<script setup>` → `<style>`.

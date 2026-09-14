@@ -1,13 +1,13 @@
 ---
 name: server-align-code
-description: Use when aligning branch and working-tree changes against the active OpenSpec change (primary), optional pasted clarifications, repository analogues, test readiness, preservation of previous behavior, Colyseus room registration (lobby + checkers + enableRealtimeListing), @colyseus/schema board/currentTurn/status/players, JWT onAuth, room message move {from,to}, Express CORS/health endpoints, handler/lifecycle feedback loops (message/HTTP/schema/timer storms), and GameDatabase/users schema consumed by sibling happy-tourist.github.io.
+description: Use when aligning branch and working-tree changes against the active OpenSpec change (primary), optional pasted clarifications, repository analogues, test readiness, preservation of previous behavior, Colyseus room registration (lobby + tourist + enableRealtimeListing), @colyseus/schema board/currentTurn/status/players, JWT onAuth, room message move {from,to}, Express CORS/health endpoints, handler/lifecycle feedback loops (message/HTTP/schema/timer storms), and GameDatabase/users schema consumed by sibling happy-tourist.github.io.
 ---
 
 # Align Code
 
-Perform a read-only code alignment audit for the Colyseus multiplayer checkers backend (`happy-tourist-server`) and report findings in Russian across three tiers: hard gaps, warnings, and recommendations.
+Perform a read-only code alignment audit for the Colyseus multiplayer tourist backend (`happy-tourist-server`) and report findings in Russian across three tiers: hard gaps, warnings, and recommendations.
 
-Stack context: Colyseus 0.18 (`defineServer` / `defineRoom` via `@colyseus/tools`), `@colyseus/auth` + JWT, `@colyseus/database` + drizzle-orm + better-sqlite3, `@colyseus/schema`, Express 5, TypeScript ESM (`"type": "module"`, NodeNext), Node `>= 22`. Entry: `src/index.ts` → `listen(app)`; configure rooms/HTTP/DB in `src/app.config.ts`. Contract consumers: sibling SPA `../happy-tourist.github.io` (room type `checkers`, live `lobby` LobbyRoom, state `board` / `currentTurn` / `status` / `players[sessionId].color`, message `move` `{ from, to }`, Colyseus Auth HTTP).
+Stack context: Colyseus 0.18 (`defineServer` / `defineRoom` via `@colyseus/tools`), `@colyseus/auth` + JWT, `@colyseus/database` + drizzle-orm + better-sqlite3, `@colyseus/schema`, Express 5, TypeScript ESM (`"type": "module"`, NodeNext), Node `>= 22`. Entry: `src/index.ts` → `listen(app)`; configure rooms/HTTP/DB in `src/app.config.ts`. Contract consumers: sibling SPA `../happy-tourist.github.io` (room type `tourist`, live `lobby` LobbyRoom, static Game board today, Colyseus Auth HTTP; synced rules/messages later).
 
 **Paths:** this skill currently lives in **this server repo** at `.agents/skills/server/` (temporary). Canonical skills/OpenSpec will move to **happy-tourist-meta** when present (`project-map.md` key `happy-tourist-meta`). Runtime `src/…` paths are relative to **this repository root**. Sibling Vue/Quasar client is **`../happy-tourist.github.io`**. Outside align-only mode, the agent runs `npm test` / `npm run build` / `npm run dev` from this repo root when verifying; fix failures before claiming done.
 
@@ -58,7 +58,7 @@ Load **in this order**:
 
 Treat explicit prohibitions and exceptions as atomic requirements: "не возвращать", "не добавлять", "не принимать", "только для…", "кроме…", "без JWT", "stub".
 
-Auth (register / login / anonymous) and room JWT gate (`onAuth` → `JWT.verify`) are first-class. Authoritative russian-checkers rules and board truth live on the server; do not treat client local highlights as fulfilment of server AC.
+Auth (register / login / anonymous) and room JWT gate (`onAuth` → `JWT.verify`) are first-class. Authoritative russian-tourist rules and board truth live on the server; do not treat client local highlights as fulfilment of server AC.
 
 A tester's guess/question is only a lead. Treat dialog wording as clarification only when it explicitly states or updates expected behavior relative to the active change.
 
@@ -77,7 +77,7 @@ For every stated `@colyseus/schema` field, independently verify:
 - who may mutate (server only — never trust client board);
 - serialization / `@type` annotations match consumer expectations.
 
-A synced field is not covered until all explicit properties are covered. Known client-expected surface: `board`, `currentTurn`, `status`, `players[sessionId].color` (cells: `0` empty, `1` white, `2` black, `3` white king, `4` black king). Scaffold `mySynchronizedProperty` alone does not fulfil that contract.
+A synced field is not covered until all explicit properties are covered. Known client contract today: room `tourist` + lobby listing. Synced rules fields are deferred; scaffold `mySynchronizedProperty` is not product rules state.
 
 ### Room messages
 
@@ -114,7 +114,7 @@ For every HTTP endpoint / listing, independently verify:
 2. HTTP method and exact path (`GET /health`, `GET /hi`, `GET /api/hello`, Colyseus `GET /rooms/:roomName`, `/auth/*`);
 3. middleware order — CORS **must be first** in the Express hook;
 4. CORS policy: production `https://happy-tourist.github.io` + credentials; development any origin;
-5. every query/path parameter (room name for listing must match registered room — client expects `checkers`);
+5. every query/path parameter (room name for listing must match registered room — client expects `tourist`);
 6. success body shape (`{ status, uptime }` for health, JSON for `/api/hello`);
 7. non-prod only: `/monitor`, playground — must not leak in production;
 8. room registration key in `defineServer({ rooms })` aligns with listing path the client calls.
@@ -132,7 +132,7 @@ HTTP /auth/* (register|login|anonymous) → JWT
 Example shape (auth join):
 
 ```ts
-// client: auth token → joinOrCreate('checkers')
+// client: auth token → joinOrCreate('tourist')
 // server: MyRoom.onAuth → JWT.verify(token) → userdata
 //         onJoin → assign color → state.players[sessionId].color
 ```
@@ -147,13 +147,13 @@ Example shape (move):
 Example shape (lobby):
 
 ```ts
-// client: joinOrCreate('lobby', { filter: { name: 'checkers' } }) + rooms / + / -
-// server: lobby: LobbyRoom; checkers: MyRoom.enableRealtimeListing()
+// client: joinOrCreate('lobby', { filter: { name: 'tourist' } }) + rooms / + / -
+// server: lobby: LobbyRoom; tourist: MyRoom.enableRealtimeListing()
 ```
 
 Method presence or "looks compatible" alone is insufficient. Track each contract fact separately so one correct layer cannot hide another mismatch.
 
-The client↔server contract is Colyseus Auth + room type `checkers` + live `lobby` + message `move` `{ from, to }` and state `board` / `currentTurn` / `status` / `players`. HTTP `/rooms/checkers` is optional fallback. When CR/docs/client and server disagree, report `code-only` / contradiction with both sides named (`src/rooms/*` / `src/rooms/schema/*` vs `../happy-tourist.github.io`).
+The client↔server contract is Colyseus Auth + room type `tourist` + live `lobby` + static Game board (no Game messages yet; synced rules fields deferred). HTTP `/rooms/tourist` is optional fallback. When CR/docs/client and server disagree, report `code-only` / contradiction with both sides named (`src/rooms/*` / `src/rooms/schema/*` vs `../happy-tourist.github.io`).
 
 Prefer aligning room name, schema, and messages with the client rather than changing the client unilaterally — unless AC explicitly says otherwise.
 
@@ -203,11 +203,11 @@ Report hard gaps only as:
 
 Ambiguous CR wording, unresolved Open Questions, or unproven leans → **Warnings**, not hard omissions.
 
-Wrong schema field source/constraint, missing `move` payload field, wrong room name registration, missing JWT `onAuth`, broken CORS order/origin, wrong cell encoding, or trusting client board as authoritative are explicit omissions.
+Wrong schema field source/constraint, wrong room name registration, missing JWT `onAuth`, broken CORS order/origin, or trusting client board as authoritative are explicit omissions.
 
 Score **Постановка: N/10** only from hard omissions (`missing` / `docs-only` / `code-only` / `extra`), not from Warnings or Recommendations.
 
-Known scaffold gap vs product contract (repository fact — elevate to hard only when AC/docs demand the product surface): room name is `checkers` (+ live `lobby`), but state is still scaffold; `move` not implemented; cells `0`–`4` not implemented. Do not treat scaffold alone as fulfilment of client contract AC.
+Known scaffold fact: room name is `tourist` (+ live `lobby`); synced rules / Game messages are deferred. Do not treat scaffold alone as fulfilment of AC that demands product rules — and do not invent draughts `move` / cells `0`–`4` as the current client contract.
 
 ## Axis B — Codebase
 
@@ -270,7 +270,7 @@ Runtime facts that often create defects:
 3. **Повторный вход** — может ли side effect снова попасть в тот же handler/route без нового внешнего события (self-send, webhook echo, middleware, вызывающий тот же endpoint).
 4. **Идемпотентность / guard** — dedupe key, generation, «already applied», clearInterval on dispose; отсутствие guard при доказанном re-entry → defect.
 5. **Room dispose / leave** — timers and subscriptions cleared in `onLeave`/`onDispose`; иначе накопление ticks после пустой комнаты.
-6. **Кратность** — на один client `move` / один preference POST ожидается конечный ответ/state patch, не каскад N сообщений без новых inputs.
+6. **Кратность** — на один client game message / один preference POST ожидается конечный ответ/state patch, не каскад N сообщений без новых inputs.
 
 Типичные петли для флага:
 
@@ -318,18 +318,16 @@ For every removed, renamed, or reshaped room/field/message, independently verify
 
 1. **Old public surface** — room type name, schema fields, message type/payload, success/reject behavior previously observed by clients/tests.
 2. **New resolution path** — which room class, schema type, or handler now owns the value.
-3. **Caller migration** — grep sibling client (`stores/game`, boot Colyseus, pages) and `test/` for old room names / field names / `'move'` payload; untouched client call sites are strong regression evidence.
+3. **Caller migration** — grep sibling client (`stores/game`, boot Colyseus, pages) and `test/` for old room names / field names / message types; untouched client call sites are strong regression evidence.
 4. **Effective sync** — trace what `@colyseus/schema` actually patches to clients; a renamed field with old client mapping is a break.
-5. **Indirect paths** — shared rule helpers, seat assignment used by join and move paths.
+5. **Indirect paths** — shared rule helpers, seat assignment used by join and future action paths.
 
 Typical regression patterns to flag:
 
-- room key or listing registration (`lobby` / `checkers` / `.enableRealtimeListing()`) changed without client/test update;
-- schema field renamed/omitted while client still reads `board` / `currentTurn` / `status` / `players…color`;
-- `onMessage('move')` payload shape drift (`from`/`to` / `row`/`col`);
+- room key or listing registration (`lobby` / `tourist` / `.enableRealtimeListing()`) changed without client/test update;
+- inventing or requiring draughts `board` / `currentTurn` / `move` / cells `0`–`4` as current product without AC;
 - `onAuth` removed or no longer calls `JWT.verify`;
-- `maxClients` / seat colors changed without AC;
-- cell encoding changed away from `0`–`4` without client sync.
+- seating / `maxClients` changed without AC.
 
 Report as `regression` or `defect` when old call sites deterministically stop receiving the intended state, accept/reject moves incorrectly, or fail join/list. Mention approximate client/test hit count when grep proves it.
 
@@ -370,13 +368,13 @@ Every finding goes into exactly one tier. Do not silence softer items; do not in
 
 Examples:
 
-- AC requires message `move` with `{ from, to }` and handler is absent → hard `[missing]`.
+- AC requires a specific game message/state shape and the handler/fields are absent → hard `[missing]`.
 - AC unclear whether disconnect forfeits or allows rejoin; code picks one and no wrong state is proven → **Warning** until discriminant is settled.
 - Analogue room always verifies JWT in `onAuth` and CR says «как MyRoom» → hard `[gap]` if that file is the cited evidence; if CR is silent → **Recommendation**.
 - OpenSpec `tasks.md` still unchecked while code exists → **Recommendation** (docs sync), not hard requirements gap.
 - Ambiguous CR wording that was misread once already → **Warning** with both readings, ask for confirmation rather than hard `missing`.
 - AC demands live LobbyRoom listing and server omits `lobby` / `.enableRealtimeListing()` → hard `[missing]` / `[code-only]` vs client contract as evidenced.
-- Scaffold-only state while AC demands board/turn/status/players → hard `[missing]` / `[docs-only]`; do not treat scaffold property as fulfilment.
+- Scaffold-only state while AC demands product sync fields → hard `[missing]` / `[docs-only]`; do not treat scaffold property as fulfilment (and do not invent draughts board/move as the AC).
 - `onMessage` / HTTP handler re-enters itself (or uncleared `setInterval` after dispose) and storms outbound work → hard `[defect]`.
 - Suspected re-entry without a proven storm path → **Warning** with cycle edges.
 

@@ -1,22 +1,4 @@
-# lobby/rooms Specification
-
-## Purpose
-
-Live-список доступных игровых комнат на экране лобби: авторизованный пользователь (включая гостя) видит актуальные комнаты `tourist` в реальном времени и может создать или присоединиться к партии.
-
-## Traceability
-
-| Scenario ID | Coverage |
-|-------------|----------|
-| SC-LOBBY-01 | partial (client subscribe on mount; full check → task 3.2 manual) |
-| SC-LOBBY-02 | covered (server mocha, task 1.5) |
-| SC-LOBBY-03 | covered (server mocha, task 1.5) |
-| SC-LOBBY-04 | covered (registration + tests/loadtest `tourist`, tasks 1.2/1.4) |
-| SC-LOBBY-05 | partial (client `_enterRoom` unsubscribe; full check → task 3.2) |
-| SC-LOBBY-06 | pending (manual, task 3.2) |
-| SC-LOBBY-07 | partial (store error + banner; full check → task 3.2) |
-
-## Requirements
+## MODIFIED Requirements
 
 ### Requirement: Live lobby listing subscription
 
@@ -70,13 +52,7 @@ While the user is on the game screen in an active `tourist` session, the client 
 - **WHEN** the user returns to the lobby screen without an active need for the game session listing
 - **THEN** the client establishes a new lobby listing subscription and shows the current `tourist` room list
 
-### Requirement: Lobby listing errors
+## RENAMED Requirements
 
-If establishing or maintaining the lobby listing subscription fails, the system SHALL surface an error on the lobby screen so the user can understand that the room list is unavailable, without blocking unrelated navigation such as logout.
-
-#### Scenario [SC-LOBBY-07]: Failed lobby subscribe
-
-- **GIVEN** the user is on the lobby screen
-- **WHEN** the lobby listing subscription fails to connect or errors after connect
-- **THEN** the lobby UI shows an error indication for the listing
-- **AND** the user can still leave the lobby (for example log out)
+- FROM: `### Requirement: Canonical checkers room name`
+- TO: `### Requirement: Canonical tourist room name`
