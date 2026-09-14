@@ -31,7 +31,7 @@ Coordinate with sibling skills when they exist: `work-with-schema`, `work-with-m
 | Registration | `src/app.config.ts` | `lobby: defineRoom(LobbyRoom)`; `tourist: defineRoom(MyRoom).enableRealtimeListing()` |
 | Game handler | `src/rooms/MyRoom.ts` | `Room` subclass: `onAuth`, `onCreate`, `onJoin`, `onDrop`, `onReconnect`, `onLeave`, `onDispose` |
 | Schema | `src/rooms/schema/MyRoomState.ts` | Synced state: `started` + `seats` Map (`connected` / `reconnectUntil`) |
-| Tests | `test/MyRoom.test.ts` | JWT, tourist connect; grace / consented / dispose (SC-PIECE-07…16); turn/move (SC-MOVE-*); lobby listing (SC-LOBBY-02/03) |
+| Tests | `test/MyRoom.test.ts` | JWT, tourist connect; grace / consented / dispose (SC-PIECE-07…16); turn/move (SC-MOVE-*); say presets (SC-SAY-*); lobby listing (SC-LOBBY-02/03) |
 | Loadtest | `loadtest/example.ts` | `joinOrCreate`; `--room tourist` |
 
 Registered room keys today: **`lobby`** (built-in listing) and **`tourist`** (playable `MyRoom` with realtime listing). Client `TOURIST_ROOM` / `LOBBY_ROOM` match these names — do not reintroduce `my_room`.
@@ -48,7 +48,7 @@ client create / joinById / joinOrCreate / reconnect('tourist')
         │  returns userdata → onJoin(…, auth)
         ▼
   onCreate(options)        ← once per room instance
-        │  setState(MyRoomState), setMetadata, onMessage('move')
+        │  setState(MyRoomState), setMetadata, onMessage('move'), onMessage('say')
         │  (enableRealtimeListing publishes to LobbyRoom subscribers)
         ▼
   onJoin(client, options, auth)

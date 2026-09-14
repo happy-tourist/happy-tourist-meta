@@ -89,7 +89,9 @@ Room mutates these in `onDrop` / `onReconnect` / seat assign — see `work-with-
 
 **Not synced:** room-private `turnOrder: string[]` in `MyRoom` (join-order queue). Client only needs «чей ход».
 
-- Client mirrors `started` + seats + `currentTurnSessionId` into Pinia; GamePage draws tokens, strip×4, presence, and local move chrome when `isMyTurn`.
+**Not synced (ephemeral messages):** preset `say` bubbles — room-private `liveSays` + `broadcast('say', …)`; client keeps `sayEvents` in Pinia. Do **not** add bubble fields to schema.
+
+- Client mirrors `started` + seats + `currentTurnSessionId` into Pinia; GamePage draws tokens, strip×4, presence, local move chrome when `isMyTurn`, and say bubbles from `sayEvents`.
 - Board **tile geometry** stays a client CSS Grid constant — not in schema.
 - Do **not** revive draughts `board` / cell `0`–`4` / `{ from, to }` encoding.
 
@@ -140,7 +142,7 @@ lockstep. Initialize collections in Room `onCreate` (not inside schema “logic�
 
 ## Don't
 
-- Put rules, seating pools, `turnOrder`, reconnect timers, win detection, or rating DB writes inside schema files.
+- Put rules, seating pools, `turnOrder`, reconnect timers, say/`liveSays`, win detection, or rating DB writes inside schema files.
 - Trust or echo a client-supplied full board/layout as truth.
 - Invent parallel field names without changing the client in the same effort.
 - Mix decorator `@type` Schema classes with the v5 `schema()` style in this package.

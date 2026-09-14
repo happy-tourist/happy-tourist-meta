@@ -4,7 +4,7 @@ description: >-
   Use when adding, changing, or reviewing Colyseus client I/O in the
   happy-tourist tourist SPA: Client singleton from src/boot/colyseus.ts,
   LobbyRoom live listing (subscribeLobby), room create/join/leave,
-  room.send move messages, client.auth register/sign-in/sign-out, Pinia
+  room.send move/say messages, client.auth register/sign-in/sign-out, Pinia
   auth/game stores, or VITE_COLYSEUS_URL / VITE_API_URL env wiring.
 ---
 
@@ -31,7 +31,7 @@ There is **no** axios layer and **no** BFF. Live lobby uses `LobbyRoom` WebSocke
 | Theme preference | `stores/theme.ts` → registered `client.http.get('/api/theme')` restore (≠ JWT-only) + `post('/api/theme', { body: { theme } })` on toggle; guest uses `localStorage` only |
 | Room names | `TOURIST_ROOM = 'tourist'`; `LOBBY_ROOM = 'lobby'` in `stores/game.ts` |
 | Connect | `client.create` / `joinById` / `joinOrCreate` via game store actions |
-| Game messages | `sendMove` → `room.send('move', { side, row, col })` when `isMyTurn` |
+| Game messages | `sendMove` → `move` when `isMyTurn`; `sendSay` → `say` `{ presetId: 'hello'\|'luck' }` + `onMessage('say')` → `sayEvents` |
 | Auth | `client.auth` — register / signIn / signOut / `onChange`; token key `colyseus-auth-token` |
 | Env | `VITE_COLYSEUS_URL`, `VITE_API_URL` (typed in `env.d.ts`) |
 | Errors | Store `error` string; pages show `q-banner` |
@@ -49,7 +49,7 @@ There is **no** axios layer and **no** BFF. Live lobby uses `LobbyRoom` WebSocke
 | Restore/save registered theme via `stores/theme` → `GET`/`POST` `/api/theme` | Theme HTTP from page templates; JWT-only restore after reload; save guest theme to the server |
 | Use `TOURIST_ROOM` / `LOBBY_ROOM` constants | Hardcode room names in multiple places or invent names without the server |
 | Enter rooms via `createGame` / `joinGame` (`_enterRoom`) | Duplicate connect + `onStateChange` wiring in pages |
-| Keep room I/O in Pinia `game` store | Call `room.send` from GamePage — use `sendMove` |
+| Keep room I/O in Pinia `game` store | Call `room.send` from GamePage — use `sendMove` / `sendSay` |
 | Auth via `client.auth.*` in `stores/auth` | Import `@colyseus/auth` on the client (that package is **server-side**) |
 | Catch into store `error`; clear loading in `finally` | Leave `listing` / `loading` stuck on reject |
 | Pages → stores → `client` | Pages → `client` directly |
@@ -92,8 +92,8 @@ Local defaults: `.env.development` → `localhost:2567`. Production: `.env.produ
 | Lobby list | `stores/game.ts` → `subscribeLobby` / `unsubscribeLobby` | `joinOrCreate('lobby', { filter })` + messages `rooms` / `+` / `-` |
 | HTTP fallback | `stores/game.ts` → `refreshRooms` | `client.http.get('/rooms/tourist')` (unused by LobbyPage) |
 | Room lifecycle | `stores/game.ts` → `createGame` / `joinGame` / `leaveGame` | `client.create` / `joinById` / `joinOrCreate`, `room.leave` |
-| Game board UI | `pages/GamePage.vue` | Layout + pieces / strip / presence / local hints; calls `sendMove` (no direct `room.send`) |
-| Live state | `stores/game.ts` → `_attachRoom` | `room.onStateChange` (`seats`/`started`/`currentTurnSessionId`), `onError`, `onLeave` |
+| Game board UI | `pages/GamePage.vue` | Layout + pieces / strip / presence / say bubbles; calls `sendMove` / `sendSay` (no direct `room.send`) |
+| Live state | `stores/game.ts` → `_attachRoom` | `onStateChange` (`seats`/`started`/`currentTurnSessionId`); `onMessage('say')` → `sayEvents`; `onError`, `onLeave` |
 
 Allowed dependency direction: `pages` → `stores` / `boot` / `components`. Keep all `client.*` and `room.*` I/O in stores.
 
@@ -102,7 +102,7 @@ Allowed dependency direction: `pages` → `stores` / `boot` / `components`. Keep
 | Store | Actions / API |
 |-------|----------------|
 | `auth` | `register`, `login`, `loginAnonymously`, `loginWithGoogle`, `logout`, `whenReady` |
-| `game` | `subscribeLobby`, `unsubscribeLobby`, `createGame`, `joinGame`, `rejoinGame`, `leaveGame`, `sendMove` (`refreshRooms` HTTP unused) |
+| `game` | `subscribeLobby`, `unsubscribeLobby`, `createGame`, `joinGame`, `rejoinGame`, `leaveGame`, `sendMove`, `sendSay` (`refreshRooms` HTTP unused) |
 
 Pages already wired:
 
@@ -110,7 +110,7 @@ Pages already wired:
 |------|-------|
 | `LoginPage` | `auth.register` / `login` / `loginAnonymously` / `loginWithGoogle` |
 | `LobbyPage` | `subscribeLobby` / `unsubscribeLobby`, `createGame`, `joinGame`, `leaveGame`; `auth.logout` |
-| `GamePage` | `game.rejoinGame(roomId)` on remount / soft-fail; pieces + presence from seats; move UX → `sendMove`; `leaveGame` |
+| `GamePage` | `game.rejoinGame(roomId)` on remount / soft-fail; pieces + presence + say bubbles from store; move UX → `sendMove`; say → `sendSay`; `leaveGame` |
 | Router | `auth.whenReady()` before `requiresAuth` / `guest` guards |
 
 ## Auth (`client.auth`)
@@ -259,6 +259,8 @@ room.onLeave(() => { this._resetRoomState(); });
 | Direction | Name | Payload |
 |-----------|------|---------|
 | Client → server | `move` | `{ side: 'N'\|'E'\|'S'\|'W', row, col }` via `sendMove` only when `isMyTurn` |
+| Client → server | `say` | `{ presetId: 'hello' \| 'luck' }` via `sendSay` (seated + connected; max 3 live / 10s) |
+| Server → clients | `say` | `{ sessionId, presetId, at }` via `room.onMessage` → store `sayEvents` (ephemeral; not schema) |
 
 ```ts
 sendMove(side: string, row: number, col: number): boolean {
@@ -266,9 +268,18 @@ sendMove(side: string, row: number, col: number): boolean {
   this.room.send('move', { side, row, col });
   return true;
 }
+
+sendSay(presetId: SayPresetId): boolean {
+  // whitelist hello|luck; seated + connected; prune sayEvents; refuse if ≥ 3 live
+  this.room.send('say', { presetId });
+  return true;
+}
+
+// in _attachRoom:
+room.onMessage('say', (message) => { /* validate → push sayEvents; prune by SAY_TTL_MS */ });
 ```
 
-Do **not** use legacy draughts `{ from, to }`. Pages must not call `room.send` directly. GamePage may start travel animation only when `sendMove` returns `true`.
+Do **not** use legacy draughts `{ from, to }`. Pages must not call `room.send` directly. GamePage may start travel animation only when `sendMove` returns `true`. Say UI reads `sayEvents` and calls `sendSay` only (`work-with-game-board`).
 
 ## Loading and errors
 
@@ -329,13 +340,14 @@ Catch at the page only if you need extra UI beyond `game.error`.
 ### Board + seats on GamePage
 
 ```ts
-// GamePage: LAYOUT + pieces + presence + local hints; remount → rejoinGame(roomId)
+// GamePage: LAYOUT + pieces + presence + say bubbles; remount → rejoinGame(roomId)
 // Own turn: select → red targets → game.sendMove(side, row, col)
+// Own online marker: picker → game.sendSay('hello'|'luck'); bubbles from game.sayEvents
 await game.leaveGame(); // consented — clears tourist reconnect token
 await router.push({ name: 'lobby' });
 ```
 
-Do not call `room.send` from the page; keep move protocol lockstep with server.
+Do not call `room.send` from the page; keep move/say protocol lockstep with server.
 
 ### Auth form submit
 
@@ -360,14 +372,14 @@ Show `auth.error` in a `q-banner`. Router already blocks until `whenReady()`.
 | Leaving `listing` / `loading` true after error | Always `finally` |
 | Skipping `whenReady` in router | Await before `requiresAuth` / `guest` redirects |
 | Inventing axios/BFF helpers | Stay on LobbyRoom + room messages (`client.http` only if needed) |
-| Calling `room.send('move', …)` from GamePage | Use `game.sendMove` only |
+| Calling `room.send('move'|'say', …)` from GamePage | Use `game.sendMove` / `game.sendSay` only |
 | Skipping `lint` / `typecheck` after Colyseus client changes | Run `npm run lint` / `typecheck` from client package root; fix failures |
 
 ## Checklist for a new or changed Colyseus call
 
 1. Belongs in `stores/auth` or `stores/game` (not a page).
 2. Uses shared `client` from `@/boot/colyseus`.
-3. Lobby list: LobbyRoom subscribe; rooms: `create` / `joinById` / `joinOrCreate`; Game `sendMove` → `move` `{ side, row, col }`. HTTP only as unused fallback.
+3. Lobby list: LobbyRoom subscribe; rooms: `create` / `joinById` / `joinOrCreate`; Game `sendMove` → `move`; `sendSay` → `say` + `onMessage('say')`. HTTP only as unused fallback.
 4. Room types use `TOURIST_ROOM` / `LOBBY_ROOM`.
 5. Loading flag cleared in `finally`; failures set store `error`.
 6. State fields / message payloads match `../happy-tourist-server` (lockstep), including `currentTurnSessionId`.

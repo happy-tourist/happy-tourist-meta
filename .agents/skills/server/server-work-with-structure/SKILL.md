@@ -15,7 +15,7 @@ description: >-
 Use this skill when creating or relocating code under `src` (and related
 `test/` / `loadtest/` / deploy wiring). This is a **realtime Colyseus game
 server**, not an Express BFF: authoritative seating, reconnect grace, turn order, and one-step move rules live in the Room;
-the client mirrors seats/connectivity/`currentTurnSessionId` and renders pieces + presence + local move chrome on a local board layout.
+the client mirrors seats/connectivity/`currentTurnSessionId` and renders pieces + presence + local move chrome + ephemeral say bubbles on a local board layout.
 
 Stack: Colyseus 0.18 (`defineServer` / `defineRoom` via `@colyseus/tools`),
 `@colyseus/auth` + JWT, `@colyseus/database` + Drizzle + better-sqlite3,
@@ -55,7 +55,7 @@ Sibling client: `../happy-tourist.github.io` (room type `tourist`, board + piece
 | Server wiring | `src/app.config.ts` | `defineServer`: `database`, `rooms`, `routes`, `express`; side-effect import of OAuth config |
 | OAuth config | `src/config/` | `auth.ts` — `auth.oauth.addProvider('google', …)`; no custom `onOAuthProviderCallback` in MVP |
 | Database | `src/db/` | `GameDatabase` (`index.ts`) + Drizzle user schema (`schema.ts`) |
-| Rooms | `src/rooms/` | Room handlers (`onCreate` / `onJoin` / `onDrop` / `onReconnect` / leave / dispose; `onMessage('move')`) |
+| Rooms | `src/rooms/` | Room handlers (`onCreate` / `onJoin` / `onDrop` / `onReconnect` / leave / dispose; `onMessage('move'|'say')`) |
 | Schema | `src/rooms/schema/` | `@colyseus/schema` synced state (`started` + `seats` + `currentTurnSessionId`) |
 | Pure rules | `src/game/` | Authoritative move validate/apply (`touristMove.ts`) — no Colyseus I/O |
 | Tests | `test/` | mocha + `@colyseus/testing` (`*.test.ts`) |
@@ -72,7 +72,7 @@ Env templates: `.env.example`, `.env.development`, `.env.production` (do not com
 | **`app.config.ts`** | Wire `database`, register rooms, thin `routes` / `express` (CORS first, health, dev monitor/playground); import `./config/auth.js` | Game rules, board mutation |
 | **`config/`** | OAuth provider registration (`addProvider`) | Room gate, user schema, custom OAuth callback (leave built-in) |
 | **`db/`** | SQLite GameDatabase; extend `colyseus_users` with defaults | Room messages; inventing a second auth store |
-| **`rooms/`** | Auth gate (`onAuth`), seats, reconnect grace, turn order, `onMessage('move')` + schema writes | Raw HTTP; client-trusted board; pure geometry tables (prefer `src/game/`) |
+| **`rooms/`** | Auth gate (`onAuth`), seats, reconnect grace, turn order, `onMessage('move'|'say')` + schema writes (move) / ephemeral broadcast (say) | Raw HTTP; client-trusted board; pure geometry tables (prefer `src/game/`) |
 | **`rooms/schema/`** | Sync fields (`started` + `seats` → `touristId` + `pieces` + connectivity + `currentTurnSessionId`) | Validation / rules / side effects |
 | **`game/`** | Pure tourist move rules (playable cells, Chebyshev, occupancy) | Room lifecycle, schema `@type`, HTTP |
 | **`test/` / `loadtest/`** | Boot server / joinOrCreate clients | Production deploy secrets |
@@ -234,7 +234,7 @@ ecosystem.config.cjs
 
 **Test** — `boot(appConfig)`, `JWT.sign(...)`, `createRoom("tourist")`, `connectTo`, assert `sessionId`; lobby `+`/`-` cases when listing changes.
 
-**Client contract** — room `tourist` + live `lobby`; synced `seats` / `started` / `currentTurnSessionId` + `move` `{ side, row, col }`; HTTP `/rooms/tourist` is fallback only.
+**Client contract** — room `tourist` + live `lobby`; synced `seats` / `started` / `currentTurnSessionId` + `move` `{ side, row, col }` + ephemeral `say` `{ presetId }` → broadcast `{ sessionId, presetId, at }`; HTTP `/rooms/tourist` is fallback only.
 
 ## Creating New Pieces — Checklist
 

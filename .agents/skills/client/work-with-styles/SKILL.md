@@ -176,8 +176,10 @@ Board UI is custom CSS Grid (not Quasar widgets). Keep selectors local and class
 | `.tile-center` | Yellow center (`#ffeb3b`); one element with `span 2` / `span 2` |
 | `.tile--selected` / `.tile--target` | Local white / red move chrome (current-turn client only) |
 | `.piece` | Absolute `left`/`top` from `--pcol`/`--prow` + `--cell`; ~250ms transition |
+| `.say-bubble` / `.say-picker` | Presence comic bubbles + picker; chrome follows Dark via `body.body--dark` overrides (not tile fills) |
+| `.say-affordance` | Small circular control on own online marker |
 
-Current-turn interactivity and travel animation live in `work-with-game-board` — do not reintroduce draughts `.cell` / selection classes.
+Current-turn interactivity, say bubbles/picker, and travel animation live in `work-with-game-board` — do not reintroduce draughts `.cell` / selection classes.
 
 When editing board visuals:
 
@@ -186,7 +188,9 @@ When editing board visuals:
 - Do not replace the board with Quasar grid components unless explicitly asked.
 - Do **not** retune tile fills for app Dark mode — chrome theme must not
   change the tourist board look.
-- See `work-with-game-board` for layout constant / center span rules.
+- Say bubbles/picker **may** use `body.body--dark` overrides (readable chrome);
+  keep them comic bubbles near presence, not Quasar Notify toasts.
+- See `work-with-game-board` for layout constant / center span / say rules.
 
 ## Template Utilities And Color Props
 

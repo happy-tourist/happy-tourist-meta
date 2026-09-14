@@ -3,10 +3,11 @@ name: server-work-with-test
 description: >-
   Use when planning or writing mocha + @colyseus/testing tests for
   happy-tourist-server: room connect with JWT, onAuth failures, seating /
-  reconnect grace (SC-PIECE), move messages, schema sync assertions,
-  GET /rooms listing, or preference HTTP (GET/POST /api/theme).
-  Core workflow: test plan (mocks/verify) → write test/*.test.ts → run npm test
-  from server package root and fix failures. Do not invent Jest/babel patterns.
+  reconnect grace (SC-PIECE), move messages (SC-MOVE), preset say (SC-SAY),
+  schema sync assertions, GET /rooms listing, or preference HTTP
+  (GET/POST /api/theme). Core workflow: test plan (mocks/verify) → write
+  test/*.test.ts → run npm test from server package root and fix failures.
+  Do not invent Jest/babel patterns.
 trigger: slash
 ---
 
@@ -112,6 +113,10 @@ Use these categories only when the SUT has relevant behavior:
   reject; out-of-turn / spectator reject; permanent leave advances; offline grace
   keeps turn). Pure rules without room I/O: `test/touristMove.test.ts`. Do **not**
   assert draughts-era `board` / `players[sessionId].color`.
+- Preset say: cover SC-SAY-* in `test/MyRoom.test.ts` (known preset broadcast;
+  non-whitelist / spectator / offline grace silent reject; off-turn seated OK;
+  spectators receive; max 3 live / `SAY_TTL_MS` then send again). Assert via
+  `waitForMessage('say')` / observer flags — **not** schema fields.
 - Listing: live LobbyRoom — after `createRoom("tourist")`, lobby client
   receives `+`; after dispose, receives `-` (SC-LOBBY-02/03). HTTP
   `GET /rooms/tourist` remains optional fallback.
@@ -151,6 +156,12 @@ Verify move / turn (SC-MOVE):
 - First seated holds `currentTurnSessionId`; successful move advances join-order queue
 - Legal orthogonal/diagonal one-step: piece row/col update; illegal/out-of-turn/spectator: unchanged
 - Permanent leave of current advances turn; offline grace does not
+
+Verify preset say (SC-SAY):
+- Known `presetId` hello|luck → all clients get `say` `{ sessionId, presetId, at }`
+- Unknown / free text / spectator / offline grace → no broadcast
+- Seated off-turn may say; spectators see seated say
+- Fourth concurrent live say rejected; after `SAY_TTL_MS` may send again
 
 Verify live lobby listing:
 - joinOrCreate("lobby", { filter: { name: "tourist" } }); createRoom("tourist") → lobby receives +
@@ -226,6 +237,16 @@ Canonical coverage: `test/MyRoom.test.ts` (SC-MOVE-*) + pure `test/touristMove.t
 - Pure module tests cover playable set, Chebyshev, occupancy without room I/O.
 
 Server is authoritative; never assert by trusting a client-only board copy.
+
+### Preset say (SC-SAY)
+
+Canonical coverage: `test/MyRoom.test.ts` (SC-SAY-*).
+
+- Accept `hello` / `luck` → `broadcast('say', { sessionId, presetId, at })` to seated + spectators.
+- Reject non-whitelist, spectator, offline-grace seat without broadcast (silent).
+- Turn ownership not required; max `SAY_MAX_LIVE` (3) concurrent per session within `SAY_TTL_MS` (10s).
+- Do **not** assert say via schema — use `client.waitForMessage('say')` / message listeners.
+- TTL cases may need `this.timeout(SAY_TTL_MS + …)` above the default.
 
 ### Schema sync assertions
 

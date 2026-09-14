@@ -16,7 +16,7 @@ There is **no** country config, phone masks, locale switcher, or brand localizat
 
 ## Reality check
 
-Boot and message catalog exist, but Login / Lobby / Game pages mostly **hardcode Russian** copy today. Scaffold keys in `src/i18n/en-US` (`failed` / `success`) are barely used.
+Boot and message catalog exist; Login / Lobby still mostly **hardcode Russian**. Scaffold keys (`failed` / `success`) are barely used. **Exception (game/say):** preset labels and affordance use i18n `game.say.*` (`hello` / `luck` / `affordance`) — keep display copy in the catalog, never in the wire `presetId`.
 
 When adding **new** user-facing strings, prefer i18n keys via `$t` / `useI18n`. Do not mass-migrate hardcoded Russian unless the user asks.
 
@@ -67,6 +67,13 @@ export default {
   success: 'Action was successful',
   login: {
     google: 'Продолжить с Google', // LoginPage; catalog lives under en-US even when copy is RU
+  },
+  game: {
+    say: {
+      affordance: 'Сказать',
+      hello: 'Всем привет',
+      luck: 'Удачи',
+    },
   },
   // lobby: { title: 'Lobby' },
 };

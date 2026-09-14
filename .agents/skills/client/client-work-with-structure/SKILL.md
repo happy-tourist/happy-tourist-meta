@@ -187,7 +187,7 @@ Registered in `quasar.config.ts` boot array: `theme`, `i18n`, `colyseus` (+ `fra
 
 **Lobby** — `LobbyPage` uses `useGameStore().subscribeLobby` / `createGame` / `joinGame` and `useAuthStore` for display/logout.
 
-**Game** — `GamePage` shows tourist board with all seats’ pieces (4 per seated) + occupied presence (offline grace ring) + strip×4 if seated; on `isMyTurn` local select/hints and `game.sendMove`; `rejoinGame(roomId)` on mount / soft-fail (reconnect token → `joinById`).
+**Game** — `GamePage` shows tourist board with all seats’ pieces (4 per seated) + occupied presence (offline grace ring) + strip×4 if seated; on `isMyTurn` local select/hints and `game.sendMove`; seated+online own marker may `game.sendSay` (preset bubbles from `sayEvents`); `rejoinGame(roomId)` on mount / soft-fail (reconnect token → `joinById`).
 
 **App shell** — `App.vue` hosts `q-layout` → theme `q-header` → `router-view`; stable `watch([() => auth.ready, () => auth.user?.id, () => auth.user?.anonymous], …)` → `theme.syncFromAuthUser` (GET restore for registered; do not replace `auth.user` after GET); shows `theme.error` banner.
 
@@ -227,7 +227,7 @@ Registered in `quasar.config.ts` boot array: `theme`, `i18n`, `colyseus` (+ `fra
 | Auth | `LoginPage` | `stores/auth` + `boot/colyseus` |
 | Theme (chrome Dark) | `App.vue` header | `stores/theme` + `boot/theme` |
 | Lobby / rooms | `LobbyPage` | `stores/game.subscribeLobby` / create / join |
-| Game session | `GamePage` | `stores/game` room attach + seats (`touristId` + `pieces[]` + connectivity) / presence / strip×4 |
+| Game session | `GamePage` | `stores/game` room attach + seats (`touristId` + `pieces[]` + connectivity) / presence / say bubbles / strip×4 |
 | Shell | `App.vue` | layout + theme header/banner + `router-view` |
 
 Routes (from `src/router/routes.ts`):

@@ -11,7 +11,7 @@ description: >-
 
 Use this skill for **authoritative tourist-room game logic** («Счастливый турист») in `happy-tourist-server`.
 
-Server owns seating, reconnect grace, turn order, and one-step move validation. Client board geometry is local CSS Grid; pieces/strip/presence/hints mirror synced seats + `currentTurnSessionId`. Do not trust client-local seat assignment or client hints as authority. Do not invent legacy draughts rules.
+Server owns seating, reconnect grace, turn order, and one-step move validation. Client board geometry is local CSS Grid; pieces/strip/presence/hints mirror synced seats + `currentTurnSessionId`. Do not trust client-local seat assignment or client hints as authority. Do not invent legacy draughts rules. Preset **`say`** is **not** game rules — whitelist I/O + live-limit live in `work-with-messages` / `MyRoom.handleSay` (ephemeral broadcast; not `touristMove.ts`, not schema).
 
 Pair with client board UX: `happy-tourist-meta/.agents/skills/client/work-with-game-board/SKILL.md`.
 
@@ -19,7 +19,7 @@ Pair with client board UX: `happy-tourist-meta/.agents/skills/client/work-with-g
 
 | Surface | Path | Role |
 | --- | --- | --- |
-| Room | `src/rooms/MyRoom.ts` | JWT `onAuth`; seat assign; `turnOrder` + turn hooks; `onMessage('move')`; `onDrop`/`onReconnect`/`onLeave` |
+| Room | `src/rooms/MyRoom.ts` | JWT `onAuth`; seat assign; `turnOrder` + turn hooks; `onMessage('move')` (+ `say` → see messages skill); `onDrop`/`onReconnect`/`onLeave` |
 | Schema | `src/rooms/schema/MyRoomState.ts` | `started` + `seats` + `currentTurnSessionId` |
 | Rules | `src/game/touristMove.ts` | Pure validate/apply one-step move (no Colyseus I/O) |
 | Registration | `src/app.config.ts` | Room name must be `tourist` for client lobby |
@@ -77,10 +77,11 @@ LobbyRoom: **no** grace / `allowReconnection` — see `work-with-rooms` (D7).
 | Board UI | Client-only `LAYOUT` in `GamePage`; server does **not** sync tile kinds |
 | Synced state | `started`, `seats` Map → `touristId` + four `pieces` + connectivity, `currentTurnSessionId` |
 | Message | Client → server `move` `{ side, row, col }` via game store `sendMove` |
+| Say (ephemeral) | `say` `{ presetId }` → `broadcast('say', { sessionId, presetId, at })` — see `work-with-messages`; **not** schema |
 | Reconnect | Colyseus token; client `localStorage` + `reconnect` then `joinById` |
 | Presence / hints | Client-only chrome; selection + red targets local to current-turn client |
 
-Client-local only (do **not** put on schema): Pinia status strings; `selectedSide` / legal hints; presence layout; `turnOrder` (room-private). Lobby leave-before-enter / quiet listing stays in `work-with-rooms` / client `work-with-lobby`.
+Client-local / room-private only (do **not** put on schema): Pinia status strings; `selectedSide` / legal hints; presence layout; say bubbles (`sayEvents` / `liveSays`); `turnOrder` (room-private). Lobby leave-before-enter / quiet listing stays in `work-with-rooms` / client `work-with-lobby`.
 
 ## Architecture Preference
 
@@ -120,7 +121,7 @@ onMessage('move') → parse { side, row, col } → pure validate/apply (touristM
 
 - Client board + presence: `.agents/skills/client/work-with-game-board/SKILL.md`
 - Schema seats + turn: `.agents/skills/server/work-with-schema/SKILL.md`
-- Messages (`move`): `.agents/skills/server/work-with-messages/SKILL.md`
+- Messages (`move` / `say`): `.agents/skills/server/work-with-messages/SKILL.md`
 - Rooms / registration / LobbyRoom policy: `.agents/skills/server/work-with-rooms/SKILL.md`
 - Change-point map: `.agents/skills/server/server-locate-change-points/SKILL.md`
 - Package overview: `../happy-tourist-server/AGENTS.md`

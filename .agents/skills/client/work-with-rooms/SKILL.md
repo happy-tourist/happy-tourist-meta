@@ -44,7 +44,8 @@ createGame / joinGame(roomId?) / joinGame() / rejoinGame(roomId)
         │  await unsubscribeLobby()    ← SC-LOBBY-05 only on success
         ▼
   listeners (store only)
-        │  onStateChange → seats (incl. connected/reconnectUntil) / started / sessionId
+        │  onStateChange → seats (incl. connected/reconnectUntil) / started / sessionId / currentTurnSessionId
+        │  onMessage('say') → sayEvents (ephemeral; not schema)
         │  onError → error string
         │  onLeave → _resetRoomState()  ← keeps localStorage token (unexpected drop)
         ▼
@@ -61,7 +62,8 @@ createGame / joinGame(roomId?) / joinGame() / rejoinGame(roomId)
 | Join or create | `joinGame()` (no id) | `client.joinOrCreate(TOURIST_ROOM, options)` |
 | Rejoin after F5 | `rejoinGame(roomId)` | `client.reconnect(token)` then fallback `joinById` |
 | Leave (consented) | `leaveGame()` | clear token + `unsubscribeLobby` + `room.leave()` after `_resetRoomState` |
-| Game messages | `sendMove(side, row, col)` | `room.send('move', { side, row, col })` when `isMyTurn` |
+| Game move | `sendMove(side, row, col)` | `room.send('move', { side, row, col })` when `isMyTurn` |
+| Game say | `sendSay(presetId)` | `room.send('say', { presetId: 'hello'\|'luck' })` when seated+connected; max 3 live / 10s |
 
 All connect paths go through `_enterRoom`. Do not call `client.create` / `joinById` / `joinOrCreate` / `reconnect` from pages.
 
@@ -101,17 +103,18 @@ async _enterRoom(connect: () => Promise<Room>) {
 
 Wire listeners **once** in the store (never in `GamePage`):
 
-1. Assign `this.room`, `this.roomId = room.roomId`, `this.sessionId = room.sessionId`, `this.status = 'waiting'`.
+1. Assign `this.room`, `this.roomId = room.roomId`, `this.sessionId = room.sessionId`, `this.status = 'waiting'`; clear `sayEvents`.
 2. **`saveTouristReconnect(room)`** — persist `{ roomId, token: room.reconnectionToken }` in **`localStorage`** key `ht-tourist-reconnect` (design D3; **never** lobby). `loadTouristReconnect` MAY one-shot migrate the same key from legacy `sessionStorage`.
-3. `room.onStateChange` — map `started` / `seats` (incl. connectivity) → Pinia; refresh token (may rotate); also mirror `room.state` once if already present.
-4. `room.onError` — set `this.error`.
-5. `room.onLeave` — call `_resetRoomState()` **without** clearing the tourist token (unexpected drop / soft disconnect — F5 may still `reconnect`).
+3. `room.onStateChange` — map `started` / `seats` (incl. connectivity) / `currentTurnSessionId` → Pinia; refresh token (may rotate); also mirror `room.state` once if already present.
+4. `room.onMessage('say')` — validate whitelist payload → push ephemeral `sayEvents` (prune by `SAY_TTL_MS`; max `SAY_MAX_LIVE` per session).
+5. `room.onError` — set `this.error`.
+6. `room.onLeave` — call `_resetRoomState()` **without** clearing the tourist token (unexpected drop / soft disconnect — F5 may still `reconnect`).
 
 **Ordering:** call `_attachRoom` immediately after `connect()` succeeds — **before** any other `await` (including `unsubscribeLobby`).
 
 ### `_resetRoomState()`
 
-Clear session fields: `room`, `roomId`, `sessionId`, `started`, `seats`, `status = 'idle'`. Does **not** clear lobby `rooms` / `listing` / `error` and does **not** clear the tourist reconnection token (callers that consent to leave must clear it explicitly).
+Clear session fields: `room`, `roomId`, `sessionId`, `started`, `currentTurnSessionId`, `seats`, `sayEvents`, `status = 'idle'`. Does **not** clear lobby `rooms` / `listing` / `error` and does **not** clear the tourist reconnection token (callers that consent to leave must clear it explicitly).
 
 ## Tourist reconnection token (D3)
 
