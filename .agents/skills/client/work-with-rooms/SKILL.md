@@ -2,9 +2,10 @@
 name: work-with-rooms
 description: >-
   Use when adding, changing, reviewing, or debugging Colyseus room lifecycle in
-  the happy-tourist tourist client: createGame / joinGame / leaveGame,
-  _enterRoom / _attachRoom / _resetRoomState, onStateChange / onError / onLeave,
-  GamePage rejoin by roomId after refresh, or TOURIST_ROOM wiring.
+  the happy-tourist tourist client: createGame / joinGame / rejoinGame /
+  leaveGame, sessionStorage tourist reconnection token, _enterRoom /
+  _attachRoom / _resetRoomState, onStateChange / onError / onLeave, GamePage
+  reconnect-then-joinById after refresh, or TOURIST_ROOM wiring.
 ---
 
 # Work With Rooms
@@ -13,15 +14,17 @@ Use this skill for **Colyseus room lifecycle** in the happy-tourist client (`hap
 
 Room connect, listeners, and leave live in **`src/stores/game.ts`**. Pages call store actions only. Do **not** put `room.onStateChange` / `onError` / `onLeave` in pages.
 
-Coordinate schema / protocol (room name, state shape, `move` message) with [`../happy-tourist-server`](../../../../happy-tourist-server).
+Coordinate schema / protocol (room name, state shape, seat connectivity, `move` message) with [`../happy-tourist-server`](../../../../happy-tourist-server).
+
+**Tourist vs lobby:** reconnection grace and `sessionStorage` token apply **only** to room `tourist`. Lobby listing is fire-and-forget / quiet resubscribe — see `work-with-lobby` (design D3 / D7).
 
 ## Map Of Pieces
 
 | Layer | Path | Role |
 |-------|------|------|
-| Store | `src/stores/game.ts` | `TOURIST_ROOM`, create/join/leave, `_attachRoom` listeners |
+| Store | `src/stores/game.ts` | `TOURIST_ROOM`, create/join/rejoin/leave, token persist, `_attachRoom` listeners |
 | Lobby | `src/pages/LobbyPage.vue` | `createGame` / `joinGame` → navigate to `game` with `roomId` |
-| Game | `src/pages/GamePage.vue` | Board: all seats’ pieces + strip×4 if seated; rejoin by `roomId`; `leaveGame` |
+| Game | `src/pages/GamePage.vue` | Board + presence; `rejoinGame(roomId)` on mount / soft-fail; `leaveGame` |
 | Boot | `src/boot/colyseus.ts` | Shared `Client` (`VITE_COLYSEUS_URL`) |
 | Route | `/game/:roomId` | Hash mode; `meta.requiresAuth` |
 
@@ -30,23 +33,23 @@ Room type constant: `TOURIST_ROOM = 'tourist'`.
 ## Lifecycle Flow
 
 ```text
-createGame / joinGame(roomId?) / joinGame()
+createGame / joinGame(roomId?) / joinGame() / rejoinGame(roomId)
         │
         ▼
   _enterRoom(connect)
         │  status = 'connecting'; clear error
         │  await _leaveTouristRoom()  ← prior tourist only; lobby stays live
-        │  room = await connect()      ← create | joinById | joinOrCreate
-        │  _attachRoom(room)           ← BEFORE any await (catch first ROOM_STATE)
+        │  room = await connect()      ← create | joinById | joinOrCreate | reconnect
+        │  _attachRoom(room)           ← BEFORE any await; save tourist token
         │  await unsubscribeLobby()    ← SC-LOBBY-05 only on success
         ▼
   listeners (store only)
-        │  onStateChange → seats / started / sessionId → status
+        │  onStateChange → seats (incl. connected/reconnectUntil) / started / sessionId
         │  onError → error string
-        │  onLeave → _resetRoomState()
+        │  onLeave → _resetRoomState()  ← keeps sessionStorage token (unexpected drop)
         ▼
-  leaveGame() or remote leave
-        │  unsubscribeLobby(); _resetRoomState(); room.leave() (swallow)
+  leaveGame() (consented)
+        │  clearTouristReconnect(); unsubscribeLobby(); _resetRoomState(); room.leave()
 ```
 
 ### Public actions → SDK
@@ -56,10 +59,11 @@ createGame / joinGame(roomId?) / joinGame()
 | New room | `createGame(options?)` | `client.create(TOURIST_ROOM, options)` |
 | Join by id | `joinGame(roomId, options?)` | `client.joinById(roomId, options)` |
 | Join or create | `joinGame()` (no id) | `client.joinOrCreate(TOURIST_ROOM, options)` |
-| Leave | `leaveGame()` | `unsubscribeLobby` + `room.leave()` after `_resetRoomState` |
+| Rejoin after F5 | `rejoinGame(roomId)` | `client.reconnect(token)` then fallback `joinById` |
+| Leave (consented) | `leaveGame()` | clear token + `unsubscribeLobby` + `room.leave()` after `_resetRoomState` |
 | Game messages | Deferred until rules land | Coordinate with `work-with-game` |
 
-All connect paths go through `_enterRoom`. Do not call `client.create` / `joinById` / `joinOrCreate` from pages.
+All connect paths go through `_enterRoom`. Do not call `client.create` / `joinById` / `joinOrCreate` / `reconnect` from pages.
 
 ## Private Actions Pattern
 
@@ -98,20 +102,33 @@ async _enterRoom(connect: () => Promise<Room>) {
 Wire listeners **once** in the store (never in `GamePage`):
 
 1. Assign `this.room`, `this.roomId = room.roomId`, `this.sessionId = room.sessionId`, `this.status = 'waiting'`.
-2. `room.onStateChange` — map `started` / `seats` → Pinia (see below); also mirror `room.state` once if already present.
-3. `room.onError` — set `this.error`.
-4. `room.onLeave` — call `_resetRoomState()`.
+2. **`saveTouristReconnect(room)`** — persist `{ roomId, token: room.reconnectionToken }` in **`sessionStorage`** key `ht-tourist-reconnect` (design D3; **never** lobby).
+3. `room.onStateChange` — map `started` / `seats` (incl. connectivity) → Pinia; refresh token (may rotate); also mirror `room.state` once if already present.
+4. `room.onError` — set `this.error`.
+5. `room.onLeave` — call `_resetRoomState()` **without** clearing the tourist token (unexpected drop / soft disconnect — F5 may still `reconnect`).
 
 **Ordering:** call `_attachRoom` immediately after `connect()` succeeds — **before** any other `await` (including `unsubscribeLobby`).
 
 ### `_resetRoomState()`
 
-Clear session fields: `room`, `roomId`, `sessionId`, `started`, `seats`, `status = 'idle'`. Does **not** clear lobby `rooms` / `listing` / `error` (leave that to callers when appropriate).
+Clear session fields: `room`, `roomId`, `sessionId`, `started`, `seats`, `status = 'idle'`. Does **not** clear lobby `rooms` / `listing` / `error` and does **not** clear the tourist reconnection token (callers that consent to leave must clear it explicitly).
+
+## Tourist reconnection token (D3)
+
+| Event | Token |
+|-------|--------|
+| Successful tourist enter / soft reconnect | Save `reconnectionToken` + `roomId` to `sessionStorage` |
+| Consented `leaveGame` / `_leaveTouristRoom` (swap rooms) | **Clear** storage |
+| Unexpected `onLeave` (drop) | **Keep** storage for remount / F5 |
+| Lobby subscribe | **Never** write lobby token |
+
+Do **not** use `localStorage` (cross-tab revive rejected in design).
 
 ## leaveGame
 
 ```ts
 async leaveGame() {
+  clearTouristReconnect(); // consented leave (D3)
   await this.unsubscribeLobby();
   const room = this.room;
   this._resetRoomState();
@@ -125,88 +142,90 @@ async leaveGame() {
 }
 ```
 
-- Used for logout / explicit leave (Lobby «Выйти», GamePage «Лобби»).
-- Reset Pinia first, then call `leave`.
+- Used for logout / explicit leave (Lobby «Выйти», GamePage «Лобби») — **consented** leave on server (immediate seat remove, no grace).
+- Clear tourist token, reset Pinia, then call `leave`.
 - **Swallow** closed-room errors — do not surface them as `game.error`.
-- `_enterRoom` uses `_leaveTouristRoom` (not `leaveGame`) so a failed enter keeps the lobby list live.
+- `_enterRoom` uses `_leaveTouristRoom` (not `leaveGame`) so a failed enter keeps the lobby list live; `_leaveTouristRoom` also clears the prior tourist token when leaving a live prior room.
 
 ## onStateChange Mapping
 
-**Today** (seats / pieces phase — coordinate with `../happy-tourist-server`):
+**Today** (seats / pieces / connectivity — coordinate with `../happy-tourist-server`):
 
 | Server field | Store field |
 |--------------|-------------|
 | `started` | `started`; also drives `status` (`playing` if started, else `waiting`) |
-| `seats` Map (key = `sessionId`) | `seats[]` with `sessionId`, `touristId`, `pieces[]` (`side`/`row`/`col`; server map key = side) |
-| (room) `sessionId` | `sessionId` — for `mySeat` / strip×4 |
+| `seats` Map (key = `sessionId`) | `seats[]` with `sessionId`, `touristId`, `pieces[]` (`side`/`row`/`col`), **`connected`**, **`reconnectUntil`** |
+| (room) `sessionId` | `sessionId` — for `mySeat` / strip×4 / presence self |
+
+- `connected` — `true` when online; `false` during reconnect grace (SC-PIECE-16).
+- `reconnectUntil` — unix ms deadline while offline; `0` when online (design D2). Presence countdown uses this, not a local “30” without deadline.
+- Mirror via `_mirrorRoomState`; default `connected !== false` if field missing for older peers.
 
 Move messages and turn/progress fields — **deferred** until rules land (`work-with-game` + client board skill).
 
 ```ts
-room.onStateChange((state) => {
-  const s = state as TouristRoomState;
-  this.sessionId = room.sessionId;
-  this.started = Boolean(s.started);
-  const next: GameSeat[] = [];
-  s.seats?.forEach((seat, sessionId) => {
-    const pieces: GamePiece[] = [];
-    seat.pieces?.forEach((piece, sideKey) => {
-      pieces.push({
-        side: String(piece.side ?? sideKey),
-        row: Number(piece.row),
-        col: Number(piece.col),
-      });
-    });
-    next.push({
-      sessionId,
-      touristId: Number(seat.touristId),
-      pieces,
-    });
-  });
-  this.seats = next;
-  this.status = this.started ? 'playing' : 'waiting';
+// inside _mirrorRoomState / onStateChange
+next.push({
+  sessionId,
+  touristId: Number(seat.touristId),
+  pieces,
+  connected: seat.connected !== false,
+  reconnectUntil: Number(seat.reconnectUntil ?? 0),
 });
-
-room.onError((_code, message) => {
-  this.error = message || 'Room error';
-});
-
-room.onLeave(() => {
-  this._resetRoomState();
-});
+saveTouristReconnect(room); // token may rotate after soft reconnect
 ```
 
-`onLeave` always resets state (remote kick, disconnect, or peer close). Do not leave a stale `room` after leave.
+`onLeave` always resets Pinia room state (remote kick, disconnect, or peer close) but **keeps** the tourist reconnection token so Game remount can call `rejoinGame`. Consented leave clears the token in `leaveGame` / `_leaveTouristRoom`.
 
-## GamePage Rejoin After Refresh
+## GamePage Rejoin After Refresh / Soft Fail
 
-Pinia is in-memory. After full page refresh, `game.room` is null but the hash route still has `/game/:roomId`.
+Pinia is in-memory. After full page refresh, `game.room` is null but the hash route still has `/game/:roomId`. Soft SDK drops keep the Room object while auto-reconnect runs; if SDK gives up, store `onLeave` clears Pinia but **keeps** the token in `sessionStorage` within the 30 s server grace.
 
-In `GamePage` `onMounted`:
+In `GamePage`:
 
 1. Read `route.params.roomId`.
-2. If **`!game.room && roomId`** → `await game.joinGame(roomId)` (rejoin via `_enterRoom` → `joinById`).
-3. If join throws → `router.replace({ name: 'lobby' })`.
+2. If **`!game.room && roomId`** → `await game.rejoinGame(roomId)`:
+   - If stored token matches `roomId` → try `client.reconnect(token)` first.
+   - On failure (grace expired / invalid) → fallback `joinById` (spectator / new seat before start).
+3. If rejoin throws → `router.replace({ name: 'lobby' })`.
 4. If **`!game.room`** and no `roomId` → lobby.
+5. Also **`watch(game.room)`**: when a live room becomes null while still on Game (SDK soft-fail), call the same rejoin helper — **unless** consented `leaveGame` is in progress (guard with a local flag so «Лобби» does not immediately `joinById` again).
 
 ```ts
-onMounted(async () => {
+// onMounted + watch(game.room lost) → ensureTouristRoom()
+// consentedLeaving=true around leaveGame so the watch does not rejoin
+async function ensureTouristRoom() {
+  if (consentedLeaving || game.room) return;
   const roomId = /* string from route.params.roomId */;
-  if (!game.room && roomId) {
-    try {
-      await game.joinGame(roomId);
-    } catch {
-      await router.replace({ name: 'lobby' });
-    }
-  } else if (!game.room) {
+  if (!roomId) {
+    await router.replace({ name: 'lobby' });
+    return;
+  }
+  try {
+    await game.rejoinGame(roomId);
+  } catch {
     await router.replace({ name: 'lobby' });
   }
-});
+}
+```
+
+```ts
+async rejoinGame(roomId: string, options = {}) {
+  const saved = loadTouristReconnect();
+  if (saved && saved.roomId === roomId) {
+    try {
+      return await this._enterRoom(() => client.reconnect(saved.token));
+    } catch {
+      // fall through
+    }
+  }
+  return this._enterRoom(() => client.joinById(roomId, options));
+}
 ```
 
 Normal lobby → game navigation already has `game.room` set; skip rejoin.
 
-**Do not** attach room listeners in the page — rejoin only calls `joinGame`; `_attachRoom` wires listeners in the store.
+**Do not** attach room listeners in the page — rejoin only calls `rejoinGame`; `_attachRoom` wires listeners in the store.
 
 ## Game messages
 
@@ -216,10 +235,13 @@ Normal lobby → game navigation already has `game.room` set; skip rejoin.
 
 | Do | Don't |
 |----|--------|
-| Enter via `createGame` / `joinGame` → `_enterRoom` | Call `client.create` / `joinById` from a page |
+| Enter via `createGame` / `joinGame` / `rejoinGame` → `_enterRoom` | Call `client.create` / `joinById` / `reconnect` from a page |
+| Persist tourist token in `sessionStorage` only | Persist lobby token or use `localStorage` for reconnect |
+| Clear token on consented `leaveGame` | Clear token on unexpected `onLeave` (blocks F5 revive) |
+| Mirror `connected` / `reconnectUntil` into `seats[]` | Invent client-only offline flags without schema |
 | Leave before enter (`_leaveTouristRoom` inside `_enterRoom`; unsubscribe lobby on success) | Attach a second tourist room without leaving the first |
 | Wire `onStateChange` / `onError` / `onLeave` in `_attachRoom` | Put room listeners in `GamePage` or components |
-| Rejoin with `joinGame(roomId)` when Pinia lost room | Assume `game.room` survives refresh |
+| Rejoin with `rejoinGame(roomId)` when Pinia lost room | Assume `game.room` survives refresh; skip reconnect and only `joinById` |
 | On rejoin failure → lobby | Leave the user on `/game/:id` without a room |
 | Swallow closed-room errors in `leaveGame` | Treat `room.leave()` failure as a user-facing banner |
 | Use `TOURIST_ROOM` | Hardcode `'tourist'` in pages or invent a new room name alone |
@@ -228,16 +250,19 @@ Normal lobby → game navigation already has `game.room` set; skip rejoin.
 ## Change Checklist
 
 1. Belongs in `stores/game` (listeners + connect), not the page.
-2. New connect path still goes through `_enterRoom` (`_leaveTouristRoom` → connect → `unsubscribeLobby` → `_attachRoom`).
-3. State fields / `move` payload match `../happy-tourist-server`.
-4. `onLeave` / `leaveGame` still call `_resetRoomState`.
-5. `GamePage` rejoin-by-`roomId` still works after refresh; fail → lobby.
+2. New connect path still goes through `_enterRoom` (`_leaveTouristRoom` → connect → `_attachRoom` → `unsubscribeLobby`).
+3. State fields / connectivity / `move` payload match `../happy-tourist-server`.
+4. Consented `leaveGame` clears tourist token; unexpected `onLeave` keeps it.
+5. `GamePage` uses `rejoinGame` on mount and when Pinia loses the room unexpectedly (reconnect → `joinById`); fail → lobby; consented leave guarded against auto-rejoin.
 6. Pages only call store actions and bind store state.
-7. Run `npm run lint` / `npm run typecheck` from the client package root; fix failures before claiming done.
+7. Lobby reconnect policy stays in `work-with-lobby` (no tourist grace on lobby).
+8. Run `npm run lint` / `npm run typecheck` from the client package root; fix failures before claiming done.
 
 ## Related
 
 - Broader Colyseus I/O: `.agents/skills/client/colyseus-client/SKILL.md`
+- Lobby quiet listing: `.agents/skills/client/work-with-lobby/SKILL.md`
+- Presence UI: `.agents/skills/client/work-with-game-board/SKILL.md`
 - Auth before rooms: `.agents/skills/client/client-work-with-auth/SKILL.md`
 - Client overview: `AGENTS.md` (game session / seats / board)
 - Sibling server: `../happy-tourist-server`

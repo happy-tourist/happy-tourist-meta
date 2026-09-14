@@ -197,7 +197,7 @@ use the shared `App.vue` banner only.
 | Auth register / login / anonymous / Google / logout | Store sets `error`, re-throws; page `catch { /* error already in store */ }` and skips redirect |
 | Lobby create / join / play | Store sets `error`, re-throws; page `catch` + local `creating`/`joining` in `finally` |
 | Lobby room list subscribe | Store catch sets `error`, empties `rooms`, **no** re-throw |
-| GamePage mount rejoin | `joinGame(roomId)` fail → `router.replace({ name: 'lobby' })` (error may still be in store for lobby banner) |
+| GamePage mount rejoin | `rejoinGame(roomId)` fail → `router.replace({ name: 'lobby' })` (error may still be in store for lobby banner) |
 | GamePage missing room and no `roomId` | Redirect lobby without setting a new error |
 | Leave room (user or `_enterRoom` cleanup) | Swallow leave errors |
 | Room `onError` while seated | Store only — banner on GamePage |
@@ -256,18 +256,25 @@ Use `subscribeLobby` as-is: catch → `error` + `rooms = []` → `listing = fals
 ### 4. GamePage rejoin failure → lobby
 
 ```ts
-onMounted(async () => {
+// consentedLeaving guards soft-fail watch from auto-rejoining after leaveGame
+async function ensureTouristRoom() {
+  if (consentedLeaving.value || rejoinInFlight || game.room) return;
   const roomId = /* from route.params.roomId */;
-  if (!game.room && roomId) {
-    try {
-      await game.joinGame(roomId);
-    } catch {
+  if (!roomId) {
+    await router.replace({ name: 'lobby' });
+    return;
+  }
+  rejoinInFlight = true;
+  try {
+    await game.rejoinGame(roomId); // reconnect(token) → joinById
+  } catch {
+    if (!consentedLeaving.value) {
       await router.replace({ name: 'lobby' });
     }
-  } else if (!game.room) {
-    await router.replace({ name: 'lobby' });
+  } finally {
+    rejoinInFlight = false;
   }
-});
+}
 ```
 
 Do not stay on `/game/:roomId` with an empty board after a failed rejoin.

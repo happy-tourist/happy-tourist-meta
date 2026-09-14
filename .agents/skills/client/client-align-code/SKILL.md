@@ -227,8 +227,8 @@ Runtime facts that often create defects:
 
 - router `beforeEach` awaits `auth.whenReady()` then enforces `requiresAuth` / `guest`;
 - `leaveGame` swallows leave errors on already-closed rooms;
-- `GamePage` rejoins by `roomId` if Pinia lost the room; failed rejoin → lobby;
-- Game board is static client layout; no `canMove` / `sendMove` until rules land.
+- `GamePage` calls `rejoinGame(roomId)` if Pinia lost the room (token → `joinById`); failed rejoin → lobby;
+- Game board is static client layout + presence; no `canMove` / `sendMove` until rules land.
 
 ### Tourist board CSS sizing (обязательно при касании Game board)
 

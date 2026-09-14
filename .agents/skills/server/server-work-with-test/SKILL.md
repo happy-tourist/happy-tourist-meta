@@ -2,8 +2,9 @@
 name: server-work-with-test
 description: >-
   Use when planning or writing mocha + @colyseus/testing tests for
-  happy-tourist-server: room connect with JWT, onAuth failures, move messages,
-  schema sync assertions, GET /rooms listing, or preference HTTP (GET/POST /api/theme).
+  happy-tourist-server: room connect with JWT, onAuth failures, seating /
+  reconnect grace (SC-PIECE), move messages, schema sync assertions,
+  GET /rooms listing, or preference HTTP (GET/POST /api/theme).
   Core workflow: test plan (mocks/verify) → write test/*.test.ts → run npm test
   from server package root and fix failures. Do not invent Jest/babel patterns.
 trigger: slash
@@ -101,8 +102,11 @@ Use these categories only when the SUT has relevant behavior:
 - Auth failure: missing / invalid token → connect rejects (client cannot join).
 - Schema sync: after join, client-visible state matches room —
   `started`, `seats` Map (`touristId` + exactly four `pieces` keyed by side
-  `N|E|S|W` → `{ side, row, col }`). Assert four pieces / free start cells /
-  leave-pool reopen as in SC-PIECE-01…08 (`test/MyRoom.test.ts`).
+  `N|E|S|W` → `{ side, row, col }` + `connected` / `reconnectUntil`). Assert
+  four pieces / free start cells / leave-pool reopen as in SC-PIECE-01…08
+  (`test/MyRoom.test.ts`). Also cover reconnect grace SC-PIECE-11…16
+  (unexpected drop holds seat; reconnect restores; grace timeout removes;
+  empty-seated dispose; connectivity sync).
 - Messages: when move rules exist, legal/illegal payloads; until then do **not**
   assert draughts-era `board` / `currentTurn` / `players[sessionId].color`.
 - Listing: live LobbyRoom — after `createRoom("tourist")`, lobby client
@@ -131,6 +135,14 @@ Verify seating / pieces (SC-PIECE):
 - First join: seat has touristId 1…4 and exactly four pieces on N/E/S/W start cells
 - Two seats: unique touristId; no shared (row,col) among any pieces
 - Fourth seat → started true; fifth → no seat; leave before start frees kind+cells
+
+Verify reconnect grace (SC-PIECE-11…16):
+- Unexpected drop (client.reconnection.enabled=false; leave(false)): seat held;
+  connected=false; reconnectUntil ≈ now+RECONNECT_GRACE_SECONDS*1000
+- reconnect(token) within grace: same sessionId/touristId/pieces; connected=true; reconnectUntil=0
+- Grace timeout: seat removed; kind/cells reusable before start
+- Last seated permanent leave closes room even with spectators
+- Observer sees connectivity fields sync (SC-PIECE-16)
 
 Verify move (when implemented):
 - Legal action on current turn: piece positions / turn fields update
@@ -189,14 +201,15 @@ Always use `createRoom("tourist", …)` matching `app.config.ts`. Include lobby 
 
 Canonical coverage lives in `test/MyRoom.test.ts`:
 
-- First join → exactly four pieces on sides N/E/S/W on that side’s start cells.
+- First join → exactly four pieces on sides N/E/S/W on that side’s start cells; `connected=true`, `reconnectUntil=0`.
 - Unique `touristId` among seats; no shared cell among any pieces in the room.
 - Fourth seated → `started === true`; fifth → no seat / no extra pieces.
-- Leave before start → kind + cells reusable; leave after start → no reseat.
+- Consented leave before start → kind + cells reusable; after start → no reseat.
+- Unexpected drop → hold seat for `RECONNECT_GRACE_SECONDS` (SC-PIECE-11…14); `reconnect(token)` restores online; grace timeout removes; empty seated → dispose with spectators (SC-PIECE-15); connectivity sync (SC-PIECE-16).
 
-Helpers in that file (`assertFourPiecesOnSides`, `listPieces`, `allRoomPieces`)
+Helpers in that file (`assertFourPiecesOnSides`, `listPieces`, `allRoomPieces`, `unexpectedDrop`, `assertOfflineGrace`)
 are the preferred assertion style — extend them rather than inventing a parallel
-seat-flat `side`/`row`/`col` model.
+seat-flat `side`/`row`/`col` model. Grace-timeout cases may need `this.timeout(…)` above the default 15s.
 
 ### Future move validation
 
@@ -212,7 +225,8 @@ Server is authoritative; never assert by trusting a client-only board copy.
 
 - After `connectTo`, read synced state from the client SDK view or room state
   the harness exposes; assert fields the client SPA expects:
-  `started`, `seats` → `touristId` + four `pieces` `{ side, row, col }`.
+  `started`, `seats` → `touristId` + four `pieces` `{ side, row, col }` +
+  `connected` / `reconnectUntil`.
 - Do not assert legacy draughts fields (`board`, `currentTurn`,
   `players[].color`) — they are not in product schema.
 

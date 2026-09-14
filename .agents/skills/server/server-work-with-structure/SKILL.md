@@ -14,8 +14,8 @@ description: >-
 
 Use this skill when creating or relocating code under `src` (and related
 `test/` / `loadtest/` / deploy wiring). This is a **realtime Colyseus game
-server**, not an Express BFF: authoritative seating (and later move rules) live in the Room;
-the client mirrors seats and renders pieces on a local board layout.
+server**, not an Express BFF: authoritative seating, reconnect grace, and later move rules live in the Room;
+the client mirrors seats/connectivity and renders pieces + presence on a local board layout.
 
 Stack: Colyseus 0.18 (`defineServer` / `defineRoom` via `@colyseus/tools`),
 `@colyseus/auth` + JWT, `@colyseus/database` + Drizzle + better-sqlite3,
@@ -56,7 +56,7 @@ move messages deferred until product rules land).
 | Server wiring | `src/app.config.ts` | `defineServer`: `database`, `rooms`, `routes`, `express`; side-effect import of OAuth config |
 | OAuth config | `src/config/` | `auth.ts` — `auth.oauth.addProvider('google', …)`; no custom `onOAuthProviderCallback` in MVP |
 | Database | `src/db/` | `GameDatabase` (`index.ts`) + Drizzle user schema (`schema.ts`) |
-| Rooms | `src/rooms/` | Room handlers (`onCreate` / `onJoin` / messages / leave / dispose) |
+| Rooms | `src/rooms/` | Room handlers (`onCreate` / `onJoin` / `onDrop` / `onReconnect` / leave / dispose; messages later) |
 | Schema | `src/rooms/schema/` | `@colyseus/schema` synced state definitions |
 | Tests | `test/` | mocha + `@colyseus/testing` (`*.test.ts`) |
 | Loadtest | `loadtest/` | `@colyseus/loadtest` scripts |
@@ -72,8 +72,8 @@ Env templates: `.env.example`, `.env.development`, `.env.production` (do not com
 | **`app.config.ts`** | Wire `database`, register rooms, thin `routes` / `express` (CORS first, health, dev monitor/playground); import `./config/auth.js` | Game rules, board mutation |
 | **`config/`** | OAuth provider registration (`addProvider`) | Room gate, user schema, custom OAuth callback (leave built-in) |
 | **`db/`** | SQLite GameDatabase; extend `colyseus_users` with defaults | Room messages; inventing a second auth store |
-| **`rooms/`** | Auth gate (`onAuth`), seats, lifecycle; future game `onMessage` + state | Raw HTTP; client-trusted board |
-| **`rooms/schema/`** | Sync fields (`started` + `seats` → `touristId` + `pieces` Map; moves later) | Validation / rules / side effects |
+| **`rooms/`** | Auth gate (`onAuth`), seats, reconnect grace (`onDrop`/`onReconnect`), lifecycle; future game `onMessage` + state | Raw HTTP; client-trusted board |
+| **`rooms/schema/`** | Sync fields (`started` + `seats` → `touristId` + `pieces` + `connected` / `reconnectUntil`; moves later) | Validation / rules / side effects |
 | **`test/` / `loadtest/`** | Boot server / joinOrCreate clients | Production deploy secrets |
 
 ## Dependency Direction
@@ -131,7 +131,7 @@ Decide in this order:
 
 **Put in rooms**
 
-- `maxClients`, seats, disconnect / forfeit / reconnect policy (when product decides).
+- `maxClients`, seats, disconnect / forfeit / reconnect policy (`onDrop` grace vs consented `onLeave`).
 - Future game `onMessage` handlers; reject illegal actions once rules exist.
 - Authoritative state updates and status transitions when rules land.
 - `onAuth` JWT verify; use returned userdata in `onJoin`.

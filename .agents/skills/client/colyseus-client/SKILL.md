@@ -102,7 +102,7 @@ Allowed dependency direction: `pages` → `stores` / `boot` / `components`. Keep
 | Store | Actions / API |
 |-------|----------------|
 | `auth` | `register`, `login`, `loginAnonymously`, `loginWithGoogle`, `logout`, `whenReady` |
-| `game` | `subscribeLobby`, `unsubscribeLobby`, `createGame`, `joinGame`, `leaveGame` (`refreshRooms` HTTP unused) |
+| `game` | `subscribeLobby`, `unsubscribeLobby`, `createGame`, `joinGame`, `rejoinGame`, `leaveGame` (`refreshRooms` HTTP unused) |
 
 Pages already wired:
 
@@ -110,7 +110,7 @@ Pages already wired:
 |------|-------|
 | `LoginPage` | `auth.register` / `login` / `loginAnonymously` / `loginWithGoogle` |
 | `LobbyPage` | `subscribeLobby` / `unsubscribeLobby`, `createGame`, `joinGame`, `leaveGame`; `auth.logout` |
-| `GamePage` | `game.joinGame(roomId)` on remount, pieces from seats, `leaveGame` |
+| `GamePage` | `game.rejoinGame(roomId)` on remount / soft-fail, pieces + presence from seats, `leaveGame` |
 | Router | `auth.whenReady()` before `requiresAuth` / `guest` guards |
 
 ## Auth (`client.auth`)
@@ -247,7 +247,7 @@ room.onError((_code, message) => { this.error = message || 'Room error'; });
 room.onLeave(() => { this._resetRoomState(); });
 ```
 
-`GamePage` may call `joinGame(roomId)` again if Pinia lost the room after refresh; failed rejoin → navigate to lobby. Board tile geometry is a **client constant** (`work-with-game-board`); seats come from sync.
+`GamePage` may call `rejoinGame(roomId)` if Pinia lost the room after refresh / soft-fail (`reconnect` token → `joinById`); failed rejoin → navigate to lobby. Board tile geometry is a **client constant** (`work-with-game-board`); seats + connectivity come from sync.
 
 ## Messages: game actions
 
@@ -312,8 +312,8 @@ Catch at the page only if you need extra UI beyond `game.error`.
 ### Board + seats on GamePage
 
 ```ts
-// GamePage renders LAYOUT tiles + pieces from game.seats; no room.send for board UX today
-await game.leaveGame();
+// GamePage: LAYOUT + pieces + presence from game.seats; remount → rejoinGame(roomId)
+await game.leaveGame(); // consented — clears tourist reconnect token
 await router.push({ name: 'lobby' });
 ```
 

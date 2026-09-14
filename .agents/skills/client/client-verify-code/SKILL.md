@@ -273,7 +273,7 @@ Apply always; sibling skills win when they exist and conflict on a detail.
   `q-banner`. Theme save/restore failures use `theme.error` + `App.vue` banner.
 - Do not swallow errors with empty `catch` (except established room-leave
   closed-room swallow in `leaveGame`).
-- `GamePage` rejoins by `roomId` if Pinia lost the room; failed rejoin → lobby.
+- `GamePage` calls `rejoinGame(roomId)` if Pinia lost the room (token → `joinById`); failed rejoin → lobby.
 - Theme restore: stable multi-source `watch` in `App.vue`; after GET keep theme
   in `theme` store — do not replace `auth.user` (SC-THEME-10 request storm).
 

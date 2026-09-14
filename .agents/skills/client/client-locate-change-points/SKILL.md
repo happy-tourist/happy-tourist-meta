@@ -98,7 +98,7 @@ Do not invent room schemas, HTTP routes, or move payloads — note the server pa
 
 - Login / register / guest / Google → `pages/LoginPage.vue` + `stores/auth.ts`.
 - Lobby create / join / list → `pages/LobbyPage.vue` + `stores/game.ts`.
-- Board interaction / rejoin-by-`roomId` → `pages/GamePage.vue` + `stores/game.ts`.
+- Board interaction / presence / `rejoinGame` → `pages/GamePage.vue` + `stores/game.ts`.
 - Locale messages → `src/i18n/` (default `en-US`).
 - Deploy / Pages 404 fallback → `.github/workflows/deploy.yml` (`quasar build -m spa`, `index.html` → `404.html`).
 
@@ -107,13 +107,13 @@ Do not invent room schemas, HTTP routes, or move payloads — note the server pa
 | Domain | Start here |
 |--------|------------|
 | Auth (email/password, anonymous, Google, logout) | `pages/LoginPage.vue` + `stores/auth.ts`; router guards in `router/index.ts` |
-| Lobby (list / create / join) | `pages/LobbyPage.vue` + `stores/game` `subscribeLobby` / `createGame` / `joinGame` |
-| Game board (layout, 4 pieces/seat, strip×4, rejoin) | `pages/GamePage.vue` + `stores/game` `onStateChange` / `joinGame(roomId)` |
+| Lobby (list / create / join; quiet resubscribe) | `pages/LobbyPage.vue` + `stores/game` `subscribeLobby` / `createGame` / `joinGame` |
+| Game board (layout, pieces, presence, strip×4, rejoin) | `pages/GamePage.vue` + `stores/game` `onStateChange` / `rejoinGame(roomId)` |
 | Env / deploy | `.env.*`, `env.d.ts`, `boot/colyseus.ts`, `.github/workflows/deploy.yml` |
 | Theme / layout chrome | `App.vue` header + `stores/theme` + `boot/theme` + `css/*` (board CSS ≠ app Dark) |
 | i18n copy | `src/i18n/`, boot `i18n` |
 
-Today: GamePage board + all pieces from synced `seats` (`touristId` + four `pieces`) / `started`; strip×4 if seated. Move messages deferred. Room name `tourist`.
+Today: GamePage board + presence + all pieces from synced `seats` (`touristId` + four `pieces` + `connected` / `reconnectUntil`) / `started`; strip×4 if seated. Tourist reconnect via `sessionStorage` token. Move messages deferred. Room name `tourist`.
 
 ## Workflow
 
@@ -125,8 +125,8 @@ Today: GamePage board + all pieces from synced `seats` (`touristId` + four `piec
 
 2. Search by domain terms:
    - route paths and page names (`login`, `lobby`, `game`);
-   - store names and actions (`register`, `login`, `subscribeLobby`, `unsubscribeLobby`, `createGame`, `joinGame`, `leaveGame`);
-   - Colyseus symbols (`TOURIST_ROOM`, `LOBBY_ROOM`, `client.auth`, `onStateChange`, `room.send`);
+   - store names and actions (`register`, `login`, `subscribeLobby`, `unsubscribeLobby`, `createGame`, `joinGame`, `rejoinGame`, `leaveGame`);
+   - Colyseus symbols (`TOURIST_ROOM`, `LOBBY_ROOM`, `client.auth`, `client.reconnect`, `onStateChange`, `room.send`);
    - env keys (`VITE_COLYSEUS_URL`, `VITE_API_URL`);
    - user-visible strings in pages and `src/i18n/`.
 

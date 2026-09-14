@@ -3,9 +3,9 @@ name: work-with-schema
 description: >-
   Use when creating, changing, reviewing, or debugging @colyseus/schema sync
   state in the happy-tourist Colyseus server — MyRoomState started/seats
-  (touristId + pieces map), MapSchema / ArraySchema, schema() + t.* (v5), or
-  aligning the sync surface with the sibling client tourist contract
-  (move rules deferred).
+  (touristId + pieces map + connected/reconnectUntil), MapSchema / ArraySchema,
+  schema() + t.* (v5), or aligning the sync surface with the sibling client
+  tourist contract (move rules deferred).
 ---
 
 # Work With Schema
@@ -17,10 +17,10 @@ Skills path: `happy-tourist-meta/.agents/skills/server/`. Runtime paths below ar
 relative to the server repo root.
 
 Sibling client: `../happy-tourist.github.io` (room `tourist`; board geometry local;
-seats/`started` mirrored in `stores/game`).
+seats/`started`/connectivity mirrored in `stores/game`; presence UI on GamePage).
 
-Schema is the **sync surface only**. Seating assignment and future rules live in
-the Room / `work-with-game` — not in schema definitions.
+Schema is the **sync surface only**. Seating assignment, reconnect grace, and
+future rules live in the Room / `work-with-game` — not in schema definitions.
 
 ## Overview
 
@@ -28,8 +28,8 @@ the Room / `work-with-game` — not in schema definitions.
 | --- | --- |
 | Sync state | `src/rooms/schema/MyRoomState.ts` |
 | API | `@colyseus/schema` **v5**: `schema({...})`, `t.*`, `SchemaType` |
-| Room wiring | Room sets `this.setState(...)` / mutates seats in `onJoin` / `onLeave` |
-| Client consumer | `../happy-tourist.github.io` — `stores/game.ts` `onStateChange` |
+| Room wiring | Room sets `this.setState(...)` / mutates seats in `onJoin` / `onDrop` / `onReconnect` / `onLeave` |
+| Client consumer | `../happy-tourist.github.io` — `stores/game.ts` `onStateChange`; GamePage presence |
 
 Package: `@colyseus/schema` `^5.0.14` (see `package.json`).
 
@@ -52,6 +52,9 @@ export const Seat = schema(
   {
     touristId: t.uint8(), // 1…4
     pieces: t.map(Piece),
+    connected: t.boolean().default(true),
+    /** Unix ms deadline while offline in grace; `0` when online. */
+    reconnectUntil: t.number().default(0),
   },
   "Seat",
 );
@@ -65,7 +68,16 @@ export const MyRoomState = schema(
 );
 ```
 
-- Client mirrors `started` + seats (`touristId` + `pieces[]`) into Pinia; GamePage draws all tokens + strip×4.
+### Connectivity fields (D2 / SC-PIECE-16)
+
+| Field | Meaning |
+|-------|---------|
+| `connected` | `true` online; `false` during unexpected-disconnect grace |
+| `reconnectUntil` | Unix ms deadline while offline; **`0` when online / no grace** |
+
+Room mutates these in `onDrop` / `onReconnect` / seat assign — see `work-with-rooms` / `work-with-game`. Client mirrors into Pinia `GameSeat` and drives presence `QCircularProgress` from `reconnectUntil`.
+
+- Client mirrors `started` + seats (`touristId` + `pieces[]` + connectivity) into Pinia; GamePage draws tokens, strip×4, and presence.
 - Board **tile geometry** stays a client CSS Grid constant — not in schema.
 - Move / turn fields — later; do **not** revive draughts `board` / `currentTurn` / cell `0`–`4` / `move` unless product revives that contract.
 
@@ -108,7 +120,7 @@ lockstep. Initialize collections in Room `onCreate` (not inside schema “logic�
 
 ## Do
 
-- Keep schema fields to **what must sync** (today: `started` + `seats`).
+- Keep schema fields to **what must sync** (today: `started` + `seats` incl. connectivity).
 - Mutate state from the **Room** after validating actions; treat client payloads as intents only.
 - Align field names with `../happy-tourist.github.io` (`stores/game`) in the same change.
 - Use `schema()` + `t.*` + `export type X = SchemaType<typeof X>`.
@@ -116,7 +128,7 @@ lockstep. Initialize collections in Room `onCreate` (not inside schema “logic�
 
 ## Don't
 
-- Put rules, seating pools, win detection, or rating DB writes inside schema files.
+- Put rules, seating pools, reconnect timers, win detection, or rating DB writes inside schema files.
 - Trust or echo a client-supplied full board/layout as truth.
 - Invent parallel field names without changing the client in the same effort.
 - Mix decorator `@type` Schema classes with the v5 `schema()` style in this package.
@@ -128,16 +140,16 @@ lockstep. Initialize collections in Room `onCreate` (not inside schema “logic�
 
 When changing schema:
 
-1. Field names match client Pinia / GamePage (`started`, `seats` → `touristId` + `pieces` `{ side, row, col }`).
-2. Room owns seating and messages — schema does not define messages.
-3. Sibling client `onStateChange` is updated together when fields appear.
+1. Field names match client Pinia / GamePage (`started`, `seats` → `touristId` + `pieces` + `connected` / `reconnectUntil`).
+2. Room owns seating, reconnect, and messages — schema does not define messages.
+3. Sibling client `onStateChange` / presence is updated together when fields appear.
 4. Prefer server → client alignment over unilateral client rewrites.
 
 ## Related
 
 - Room structure / layering: `server-work-with-structure`
 - Where to edit for a task: `server-locate-change-points`
-- Seating / future rules: `work-with-game`
-- Client board UI: `happy-tourist-meta/.agents/skills/client/work-with-game-board/SKILL.md`
+- Seating / reconnect / future rules: `work-with-game`
+- Client board + presence UI: `happy-tourist-meta/.agents/skills/client/work-with-game-board/SKILL.md`
 - Client room state mapping: `happy-tourist-meta/.agents/skills/client/work-with-rooms/SKILL.md`
 - Package overview: `../happy-tourist-server/AGENTS.md` (Current vs client contract)

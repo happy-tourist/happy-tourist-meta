@@ -3,7 +3,8 @@ name: work-with-game-board
 description: >-
   Use when creating, changing, reviewing, or debugging the tourist board UI in
   the happy-tourist client — GamePage CSS Grid layout, synced seat pieces
-  overlay, personal tourist strip, tile kinds (start/task/center), or
+  overlay, occupied presence circles (seated/spectator layout, offline
+  QCircularProgress), personal tourist strip, tile kinds (start/task/center), or
   non-interactive board rendering for room tourist.
 ---
 
@@ -17,17 +18,18 @@ Product: настольная игра «Счастливый турист». Th
 
 | Surface | Path | Role |
 | --- | --- | --- |
-| Game page | `src/pages/GamePage.vue` | CSS Grid tourist field; overlay all seats’ pieces; strip×4 «Мои туристы» if seated; leave → lobby |
-| Game store | `src/stores/game.ts` | Room join/leave; mirror `seats` / `started` / `sessionId` from `onStateChange` |
+| Game page | `src/pages/GamePage.vue` | CSS Grid tourist field; overlay all seats’ pieces; **presence** around the board; strip×4 «Мои туристы» if seated; leave → lobby |
+| Game store | `src/stores/game.ts` | Room join/leave/rejoin; mirror `seats` (incl. `connected` / `reconnectUntil`) / `started` / `sessionId` |
 
 | Concern | Location |
 | --- | --- |
 | Layout constant | `LAYOUT` string grid in `GamePage.vue` (`.` hole, `1` start, `*` task, `7` center) |
 | Tile build | `buildBoardTiles()` → non-button `div.tile` with `gridColumn` / `gridRow` |
 | Pieces | Flatten all seats’ `pieces` (4 per seated player) → `img.piece` at `row`/`col`; PNG from seat `touristId` → `@/assets/tourists/touristN.png` |
+| Presence | Occupied seats only → `.presence-frame` slots; offline → `QCircularProgress` from `reconnectUntil` |
 | Strip | Below board only when `mySeat`: **four** slots `N→E→S→W` (same PNG; status chrome later); spectators: pieces yes, strip no |
 | Center | One element with `span 2` / `span 2` (solid 2×2), not four cells |
-| Room enter | Out of scope — see `work-with-lobby` / `work-with-rooms` |
+| Room enter | Out of scope — see `work-with-lobby` / `work-with-rooms` (`rejoinGame`) |
 
 ## Layout And Tiles
 
@@ -39,10 +41,28 @@ Product: настольная игра «Счастливый турист». Th
 
 Tiles and pieces are non-interactive — not `button`s, no `@click`, no selection/target classes (`pointer-events: none` on board/pieces).
 
+## Presence (occupied seats)
+
+Sync-driven markers around the board (SC-PRESENCE-01…05 / design D5). Page reads mirrored `game.seats` only — no Colyseus I/O here.
+
+| Rule | Behavior |
+|------|----------|
+| Who | One marker per **occupied** seat (including offline-in-grace). Empty slots not rendered. |
+| Avatar | Seat `touristId` → same tourist PNG as pieces |
+| Seated viewer | Self → **bottom** (home/north); other seats by join order → **top**, **left**, **right** |
+| Spectator | Join order among seated → **top**, **bottom**, **left**, **right**; omit missing positions |
+| Join order | Array order from sync map `forEach` as mirrored into `seats[]` |
+| Offline | `!connected && reconnectUntil > 0` → wrap avatar in `QCircularProgress` (`min=0`, `max=30`, `value` = remaining seconds from `reconnectUntil − now`) |
+| Online | Avatar only — no countdown ring |
+
+Tick `nowMs` on an interval (~200 ms) while Game is mounted so the ring animates from the **server** deadline, not a local fixed “30” without `reconnectUntil`.
+
+Spectators and seated players see the same occupied set; layouts differ as above. Do **not** add strip×4 “in game / passed” chrome here — presence only.
+
 ## Authority
 
 - Board **geometry** (`LAYOUT`) is a client constant; server does not sync tile kinds.
-- **Seats** (`touristId` + exactly four `pieces` `{ side, row, col }` keyed N/E/S/W) and `started` are server-authoritative; client only mirrors and renders.
+- **Seats** (`touristId` + exactly four `pieces` `{ side, row, col }` keyed N/E/S/W), `started`, and connectivity (`connected` / `reconnectUntil`) are server-authoritative; client only mirrors and renders.
 - Do not reintroduce legacy draughts CellValue `0…4`, `getTargets`, `selected` / `targets`, or `sendMove` on Game.
 - When move rules land, coordinate wire protocol with server `work-with-game` — do not invent a second client-only rules engine.
 
@@ -50,27 +70,32 @@ Tiles and pieces are non-interactive — not `button`s, no `@click`, no selectio
 
 - Render `boardTiles` from `LAYOUT`.
 - Overlay **all** pieces of **all** seats at `row`/`col` (0-based schema → 1-based CSS Grid).
+- Render **presence** markers for occupied seats (layouts + offline ring above).
 - Show strip «Мои туристы» only if `mySeat`: four imgs of that seat’s `touristId` in order `N,E,S,W` (1:1 with field sides); spectators: board pieces yes, strip no.
-- Status from store (`waiting` / `playing`); leave → `leaveGame` + lobby; rejoin by `roomId` via store.
+- Status from store (`waiting` / `playing`); leave → `leaveGame` + lobby; remount without room → `rejoinGame(roomId)` via store.
 
 ## Do
 
 - Keep layout in one client constant; center as a single 2×2 grid area.
 - Preserve max tile 60px, gap 6, radius 12, hole = page background.
-- Keep Colyseus I/O in `stores/game`; page reads seats/strip from store only.
+- Keep Colyseus I/O in `stores/game`; page reads seats/strip/presence from store only.
 - Map `touristId` 1…4 to `tourist{N}.png`; strip shows only the local player’s four slots (not other kinds).
+- Drive offline countdown from synced `reconnectUntil`.
 
 ## Don't
 
 - Add click handlers, move highlights, or draughts piece UX.
 - Depend tile fills on Quasar Dark / theme preference.
 - Invent client-local seat assignment (server assigns on join).
+- Render empty seat placeholders as presence markers.
 - Sync or invent server board encoding for the static layout without a product change.
 - Put lobby subscribe/create/join logic into the board skill — use `work-with-lobby`.
+- Put reconnect token / `rejoinGame` details here — use `work-with-rooms`.
 
 ## Related
 
-- Server seating / rules: `.agents/skills/server/work-with-game/SKILL.md`
-- Schema seats: `.agents/skills/server/work-with-schema/SKILL.md`
+- Server seating / reconnect: `.agents/skills/server/work-with-game/SKILL.md`
+- Schema seats + connectivity: `.agents/skills/server/work-with-schema/SKILL.md`
 - Lobby / room name: `.agents/skills/client/work-with-lobby/SKILL.md`
+- Tourist reconnect: `.agents/skills/client/work-with-rooms/SKILL.md`
 - Styles / theme chrome: `.agents/skills/client/work-with-styles/SKILL.md`

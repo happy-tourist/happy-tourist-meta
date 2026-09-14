@@ -30,8 +30,8 @@ Search and assign ownership top-down along the call path.
 | Server def | `src/app.config.ts` | `defineServer`: database, rooms, routes, express (CORS, `/health`, `/hi`, monitor/playground); side-effect import `./config/auth.js` |
 | OAuth config | `src/config/auth.ts` | `auth.oauth.addProvider('google', …)`; leave built-in `onOAuthProviderCallback` alone |
 | DB | `src/db/index.ts`, `src/db/schema.ts` | `GameDatabase`, `users` extension |
-| Rooms | `src/rooms/MyRoom.ts` | `onAuth` / `onCreate` / `onJoin` / `onLeave` / `onDispose` |
-| Schema | `src/rooms/schema/MyRoomState.ts` | `@colyseus/schema` sync state |
+| Rooms | `src/rooms/MyRoom.ts` | `onAuth` / `onCreate` / `onJoin` / `onDrop` / `onReconnect` / `onLeave` / `onDispose` |
+| Schema | `src/rooms/schema/MyRoomState.ts` | `@colyseus/schema` sync state (`connected` / `reconnectUntil`) |
 | Tests | `test/` | mocha + `@colyseus/testing` |
 | Loadtest | `loadtest/example.ts` | `@colyseus/loadtest` |
 | Deploy | `ecosystem.config.cjs`, `.github/workflows/deploy.yml`, `.env.*` | PM2, GH Actions |
@@ -51,7 +51,7 @@ The sibling client assumes a tourist contract; prefer aligning server to client 
 | Room type name `tourist` | Registered as `tourist` in `app.config.ts` with `.enableRealtimeListing()` |
 | Live lobby (`LobbyRoom`) | `lobby: defineRoom(LobbyRoom)` — client filters `name: tourist` |
 | Tourist board layout on Game | Client-only tile geometry; server does not sync layout |
-| Synced seats / started | `MyRoomState`: `started` + `seats` Map (`touristId` + `pieces` Map keyed by side → `{ side, row, col }`); move messages later |
+| Synced seats / started / connectivity | `MyRoomState`: `started` + `seats` Map (`touristId` + `pieces` + `connected` / `reconnectUntil`); move messages later |
 | Lobby `GET /rooms/tourist` | Available (HTTP fallback; UI uses live LobbyRoom) |
 
 ### HTTP surface (today)
@@ -83,7 +83,7 @@ Use these rules to pick the layer before naming files.
 | Realtime gameplay intent (move, resign, rematch, chat) | Room message handler in `src/rooms/MyRoom.ts` (`this.onMessage(...)`), not a new HTTP route |
 | Synced board / turn / status / player seats visible to clients | `@colyseus/schema` in `src/rooms/schema/MyRoomState.ts` (+ room code that mutates state) |
 | Authoritative rules / validation of moves | Room handler (`MyRoom.ts`); do not trust client board state |
-| Room lifecycle (maxClients, seats, disconnect, dispose) | `MyRoom.ts` lifecycle hooks |
+| Room lifecycle (seats, disconnect grace, dispose) | `MyRoom.ts` lifecycle hooks (`onDrop` / `onReconnect` / `onLeave`) |
 
 **Do not** put board truth or move validation in Express routes. Keep HTTP for auth (built-in), health, and non-realtime helpers; keep match state in schema + room messages.
 
@@ -123,10 +123,10 @@ Use these rules to pick the layer before naming files.
 | Auth to rooms | `MyRoom.onAuth` + `@colyseus/auth` JWT; secrets in `.env.*` |
 | Google OAuth provider | `src/config/auth.ts` + side-effect import from `app.config.ts`; `GOOGLE_CLIENT_*` in `.env.*` |
 | User profile columns | `src/db/schema.ts` + `src/db/index.ts` |
-| Game state sync | `src/rooms/schema/MyRoomState.ts` (`started` + `seats`) |
-| Match flow / seating / future moves | `src/rooms/MyRoom.ts` lifecycle + future `onMessage`; align with client |
+| Game state sync | `src/rooms/schema/MyRoomState.ts` (`started` + `seats` + connectivity) |
+| Match flow / seating / reconnect / future moves | `src/rooms/MyRoom.ts` lifecycle (`onDrop`/`onReconnect`) + future `onMessage`; align with client |
 | HTTP health / CORS / demo API | `src/app.config.ts` express + routes |
-| Tests | `test/MyRoom.test.ts`, `test/theme.test.ts`, … |
+| Tests | `test/MyRoom.test.ts` (SC-PIECE incl. grace 11…16), `test/theme.test.ts`, … |
 | Loadtest | `loadtest/example.ts` |
 | Deploy / PM2 / CI | `ecosystem.config.cjs`, `.github/workflows/deploy.yml`, `.env.production` (on server only) |
 
@@ -136,12 +136,12 @@ Use these rules to pick the layer before naming files.
    - target feature or behavior;
    - entities (auth, lobby rooms, board/state, game messages, profile/DB, HTTP health, deploy/env);
    - whether the task changes existing behavior or adds a new flow;
-   - whether the client contract (room name `tourist`, seats/`started`, board layout local, `/rooms/tourist`) is involved.
+   - whether the client contract (room name `tourist`, seats/`started`/connectivity, board layout local, `/rooms/tourist`) is involved.
 
 2. Search the codebase by domain terms from the task:
    - room name / registration (`lobby`, `tourist`, `LobbyRoom`, `enableRealtimeListing`, `defineRoom`, `rooms:`);
-   - room hooks (`onAuth`, `onCreate`, `onJoin`, `onLeave`, `onDispose`, `onMessage`);
-   - schema symbols (`MyRoomState`, `schema`, `t`, `MapSchema`, product sync fields when present);
+   - room hooks (`onAuth`, `onCreate`, `onJoin`, `onDrop`, `onReconnect`, `onLeave`, `onDispose`, `onMessage`);
+   - schema symbols (`MyRoomState`, `Seat`, `connected`, `reconnectUntil`, `schema`, `t`, product sync fields when present);
    - auth (`JWT.verify`, `@colyseus/auth`, `AUTH_SALT`, `JWT_SECRET`);
    - DB (`GameDatabase`, `users`, `displayName`, `rating`, `gamesPlayed`, `gamesWon`, `theme`);
    - HTTP (`/health`, `/hi`, `/api/hello`, `GET|POST /api/theme`, `createEndpoint`, CORS, `monitor`, `playground`);
