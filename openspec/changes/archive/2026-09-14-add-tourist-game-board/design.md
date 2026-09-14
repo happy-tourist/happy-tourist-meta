@@ -1,6 +1,6 @@
 ## Context
 
-См. `proposal.md` (Why / Scope). Сейчас Game — шашечная 8×8 сетка с select/targets/`sendMove`; client constant `CHECKERS_ROOM = 'checkers'`; server `defineRoom` ключ `checkers` + tests/loadtest. Meta/skills/AGENTS и `openspec/config.yaml` context описывают онлайн-шашки. Пакеты: **client** (`../happy-tourist.github.io`), **server** (`../happy-tourist-server`, только имя room + согласованные тесты/loadtest), **meta** (docs/skills/AGENTS/openspec context).
+См. `proposal.md` (Why / Scope). Исходное состояние до change: Game — шашечная 8×8 сетка с select/targets/`sendMove`; client `CHECKERS_ROOM = 'checkers'`; server `defineRoom` ключ `checkers` + tests/loadtest; meta/skills/AGENTS и `openspec/config.yaml` context описывали онлайн-шашки. После реализации: Game — статичный tourist layout; room `tourist` на client/server; skill `work-with-game`; канон агентов — «Счастливый турист». Пакеты: **client** (`../happy-tourist.github.io`), **server** (`../happy-tourist-server`, только имя room + тесты/loadtest), **meta** (docs/skills/AGENTS/openspec context).
 
 ## Goals / Non-Goals
 
@@ -74,4 +74,4 @@
 
 ## Open Questions
 
-- Нет (решения explore зафиксированы: D1–D8).
+- Нет (решения explore зафиксированы: D1–D7; rename room на server входит в D4).

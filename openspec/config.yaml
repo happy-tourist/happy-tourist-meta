@@ -40,7 +40,7 @@ context: |
   Домены: auth (register/login/anonymous), lobby (rooms list/create/join), game (board, move, turn/status).
 
   Skills roots: .agents/skills/client/ (UI), .agents/skills/server/ (Colyseus),
-  .agents/skills/ (openspec-*, commit когда появится).
+  .agents/skills/ (openspec-*, align-code, check-changes, implement-change, end-implement-change, commit).
   AGENTS.md — индекс docs/, OpenSpec и .agents/skills/.
   Пакетный контекст: ../happy-tourist.github.io/AGENTS.md, ../happy-tourist-server/AGENTS.md.
   При /opsx-apply: читать applyContextFiles из этого config.yaml помимо contextFiles из CLI.
@@ -183,7 +183,7 @@ rules:
     - 'Client skills при apply: из .agents/skills/client/ (locate/align/verify + topic skills)'
     - 'Server skills при apply: из .agents/skills/server/ (locate/align/verify + topic skills)'
     - 'Cross-package: сначала server contract (room/schema/messages/auth), затем client stores/UI — или явно согласовать порядок'
-    - 'Финализация: openspec validate, /opsx-sync, /opsx-archive'
+    - 'НЕ добавлять в конец tasks.md блоки «закрытие» / «финализация»: openspec validate, /opsx-sync, /opsx-archive, end-implement-change — это отдельные workflow вне чеклиста реализации'
     - 'Команды npm — запускает агент из sibling-репо; в tasks включать пункты lint/test/build без пометки «(пользователь)»'
 
   # /opsx-update — правка существующих planning-артефактов change

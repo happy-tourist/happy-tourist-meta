@@ -18,7 +18,7 @@ description: >-
 
 Не подменять одиночный `openspec-apply-change`, если пользователь явно хочет только apply.
 
-После прерывания продолжение — [`continue-implement-change`](../continue-implement-change/SKILL.md) (не перезапускать этот скилл с нуля без нужды).
+После прерывания продолжение — снова запустить этот скилл (`implement-change`): он читает `.implement-change-state.yaml` и резюмирует с сохранённой фазы (не начинать apply с нуля без нужды).
 
 ## Жёсткое правило прерывания
 
@@ -33,7 +33,7 @@ description: >-
 
 Останавливаться только когда без выбора человека нельзя продолжить, например: нет/несколько active change без однозначного контекста; секрет/credential, которого нет в env; конфликт требований без default в артефактах; git/auth blocker у `commit`, который нельзя обойти без человека.
 
-При таком стопе — записать state (ниже), кратко: что блокирует, какие варианты, что уже сделано; предложить `continue-implement-change` после решения. Не продолжать следующие фазы пайплайна.
+При таком стопе — записать state (ниже), кратко: что блокирует, какие варианты, что уже сделано; после решения человека — снова `implement-change` (resume по state). Не продолжать следующие фазы пайплайна.
 
 ## State-файл (для resume)
 
@@ -170,7 +170,7 @@ Override «только анализ» у align-code / check-changes: в рам�
 **Check-changes:** OK | HUMAN_BLOCKER | skipped
 **Commit:** OK | HUMAN_BLOCKER | skipped
 **Stopped:** нет | <причина только human-blocker>
-**Resume:** continue-implement-change (если Stopped ≠ нет)
+**Resume:** снова `implement-change` (если Stopped ≠ нет; читает state)
 ```
 
 ## Субагенты — общие правила

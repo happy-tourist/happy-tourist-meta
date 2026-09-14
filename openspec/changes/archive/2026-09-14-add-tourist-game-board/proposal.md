@@ -50,4 +50,4 @@
 - `docs/projects-map.md` — пути client/server.
 - `../happy-tourist.github.io/AGENTS.md` — client UI / game.
 - `../happy-tourist-server/AGENTS.md` — rooms / listing.
-- Explore: поле 10×10 sparse; `1` старт зелёный; `*` задание коричневый; центр жёлтый сплошной 2×2; radius 12; gap 6; max tile 60px; mobile edge-to-edge; фон как страница; room `tourist`; D1 UI-only; D8 rename room на server тоже.
+- Explore: поле 10×10 sparse; `1` старт зелёный; `*` задание коричневый; центр жёлтый сплошной 2×2; radius 12; gap 6; max tile 60px; mobile edge-to-edge; фон как страница; room `tourist`; D1 UI-only; rename room на server — в D4.
