@@ -92,7 +92,7 @@ Examples:
 
 - `LoginPage` — form UI; calls `useAuthStore()` (`register` / `login` / `loginAnonymously`), then `router.replace`.
 - `LobbyPage` — room list / create / join via `useGameStore()`; navigates to `game` with `roomId`.
-- `GamePage` — board + presence UI; syncs via `useGameStore()`; `rejoinGame(roomId)` on mount / soft-fail / browser reopen (`localStorage` token); leave → `lobby`.
+- `GamePage` — board + presence UI (blue ring on current-turn seat); header turn text («Ваш ход» / «Ход соперника» / «Ход игрока»); syncs via `useGameStore()`; `rejoinGame(roomId)` on mount / soft-fail / browser reopen (`localStorage` token); leave → `lobby`.
 
 Do not put a second app shell (global layout host) inside a page — `App.vue` already mounts `router-view`.
 
@@ -198,9 +198,9 @@ If an old path changes, keep a redirect in `routes.ts`:
 | Auth | `LoginPage` | `stores/auth`; `meta.guest` |
 | Theme (chrome Dark) | `App.vue` header | `stores/theme` + `boot/theme` |
 | Lobby / rooms | `LobbyPage` | `stores/game.subscribeLobby`, create/join; `meta.requiresAuth` |
-| Game session | `GamePage` | `stores/game` leave/`rejoinGame`; board + presence + seat pieces / strip; route param `roomId`; `meta.requiresAuth` |
+| Game session | `GamePage` | `stores/game` leave/`rejoinGame`/`sendMove`; board + presence turn ring + seat pieces / strip; route param `roomId`; `meta.requiresAuth` |
 
-Room name `tourist` + live lobby align with `../happy-tourist-server`; Game mirrors seats and renders pieces; move UX later.
+Room name `tourist` + live lobby align with `../happy-tourist-server`; Game mirrors seats/`currentTurnSessionId` and renders pieces + local move chrome.
 
 ## Verification and Final Response
 

@@ -90,11 +90,11 @@ Spectators and seated players see the same occupied set; layouts differ as above
 
 - Render `boardTiles` from `LAYOUT`.
 - Overlay **all** pieces of **all** seats at `row`/`col` (0-based schema → CSS vars / transform).
-- Render **presence** markers for occupied seats (layouts + offline ring above).
+- Render **presence** markers for occupied seats (layouts + offline ring above; blue ring on current-turn seat).
 - Show strip «Мои туристы» only if `mySeat`; on own turn allow select + destination click.
 - On own turn: white selection + red targets; submit via store `sendMove`.
 - Animate piece travel for everyone; ignore input while `moveAnimating`.
-- Status from store; leave → `leaveGame` + lobby; remount without room → `rejoinGame(roomId)` via store.
+- Header status: turn labels («Ваш ход» / «Ход соперника» / «Ход игрока») from `currentTurnSessionId` / `isMyTurn`; leave → `leaveGame` + lobby; remount without room → `rejoinGame(roomId)` via store.
 
 ## Do
 
