@@ -51,7 +51,7 @@ The sibling client assumes a tourist contract; prefer aligning server to client 
 | Room type name `tourist` | Registered as `tourist` in `app.config.ts` with `.enableRealtimeListing()` |
 | Live lobby (`LobbyRoom`) | `lobby: defineRoom(LobbyRoom)` — client filters `name: tourist` |
 | Tourist board layout on Game | Client-only tile geometry; server does not sync layout |
-| Synced seats / started | `MyRoomState`: `started` + `seats` Map (`touristId`, `side`, `row`, `col`); move messages later |
+| Synced seats / started | `MyRoomState`: `started` + `seats` Map (`touristId` + `pieces` Map keyed by side → `{ side, row, col }`); move messages later |
 | Lobby `GET /rooms/tourist` | Available (HTTP fallback; UI uses live LobbyRoom) |
 
 ### HTTP surface (today)

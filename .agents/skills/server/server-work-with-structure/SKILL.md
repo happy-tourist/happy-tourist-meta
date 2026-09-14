@@ -73,7 +73,7 @@ Env templates: `.env.example`, `.env.development`, `.env.production` (do not com
 | **`config/`** | OAuth provider registration (`addProvider`) | Room gate, user schema, custom OAuth callback (leave built-in) |
 | **`db/`** | SQLite GameDatabase; extend `colyseus_users` with defaults | Room messages; inventing a second auth store |
 | **`rooms/`** | Auth gate (`onAuth`), seats, lifecycle; future game `onMessage` + state | Raw HTTP; client-trusted board |
-| **`rooms/schema/`** | Sync fields (`started` + `seats`; moves later) | Validation / rules / side effects |
+| **`rooms/schema/`** | Sync fields (`started` + `seats` → `touristId` + `pieces` Map; moves later) | Validation / rules / side effects |
 | **`test/` / `loadtest/`** | Boot server / joinOrCreate clients | Production deploy secrets |
 
 ## Dependency Direction

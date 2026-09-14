@@ -2,9 +2,10 @@
 name: work-with-schema
 description: >-
   Use when creating, changing, reviewing, or debugging @colyseus/schema sync
-  state in the happy-tourist Colyseus server — MyRoomState started/seats,
-  MapSchema / ArraySchema, schema() + t.* (v5), or aligning the sync surface
-  with the sibling client tourist contract (move rules deferred).
+  state in the happy-tourist Colyseus server — MyRoomState started/seats
+  (touristId + pieces map), MapSchema / ArraySchema, schema() + t.* (v5), or
+  aligning the sync surface with the sibling client tourist contract
+  (move rules deferred).
 ---
 
 # Work With Schema
@@ -37,12 +38,20 @@ Package: `@colyseus/schema` `^5.0.14` (see `package.json`).
 ```ts
 import { schema, t, type SchemaType } from "@colyseus/schema";
 
+export const Piece = schema(
+  {
+    side: t.string(), // "N"|"E"|"S"|"W"
+    row: t.uint8(),
+    col: t.uint8(),
+  },
+  "Piece",
+);
+
+/** Seated player: unique kind + exactly four pieces (map key = side). */
 export const Seat = schema(
   {
     touristId: t.uint8(), // 1…4
-    side: t.string(),     // "N"|"E"|"S"|"W"
-    row: t.uint8(),
-    col: t.uint8(),
+    pieces: t.map(Piece),
   },
   "Seat",
 );
@@ -56,7 +65,7 @@ export const MyRoomState = schema(
 );
 ```
 
-- Client mirrors `started` + seats into Pinia; GamePage draws pieces / strip.
+- Client mirrors `started` + seats (`touristId` + `pieces[]`) into Pinia; GamePage draws all tokens + strip×4.
 - Board **tile geometry** stays a client CSS Grid constant — not in schema.
 - Move / turn fields — later; do **not** revive draughts `board` / `currentTurn` / cell `0`–`4` / `move` unless product revives that contract.
 
@@ -119,7 +128,7 @@ lockstep. Initialize collections in Room `onCreate` (not inside schema “logic�
 
 When changing schema:
 
-1. Field names match client Pinia / GamePage (`started`, `seats` → `touristId`/`side`/`row`/`col`).
+1. Field names match client Pinia / GamePage (`started`, `seats` → `touristId` + `pieces` `{ side, row, col }`).
 2. Room owns seating and messages — schema does not define messages.
 3. Sibling client `onStateChange` is updated together when fields appear.
 4. Prefer server → client alignment over unilateral client rewrites.

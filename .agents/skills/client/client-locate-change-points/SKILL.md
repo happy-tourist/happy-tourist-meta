@@ -108,12 +108,12 @@ Do not invent room schemas, HTTP routes, or move payloads — note the server pa
 |--------|------------|
 | Auth (email/password, anonymous, Google, logout) | `pages/LoginPage.vue` + `stores/auth.ts`; router guards in `router/index.ts` |
 | Lobby (list / create / join) | `pages/LobbyPage.vue` + `stores/game` `subscribeLobby` / `createGame` / `joinGame` |
-| Game board (layout, pieces, rejoin) | `pages/GamePage.vue` + `stores/game` `onStateChange` / `joinGame(roomId)` |
+| Game board (layout, 4 pieces/seat, strip×4, rejoin) | `pages/GamePage.vue` + `stores/game` `onStateChange` / `joinGame(roomId)` |
 | Env / deploy | `.env.*`, `env.d.ts`, `boot/colyseus.ts`, `.github/workflows/deploy.yml` |
 | Theme / layout chrome | `App.vue` header + `stores/theme` + `boot/theme` + `css/*` (board CSS ≠ app Dark) |
 | i18n copy | `src/i18n/`, boot `i18n` |
 
-Today: GamePage board + pieces from synced `seats`/`started`. Move messages deferred. Room name `tourist`.
+Today: GamePage board + all pieces from synced `seats` (`touristId` + four `pieces`) / `started`; strip×4 if seated. Move messages deferred. Room name `tourist`.
 
 ## Workflow
 

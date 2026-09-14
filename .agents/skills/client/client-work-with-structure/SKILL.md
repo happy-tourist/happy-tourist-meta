@@ -187,7 +187,7 @@ Registered in `quasar.config.ts` boot array: `theme`, `i18n`, `colyseus` (+ `fra
 
 **Lobby** — `LobbyPage` uses `useGameStore().subscribeLobby` / `createGame` / `joinGame` and `useAuthStore` for display/logout.
 
-**Game** — `GamePage` shows tourist board with synced seat pieces / strip; rejoins by `roomId` on refresh; no move UX until rules land.
+**Game** — `GamePage` shows tourist board with all seats’ pieces (4 per seated) + strip×4 if seated; rejoins by `roomId` on refresh; no move UX until rules land.
 
 **App shell** — `App.vue` hosts `q-layout` → theme `q-header` → `router-view`; stable `watch([() => auth.ready, () => auth.user?.id, () => auth.user?.anonymous], …)` → `theme.syncFromAuthUser` (GET restore for registered; do not replace `auth.user` after GET); shows `theme.error` banner.
 
@@ -227,7 +227,7 @@ Registered in `quasar.config.ts` boot array: `theme`, `i18n`, `colyseus` (+ `fra
 | Auth | `LoginPage` | `stores/auth` + `boot/colyseus` |
 | Theme (chrome Dark) | `App.vue` header | `stores/theme` + `boot/theme` |
 | Lobby / rooms | `LobbyPage` | `stores/game.subscribeLobby` / create / join |
-| Game session | `GamePage` | `stores/game` room attach + seats / pieces |
+| Game session | `GamePage` | `stores/game` room attach + seats (`touristId` + `pieces[]`) / strip×4 |
 | Shell | `App.vue` | layout + theme header/banner + `router-view` |
 
 Routes (from `src/router/routes.ts`):

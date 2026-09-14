@@ -71,7 +71,7 @@ Use local `ref()` / `reactive()` for:
 Examples:
 - `LoginPage.vue`: `email`, `password`, `displayName`, `isRegister`, `showPassword`.
 - `LobbyPage.vue`: `creating`, `joining` (page spinners); room list and errors come from `game`.
-- `GamePage.vue`: `LAYOUT` tiles + piece assets; seats/strip from `game` store.
+- `GamePage.vue`: `LAYOUT` tiles + piece assets; flatten `seat.pieces` for board overlay; strip×4 from `mySeat`.
 
 ### Pinia state
 
@@ -81,14 +81,14 @@ Use a store for shared domain data, realtime session, or anything the router/oth
 |-------|------|-------------------|
 | **auth** | `user`, `token`, `loading`, `error`, `ready`; `isAuthenticated`, `displayName`; register/login/anonymous/Google/`logout`/`whenReady` | `LoginPage`, router `beforeEach`, `LobbyPage` logout/header, `App.vue` theme sync |
 | **theme** | Quasar Dark `preference`, `error`; async `syncFromAuthUser` (GET restore + generation + `clearStoredTheme` when unset; **no** `auth.user` replace after GET), `toggle` (guest `localStorage` `ht-theme`; registered `get` ≠ JWT-only, `post` on toggle may patch `user.theme`) | `App.vue` header toggle + stable auth identity watch |
-| **game** | lobby `rooms`/`lobbyRoom`/`listing`; active `room`/`roomId`/`sessionId`; mirrored `seats`/`started`; getters `mySeat`/`isSeated`; `status`, `error`; subscribe/unsubscribe / create/join/leave | `LobbyPage`, `GamePage` |
+| **game** | lobby `rooms`/`lobbyRoom`/`listing`; active `room`/`roomId`/`sessionId`; mirrored `seats` (`GameSeat`: `touristId` + `pieces[]` `{ side, row, col }`) / `started`; getters `mySeat`/`isSeated`; `status`, `error`; subscribe/unsubscribe / create/join/leave | `LobbyPage`, `GamePage` |
 | **counter** | scaffold only | none in product flow — ignore unless cleaning scaffold |
 
 ### Auth vs theme vs game ownership
 
 - **auth** owns Colyseus Auth only (`client.auth.*`, token sync via `onChange`). It does not create rooms or call Dark/`GET|POST /api/theme`.
 - **theme** owns chrome Dark preference and preference HTTP (`client.http.get('/api/theme')` on restore, `post` on toggle). Wired from `App.vue`; does not own auth session or rooms. See `work-with-styles`.
-- **game** owns room listing, room lifecycle, and seat sync (`seats` / `started` / `sessionId` from `onStateChange`). No Game `send*` messages until move rules land. It does not call `client.auth` or theme APIs.
+- **game** owns room listing, room lifecycle, and seat sync (`seats` with four `pieces` each / `started` / `sessionId` from `onStateChange`). No Game `send*` messages until move rules land. It does not call `client.auth` or theme APIs. Do not put `side`/`row`/`col` on `GameSeat` itself — those live on each `GamePiece`.
 - Cross-cutting: router awaits `useAuthStore().whenReady()` then enforces `requiresAuth` / `guest`. `App.vue` uses `watch([() => auth.ready, () => auth.user?.id, () => auth.user?.anonymous], …)` → `theme.syncFromAuthUser` (GET restore; not JWT `user.theme`-only). Do **not** use `watch(() => [ready, id, anonymous])` (new array each run) or replace `auth.user` after GET — that storms `GET /api/theme` (SC-THEME-10). POST toggle may patch `auth.user.theme` because the watch does not depend on it. Game pages assume auth already passed.
 - Room constants: `TOURIST_ROOM = 'tourist'`, `LOBBY_ROOM = 'lobby'`. Board tile geometry stays on `GamePage`; move encoding — deferred until rules land.
 

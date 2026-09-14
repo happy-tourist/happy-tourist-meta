@@ -214,8 +214,8 @@ Do **not** `await unsubscribeLobby()` (or any other await) between `connect()` r
 | Field | Meaning |
 |-------|---------|
 | `started` | Fourth seat assigned → `true`; drives Pinia `status` `playing` / `waiting` |
-| `seats` Map | Key = `sessionId` → `touristId`, `side`, `row`, `col` |
-| `sessionId` | From `room.sessionId` — for `mySeat` / strip |
+| `seats` Map | Key = `sessionId` → `touristId` + `pieces` Map (key = side `N\|E\|S\|W` → `{ side, row, col }`) |
+| `sessionId` | From `room.sessionId` — for `mySeat` / strip×4 |
 
 Wire once in the store:
 
@@ -226,12 +226,18 @@ room.onStateChange((state) => {
   this.started = Boolean(s.started);
   const next: GameSeat[] = [];
   s.seats?.forEach((seat, sessionId) => {
+    const pieces: GamePiece[] = [];
+    seat.pieces?.forEach((piece, sideKey) => {
+      pieces.push({
+        side: String(piece.side || sideKey),
+        row: Number(piece.row),
+        col: Number(piece.col),
+      });
+    });
     next.push({
       sessionId,
       touristId: Number(seat.touristId),
-      side: String(seat.side),
-      row: Number(seat.row),
-      col: Number(seat.col),
+      pieces,
     });
   });
   this.seats = next;

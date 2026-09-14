@@ -99,12 +99,12 @@ Use these categories only when the SUT has relevant behavior:
 
 - Room connect: `sessionId` matches; `onAuth` userdata reaches `onJoin`.
 - Auth failure: missing / invalid token → connect rejects (client cannot join).
-- Schema sync: after join / move, client-visible state fields
-  (`board`, `currentTurn`, `status`, `players[sessionId].color`) match
-  authoritative room state (once implemented; align with client contract).
-- Messages: `client.send("move", { from, to })` — legal move updates board;
-  illegal move leaves state unchanged (and/or sends an error message if the
-  room defines one).
+- Schema sync: after join, client-visible state matches room —
+  `started`, `seats` Map (`touristId` + exactly four `pieces` keyed by side
+  `N|E|S|W` → `{ side, row, col }`). Assert four pieces / free start cells /
+  leave-pool reopen as in SC-PIECE-01…08 (`test/MyRoom.test.ts`).
+- Messages: when move rules exist, legal/illegal payloads; until then do **not**
+  assert draughts-era `board` / `currentTurn` / `players[sessionId].color`.
 - Listing: live LobbyRoom — after `createRoom("tourist")`, lobby client
   receives `+`; after dispose, receives `-` (SC-LOBBY-02/03). HTTP
   `GET /rooms/tourist` remains optional fallback.
@@ -127,9 +127,14 @@ Verify JWT room connect:
 - Valid JWT.sign payload: connectTo succeeds; client.sessionId === room.clients[0].sessionId
 - Missing/invalid token: connect rejects / join fails
 
+Verify seating / pieces (SC-PIECE):
+- First join: seat has touristId 1…4 and exactly four pieces on N/E/S/W start cells
+- Two seats: unique touristId; no shared (row,col) among any pieces
+- Fourth seat → started true; fifth → no seat; leave before start frees kind+cells
+
 Verify move (when implemented):
-- Legal { from, to } on currentTurn: board cells update; turn flips
-- Wrong turn / empty from / occupied to: state unchanged
+- Legal action on current turn: piece positions / turn fields update
+- Illegal payload: state unchanged
 
 Verify live lobby listing:
 - joinOrCreate("lobby", { filter: { name: "tourist" } }); createRoom("tourist") → lobby receives +
@@ -180,25 +185,36 @@ Always use `createRoom("tourist", …)` matching `app.config.ts`. Include lobby 
   matching how neighboring tests assert rejections (`assert.rejects`).
 - Do not weaken `MyRoom.onAuth` / `JWT.verify` to make the test pass.
 
+### Seating / pieces sync (SC-PIECE)
+
+Canonical coverage lives in `test/MyRoom.test.ts`:
+
+- First join → exactly four pieces on sides N/E/S/W on that side’s start cells.
+- Unique `touristId` among seats; no shared cell among any pieces in the room.
+- Fourth seated → `started === true`; fifth → no seat / no extra pieces.
+- Leave before start → kind + cells reusable; leave after start → no reseat.
+
+Helpers in that file (`assertFourPiecesOnSides`, `listPieces`, `allRoomPieces`)
+are the preferred assertion style — extend them rather than inventing a parallel
+seat-flat `side`/`row`/`col` model.
+
 ### Future move validation
 
 Once `onMessage("move", …)` exists:
 
-- Two clients with JWT; assign colors via state; send `move` only on the
-  current player’s turn.
-- Assert schema `board` / `currentTurn` after a legal move.
-- Assert no board change on illegal payloads (`from`/`to` out of range,
-  wrong piece, mandatory capture ignored — when rules land).
+- Two+ seated clients with JWT; send only on the current player’s turn.
+- Assert piece positions / turn fields after a legal move (lockstep with client).
+- Assert no state change on illegal payloads (when rules land).
 
 Server is authoritative; never assert by trusting a client-only board copy.
 
 ### Schema sync assertions
 
 - After `connectTo`, read synced state from the client SDK view or room state
-  the harness exposes; assert fields the client SPA expects
-  (`board`, `currentTurn`, `status`, `players`).
-- Until schema is implemented, keep tests focused on join/auth; add schema
-  assertions in the same change that introduces `MyRoomState` fields.
+  the harness exposes; assert fields the client SPA expects:
+  `started`, `seats` → `touristId` + four `pieces` `{ side, row, col }`.
+- Do not assert legacy draughts fields (`board`, `currentTurn`,
+  `players[].color`) — they are not in product schema.
 
 ### Live lobby listing (SC-LOBBY-02 / SC-LOBBY-03)
 

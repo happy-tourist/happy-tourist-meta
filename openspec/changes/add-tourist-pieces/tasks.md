@@ -1,18 +1,24 @@
-## 1. Server — seating + schema
+## 1. Server — four pieces per seat
 
-- [x] 1.1 Прочитать `design.md` (D1–D3, D5), delta `specs/game/pieces/spec.md` (SC-PIECE-01…07), `.agents/skills/server/work-with-schema/SKILL.md`, `.agents/skills/server/work-with-rooms/SKILL.md`, `.agents/skills/server/work-with-game/SKILL.md`; сверить `../happy-tourist-server/src/rooms/MyRoom.ts` и `schema/MyRoomState.ts`
-- [x] 1.2 Заменить scaffold `MyRoomState` на product sync: `started` + map seats (`touristId`, `side`, `row`, `col`); wired `setState` в room — verify: schema компилируется / room поднимается в тестах
-- [x] 1.3 В `MyRoom.onJoin` / `onLeave` реализовать назначение из оставшихся пулов, старт на 4-й seat, leave до/после start (design D2–D3); без `maxClients=4` — SC-PIECE-01…07
-- [x] 1.4 Добавить mocha-тесты с ID `SC-PIECE-01`…`SC-PIECE-07` в `../happy-tourist-server/test/`; обновить Traceability в delta `game/pieces` на covered где применимо
-- [x] 1.5 В `../happy-tourist-server`: `npm test`; при падении — починить до client
+- [x] 1.1 Прочитать design/skills и сверить `MyRoom` / `MyRoomState` *(базовое чтение; контракт ниже устарел относительно v1 — перечитать при 1.2)*
+- [x] 1.2 **Rework** schema: seat = `touristId` + ровно 4 pieces (`side` N/E/S/W + `row`/`col`); убрать модель «один side на seat» — verify: compile / room в тестах
+- [x] 1.3 **Rework** `onJoin`/`onLeave`: уникальный kind; 4 клетки из свободных стартов сторон; start на 4-м seated; leave снимает все 4 — SC-PIECE-01…08
+- [x] 1.4 **Переписать** mocha SC-PIECE-01…08; Traceability pieces → covered где применимо
+- [x] 1.5 `npm test` в server; починить до client
 
-## 2. Client — фигурки + strip
+## 2. Client — board ×4 + strip ×4
 
-- [x] 2.1 Прочитать `design.md` (D4), delta `specs/game/pieces/spec.md` (SC-PIECE-08…09), delta `specs/game/board/spec.md` (SC-BOARD-01/05), `.agents/skills/client/work-with-game-board/SKILL.md`, `.agents/skills/client/work-with-stores/SKILL.md`, `.agents/skills/client/work-with-rooms/SKILL.md`; сверить `GamePage.vue` / `stores/game.ts` и наличие `src/assets/tourists/tourist{1-4}.png`
-- [x] 2.2 В `stores/game` зеркалировать seats / `started` / свой `sessionId` из room state (`onStateChange`) — verify: store отражает sync после join
-- [x] 2.3 На Game отрисовать фигурки на стартовых клетках по seats + strip «мой турист» только для seated (ассеты `touristN.png`); доска/фигурки non-interactive — SC-PIECE-08/09, SC-BOARD-01/05
-- [x] 2.4 В `../happy-tourist.github.io`: `npm run lint` и `npm run typecheck`; при падении — починить
+- [x] 2.1 Прочитать board skills / сверить ассеты *(повторно сверить при 2.2)*
+- [x] 2.2a Сохранить `_attachRoom` до `unsubscribeLobby` (race fix) — не ломать
+- [x] 2.2 **Rework** `stores/game`: mirror seats с массивом/map pieces + `touristId` / `started` / `sessionId`
+- [x] 2.3 **Rework** `GamePage`: все pieces всех seats на клетках; strip из 4 своих слотов N→E→S→W (тот же PNG); без статусов; non-interactive — SC-PIECE-09/10, SC-BOARD-01/05
+- [x] 2.4 `npm run lint` + `npm run typecheck` в client
 
-## 3. Meta — skills (кратко)
+## 3. Meta — skills
 
-- [x] 3.1 Обновить `.agents/skills/client/work-with-game-board/SKILL.md` и при необходимости `.agents/skills/server/work-with-schema/SKILL.md` / `work-with-game/SKILL.md`: sync seats, фигурки, без ходов (design D6); verify: skills не противоречат specs
+- [x] 3.1 Обновить `work-with-game-board` / schema / game / rooms: 4 tokens/player, strip×4, free cells; verify vs specs
+
+## Notes
+
+- Сняты `[x]` с прежних 1.2–1.5 / 2.2–2.4 / 3.1: поведение v1 (1 piece / strip×1) **не** соответствует обновлённым specs.
+- Новый SC-PIECE-10 = spectator strip (бывший 09); нумерация в spec актуальна.

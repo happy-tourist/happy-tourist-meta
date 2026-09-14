@@ -20,16 +20,16 @@ Pair with client board UX: `happy-tourist-meta/.agents/skills/client/work-with-g
 | Surface | Path | Role |
 | --- | --- | --- |
 | Room | `src/rooms/MyRoom.ts` | JWT `onAuth`; seat assign/remove in `onJoin`/`onLeave`; future `onMessage` for moves |
-| Schema | `src/rooms/schema/MyRoomState.ts` | `started` + `seats` Map (`touristId`, `side`, `row`, `col`) |
+| Schema | `src/rooms/schema/MyRoomState.ts` | `started` + `seats` Map → `touristId` + `pieces` Map (`side` N/E/S/W → `row`/`col`) |
 | Rules (preferred) | new pure module e.g. `src/game/` or `src/rooms/tourist/` | Validate / apply moves later without Colyseus I/O |
 | Registration | `src/app.config.ts` | Room name must be `tourist` for client lobby |
 
 ## Seating (shipped)
 
-- Until `started`: join gets a seat — unique `touristId` 1…4 and side `N|E|S|W` from remaining pools; start cell uniform from the four starts on that side (N row0 cols3–6; E col9 rows3–6; S row9 cols3–6; W col0 rows3–6).
-- Fourth seat → `started = true` (optional metadata `status: "playing"`).
-- After `started`: join does **not** get a seat (spectator). No `maxClients = 4`.
-- Leave before start: delete seat → kind/side back in pools. Leave after start: delete seat; `started` stays true; no new seats.
+- Until `started` and `seats.size < 4`: join gets a seat — unique `touristId` 1…4 not used by any current seat, plus **exactly four pieces** (one per side `N|E|S|W`). For each side, pick a start cell uniformly from that side’s free starts (not occupied by any piece in the room). Starts: N row0 cols3–6; E col9 rows3–6; S row9 cols3–6; W col0 rows3–6.
+- Fourth seated player → `started = true` (optional metadata `status: "playing"`).
+- After `started`: join does **not** get a seat or pieces (spectator). No `maxClients = 4`.
+- Leave: delete the seat (all four pieces). Before start → kind and cells return to pools. After start → `started` stays true; no new seats.
 - Assign only in Room lifecycle — client never invents seats.
 
 ## Authority
@@ -45,7 +45,7 @@ Pair with client board UX: `happy-tourist-meta/.agents/skills/client/work-with-g
 | --- | --- |
 | Room name | `tourist` |
 | Board UI | Client-only `LAYOUT` in `GamePage`; server does **not** sync tile kinds |
-| Synced state | `started`, `seats` Map keyed by `sessionId` → `touristId`/`side`/`row`/`col` |
+| Synced state | `started`, `seats` Map keyed by `sessionId` → `touristId` + four `pieces` (`side`/`row`/`col`) |
 | Game messages | None for seating; add with client lockstep when moves land |
 
 Client-local only (do **not** put on schema): Pinia `idle` / `connecting` status strings. Lobby leave-before-enter stays in `work-with-rooms` / client `work-with-lobby`.

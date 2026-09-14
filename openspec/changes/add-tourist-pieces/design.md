@@ -1,73 +1,73 @@
 ## Context
 
-См. `proposal.md` (Why / Scope). Сейчас: client `GamePage` — статичный LAYOUT без фигурок; ассеты `src/assets/tourists/tourist{1-4}.png` уже на месте; `stores/game` join/leave без product schema; server `MyRoom` stub + `MyRoomState.mySynchronizedProperty`; room `tourist` без seating. Пакеты: **server** (authority seating/sync), затем **client** (рендер по state).
+См. `proposal.md`. В runtime уже есть seating v1 (1 piece / 1 side / strip×1) + racefix attach-before-await. Этот design **переводит** контракт на 4 tokens/player. Пакеты: **server** first, затем **client**, затем meta skills.
 
 ## Goals / Non-Goals
 
 **Goals:**
 
-- Авторитетная рассадка ≤4 в `tourist` + флаг start на 4-й seat.
-- Sync seats → все клиенты рисуют фигурки; seated — strip «мой турист»; spectator — без strip.
-- Leave: до start вернуть pool; после start не раздавать; убрать фигурку ушедшего.
+- Seated ≤4: уникальный `touristId`; ровно 4 pieces (N/E/S/W) на свободных стартах стороны.
+- Все клиенты рисуют все pieces; seated — strip из 4 своих слотов 1:1 по сторонам (статус UI later).
+- Leave снимает все 4; до start освобождает kind и клетки; после start новым не раздаём.
+- `started` на 4-м seated (кнопка «готов» — later).
 
 **Non-Goals:**
 
-- Ходы / «дошёл до центра» / reconnect policy / forfeit; лимит `maxClients`; новые room messages.
+- Ходы / статус-хром / ready-кнопка; `maxClients=4`; owner chrome кроме разного PNG вида.
 
 ## Decisions
 
-### D1 — Server authority + schema seats
+### D1 — Schema: seat + four pieces
 
-- Заменить scaffold state на product fields, например:
+- Product state:
   - `started: boolean`
-  - `seats: Map` keyed by `sessionId` → `{ touristId: 1..4, side: "N"|"E"|"S"|"W", row, col }`
-- Назначение только в room `onJoin` / снятие в `onLeave`; client только читает sync.
-- Альтернатива (client-local random) — отвергнута: гости и rejoin разойдутся.
+  - `seats: Map` keyed by `sessionId` → `{ touristId: 1..4, pieces: Map|list of { side: N|E|S|W, row, col } }` с ровно четырьмя сторонами.
+- Alternate (четыре отдельных top-level maps) — отвергнута: владелец и kind удобнее на seat.
+- Client только зеркалирует sync.
 
-### D2 — Пулы и рандом
+### D2 — Assign on join
 
-- До `started`: из оставшихся `touristId` и `side` выбрать равновероятно; клетку — равновероятно из 4 стартов стороны (геометрия как LAYOUT client: N row0 cols3–6; E col9 rows3–6; S row9 cols3–6; W col0 rows3–6).
-- При 4-й выдаче выставить `started = true` (и при желании metadata `status: "playing"` для лобби).
-- После `started` join не пишет в `seats`.
+- До `started` и `seats.size < 4`: выбрать свободный `touristId`; для каждой стороны взять random cell из START_CELLS[side], исключая уже занятые `(row,col)` в комнате.
+- Геометрия стартов без изменений: N row0 cols3–6; E col9 rows3–6; S row9 cols3–6; W col0 rows3–6.
+- На 4-м seat: `started = true`, metadata `playing` optional.
+- После `started`: join без записи в seats.
 
 ### D3 — Leave
 
-- `!started`: delete seat → kind/side снова доступны.
-- `started`: delete seat; `started` остаётся true; новым seats не давать.
-- Альтернатива «оставить ghost piece» — отвергнута для этого change (убрать из sync).
+- Удалить seat целиком (все 4 pieces); kind и клетки снова в пуле если `!started`.
+- Если `started`: pieces убрать, `started` остаётся, новым seats нет.
 
 ### D4 — Client render
 
-- `stores/game`: зеркалировать seats/`started`/sessionId из `onStateChange`; Colyseus I/O не в page.
-- `GamePage`: оверлей фигурок на CSS Grid (img по `touristId` → `@/assets/tourists/touristN.png`); strip под доской только если `seats.has(mySessionId)`.
-- Доска остаётся non-interactive (`pointer-events: none` на тайлах/фигурках).
-- Альтернатива: отдельный component — по желанию, если page раздуется; не обязателен.
+- Store: mirror `seats` / `started` / `sessionId`; `_attachRoom` **до** любого await после connect (уже в коде — сохранить).
+- `GamePage`: оверлей всех pieces всех seats; strip только если есть свой seat — четыре img того же `touristId`, порядок `N,E,S,W` (слоты = полевые стороны). Статус-хром не рисовать.
+- Non-interactive board/pieces.
 
-### D5 — Без лимита клиентов
+### D5 — Без maxClients=4
 
-- Не ставить `maxClients = 4`; политика «игроков ≤ 4» только через seats/`started`.
-- JWT `onAuth` без изменений.
+- Как раньше: гости через отсутствие seat, не через hard cap клиентов.
 
-### D6 — Skills / канон (meta, по необходимости)
+### D6 — Skills
 
-- Обновить `work-with-game-board` / `work-with-schema` / `work-with-game` коротко: фигурки sync, seating, не draughts; детали — в tasks если затронуты apply-файлы.
+- Обновить board/schema/game/rooms: 4 tokens, strip×4, free cells.
 
 ## Risks / Trade-offs
 
-- [Schema scaffold → product без dual client update] → пустой UI — mitigation: один change, server contract first, затем client.
-- [Несовпадение индексов стартов client/server] → фигурка «в дыре» — mitigation: зафиксировать таблицу клеток стороны в design/tasks + тест SC-PIECE-03.
-- [Race двух join до start] → Colyseus `onJoin` последователен в room — ок; тесты на uniqueness.
+- [До 16 pieces на доске] → OK для CSS overlay; следить за z-index.
+- [4 игрока заполняют все 16 стартов] → на 4-м join пул клеток пуст на каждой стороне ровно на одну клетку — OK если учитываем occupied.
+- [Одинаковый PNG у 4 слотов strip] → статусы later отличат; сейчас допустимо.
 
 ## Migration Plan
 
-1. Server: schema + MyRoom seating + mocha SC-PIECE-*.
-2. Client: store mirror + GamePage pieces/strip; lint/typecheck.
-3. Rollback: revert schema/UI; room снова без seats.
+1. Server: schema + assign/leave + mocha (новые SC-PIECE-*).
+2. Client: store + GamePage ×4 + strip×4; lint/typecheck.
+3. Meta skills; Traceability → covered.
+4. Rollback: вернуть seats v1 или убрать pieces.
 
-## Technical prerequisites (из explore)
+## Technical prerequisites
 
-- PNG `tourist1`…`tourist4` уже в client `src/assets/tourists/` — готово.
-- Решения D1–D4 explore закрыты (см. proposal References).
+- PNG `tourist1`…`tourist4` в client — готово.
+- Explore D1–D3 / Q1–Q4 закрыты.
 
 ## Open Questions
 

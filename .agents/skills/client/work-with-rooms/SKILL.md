@@ -21,7 +21,7 @@ Coordinate schema / protocol (room name, state shape, `move` message) with [`../
 |-------|------|------|
 | Store | `src/stores/game.ts` | `TOURIST_ROOM`, create/join/leave, `_attachRoom` listeners |
 | Lobby | `src/pages/LobbyPage.vue` | `createGame` / `joinGame` → navigate to `game` with `roomId` |
-| Game | `src/pages/GamePage.vue` | Board + seat pieces / strip; rejoin by `roomId`; `leaveGame` |
+| Game | `src/pages/GamePage.vue` | Board: all seats’ pieces + strip×4 if seated; rejoin by `roomId`; `leaveGame` |
 | Boot | `src/boot/colyseus.ts` | Shared `Client` (`VITE_COLYSEUS_URL`) |
 | Route | `/game/:roomId` | Hash mode; `meta.requiresAuth` |
 
@@ -70,8 +70,8 @@ Three private helpers own the room session (`_enterRoom`, `_attachRoom`, `_reset
 1. Set `status = 'connecting'`, `error = null`.
 2. **`await this._leaveTouristRoom()`** — detach prior tourist room; **keep** lobby subscription during the attempt.
 3. `const room = await connect()`.
-4. **`await this.unsubscribeLobby()`** — only after success (SC-LOBBY-05).
-5. `this._attachRoom(room)` and return `room`.
+4. **`this._attachRoom(room)`** — immediately after connect (before any other await) so the first `ROOM_STATE` is not missed.
+5. **`await this.unsubscribeLobby()`** — only after success (SC-LOBBY-05); return `room`.
 6. On failure: `status = 'idle'`, set `error`, rethrow (lobby stays subscribed on LobbyPage).
 
 ```ts
@@ -137,8 +137,8 @@ async leaveGame() {
 | Server field | Store field |
 |--------------|-------------|
 | `started` | `started`; also drives `status` (`playing` if started, else `waiting`) |
-| `seats` Map (key = `sessionId`) | `seats[]` with `sessionId`, `touristId`, `side`, `row`, `col` |
-| (room) `sessionId` | `sessionId` — for `mySeat` / strip |
+| `seats` Map (key = `sessionId`) | `seats[]` with `sessionId`, `touristId`, `pieces[]` (`side`/`row`/`col`; server map key = side) |
+| (room) `sessionId` | `sessionId` — for `mySeat` / strip×4 |
 
 Move messages and turn/progress fields — **deferred** until rules land (`work-with-game` + client board skill).
 
@@ -149,12 +149,18 @@ room.onStateChange((state) => {
   this.started = Boolean(s.started);
   const next: GameSeat[] = [];
   s.seats?.forEach((seat, sessionId) => {
+    const pieces: GamePiece[] = [];
+    seat.pieces?.forEach((piece, sideKey) => {
+      pieces.push({
+        side: String(piece.side ?? sideKey),
+        row: Number(piece.row),
+        col: Number(piece.col),
+      });
+    });
     next.push({
       sessionId,
       touristId: Number(seat.touristId),
-      side: String(seat.side),
-      row: Number(seat.row),
-      col: Number(seat.col),
+      pieces,
     });
   });
   this.seats = next;

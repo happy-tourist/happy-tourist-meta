@@ -47,10 +47,10 @@ client create / joinById / joinOrCreate('tourist')
         │  (enableRealtimeListing publishes to LobbyRoom subscribers)
         ▼
   onJoin(client, options, auth)
-        │  assign seat unless started; 4th seat → started + metadata playing
+        │  assign touristId + 4 pieces unless started; 4th seat → started + metadata playing
         ▼
   onLeave(client, code?)
-        │  delete seat; pools reopen if !started
+        │  delete seat (all 4 pieces); pools reopen if !started
         ▼
   onDispose()              ← room empty / locked shut → lobby `-` update
 ```
@@ -61,8 +61,8 @@ client create / joinById / joinOrCreate('tourist')
 |------|---------|--------|
 | `static onAuth` | `JWT.verify(token)`; return userdata | Trust client-supplied identity without JWT |
 | `onCreate` | `this.setState(new MyRoomState())`, `setMetadata({ title, status })`; do **not** set `maxClients = 4` | Mutate board from HTTP |
-| `onJoin` | Assign seat from remaining `touristId`/`side` pools + start cell; set `started` on 4th seat | Cap the room with `maxClients = 4` (spectators allowed) |
-| `onLeave` | Delete seat; before start pools reopen; after start keep `started` | Leave stale `seats` entries without a policy |
+| `onJoin` | Assign unique `touristId` + 4 pieces on free start cells (N/E/S/W); set `started` on 4th seat | Cap the room with `maxClients = 4` (spectators allowed) |
+| `onLeave` | Delete seat (all 4 pieces); before start pools reopen; after start keep `started` | Leave stale `seats` entries without a policy |
 | `onDispose` | Cleanup timers / logs | Assume clients still connected |
 
 ## Current Room (`MyRoom.ts`)
@@ -119,9 +119,9 @@ Align with client Pinia expectations:
 | Concern | Target |
 |---------|--------|
 | Capacity | No `maxClients = 4`; seated ≤ 4 via `seats` / `started`; spectators may join |
-| Seats | Unique `touristId` 1…4 + side `N\|E\|S\|W` + start cell on that side (see `work-with-game`) |
+| Seats | Unique `touristId` 1…4 + exactly four pieces (one per side N/E/S/W on free start cells; see `work-with-game`) |
 | Status | Metadata `waiting` until 4 seated; then `playing` + `state.started = true` |
-| Leave | Before start: delete seat (pools reopen). After start: delete seat; do not reseat newcomers |
+| Leave | Delete seat (all 4 pieces). Before start: pools reopen. After start: do not reseat newcomers |
 | Authority | Server mutates schema state; client only mirrors seats / renders |
 
 Do not trust client-local board UI. When move rules land, validation belongs in the room (see `work-with-messages` / `work-with-game`).

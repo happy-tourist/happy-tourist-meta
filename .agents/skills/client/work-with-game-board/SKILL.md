@@ -17,15 +17,15 @@ Product: настольная игра «Счастливый турист». Th
 
 | Surface | Path | Role |
 | --- | --- | --- |
-| Game page | `src/pages/GamePage.vue` | CSS Grid tourist field; piece overlay from seats; strip «мой турист» if seated; leave → lobby |
+| Game page | `src/pages/GamePage.vue` | CSS Grid tourist field; overlay all seats’ pieces; strip×4 «Мой турист» if seated; leave → lobby |
 | Game store | `src/stores/game.ts` | Room join/leave; mirror `seats` / `started` / `sessionId` from `onStateChange` |
 
 | Concern | Location |
 | --- | --- |
 | Layout constant | `LAYOUT` string grid in `GamePage.vue` (`.` hole, `1` start, `*` task, `7` center) |
 | Tile build | `buildBoardTiles()` → non-button `div.tile` with `gridColumn` / `gridRow` |
-| Pieces | `img.piece` overlaid on the same grid from `game.seats` (`touristId` → `@/assets/tourists/touristN.png`) |
-| Strip | Below board only when `mySeat` (own kind); spectators see pieces, no strip |
+| Pieces | Flatten all seats’ `pieces` (4 per seated player) → `img.piece` at `row`/`col`; PNG from seat `touristId` → `@/assets/tourists/touristN.png` |
+| Strip | Below board only when `mySeat`: **four** slots `N→E→S→W` (same PNG; status chrome later); spectators: pieces yes, strip no |
 | Center | One element with `span 2` / `span 2` (solid 2×2), not four cells |
 | Room enter | Out of scope — see `work-with-lobby` / `work-with-rooms` |
 
@@ -42,15 +42,15 @@ Tiles and pieces are non-interactive — not `button`s, no `@click`, no selectio
 ## Authority
 
 - Board **geometry** (`LAYOUT`) is a client constant; server does not sync tile kinds.
-- **Seats** (`touristId`, `side`, `row`, `col`) and `started` are server-authoritative via schema; client only mirrors and renders.
+- **Seats** (`touristId` + exactly four `pieces` `{ side, row, col }` keyed N/E/S/W) and `started` are server-authoritative; client only mirrors and renders.
 - Do not reintroduce legacy draughts CellValue `0…4`, `getTargets`, `selected` / `targets`, or `sendMove` on Game.
 - When move rules land, coordinate wire protocol with server `work-with-game` — do not invent a second client-only rules engine.
 
 ## GamePage Responsibilities
 
 - Render `boardTiles` from `LAYOUT`.
-- Overlay pieces from `game.seats` at `row`/`col` (1-based CSS Grid).
-- Show strip «мой турист» only if `mySeat` (seated); spectators: pieces yes, strip no.
+- Overlay **all** pieces of **all** seats at `row`/`col` (0-based schema → 1-based CSS Grid).
+- Show strip «Мой турист» only if `mySeat`: four imgs of that seat’s `touristId` in order `N,E,S,W` (1:1 with field sides); spectators: board pieces yes, strip no.
 - Status from store (`waiting` / `playing`); leave → `leaveGame` + lobby; rejoin by `roomId` via store.
 
 ## Do
@@ -58,7 +58,7 @@ Tiles and pieces are non-interactive — not `button`s, no `@click`, no selectio
 - Keep layout in one client constant; center as a single 2×2 grid area.
 - Preserve max tile 60px, gap 6, radius 12, hole = page background.
 - Keep Colyseus I/O in `stores/game`; page reads seats/strip from store only.
-- Map `touristId` 1…4 to `tourist{N}.png`; strip shows only the local player's kind.
+- Map `touristId` 1…4 to `tourist{N}.png`; strip shows only the local player’s four slots (not other kinds).
 
 ## Don't
 
