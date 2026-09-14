@@ -14,8 +14,8 @@ description: >-
 
 Use this skill when creating or relocating code under `src` (and related
 `test/` / `loadtest/` / deploy wiring). This is a **realtime Colyseus game
-server**, not an Express BFF: authoritative seating, reconnect grace, and later move rules live in the Room;
-the client mirrors seats/connectivity and renders pieces + presence on a local board layout.
+server**, not an Express BFF: authoritative seating, reconnect grace, turn order, and one-step move rules live in the Room;
+the client mirrors seats/connectivity/`currentTurnSessionId` and renders pieces + presence + local move chrome on a local board layout.
 
 Stack: Colyseus 0.18 (`defineServer` / `defineRoom` via `@colyseus/tools`),
 `@colyseus/auth` + JWT, `@colyseus/database` + Drizzle + better-sqlite3,
@@ -34,8 +34,7 @@ Path style: relative imports with explicit `.js` suffix (NodeNext), e.g.
 intended to live in `happy-tourist-meta/.agents/skills/server/` once meta
 is available — prefer that path when choosing skills if it exists.
 
-Sibling client: `../happy-tourist.github.io` (room type `tourist`, board + pieces from synced seats;
-move messages deferred until product rules land).
+Sibling client: `../happy-tourist.github.io` (room type `tourist`, board + pieces from synced seats + turn/`sendMove`).
 
 ## Core Rules
 
@@ -56,8 +55,9 @@ move messages deferred until product rules land).
 | Server wiring | `src/app.config.ts` | `defineServer`: `database`, `rooms`, `routes`, `express`; side-effect import of OAuth config |
 | OAuth config | `src/config/` | `auth.ts` — `auth.oauth.addProvider('google', …)`; no custom `onOAuthProviderCallback` in MVP |
 | Database | `src/db/` | `GameDatabase` (`index.ts`) + Drizzle user schema (`schema.ts`) |
-| Rooms | `src/rooms/` | Room handlers (`onCreate` / `onJoin` / `onDrop` / `onReconnect` / leave / dispose; messages later) |
-| Schema | `src/rooms/schema/` | `@colyseus/schema` synced state definitions |
+| Rooms | `src/rooms/` | Room handlers (`onCreate` / `onJoin` / `onDrop` / `onReconnect` / leave / dispose; `onMessage('move')`) |
+| Schema | `src/rooms/schema/` | `@colyseus/schema` synced state (`started` + `seats` + `currentTurnSessionId`) |
+| Pure rules | `src/game/` | Authoritative move validate/apply (`touristMove.ts`) — no Colyseus I/O |
 | Tests | `test/` | mocha + `@colyseus/testing` (`*.test.ts`) |
 | Loadtest | `loadtest/` | `@colyseus/loadtest` scripts |
 | Deploy | `ecosystem.config.cjs`, `.github/workflows/` | PM2 + CI rsync |
@@ -72,8 +72,9 @@ Env templates: `.env.example`, `.env.development`, `.env.production` (do not com
 | **`app.config.ts`** | Wire `database`, register rooms, thin `routes` / `express` (CORS first, health, dev monitor/playground); import `./config/auth.js` | Game rules, board mutation |
 | **`config/`** | OAuth provider registration (`addProvider`) | Room gate, user schema, custom OAuth callback (leave built-in) |
 | **`db/`** | SQLite GameDatabase; extend `colyseus_users` with defaults | Room messages; inventing a second auth store |
-| **`rooms/`** | Auth gate (`onAuth`), seats, reconnect grace (`onDrop`/`onReconnect`), lifecycle; future game `onMessage` + state | Raw HTTP; client-trusted board |
-| **`rooms/schema/`** | Sync fields (`started` + `seats` → `touristId` + `pieces` + `connected` / `reconnectUntil`; moves later) | Validation / rules / side effects |
+| **`rooms/`** | Auth gate (`onAuth`), seats, reconnect grace, turn order, `onMessage('move')` + schema writes | Raw HTTP; client-trusted board; pure geometry tables (prefer `src/game/`) |
+| **`rooms/schema/`** | Sync fields (`started` + `seats` → `touristId` + `pieces` + connectivity + `currentTurnSessionId`) | Validation / rules / side effects |
+| **`game/`** | Pure tourist move rules (playable cells, Chebyshev, occupancy) | Room lifecycle, schema `@type`, HTTP |
 | **`test/` / `loadtest/`** | Boot server / joinOrCreate clients | Production deploy secrets |
 
 ## Dependency Direction
@@ -83,9 +84,10 @@ Typical path:
 ```text
 index.ts → app.config.ts
 app.config.ts → db / rooms (defineRoom) / config/auth / thin HTTP
-rooms → rooms/schema (+ JWT from @colyseus/auth)
+rooms → rooms/schema + game (pure rules) (+ JWT from @colyseus/auth)
 config → @colyseus/auth (oauth.addProvider only)
 db → @colyseus/database / drizzle schema only
+game → no Colyseus / no express (pure functions only)
 ```
 
 Allowed:
@@ -93,10 +95,11 @@ Allowed:
 ```text
 app.config   →  db, rooms, config/auth, colyseus tools (monitor, playground, createEndpoint)
 config       →  @colyseus/auth (addProvider; no rooms / no express)
-rooms        →  rooms/schema, @colyseus/auth (JWT), colyseus Room/Client APIs
+rooms        →  rooms/schema, game/*, @colyseus/auth (JWT), colyseus Room/Client APIs
 rooms/schema →  @colyseus/schema only
+game         →  pure TS only (no rooms / schema / express)
 db           →  @colyseus/database, drizzle (no rooms / no express)
-test         →  app.config, @colyseus/testing, JWT
+test         →  app.config, game, @colyseus/testing, JWT
 loadtest     →  @colyseus/sdk / loadtest CLI
 ```
 
@@ -109,7 +112,7 @@ loadtest     →  @colyseus/sdk / loadtest CLI
 | `index.ts` growing with rooms/HTTP | Keep listen-only; wire in `app.config` |
 | Fat REST “services” layer + Redis sessions | Use `@colyseus/auth` + Room `onAuth` JWT |
 | Trusting client board state | Room validates and owns truth |
-| HTTP handlers implementing game rules | Put rules in the Room message handler |
+| HTTP handlers implementing game rules | Put pure rules in `src/game/`; Room `onMessage` only glues |
 
 ## Where New Code Belongs
 
@@ -117,7 +120,7 @@ Decide in this order:
 
 1. **New room type / rename?** → `src/rooms/<Name>.ts` + register in `app.config.ts` `rooms` (playable key `tourist`; live list needs `lobby` + `.enableRealtimeListing()`).
 2. **Synced state fields?** → `src/rooms/schema/<Name>State.ts` only; Room assigns/mutates them.
-3. **Game messages?** → Room `onMessage(…)` when rules land — validate, apply, update schema.
+3. **Game messages / rules?** → pure module under `src/game/` + Room `onMessage(…)` glue that validates, applies, updates schema.
 4. **User profile columns?** → `src/db/schema.ts`: **NOT NULL** columns need `.default(...)` so `/auth/register` / `/auth/login` stay compatible; nullable prefs (e.g. `theme`) do not; wire via `src/db/index.ts` if needed.
 5. **Thin HTTP (health, demo API, preference read/save)?** → `express` hook or `createEndpoint` in `app.config.ts` (e.g. `GET|POST /api/theme`). CORS stays first.
 6. **Auth HTTP?** → Already from `@colyseus/auth` when `database` is set — do not reimplement `/auth/*`.
@@ -132,14 +135,18 @@ Decide in this order:
 **Put in rooms**
 
 - `maxClients`, seats, disconnect / forfeit / reconnect policy (`onDrop` grace vs consented `onLeave`).
-- Future game `onMessage` handlers; reject illegal actions once rules exist.
-- Authoritative state updates and status transitions when rules land.
+- `onMessage('move')` glue: seated + current turn → `validateTouristMove` → write piece `row`/`col` → advance turn.
+- Authoritative turn order (`turnOrder` room-private) and seat/connectivity lifecycle.
 - `onAuth` JWT verify; use returned userdata in `onJoin`.
+
+**Put in `src/game/`**
+
+- Pure playable-cell / adjacency / occupancy validate+apply (no Colyseus imports).
 
 **Put in rooms/schema**
 
 - Fields the client must sync once product decides (scaffold OK today).
-- Encoding / shape: align with client when rules land (not draughts encoding as product canon).
+- Encoding / shape: align with client (`{ side, row, col }` — not draughts encoding as product canon).
 - Defaults via schema helpers — no rule engines here.
 
 **Put in db**
@@ -227,13 +234,13 @@ ecosystem.config.cjs
 
 **Test** — `boot(appConfig)`, `JWT.sign(...)`, `createRoom("tourist")`, `connectTo`, assert `sessionId`; lobby `+`/`-` cases when listing changes.
 
-**Client contract** — room `tourist` + live `lobby`; static Game board on client; synced rules / messages later; HTTP `/rooms/tourist` is fallback only.
+**Client contract** — room `tourist` + live `lobby`; synced `seats` / `started` / `currentTurnSessionId` + `move` `{ side, row, col }`; HTTP `/rooms/tourist` is fallback only.
 
 ## Creating New Pieces — Checklist
 
 **New / product tourist room**
 
-1. Implement Room handler under `src/rooms/` (lifecycle today; `onMessage` when rules land).
+1. Implement Room handler under `src/rooms/` (lifecycle + `onMessage('move')`; pure rules in `src/game/`).
 2. Define sync state under `src/rooms/schema/` (scaffold OK; product fields with client lockstep).
 3. Register room name in `app.config.ts` (`tourist` + live `lobby` when listed).
 4. Keep `onAuth` JWT; set seating policy when product decides.

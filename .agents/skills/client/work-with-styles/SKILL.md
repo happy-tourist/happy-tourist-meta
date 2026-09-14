@@ -169,13 +169,15 @@ Board UI is custom CSS Grid (not Quasar widgets). Keep selectors local and class
 | Class | Role |
 |-------|------|
 | `.game-header` | Cap header width to board max (`calc(10 * 60px + 9 * 6px)`) |
-| `.tourist-board` | 10×10 CSS Grid; `--tile` / `--gap` / `--radius`; transparent holes |
-| `.tile` | Rounded tile (`border-radius: var(--radius)`) |
+| `.tourist-board` | 10×10 CSS Grid; `--cell` / `--gap` / `--radius`; `aspect-ratio: 1`; transparent holes |
+| `.tile` | Rounded tile (`border-radius: var(--radius)`); `pointer-events` only when interactive |
 | `.tile-start` | Green start tile (`#4caf50`) |
 | `.tile-task` | Brown task tile (`#8d6e63`) |
 | `.tile-center` | Yellow center (`#ffeb3b`); one element with `span 2` / `span 2` |
+| `.tile--selected` / `.tile--target` | Local white / red move chrome (current-turn client only) |
+| `.piece` | Absolute `left`/`top` from `--pcol`/`--prow` + `--cell`; ~250ms transition |
 
-Tiles are non-interactive `div`s — no `.cell` / piece / selection / target classes from the old draughts UX.
+Current-turn interactivity and travel animation live in `work-with-game-board` — do not reintroduce draughts `.cell` / selection classes.
 
 When editing board visuals:
 

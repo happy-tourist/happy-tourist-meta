@@ -31,7 +31,7 @@ Coordinate with sibling skills when they exist: `work-with-schema`, `work-with-m
 | Registration | `src/app.config.ts` | `lobby: defineRoom(LobbyRoom)`; `tourist: defineRoom(MyRoom).enableRealtimeListing()` |
 | Game handler | `src/rooms/MyRoom.ts` | `Room` subclass: `onAuth`, `onCreate`, `onJoin`, `onDrop`, `onReconnect`, `onLeave`, `onDispose` |
 | Schema | `src/rooms/schema/MyRoomState.ts` | Synced state: `started` + `seats` Map (`connected` / `reconnectUntil`) |
-| Tests | `test/MyRoom.test.ts` | JWT, tourist connect; grace / consented / dispose (SC-PIECE-07…16); lobby listing (SC-LOBBY-02/03) |
+| Tests | `test/MyRoom.test.ts` | JWT, tourist connect; grace / consented / dispose (SC-PIECE-07…16); turn/move (SC-MOVE-*); lobby listing (SC-LOBBY-02/03) |
 | Loadtest | `loadtest/example.ts` | `joinOrCreate`; `--room tourist` |
 
 Registered room keys today: **`lobby`** (built-in listing) and **`tourist`** (playable `MyRoom` with realtime listing). Client `TOURIST_ROOM` / `LOBBY_ROOM` match these names — do not reintroduce `my_room`.
@@ -48,7 +48,7 @@ client create / joinById / joinOrCreate / reconnect('tourist')
         │  returns userdata → onJoin(…, auth)
         ▼
   onCreate(options)        ← once per room instance
-        │  setState(MyRoomState), setMetadata, optional onMessage later
+        │  setState(MyRoomState), setMetadata, onMessage('move')
         │  (enableRealtimeListing publishes to LobbyRoom subscribers)
         ▼
   onJoin(client, options, auth)
@@ -202,7 +202,7 @@ static async onAuth(token: string, _options: any, _context: any) {
 3. `onAuth` still `JWT.verify`; userdata reaches seat assignment.
 4. Seating + consented vs unexpected leave/reconnect + empty-seated dispose are explicit; no `maxClients = 4`.
 5. Synced fields / messages match client skills (schema/messages/game) including connectivity.
-6. Tests + loadtest use `tourist`; SC-PIECE grace/leave/dispose + lobby live-list covered where applicable.
+6. Tests + loadtest use `tourist`; SC-PIECE grace/leave/dispose + SC-MOVE turn/move + lobby live-list covered where applicable.
 7. Run `npm test` / `npm run build` from the server package root; fix failures before claiming done.
 
 ## Related

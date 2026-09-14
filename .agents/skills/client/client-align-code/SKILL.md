@@ -7,7 +7,7 @@ description: >-
   auth/game/theme store public surface, reactive/async feedback loops (watch →
   HTTP/SDK → mutate watched state), async races (await gap before onStateChange /
   listener attach misses first ROOM_STATE), Colyseus room protocol (tourist room /
-  lobby / status; game messages later), hash-router requiresAuth/guest guards, and
+  lobby / status; turn + `sendMove` / `move`), hash-router requiresAuth/guest guards, and
   Quasar error UX (store error + q-banner).
 ---
 
@@ -66,7 +66,7 @@ Load **in this order**:
 
 Treat explicit prohibitions and exceptions as atomic requirements: "не отображать", "не добавлять", "скрыть", "только для…", "кроме…".
 
-Auth/guest vs registered flows and route meta (`requiresAuth` / `guest`) are first-class. Game rules live on the server when they land; today Game shows a **static** tourist board — do not treat local layout as authoritative rules.
+Auth/guest vs registered flows and route meta (`requiresAuth` / `guest`) are first-class. Game rules live on the server; Game mirrors seats/`currentTurnSessionId` and shows local select/hints — do not treat local layout as authoritative rules.
 
 A tester's guess/question is only a lead. Treat dialog wording as clarification only when it explicitly states or updates expected behavior relative to the active change.
 
@@ -131,7 +131,7 @@ await game.subscribeLobby();
 
 Method presence or "looks compatible" alone is insufficient. Track each contract fact separately so one correct component cannot hide another mismatch.
 
-The client↔server contract is Colyseus Auth + room type `tourist` + live `lobby` (LobbyRoom + `.enableRealtimeListing()`) + static Game board (no Game messages yet; synced rules fields deferred). When CR/docs/server and client disagree, report `code-only` / contradiction with both sides named (`src/stores/*` vs `../happy-tourist-server`).
+The client↔server contract is Colyseus Auth + room type `tourist` + live `lobby` (LobbyRoom + `.enableRealtimeListing()`) + Game board mirroring seats/`started`/`currentTurnSessionId` + `sendMove` → `move` `{ side, row, col }`. When CR/docs/server and client disagree, report `code-only` / contradiction with both sides named (`src/stores/*` vs `../happy-tourist-server`).
 
 A toast / silent catch is not blocking confirmation. When confirmation is required, wait for explicit approval; cancel/close must not perform the mutating action. With analogue-only evidence, require only what the analogue proves.
 
@@ -219,7 +219,7 @@ Use evidence in this order:
 1. explicit requirements — including the **resolved OpenSpec change** (delta specs scenarios/SC-*, design constraints, task acceptance) when present; do not skip change artifacts and invent generic edge cases instead;
 2. Pinia action/getter contracts, Colyseus message/state shape, props/`emit` contracts, validators;
 3. strong analogues;
-4. deterministic runtime semantics (auth ready gate, room leave/rejoin, static Game board).
+4. deterministic runtime semantics (auth ready gate, room leave/rejoin, Game board + turn/`sendMove`).
 
 For reachable behavior, examine permitted empty/null/zero/false states, constrained numeric/string boundaries, initial/loading/success/empty/error/retry states, repeated actions, async cleanup, tourist board layout rendering, conditional rendering by auth/room status, `q-banner` visibility, and validation-vs-handler mismatches — **and** every edge/negative path named or implied by the resolved change's specs/design (e.g. empty lobby snapshot, subscribe/unsubscribe, leave-before-enter).
 
@@ -228,7 +228,7 @@ Runtime facts that often create defects:
 - router `beforeEach` awaits `auth.whenReady()` then enforces `requiresAuth` / `guest`;
 - `leaveGame` swallows leave errors on already-closed rooms;
 - `GamePage` calls `rejoinGame(roomId)` if Pinia lost the room (token → `joinById`); failed rejoin → lobby;
-- Game board is static client layout + presence; no `canMove` / `sendMove` until rules land.
+- Game board mirrors seats + `currentTurnSessionId`; local select/hints on `isMyTurn`; submit only via `game.sendMove` (not page `room.send`).
 
 ### Tourist board CSS sizing (обязательно при касании Game board)
 
@@ -349,8 +349,8 @@ This SPA wires cross-tree contracts through Pinia stores, the Colyseus client/ro
 
 When a changed hunk touches `stores/auth`, `stores/theme`, `stores/game`, `boot/colyseus`, `boot/theme`, room `send`/`onStateChange`, App-level `watch` on auth, or `router` meta/guards, independently verify:
 
-1. **Pinia still wired** — `auth` setup-store exports (`register` / `login` / `loginAnonymously` / `logout` / `whenReady` / `isAuthenticated` / `displayName` / `error` / …), `theme` (`syncFromAuthUser` / `toggle` / …), and `game` options-store actions/getters (`subscribeLobby` / `unsubscribeLobby` / `createGame` / `joinGame` / `leaveGame` / `isInRoom` / …) still match callers; renamed action with old call sites is a regression.
-2. **Room protocol** — room names `TOURIST_ROOM = 'tourist'`, `LOBBY_ROOM = 'lobby'`; live listing via LobbyRoom subscribe (HTTP `refreshRooms` unused fallback only); Game messages / synced board fields deferred until rules land (do not require draughts `move` / cells `0`–`4`).
+1. **Pinia still wired** — `auth` setup-store exports (`register` / `login` / `loginAnonymously` / `logout` / `whenReady` / `isAuthenticated` / `displayName` / `error` / …), `theme` (`syncFromAuthUser` / `toggle` / …), and `game` options-store actions/getters (`subscribeLobby` / `unsubscribeLobby` / `createGame` / `joinGame` / `leaveGame` / `sendMove` / `isMyTurn` / `isInRoom` / …) still match callers; renamed action with old call sites is a regression.
+2. **Room protocol** — room names `TOURIST_ROOM = 'tourist'`, `LOBBY_ROOM = 'lobby'`; live listing via LobbyRoom subscribe (HTTP `refreshRooms` unused fallback only); `sendMove` → `move` `{ side, row, col }`; mirror `currentTurnSessionId` (do not require draughts cells `0`–`4`).
 3. **Auth lifecycle** — `client.auth.onChange` drives `token`/`user`/`ready`; token key `colyseus-auth-token`; protected routes wait for `whenReady()`.
 4. **Theme / preference sync** — registered restore via profile HTTP must not re-enter on every in-memory userdata patch; guest stays localStorage-only; Colyseus HTTP only from store (see **Reactive / async feedback loops**).
 5. **Route meta** — `/login` has `meta.guest`; `/lobby` and `/game/:roomId` have `meta.requiresAuth`; hash mode (`/#/…`). Removing or flipping meta without AC is `extra` / `missing`.
@@ -359,7 +359,7 @@ When a changed hunk touches `stores/auth`, `stores/theme`, `stores/game`, `boot/
 Typical regression patterns to flag:
 
 - store action/getter renamed but pages still call old names;
-- reintroducing draughts `sendMove` / `canMove` / cell encoding without a product change;
+- calling `room.send('move')` from GamePage instead of `game.sendMove`, or inventing alternate turn/move shapes;
 - `onStateChange` regresses leave/rejoin or invents unsynced authority on the client;
 - `_enterRoom` awaits lobby leave (or anything else) before `_attachRoom` / `onStateChange` → missed first `ROOM_STATE`;
 - guard no longer awaits `whenReady()` or ignores `requiresAuth`/`guest`;

@@ -65,7 +65,7 @@ it does **not** allow skipping skills from this list.
 | `work-with-localization` | vue-i18n boot |
 | `work-with-lobby` | live LobbyRoom subscribe / leave before enter / create/join |
 | `work-with-rooms` | Room lifecycle |
-| `work-with-game-board` | Tourist board + seat pieces / strip (no move UX) |
+| `work-with-game-board` | Tourist board + seat pieces / strip + turn select/hints/`sendMove` |
 | `work-with-env-deploy` | `VITE_*`, hash router, GH Pages |
 
 If a new code skill appears under `.agents/skills/client/` (same kind: how to
@@ -252,11 +252,12 @@ Apply always; sibling skills win when they exist and conflict on a detail.
   `getAvailableRooms`).
 - Room type constant `TOURIST_ROOM = 'tourist'` in `stores/game`.
 - Room lifecycle: `create` / `joinById` / `joinOrCreate`, `onStateChange`,
-  `leave` (Game messages when rules land). `_enterRoom` must `_attachRoom`
-  immediately after `connect()` — no `await` (e.g. `unsubscribeLobby`) before
-  the listener, or the first `ROOM_STATE` is missed.
-- GamePage: tourist board with synced seat pieces / strip; no client-invented move protocol.
-- Move encoding / turn sync — deferred until product rules land.
+  `leave`, `sendMove` → `room.send('move', { side, row, col })`. `_enterRoom`
+  must `_attachRoom` immediately after `connect()` — no `await` (e.g.
+  `unsubscribeLobby`) before the listener, or the first `ROOM_STATE` is missed.
+- GamePage: tourist board with synced seat pieces / strip; local selection /
+  hints when `isMyTurn`; travel animation; submit only via `game.sendMove`.
+- Mirror `currentTurnSessionId`; do not invent alternate move/turn shapes.
 
 ### Auth and routing
 

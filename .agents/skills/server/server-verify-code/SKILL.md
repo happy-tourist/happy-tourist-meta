@@ -65,7 +65,7 @@ it does **not** allow skipping skills from this list.
 | `work-with-middleware` | Express middleware order (CORS first, monitor/playground) |
 | `work-with-rooms` | room handlers (`onCreate` / `onJoin` / `onLeave` / `onDispose`) |
 | `work-with-schema` | `@colyseus/schema` synced state |
-| `work-with-messages` | room message handlers (none for seating; add with moves) |
+| `work-with-messages` | room message handlers (`onMessage('move')`) |
 | `work-with-game` | board game «Счастливый турист» rules (later); room `tourist` |
 | `work-with-database` | `GameDatabase`, drizzle `users` schema defaults |
 | `work-with-env-deploy` | `.env*`, secrets, PM2, GitHub Actions deploy |
@@ -222,7 +222,8 @@ Sibling client (`../happy-tourist.github.io`) assumes:
 |--------------------|------------------------|
 | Room type name `tourist` | Register room as `tourist` (+ `lobby` + `.enableRealtimeListing()`) |
 | Tourist board layout on Game | Client-only tile geometry; no layout sync required |
-| Synced seats / started | `MyRoomState`: `started` + `seats` Map; move messages later |
+| Synced seats / started / turn | `MyRoomState`: `started` + `seats` Map + `currentTurnSessionId` |
+| Move message | `onMessage('move')` `{ side, row, col }`; pure rules in `src/game/touristMove.ts` |
 | Live lobby (`LobbyRoom`) | `lobby` registered; tourist has realtime listing |
 
 Prefer aligning room name, schema, and messages with the client rather than
@@ -249,8 +250,10 @@ of verified auth userdata.
 
 ### Authoritative gameplay
 
-- Once rules exist, board-game truth for «Счастливый турист» lives on the **server**.
-- Today seating is authoritative (`seats`/`started`); there are **no** Game move messages; client mirrors seats and renders pieces.
+- Board-game truth for «Счастливый турист» lives on the **server**.
+- Seating (`seats`/`started`), turn (`currentTurnSessionId` + room-private
+  `turnOrder`), and one-step `move` are authoritative; client mirrors state and
+  shows local hints only.
 - Do not trust client-supplied layout/state as source of truth.
 
 **Violations when:** server applies client board snapshots as truth; or invents
@@ -275,7 +278,7 @@ Typical paths:
 ```text
 HTTP auth → @colyseus/auth + GameDatabase / users schema
 Matchmaking → Colyseus room create/join + GET /rooms/:roomName
-Gameplay (later) → Room handler + schema state ← client onStateChange / game messages
+Gameplay → Room handler + schema state + `src/game/*` ← client onStateChange / `move`
 Express → CORS → /health (+ optional monitor/playground)
 ```
 
@@ -382,7 +385,7 @@ Reminders to **open the skill** (or Built-in) — skill text wins.
 
 - **defineServer**: rooms/DB/routes/Express in `app.config.ts`; prefer not editing `index.ts`.
 - **CORS**: first middleware; prod `https://happy-tourist.github.io` + credentials.
-- **Room contract**: name `tourist`; live `lobby`; static client board; synced rules/messages later.
+- **Room contract**: name `tourist`; live `lobby`; seats/`started`/`currentTurnSessionId` + `move` `{ side, row, col }`.
 - **Auth**: JWT in `onAuth`; `@colyseus/auth` + DB user store.
 - **Rules**: authoritative on server when they land; never trust client board.
 - **DB**: user column `.default(...)` for register/login.

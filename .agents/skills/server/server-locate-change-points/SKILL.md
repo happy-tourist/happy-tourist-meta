@@ -51,7 +51,8 @@ The sibling client assumes a tourist contract; prefer aligning server to client 
 | Room type name `tourist` | Registered as `tourist` in `app.config.ts` with `.enableRealtimeListing()` |
 | Live lobby (`LobbyRoom`) | `lobby: defineRoom(LobbyRoom)` — client filters `name: tourist` |
 | Tourist board layout on Game | Client-only tile geometry; server does not sync layout |
-| Synced seats / started / connectivity | `MyRoomState`: `started` + `seats` Map (`touristId` + `pieces` + `connected` / `reconnectUntil`); move messages later |
+| Synced seats / started / turn / connectivity | `MyRoomState`: `started` + `seats` Map (`touristId` + `pieces` + `connected` / `reconnectUntil`) + `currentTurnSessionId` |
+| Move message | `onMessage('move')` `{ side, row, col }`; pure rules in `src/game/touristMove.ts` |
 | Lobby `GET /rooms/tourist` | Available (HTTP fallback; UI uses live LobbyRoom) |
 
 ### HTTP surface (today)
@@ -123,10 +124,10 @@ Use these rules to pick the layer before naming files.
 | Auth to rooms | `MyRoom.onAuth` + `@colyseus/auth` JWT; secrets in `.env.*` |
 | Google OAuth provider | `src/config/auth.ts` + side-effect import from `app.config.ts`; `GOOGLE_CLIENT_*` in `.env.*` |
 | User profile columns | `src/db/schema.ts` + `src/db/index.ts` |
-| Game state sync | `src/rooms/schema/MyRoomState.ts` (`started` + `seats` + connectivity) |
-| Match flow / seating / reconnect / future moves | `src/rooms/MyRoom.ts` lifecycle (`onDrop`/`onReconnect`) + future `onMessage`; align with client |
+| Game state sync | `src/rooms/schema/MyRoomState.ts` (`started` + `seats` + connectivity + `currentTurnSessionId`) |
+| Match flow / seating / reconnect / turn / move | `src/rooms/MyRoom.ts` lifecycle + `onMessage('move')`; pure rules in `src/game/touristMove.ts`; align with client |
 | HTTP health / CORS / demo API | `src/app.config.ts` express + routes |
-| Tests | `test/MyRoom.test.ts` (SC-PIECE incl. grace 11…16), `test/theme.test.ts`, … |
+| Tests | `test/MyRoom.test.ts` (SC-PIECE + SC-MOVE), `test/touristMove.test.ts`, `test/theme.test.ts`, … |
 | Loadtest | `loadtest/example.ts` |
 | Deploy / PM2 / CI | `ecosystem.config.cjs`, `.github/workflows/deploy.yml`, `.env.production` (on server only) |
 

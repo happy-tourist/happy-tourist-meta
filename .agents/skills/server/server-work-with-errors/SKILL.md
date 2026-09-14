@@ -3,7 +3,7 @@ name: server-work-with-errors
 description: >-
   Use when adding, changing, reviewing, or debugging error handling in the
   happy-tourist Colyseus tourist server — JWT onAuth failures, invalid room
-  messages (when rules land), HTTP /health and createEndpoint responses, console
+  messages (`move` reject), HTTP /health and createEndpoint responses, console
   lifecycle logging, or aligning actionable game failures with the client store
   error + q-banner UX.
 ---
@@ -98,15 +98,14 @@ this.onMessage("move", (client, message) => {
 });
 ```
 
-Why `client.send("error", { message })` (not silent ignore, not `throw` in the handler):
+Why `client.send("error", { message })` (not silent ignore, not `throw` in the handler) **when product wants a banner**:
 
 - Client UX is store `error: string | null` + `q-banner` (`client-work-with-errors`).
-- Game action errors (when rules land) need a **server → client**
-  message the game store can listen for and assign to `game.error`.
+- Optional user-visible game failures need a **server → client** channel the game store can map to `game.error`.
+- Today `onMessage('move')` may **silently reject** (no mutate) — that is OK and keeps clients consistent via schema sync; add `error` messages only when product asks for banners on illegal moves.
 - Throwing inside an `onMessage` handler is a poor fit for expected rule violations
   (noise, possible disconnect semantics). Reserve hard failures for auth / fatal room
   conditions.
-- Silent ignore hides feedback from the player who clicked an illegal square.
 
 Coordinate the message name/payload with the client when wiring listeners
 (`work-with-messages` / sibling `client-work-with-errors`). Prefer one stable type
@@ -170,20 +169,19 @@ unless there is an explicit decision to add observability.
 - Porting `ServiceError` + `{ errorCode, errorMessage }` BFF envelopes into this server.
 - Catching `JWT.verify` and allowing join anyway.
 - Trusting client board / action legality and only “syncing what they sent”.
-- Silently dropping illegal game actions with no client feedback (banner stays empty) once rules exist.
 - Throwing on every illegal action and disconnecting the player.
 - Building a global Express error middleware for `/health` and demo routes.
 - Adding pino/Prometheus solely to mirror another project.
 - Putting Russian/English copy only in server logs while sending empty or coded
-  payloads the client cannot show in `q-banner`.
-- Changing room name / future message protocol without coordinating the client
-  (`tourist`; lockstep when rules land).
+  payloads the client cannot show in `q-banner` (when an error message type exists).
+- Changing room name / `move` protocol without coordinating the client (`tourist`; lockstep).
 
 ## Key Files
 
 | Path | Role |
 |------|------|
-| `src/rooms/MyRoom.ts` | `onAuth` JWT gate; lifecycle logs; future game message handlers |
+| `src/rooms/MyRoom.ts` | `onAuth` JWT gate; lifecycle logs; `onMessage('move')` (silent reject OK) |
+| `src/game/touristMove.ts` | Pure validate — reject reasons stay server-side unless product wires banners |
 | `src/rooms/schema/MyRoomState.ts` | Synced state — mutate only after valid actions |
 | `src/app.config.ts` | Rooms, `createEndpoint`, `/health`, CORS |
 | `src/db/schema.ts` | User defaults (auth register/login MUST NOT fail on NOT NULL) |

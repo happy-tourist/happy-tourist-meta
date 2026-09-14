@@ -15,7 +15,7 @@ description: >-
 
 Perform a read-only code alignment audit for the Colyseus multiplayer tourist backend (`happy-tourist-server`) and report findings in Russian across three tiers: hard gaps, warnings, and recommendations.
 
-Stack context: Colyseus 0.18 (`defineServer` / `defineRoom` via `@colyseus/tools`), `@colyseus/auth` + JWT, `@colyseus/database` + drizzle-orm + better-sqlite3, `@colyseus/schema`, Express 5, TypeScript ESM (`"type": "module"`, NodeNext), Node `>= 22`. Entry: `src/index.ts` → `listen(app)`; configure rooms/HTTP/DB in `src/app.config.ts`. Contract consumers: sibling SPA `../happy-tourist.github.io` (room type `tourist`, live `lobby` LobbyRoom, static Game board today, Colyseus Auth HTTP; synced rules/messages later).
+Stack context: Colyseus 0.18 (`defineServer` / `defineRoom` via `@colyseus/tools`), `@colyseus/auth` + JWT, `@colyseus/database` + drizzle-orm + better-sqlite3, `@colyseus/schema`, Express 5, TypeScript ESM (`"type": "module"`, NodeNext), Node `>= 22`. Entry: `src/index.ts` → `listen(app)`; configure rooms/HTTP/DB in `src/app.config.ts`. Contract consumers: sibling SPA `../happy-tourist.github.io` (room type `tourist`, live `lobby` LobbyRoom, Game board + turn/`sendMove`, Colyseus Auth HTTP).
 
 **Paths:** this skill currently lives in **this server repo** at `.agents/skills/server/` (temporary). Canonical skills/OpenSpec will move to **happy-tourist-meta** when present (`project-map.md` key `happy-tourist-meta`). Runtime `src/…` paths are relative to **this repository root**. Sibling Vue/Quasar client is **`../happy-tourist.github.io`**. Outside align-only mode, the agent runs `npm test` / `npm run build` / `npm run dev` from this repo root when verifying; fix failures before claiming done.
 
@@ -85,7 +85,7 @@ For every stated `@colyseus/schema` field, independently verify:
 - who may mutate (server only — never trust client board);
 - serialization / `@type` annotations match consumer expectations.
 
-A synced field is not covered until all explicit properties are covered. Known client contract today: room `tourist` + lobby listing + `started`/`seats`. Move/turn fields are deferred; scaffold `mySynchronizedProperty` must not remain once seating ships.
+A synced field is not covered until all explicit properties are covered. Known client contract today: room `tourist` + lobby listing + `started`/`seats`/`currentTurnSessionId` + `move` `{ side, row, col }`. Scaffold `mySynchronizedProperty` must not remain once seating ships.
 
 ### Room messages
 
@@ -161,7 +161,7 @@ Example shape (lobby):
 
 Method presence or "looks compatible" alone is insufficient. Track each contract fact separately so one correct layer cannot hide another mismatch.
 
-The client↔server contract is Colyseus Auth + room type `tourist` + live `lobby` + static Game board (no Game messages yet; synced rules fields deferred). HTTP `/rooms/tourist` is optional fallback. When CR/docs/client and server disagree, report `code-only` / contradiction with both sides named (`src/rooms/*` / `src/rooms/schema/*` vs `../happy-tourist.github.io`).
+The client↔server contract is Colyseus Auth + room type `tourist` + live `lobby` + Game board + turn/`move` (`currentTurnSessionId`, `sendMove`). HTTP `/rooms/tourist` is optional fallback. When CR/docs/client and server disagree, report `code-only` / contradiction with both sides named (`src/rooms/*` / `src/rooms/schema/*` vs `../happy-tourist.github.io`).
 
 Prefer aligning room name, schema, and messages with the client rather than changing the client unilaterally — unless AC explicitly says otherwise.
 
@@ -215,7 +215,7 @@ Wrong schema field source/constraint, wrong room name registration, missing JWT 
 
 Score **Постановка: N/10** only from hard omissions (`missing` / `docs-only` / `code-only` / `extra`), not from Warnings or Recommendations.
 
-Known scaffold fact: room name is `tourist` (+ live `lobby`); synced rules / Game messages are deferred. Do not treat scaffold alone as fulfilment of AC that demands product rules — and do not invent draughts `move` / cells `0`–`4` as the current client contract.
+Known scaffold fact: room name is `tourist` (+ live `lobby`); product sync includes seats + turn + `move`. Do not treat scaffold alone as fulfilment of AC that demands product rules — and do not invent draughts `move` / cells `0`–`4` as the current client contract.
 
 ## Axis B — Codebase
 

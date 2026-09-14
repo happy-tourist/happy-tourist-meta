@@ -61,7 +61,7 @@ createGame / joinGame(roomId?) / joinGame() / rejoinGame(roomId)
 | Join or create | `joinGame()` (no id) | `client.joinOrCreate(TOURIST_ROOM, options)` |
 | Rejoin after F5 | `rejoinGame(roomId)` | `client.reconnect(token)` then fallback `joinById` |
 | Leave (consented) | `leaveGame()` | clear token + `unsubscribeLobby` + `room.leave()` after `_resetRoomState` |
-| Game messages | Deferred until rules land | Coordinate with `work-with-game` |
+| Game messages | `sendMove(side, row, col)` | `room.send('move', { side, row, col })` when `isMyTurn` |
 
 All connect paths go through `_enterRoom`. Do not call `client.create` / `joinById` / `joinOrCreate` / `reconnect` from pages.
 
@@ -157,12 +157,13 @@ async leaveGame() {
 | `started` | `started`; also drives `status` (`playing` if started, else `waiting`) |
 | `seats` Map (key = `sessionId`) | `seats[]` with `sessionId`, `touristId`, `pieces[]` (`side`/`row`/`col`), **`connected`**, **`reconnectUntil`** |
 | (room) `sessionId` | `sessionId` — for `mySeat` / strip×4 / presence self |
+| `currentTurnSessionId` | `currentTurnSessionId` → getter `isMyTurn` |
 
 - `connected` — `true` when online; `false` during reconnect grace (SC-PIECE-16).
 - `reconnectUntil` — unix ms deadline while offline; `0` when online (design D2). Presence countdown uses this, not a local “30” without deadline.
 - Mirror via `_mirrorRoomState`; default `connected !== false` if field missing for older peers.
 
-Move messages and turn/progress fields — **deferred** until rules land (`work-with-game` + client board skill).
+Move submit stays in the store (`sendMove`); selection / legal hints stay page-local on `GamePage` (`work-with-game-board`).
 
 ```ts
 // inside _mirrorRoomState / onStateChange
@@ -230,7 +231,7 @@ Normal lobby → game navigation already has `game.room` set; skip rejoin.
 
 ## Game messages
 
-**None today** — seating syncs via schema; board/pieces are non-interactive (no `sendMove` / selection UX). When move rules land, add store send helpers + server `onMessage` in lockstep; do not reintroduce legacy draughts `move` `{ from, to }` unless product explicitly revives that contract.
+`sendMove(side, row, col)` → `room.send('move', { side, row, col })` only when `isMyTurn` and `room` present. Selection / legal hints stay on `GamePage` (`work-with-game-board`). Do not reintroduce legacy draughts `move` `{ from, to }`.
 
 ## Do / Don't
 

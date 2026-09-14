@@ -31,7 +31,7 @@ There is **no** axios layer and **no** BFF. Live lobby uses `LobbyRoom` WebSocke
 | Theme preference | `stores/theme.ts` → registered `client.http.get('/api/theme')` restore (≠ JWT-only) + `post('/api/theme', { body: { theme } })` on toggle; guest uses `localStorage` only |
 | Room names | `TOURIST_ROOM = 'tourist'`; `LOBBY_ROOM = 'lobby'` in `stores/game.ts` |
 | Connect | `client.create` / `joinById` / `joinOrCreate` via game store actions |
-| Game messages | Deferred until rules land |
+| Game messages | `sendMove` → `room.send('move', { side, row, col })` when `isMyTurn` |
 | Auth | `client.auth` — register / signIn / signOut / `onChange`; token key `colyseus-auth-token` |
 | Env | `VITE_COLYSEUS_URL`, `VITE_API_URL` (typed in `env.d.ts`) |
 | Errors | Store `error` string; pages show `q-banner` |
@@ -49,11 +49,11 @@ There is **no** axios layer and **no** BFF. Live lobby uses `LobbyRoom` WebSocke
 | Restore/save registered theme via `stores/theme` → `GET`/`POST` `/api/theme` | Theme HTTP from page templates; JWT-only restore after reload; save guest theme to the server |
 | Use `TOURIST_ROOM` / `LOBBY_ROOM` constants | Hardcode room names in multiple places or invent names without the server |
 | Enter rooms via `createGame` / `joinGame` (`_enterRoom`) | Duplicate connect + `onStateChange` wiring in pages |
-| Keep room I/O in Pinia `game` store | Invent Game move UX without `work-with-game-board` / server rules |
+| Keep room I/O in Pinia `game` store | Call `room.send` from GamePage — use `sendMove` |
 | Auth via `client.auth.*` in `stores/auth` | Import `@colyseus/auth` on the client (that package is **server-side**) |
 | Catch into store `error`; clear loading in `finally` | Leave `listing` / `loading` stuck on reject |
 | Pages → stores → `client` | Pages → `client` directly |
-| Change contracts with `../happy-tourist-server` | Invent synced board/turn/move shapes without a rules change |
+| Change contracts with `../happy-tourist-server` | Invent alternate move/turn shapes without lockstep |
 
 ## Client singleton
 
@@ -92,8 +92,8 @@ Local defaults: `.env.development` → `localhost:2567`. Production: `.env.produ
 | Lobby list | `stores/game.ts` → `subscribeLobby` / `unsubscribeLobby` | `joinOrCreate('lobby', { filter })` + messages `rooms` / `+` / `-` |
 | HTTP fallback | `stores/game.ts` → `refreshRooms` | `client.http.get('/rooms/tourist')` (unused by LobbyPage) |
 | Room lifecycle | `stores/game.ts` → `createGame` / `joinGame` / `leaveGame` | `client.create` / `joinById` / `joinOrCreate`, `room.leave` |
-| Game board UI | `pages/GamePage.vue` | Tourist layout + seat pieces / strip (no sendMove) |
-| Live state | `stores/game.ts` → `_attachRoom` | `room.onStateChange` (`seats`/`started`), `onError`, `onLeave` |
+| Game board UI | `pages/GamePage.vue` | Layout + pieces / strip / presence / local hints; calls `sendMove` (no direct `room.send`) |
+| Live state | `stores/game.ts` → `_attachRoom` | `room.onStateChange` (`seats`/`started`/`currentTurnSessionId`), `onError`, `onLeave` |
 
 Allowed dependency direction: `pages` → `stores` / `boot` / `components`. Keep all `client.*` and `room.*` I/O in stores.
 
@@ -102,7 +102,7 @@ Allowed dependency direction: `pages` → `stores` / `boot` / `components`. Keep
 | Store | Actions / API |
 |-------|----------------|
 | `auth` | `register`, `login`, `loginAnonymously`, `loginWithGoogle`, `logout`, `whenReady` |
-| `game` | `subscribeLobby`, `unsubscribeLobby`, `createGame`, `joinGame`, `rejoinGame`, `leaveGame` (`refreshRooms` HTTP unused) |
+| `game` | `subscribeLobby`, `unsubscribeLobby`, `createGame`, `joinGame`, `rejoinGame`, `leaveGame`, `sendMove` (`refreshRooms` HTTP unused) |
 
 Pages already wired:
 
@@ -110,7 +110,7 @@ Pages already wired:
 |------|-------|
 | `LoginPage` | `auth.register` / `login` / `loginAnonymously` / `loginWithGoogle` |
 | `LobbyPage` | `subscribeLobby` / `unsubscribeLobby`, `createGame`, `joinGame`, `leaveGame`; `auth.logout` |
-| `GamePage` | `game.rejoinGame(roomId)` on remount / soft-fail, pieces + presence from seats, `leaveGame` |
+| `GamePage` | `game.rejoinGame(roomId)` on remount / soft-fail; pieces + presence from seats; move UX → `sendMove`; `leaveGame` |
 | Router | `auth.whenReady()` before `requiresAuth` / `guest` guards |
 
 ## Auth (`client.auth`)
@@ -209,13 +209,14 @@ Do **not** `await unsubscribeLobby()` (or any other await) between `connect()` r
 
 ### State sync (`_attachRoom`)
 
-**Today** — mirror seating from schema. Move messages / turn fields deferred until rules land.
+Mirror seating + turn from schema.
 
 | Field | Meaning |
 |-------|---------|
 | `started` | Fourth seat assigned → `true`; drives Pinia `status` `playing` / `waiting` |
-| `seats` Map | Key = `sessionId` → `touristId` + `pieces` Map (key = side `N\|E\|S\|W` → `{ side, row, col }`) |
-| `sessionId` | From `room.sessionId` — for `mySeat` / strip×4 |
+| `seats` Map | Key = `sessionId` → `touristId` + `pieces` Map (key = side `N\|E\|S\|W` → `{ side, row, col }`) + connectivity |
+| `currentTurnSessionId` | Synced whose turn; `""` if no seated → getter `isMyTurn` |
+| `sessionId` | From `room.sessionId` — for `mySeat` / strip×4 / turn check |
 
 Wire once in the store:
 
@@ -224,6 +225,8 @@ room.onStateChange((state) => {
   const s = state as TouristRoomState;
   this.sessionId = room.sessionId;
   this.started = Boolean(s.started);
+  this.currentTurnSessionId =
+    typeof s.currentTurnSessionId === 'string' ? s.currentTurnSessionId : '';
   const next: GameSeat[] = [];
   s.seats?.forEach((seat, sessionId) => {
     const pieces: GamePiece[] = [];
@@ -238,6 +241,8 @@ room.onStateChange((state) => {
       sessionId,
       touristId: Number(seat.touristId),
       pieces,
+      connected: Boolean(seat.connected),
+      reconnectUntil: Number(seat.reconnectUntil) || 0,
     });
   });
   this.seats = next;
@@ -247,11 +252,23 @@ room.onError((_code, message) => { this.error = message || 'Room error'; });
 room.onLeave(() => { this._resetRoomState(); });
 ```
 
-`GamePage` may call `rejoinGame(roomId)` if Pinia lost the room after refresh / soft-fail / browser reopen (`localStorage` reconnection token → `reconnect`, clear stale on fail → `joinById`); failed rejoin → navigate to lobby. Board tile geometry is a **client constant** (`work-with-game-board`); seats + connectivity come from sync. Token details: `work-with-rooms`.
+`GamePage` may call `rejoinGame(roomId)` if Pinia lost the room after refresh / soft-fail / browser reopen (`localStorage` reconnection token → `reconnect`, clear stale on fail → `joinById`); failed rejoin → navigate to lobby. Board tile geometry is a **client constant** (`work-with-game-board`); seats + connectivity + turn come from sync. Token details: `work-with-rooms`.
 
 ## Messages: game actions
 
-**None today** for seating (schema sync only). When move rules land, add `room.send(...)` helpers in the game store with server `onMessage` lockstep — do not treat legacy draughts `move` `{ from, to }` as current product canon.
+| Direction | Name | Payload |
+|-----------|------|---------|
+| Client → server | `move` | `{ side: 'N'\|'E'\|'S'\|'W', row, col }` via `sendMove` only when `isMyTurn` |
+
+```ts
+sendMove(side: string, row: number, col: number): boolean {
+  if (!this.room || !this.isMyTurn) return false;
+  this.room.send('move', { side, row, col });
+  return true;
+}
+```
+
+Do **not** use legacy draughts `{ from, to }`. Pages must not call `room.send` directly. GamePage may start travel animation only when `sendMove` returns `true`.
 
 ## Loading and errors
 
@@ -312,12 +329,13 @@ Catch at the page only if you need extra UI beyond `game.error`.
 ### Board + seats on GamePage
 
 ```ts
-// GamePage: LAYOUT + pieces + presence from game.seats; remount → rejoinGame(roomId)
+// GamePage: LAYOUT + pieces + presence + local hints; remount → rejoinGame(roomId)
+// Own turn: select → red targets → game.sendMove(side, row, col)
 await game.leaveGame(); // consented — clears tourist reconnect token
 await router.push({ name: 'lobby' });
 ```
 
-Do not invent client-only move protocols; wait for product rules + server lockstep.
+Do not call `room.send` from the page; keep move protocol lockstep with server.
 
 ### Auth form submit
 
@@ -336,22 +354,23 @@ Show `auth.error` in a `q-banner`. Router already blocks until `whenReady()`.
 | `import … from '@colyseus/auth'` in the SPA | Use `client.auth` from `@colyseus/sdk` |
 | Calling `client.create` / `room.send` in a page | Add/extend actions on `useGameStore` |
 | Second `new Client(...)` | Reuse singleton from `@/boot/colyseus` |
-| Treating GamePage layout as authoritative rules | Board geometry is UI only; seating/rules live on the server |
-| Inventing client-local seat assignment | Mirror `seats`/`started` from schema only |
+| Treating GamePage layout as authoritative rules | Board geometry is UI only; seating/turn/moves live on the server |
+| Inventing client-local seat assignment | Mirror `seats`/`started`/`currentTurnSessionId` from schema only |
 | Hardcoding room name in pages | Use `TOURIST_ROOM` / `LOBBY_ROOM` from `stores/game` |
 | Leaving `listing` / `loading` true after error | Always `finally` |
 | Skipping `whenReady` in router | Await before `requiresAuth` / `guest` redirects |
 | Inventing axios/BFF helpers | Stay on LobbyRoom + room messages (`client.http` only if needed) |
+| Calling `room.send('move', …)` from GamePage | Use `game.sendMove` only |
 | Skipping `lint` / `typecheck` after Colyseus client changes | Run `npm run lint` / `typecheck` from client package root; fix failures |
 
 ## Checklist for a new or changed Colyseus call
 
 1. Belongs in `stores/auth` or `stores/game` (not a page).
 2. Uses shared `client` from `@/boot/colyseus`.
-3. Lobby list: LobbyRoom subscribe; rooms: `create` / `joinById` / `joinOrCreate`; Game `room.send` only when rules exist. HTTP only as unused fallback.
+3. Lobby list: LobbyRoom subscribe; rooms: `create` / `joinById` / `joinOrCreate`; Game `sendMove` → `move` `{ side, row, col }`. HTTP only as unused fallback.
 4. Room types use `TOURIST_ROOM` / `LOBBY_ROOM`.
 5. Loading flag cleared in `finally`; failures set store `error`.
-6. Future state fields / message payloads match `../happy-tourist-server` (lockstep).
+6. State fields / message payloads match `../happy-tourist-server` (lockstep), including `currentTurnSessionId`.
 7. Pages only call store actions and bind store state.
 8. Run `npm run lint` / `npm run typecheck` from the client package root (and `quasar dev` if needed for smoke); fix failures before claiming done.
 

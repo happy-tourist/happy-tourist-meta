@@ -71,7 +71,7 @@ Use local `ref()` / `reactive()` for:
 Examples:
 - `LoginPage.vue`: `email`, `password`, `displayName`, `isRegister`, `showPassword`.
 - `LobbyPage.vue`: `creating`, `joining` (page spinners); room list and errors come from `game`.
-- `GamePage.vue`: `LAYOUT` tiles + piece assets; presence layout / grace tick / `consentedLeaving`; flatten `seat.pieces` for board overlay; strip×4 from `mySeat`.
+- `GamePage.vue`: `LAYOUT` tiles + piece assets; presence layout / grace tick / `consentedLeaving`; flatten `seat.pieces` for board overlay; strip×4 from `mySeat`; local `selectedSide` / `moveAnimating` / legal hints (not Pinia).
 
 ### Pinia state
 
@@ -81,16 +81,16 @@ Use a store for shared domain data, realtime session, or anything the router/oth
 |-------|------|-------------------|
 | **auth** | `user`, `token`, `loading`, `error`, `ready`; `isAuthenticated`, `displayName`; register/login/anonymous/Google/`logout`/`whenReady` | `LoginPage`, router `beforeEach`, `LobbyPage` logout/header, `App.vue` theme sync |
 | **theme** | Quasar Dark `preference`, `error`; async `syncFromAuthUser` (GET restore + generation + `clearStoredTheme` when unset; **no** `auth.user` replace after GET), `toggle` (guest `localStorage` `ht-theme`; registered `get` ≠ JWT-only, `post` on toggle may patch `user.theme`) | `App.vue` header toggle + stable auth identity watch |
-| **game** | lobby `rooms`/`lobbyRoom`/`lobbyWanted`/`listing`; active `room`/`roomId`/`sessionId`; mirrored `seats` (`GameSeat`: `touristId` + `pieces[]` + `connected` / `reconnectUntil`) / `started`; getters `mySeat`/`isSeated`; `status`, `error`; subscribe/unsubscribe / create/join/`rejoinGame`/leave; tourist token in `localStorage` | `LobbyPage`, `GamePage` |
+| **game** | lobby `rooms`/`lobbyRoom`/`lobbyWanted`/`listing`; active `room`/`roomId`/`sessionId`; mirrored `seats` (`GameSeat`: `touristId` + `pieces[]` + connectivity) / `started` / `currentTurnSessionId`; getters `mySeat`/`isSeated`/`isMyTurn`; `sendMove`; `status`, `error`; subscribe/unsubscribe / create/join/`rejoinGame`/leave; tourist token in `localStorage` | `LobbyPage`, `GamePage` |
 | **counter** | scaffold only | none in product flow — ignore unless cleaning scaffold |
 
 ### Auth vs theme vs game ownership
 
 - **auth** owns Colyseus Auth only (`client.auth.*`, token sync via `onChange`). It does not create rooms or call Dark/`GET|POST /api/theme`.
 - **theme** owns chrome Dark preference and preference HTTP (`client.http.get('/api/theme')` on restore, `post` on toggle). Wired from `App.vue`; does not own auth session or rooms. See `work-with-styles`.
-- **game** owns room listing, room lifecycle, tourist reconnect token, and seat sync (`seats` with four `pieces` + `connected` / `reconnectUntil` / `started` / `sessionId` from `onStateChange`). No Game `send*` messages until move rules land. It does not call `client.auth` or theme APIs. Do not put `side`/`row`/`col` on `GameSeat` itself — those live on each `GamePiece`.
+- **game** owns room listing, room lifecycle, tourist reconnect token, seat/turn sync (`seats` + `started` + `currentTurnSessionId` / `sessionId` from `onStateChange`), and `sendMove` → `room.send('move', { side, row, col })` only when `isMyTurn`. It does not call `client.auth` or theme APIs. Do not put `side`/`row`/`col` on `GameSeat` itself — those live on each `GamePiece`. Selection/hints/`moveAnimating` stay page-local on `GamePage`.
 - Cross-cutting: router awaits `useAuthStore().whenReady()` then enforces `requiresAuth` / `guest`. `App.vue` uses `watch([() => auth.ready, () => auth.user?.id, () => auth.user?.anonymous], …)` → `theme.syncFromAuthUser` (GET restore; not JWT `user.theme`-only). Do **not** use `watch(() => [ready, id, anonymous])` (new array each run) or replace `auth.user` after GET — that storms `GET /api/theme` (SC-THEME-10). POST toggle may patch `auth.user.theme` because the watch does not depend on it. Game pages assume auth already passed.
-- Room constants: `TOURIST_ROOM = 'tourist'`, `LOBBY_ROOM = 'lobby'`. Board tile geometry + presence UI stay on `GamePage`; move encoding — deferred until rules land.
+- Room constants: `TOURIST_ROOM = 'tourist'`, `LOBBY_ROOM = 'lobby'`. Board tile geometry + presence + move chrome stay on `GamePage`.
 
 ### Decision checklist
 
@@ -117,7 +117,7 @@ Pages call store actions; stores call `client` / `room`.
 // Do — in stores/game.ts
 await client.joinOrCreate(LOBBY_ROOM, { filter: { name: TOURIST_ROOM } });
 await client.create(TOURIST_ROOM, options);
-this.room.send('move', { from, to });
+this.room.send('move', { side, row, col }); // only from sendMove when isMyTurn
 
 // Do — in stores/auth.ts
 await client.auth.signInWithEmailAndPassword(email, password);
@@ -177,6 +177,7 @@ export const useGameStore = defineStore('game', {
     roomId: null,
     sessionId: null,
     started: false,
+    currentTurnSessionId: '',
     seats: [],
     status: 'idle',
     error: null,
@@ -188,6 +189,13 @@ export const useGameStore = defineStore('game', {
       state.seats.find((s) => s.sessionId === state.sessionId) ?? null,
     isSeated: (state) =>
       Boolean(state.sessionId && state.seats.some((s) => s.sessionId === state.sessionId)),
+    isMyTurn: (state) =>
+      Boolean(
+        state.sessionId &&
+        state.currentTurnSessionId &&
+        state.sessionId === state.currentTurnSessionId &&
+        state.seats.some((s) => s.sessionId === state.sessionId),
+      ),
   },
   actions: {
     async subscribeLobby() { /* lobbyWanted + joinOrCreate lobby + quiet resubscribe */ },
@@ -198,14 +206,18 @@ export const useGameStore = defineStore('game', {
     async rejoinGame(roomId, options = {}) {
       // localStorage reconnect(token) → clear stale on fail → fallback joinById
     },
-    // Game messages (send*) — add when move rules land, with server lockstep
+    sendMove(side, row, col) {
+      if (!this.room || !this.isMyTurn) return false;
+      this.room.send('move', { side, row, col });
+      return true;
+    },
   },
 });
 ```
 
 Notes:
 - Live lobby listing uses `subscribeLobby` / LobbyRoom messages — not LobbyPage HTTP poll. `refreshRooms` HTTP remains unused fallback. Set `lobby.reconnection.enabled = false`; filter reservation/reconnect noise (see `work-with-lobby`).
-- Mirror `seats` (incl. `connected` / `reconnectUntil`) / `started` / `sessionId` in the store; keep tile geometry + presence on `GamePage` (not Pinia).
+- Mirror `seats` (incl. connectivity) / `started` / `currentTurnSessionId` / `sessionId` in the store; keep tile geometry + presence + selection/hints on `GamePage` (not Pinia).
 - Persist tourist `reconnectionToken` in `localStorage` (`ht-tourist-reconnect`); clear on consented `leaveGame` / `_leaveTouristRoom` and after failed `reconnect`; keep on unexpected `onLeave`; cross-tab steal OK (see `work-with-rooms`).
 - `leaveGame` unsubscribes lobby and swallows leave errors (room may already be closed). `GamePage` calls `rejoinGame(roomId)` on mount / soft-fail (reconnect → `joinById`).
 
@@ -264,15 +276,15 @@ Dependency direction: `pages` → `stores` / `boot` / `components`. Keep Colyseu
 - Keep Colyseus Auth and room I/O inside `auth` / `game`.
 - Use local `ref` for form drafts, layout constants, and page-only spinners.
 - Sync auth from `client.auth.onChange`; gate routes with `whenReady()`.
-- Map only needed room fields from `onStateChange`; add game `send*` with server lockstep when rules land.
+- Map only needed room fields from `onStateChange` (incl. `currentTurnSessionId`); keep `sendMove` lockstep with server `onMessage('move')`.
 - Add `acceptHMRUpdate` to every new store file.
-- Coordinate room name / future state schema / messages with `../happy-tourist-server`.
+- Coordinate room name / state schema / messages with `../happy-tourist-server`.
 
 **Don't**
-- Call `client.auth.*`, `client.create` / `joinById`, or `room.send` from random components.
-- Put tourist board tile geometry into Pinia without a cross-page need.
+- Call `client.auth.*`, `client.create` / `joinById`, or `room.send` from random components / GamePage (use `sendMove`).
+- Put tourist board tile geometry or selection/hints into Pinia without a cross-page need.
 - Put domain state in `stores/index.ts` or grow the unused `counter` scaffold.
-- Reintroduce legacy draughts `board` / `canMove` / `sendMove` as current product canon.
+- Reintroduce legacy draughts `board` / `{ from, to }` as current product canon.
 - Mix auth session concerns into `game` or room lifecycle into `auth`.
 - Forget HMR `acceptHMRUpdate` on new stores.
 - After theme GET, replace `auth.user` only to set `theme` — feeds the App
@@ -284,7 +296,7 @@ Dependency direction: `pages` → `stores` / `boot` / `components`. Keep Colyseu
 - Scattering Colyseus calls across pages instead of store actions.
 - Adding Vuex-style modules/`mapState` — this client is Pinia + `<script setup>`.
 - Putting login form fields into `auth` state.
-- Putting cell selection into `game` state (board is static UI today).
+- Putting cell selection / legal hints into `game` state (keep page-local on `GamePage`).
 - Using `getAvailableRooms` or LobbyPage HTTP poll — use `subscribeLobby` (LobbyRoom); HTTP `refreshRooms` is unused fallback.
 - Assuming `@colyseus/auth` is the client API — browser auth is `client.auth` from `@colyseus/sdk`.
 - Skipping `whenReady()` and racing protected routes before token restore.

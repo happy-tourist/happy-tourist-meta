@@ -139,11 +139,9 @@ if (room) {
 
 Swallow leave errors on purpose. Do not set `error` here.
 
-### Game messages (later)
+### Game messages (`sendMove`)
 
-No Game `room.send` today (seating syncs via schema; board non-interactive). When move rules land, early-return if
-`!this.room`; illegal actions are server-side — do not invent local move UX
-error handling unless product requirements change.
+Use store `sendMove` only (pages must not `room.send`). Early-return if `!this.room` or `!this.isMyTurn`. Illegal actions are server-side silent rejects — do not invent local move UX error toasts unless product requirements change; rely on schema sync + existing `room.onError` → `game.error`.
 
 ## Display Surfaces
 

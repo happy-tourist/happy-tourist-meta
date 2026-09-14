@@ -3,31 +3,32 @@ name: work-with-game-board
 description: >-
   Use when creating, changing, reviewing, or debugging the tourist board UI in
   the happy-tourist client — GamePage CSS Grid layout, synced seat pieces
-  overlay, occupied presence circles (seated/spectator layout, offline
-  QCircularProgress), personal tourist strip, tile kinds (start/task/center), or
-  non-interactive board rendering for room tourist.
+  overlay, occupied presence circles, personal tourist strip, tile kinds
+  (start/task/center), current-turn selection/hints/move submit, or piece travel
+  animation for room tourist.
 ---
 
 # Work With Game Board
 
 Use this skill for the **tourist board UI** on Game in the Vue 3 Quasar client (`happy-tourist.github.io`).
 
-Product: настольная игра «Счастливый турист». The board and pieces are **non-interactive** (no selection, targets, or `sendMove`). Seats come from synced room state; move rules remain later on the server (`work-with-game`).
+Product: настольная игра «Счастливый турист». On the seated client whose turn it is (`game.isMyTurn`), the board and strip accept piece selection, local move hints, and move submit via `game.sendMove`. Spectators and non-current seated players remain non-interactive for moves. Authority for legality stays on the server (`work-with-game`).
 
 ## Overview
 
 | Surface | Path | Role |
 | --- | --- | --- |
-| Game page | `src/pages/GamePage.vue` | CSS Grid tourist field; overlay all seats’ pieces; **presence** around the board; strip×4 «Мои туристы» if seated; leave → lobby |
-| Game store | `src/stores/game.ts` | Room join/leave/rejoin; mirror `seats` (incl. `connected` / `reconnectUntil`) / `started` / `sessionId` |
+| Game page | `src/pages/GamePage.vue` | CSS Grid field; pieces overlay; presence; strip×4; local selection/hints; travel animation; leave → lobby |
+| Game store | `src/stores/game.ts` | Room I/O; mirror `seats` / `started` / `currentTurnSessionId` / `sessionId`; `isMyTurn`; `sendMove` |
 
 | Concern | Location |
 | --- | --- |
 | Layout constant | `LAYOUT` string grid in `GamePage.vue` (`.` hole, `1` start, `*` task, `7` center) |
-| Tile build | `buildBoardTiles()` → non-button `div.tile` with `gridColumn` / `gridRow` |
-| Pieces | Flatten all seats’ `pieces` (4 per seated player) → `img.piece` at `row`/`col`; PNG from seat `touristId` → `@/assets/tourists/touristN.png` |
-| Presence | Occupied seats only → `.presence-frame` slots; offline → `QCircularProgress` from `reconnectUntil` |
-| Strip | Below board only when `mySeat`: **four** slots `N→E→S→W` (same PNG; status chrome later); spectators: pieces yes, strip no |
+| Tile build | `buildBoardTiles()` → `div.tile` with `gridColumn` / `gridRow` |
+| Pieces | Flatten all seats’ `pieces` → `img.piece` positioned via CSS vars/`transform`; PNG from `touristId` |
+| Presence | Occupied seats only → `.presence-frame`; offline → `QCircularProgress` from `reconnectUntil` |
+| Strip | Below board when `mySeat`: four slots `N→E→S→W`; clickable on own turn |
+| Move UX | Local `selectedSide` + `legalTargets` (white/red chrome) only when `isMyTurn && !moveAnimating` |
 | Center | One element with `span 2` / `span 2` (solid 2×2), not four cells |
 | Room enter | Out of scope — see `work-with-lobby` / `work-with-rooms` (`rejoinGame`) |
 
@@ -39,7 +40,25 @@ Product: настольная игра «Счастливый турист». Th
 - Container: full width of Game content; mobile edge-to-edge relative to page content; wide screens capped by max tile 60px (via board max-width + square aspect).
 - Tile colors are **fixed fills**, independent of Quasar Dark chrome (see `work-with-styles` / theme specs).
 
-Tiles and pieces are non-interactive — not `button`s, no `@click`, no selection/target classes (`pointer-events: none` on board/pieces).
+## Move Interaction (current turn only — D5 / SC-MOVE-11…13, SC-BOARD-05/06)
+
+| Rule | Behavior |
+|------|----------|
+| Who interacts | Only seated client with `sessionId === currentTurnSessionId` and not mid-own-animation |
+| Select | Click own piece on board or matching strip slot → `selectedSide`; white outline on that cell |
+| Hints | Legal one-step neighbors (Chebyshev 1, playable LAYOUT cell, unoccupied incl. own) → red outline; **local only** |
+| Reselect | May change `selectedSide` among own pieces until submit |
+| Submit | Activate red destination → `game.sendMove(side, row, col)`; clear selection |
+| Others | Spectators / not-your-turn: no selection, no red/white move chrome, no `sendMove` |
+
+Do **not** sync selection or hints — page-local refs only.
+
+## Piece Travel Animation (D6 / SC-MOVE-14…15)
+
+- Position pieces with CSS `transform` / absolute offsets from grid vars (`--prow` / `--pcol`), not tweening `grid-row`/`grid-column`.
+- Duration ~200–300ms ease-out (`MOVE_ANIM_MS`); all clients animate when synced `row`/`col` changes.
+- On submit: set `moveAnimating` and ignore board/strip clicks until timer ends; clear selection.
+- Skip transition on first paint so pieces do not fly from origin.
 
 ## Presence (occupied seats)
 
@@ -61,41 +80,45 @@ Spectators and seated players see the same occupied set; layouts differ as above
 
 ## Authority
 
-- Board **geometry** (`LAYOUT`) is a client constant; server does not sync tile kinds.
-- **Seats** (`touristId` + exactly four `pieces` `{ side, row, col }` keyed N/E/S/W), `started`, and connectivity (`connected` / `reconnectUntil`) are server-authoritative; client only mirrors and renders.
-- Do not reintroduce legacy draughts CellValue `0…4`, `getTargets`, `selected` / `targets`, or `sendMove` on Game.
-- When move rules land, coordinate wire protocol with server `work-with-game` — do not invent a second client-only rules engine.
+- Board **geometry** (`LAYOUT`) is a client constant; server does not sync tile kinds (server mirrors playable set in `touristMove.ts`).
+- **Seats**, `started`, connectivity, and **`currentTurnSessionId`** are server-authoritative; client mirrors and renders.
+- Local legal-target computation is a **hint** only — server rejects illegal moves.
+- Do not reintroduce legacy draughts CellValue `0…4` / `{ from, to }` encoding.
 
 ## GamePage Responsibilities
 
 - Render `boardTiles` from `LAYOUT`.
-- Overlay **all** pieces of **all** seats at `row`/`col` (0-based schema → 1-based CSS Grid).
+- Overlay **all** pieces of **all** seats at `row`/`col` (0-based schema → CSS vars / transform).
 - Render **presence** markers for occupied seats (layouts + offline ring above).
-- Show strip «Мои туристы» only if `mySeat`: four imgs of that seat’s `touristId` in order `N,E,S,W` (1:1 with field sides); spectators: board pieces yes, strip no.
-- Status from store (`waiting` / `playing`); leave → `leaveGame` + lobby; remount without room → `rejoinGame(roomId)` via store.
+- Show strip «Мои туристы» only if `mySeat`; on own turn allow select + destination click.
+- On own turn: white selection + red targets; submit via store `sendMove`.
+- Animate piece travel for everyone; ignore input while `moveAnimating`.
+- Status from store; leave → `leaveGame` + lobby; remount without room → `rejoinGame(roomId)` via store.
 
 ## Do
 
 - Keep layout in one client constant; center as a single 2×2 grid area.
 - Preserve max tile 60px, gap 6, radius 12, hole = page background.
-- Keep Colyseus I/O in `stores/game`; page reads seats/strip/presence from store only.
-- Map `touristId` 1…4 to `tourist{N}.png`; strip shows only the local player’s four slots (not other kinds).
+- Keep Colyseus I/O in `stores/game`; page reads seats/turn/strip/presence from store only.
+- Gate interactivity with `isMyTurn` (and `!moveAnimating`).
+- Map `touristId` 1…4 to `tourist{N}.png`; strip shows only the local player’s four slots.
 - Drive offline countdown from synced `reconnectUntil`.
 
 ## Don't
 
-- Add click handlers, move highlights, or draughts piece UX.
+- Call `room.send` from the page — only `game.sendMove`.
+- Show white/red move chrome to spectators or non-current players.
 - Depend tile fills on Quasar Dark / theme preference.
 - Invent client-local seat assignment (server assigns on join).
-- Render empty seat placeholders as presence markers.
-- Sync or invent server board encoding for the static layout without a product change.
+- Treat client hints as authority.
+- Sync selection / hints to schema.
 - Put lobby subscribe/create/join logic into the board skill — use `work-with-lobby`.
 - Put reconnect token / `rejoinGame` details here — use `work-with-rooms`.
 
 ## Related
 
-- Server seating / reconnect: `.agents/skills/server/work-with-game/SKILL.md`
-- Schema seats + connectivity: `.agents/skills/server/work-with-schema/SKILL.md`
+- Server seating / turn / move: `.agents/skills/server/work-with-game/SKILL.md`
+- Schema seats + turn: `.agents/skills/server/work-with-schema/SKILL.md`
 - Lobby / room name: `.agents/skills/client/work-with-lobby/SKILL.md`
 - Tourist reconnect: `.agents/skills/client/work-with-rooms/SKILL.md`
 - Styles / theme chrome: `.agents/skills/client/work-with-styles/SKILL.md`

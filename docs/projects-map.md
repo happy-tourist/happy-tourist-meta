@@ -86,6 +86,7 @@ server: C:/Users/You/work/happy-tourist-server
 | `server.config` | `../happy-tourist-server/src/config/` | OAuth providers (`auth.ts` / `addProvider`) |
 | `server.rooms` | `../happy-tourist-server/src/rooms/` | Room handlers |
 | `server.schema` | `../happy-tourist-server/src/rooms/schema/` | `@colyseus/schema` state |
+| `server.game` | `../happy-tourist-server/src/game/` | Pure authoritative rules (`touristMove.ts`) |
 | `server.db` | `../happy-tourist-server/src/db/` | GameDatabase / users schema |
 | `server.tests` | `../happy-tourist-server/test/` | mocha + `@colyseus/testing` |
 | `server.loadtest` | `../happy-tourist-server/loadtest/` | `@colyseus/loadtest` scripts |

@@ -102,13 +102,16 @@ Use these categories only when the SUT has relevant behavior:
 - Auth failure: missing / invalid token → connect rejects (client cannot join).
 - Schema sync: after join, client-visible state matches room —
   `started`, `seats` Map (`touristId` + exactly four `pieces` keyed by side
-  `N|E|S|W` → `{ side, row, col }` + `connected` / `reconnectUntil`). Assert
-  four pieces / free start cells / leave-pool reopen as in SC-PIECE-01…08
-  (`test/MyRoom.test.ts`). Also cover reconnect grace SC-PIECE-11…16
-  (unexpected drop holds seat; reconnect restores; grace timeout removes;
-  empty-seated dispose; connectivity sync).
-- Messages: when move rules exist, legal/illegal payloads; until then do **not**
-  assert draughts-era `board` / `currentTurn` / `players[sessionId].color`.
+  `N|E|S|W` → `{ side, row, col }` + `connected` / `reconnectUntil`), and
+  `currentTurnSessionId`. Assert four pieces / free start cells / leave-pool
+  reopen as in SC-PIECE-01…08 (`test/MyRoom.test.ts`). Also cover reconnect
+  grace SC-PIECE-11…16 (unexpected drop holds seat; reconnect restores; grace
+  timeout removes; empty-seated dispose; connectivity sync).
+- Messages / turn: cover SC-MOVE-* in `test/MyRoom.test.ts` (first seated holds
+  turn; join-order rotation; legal orthogonal/diagonal; occupied/non-playable
+  reject; out-of-turn / spectator reject; permanent leave advances; offline grace
+  keeps turn). Pure rules without room I/O: `test/touristMove.test.ts`. Do **not**
+  assert draughts-era `board` / `players[sessionId].color`.
 - Listing: live LobbyRoom — after `createRoom("tourist")`, lobby client
   receives `+`; after dispose, receives `-` (SC-LOBBY-02/03). HTTP
   `GET /rooms/tourist` remains optional fallback.
@@ -144,9 +147,10 @@ Verify reconnect grace (SC-PIECE-11…16):
 - Last seated permanent leave closes room even with spectators
 - Observer sees connectivity fields sync (SC-PIECE-16)
 
-Verify move (when implemented):
-- Legal action on current turn: piece positions / turn fields update
-- Illegal payload: state unchanged
+Verify move / turn (SC-MOVE):
+- First seated holds `currentTurnSessionId`; successful move advances join-order queue
+- Legal orthogonal/diagonal one-step: piece row/col update; illegal/out-of-turn/spectator: unchanged
+- Permanent leave of current advances turn; offline grace does not
 
 Verify live lobby listing:
 - joinOrCreate("lobby", { filter: { name: "tourist" } }); createRoom("tourist") → lobby receives +
@@ -211,13 +215,15 @@ Helpers in that file (`assertFourPiecesOnSides`, `listPieces`, `allRoomPieces`, 
 are the preferred assertion style — extend them rather than inventing a parallel
 seat-flat `side`/`row`/`col` model. Grace-timeout cases may need `this.timeout(…)` above the default 15s.
 
-### Future move validation
+### Turn / move (SC-MOVE)
 
-Once `onMessage("move", …)` exists:
+Canonical coverage: `test/MyRoom.test.ts` (SC-MOVE-*) + pure `test/touristMove.test.ts`.
 
-- Two+ seated clients with JWT; send only on the current player’s turn.
-- Assert piece positions / turn fields after a legal move (lockstep with client).
-- Assert no state change on illegal payloads (when rules land).
+- First seated → `currentTurnSessionId`; join-order rotation after legal move; solo wraps to self.
+- Legal orthogonal/diagonal one-step updates piece `row`/`col` and advances turn.
+- Occupied / non-playable / out-of-turn / spectator → no state change.
+- Permanent leave of current advances turn; `onDrop` grace does not change turn.
+- Pure module tests cover playable set, Chebyshev, occupancy without room I/O.
 
 Server is authoritative; never assert by trusting a client-only board copy.
 
@@ -226,7 +232,7 @@ Server is authoritative; never assert by trusting a client-only board copy.
 - After `connectTo`, read synced state from the client SDK view or room state
   the harness exposes; assert fields the client SPA expects:
   `started`, `seats` → `touristId` + four `pieces` `{ side, row, col }` +
-  `connected` / `reconnectUntil`.
+  `connected` / `reconnectUntil`, and `currentTurnSessionId`.
 - Do not assert legacy draughts fields (`board`, `currentTurn`,
   `players[].color`) — they are not in product schema.
 
