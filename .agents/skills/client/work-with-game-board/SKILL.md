@@ -17,7 +17,7 @@ Product: настольная игра «Счастливый турист». Th
 
 | Surface | Path | Role |
 | --- | --- | --- |
-| Game page | `src/pages/GamePage.vue` | CSS Grid tourist field; overlay all seats’ pieces; strip×4 «Мой турист» if seated; leave → lobby |
+| Game page | `src/pages/GamePage.vue` | CSS Grid tourist field; overlay all seats’ pieces; strip×4 «Мои туристы» if seated; leave → lobby |
 | Game store | `src/stores/game.ts` | Room join/leave; mirror `seats` / `started` / `sessionId` from `onStateChange` |
 
 | Concern | Location |
@@ -50,7 +50,7 @@ Tiles and pieces are non-interactive — not `button`s, no `@click`, no selectio
 
 - Render `boardTiles` from `LAYOUT`.
 - Overlay **all** pieces of **all** seats at `row`/`col` (0-based schema → 1-based CSS Grid).
-- Show strip «Мой турист» only if `mySeat`: four imgs of that seat’s `touristId` in order `N,E,S,W` (1:1 with field sides); spectators: board pieces yes, strip no.
+- Show strip «Мои туристы» only if `mySeat`: four imgs of that seat’s `touristId` in order `N,E,S,W` (1:1 with field sides); spectators: board pieces yes, strip no.
 - Status from store (`waiting` / `playing`); leave → `leaveGame` + lobby; rejoin by `roomId` via store.
 
 ## Do

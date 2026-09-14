@@ -39,10 +39,9 @@
 
 ## Impact
 
-- Server: переработать `MyRoomState` / `onJoin`/`onLeave` и mocha SC-PIECE-*.
-- Client: `stores/game` + `GamePage` — четыре pieces + strip×4; сохранить attach-before-await.
-- Meta: skills board/schema/game под новую модель.
-- Уже закоммиченный код seating v1 устаревает относительно этого plan — нужен re-apply.
+- Server: `MyRoomState` / `onJoin`/`onLeave` и mocha SC-PIECE-* — 4 tokens/player (реализовано).
+- Client: `stores/game` + `GamePage` — четыре pieces + strip×4; attach-before-await сохранён.
+- Meta: skills board/schema/game под модель 4 tokens (реализовано).
 
 ## References
 

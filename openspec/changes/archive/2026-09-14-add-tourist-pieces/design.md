@@ -1,6 +1,6 @@
 ## Context
 
-См. `proposal.md`. В runtime уже есть seating v1 (1 piece / 1 side / strip×1) + racefix attach-before-await. Этот design **переводит** контракт на 4 tokens/player. Пакеты: **server** first, затем **client**, затем meta skills.
+См. `proposal.md`. Контракт реализован: 4 tokens/player (N/E/S/W) + strip×4; racefix attach-before-await сохранён. Пакеты: **server** first, затем **client**, затем meta skills.
 
 ## Goals / Non-Goals
 

@@ -20,5 +20,5 @@
 
 ## Notes
 
-- Сняты `[x]` с прежних 1.2–1.5 / 2.2–2.4 / 3.1: поведение v1 (1 piece / strip×1) **не** соответствует обновлённым specs.
-- Новый SC-PIECE-10 = spectator strip (бывший 09); нумерация в spec актуальна.
+- Rework с seating v1 (1 piece / strip×1) на 4 tokens/player выполнен; все задачи закрыты.
+- SC-PIECE-10 = spectator без strip; нумерация в spec актуальна.
