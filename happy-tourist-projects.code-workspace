@@ -1,0 +1,19 @@
+{
+  // Canonical layout: docs/projects-map.md
+  // Uncomment folders after cloning the repo.
+  "folders": [
+    {
+      "name": "happy-tourist-meta",
+      "path": "."
+    },
+    {
+      "name": "happy-tourist.github.io",
+      "path": "../happy-tourist.github.io"
+    },
+    {
+      "name": "happy-tourist-server",
+      "path": "../happy-tourist-server"
+    }
+  ],
+  "settings": {}
+}
