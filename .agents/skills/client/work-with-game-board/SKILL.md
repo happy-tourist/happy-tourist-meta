@@ -73,6 +73,7 @@ Sync-driven markers around the board (SC-PRESENCE-01…05 / design D5). Page rea
 | Join order | Array order from sync map `forEach` as mirrored into `seats[]` |
 | Offline | `!connected && reconnectUntil > 0` → wrap avatar in `QCircularProgress` (`min=0`, `max=30`, `value` = remaining seconds from `reconnectUntil − now`) |
 | Online | Avatar only — no countdown ring |
+| Current turn | Seat with `sessionId === currentTurnSessionId` → blue ring on presence avatar; header text «Ваш ход» / «Ход соперника» / «Ход игрока» (spectator) |
 
 Tick `nowMs` on an interval (~200 ms) while Game is mounted so the ring animates from the **server** deadline, not a local fixed “30” without `reconnectUntil`.
 
