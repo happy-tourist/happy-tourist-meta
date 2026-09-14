@@ -1,6 +1,14 @@
 ---
 name: server-align-code
-description: Use when aligning branch and working-tree changes against the active OpenSpec change (primary), optional pasted clarifications, repository analogues, test readiness, preservation of previous behavior, Colyseus room registration (lobby + tourist + enableRealtimeListing), @colyseus/schema board/currentTurn/status/players, JWT onAuth, room message move {from,to}, Express CORS/health endpoints, handler/lifecycle feedback loops (message/HTTP/schema/timer storms), and GameDatabase/users schema consumed by sibling happy-tourist.github.io.
+description: >-
+  Use when aligning branch and working-tree changes against the active OpenSpec
+  change (primary), optional pasted clarifications, repository analogues, test
+  readiness, preservation of previous behavior, Colyseus room registration (lobby
+  + tourist + enableRealtimeListing), @colyseus/schema board/currentTurn/status/players,
+  JWT onAuth, room message move {from,to}, Express CORS/health endpoints,
+  handler/lifecycle feedback loops (message/HTTP/schema/timer storms), first-sync
+  races (seat assign after full-state encode), and GameDatabase/users schema
+  consumed by sibling happy-tourist.github.io.
 ---
 
 # Align Code
@@ -287,7 +295,11 @@ onMessage / HTTP → mutate / broadcast / HTTP
 
 Report as hard `[defect]` when a reachable path deterministically storms messages/HTTP/DB writes or spins a timer/handler loop. If the chain looks risky but proof is incomplete → **Warning** with the suspected cycle edges.
 
-Report hard `defect` only when a reachable state deterministically causes wrong HTTP/WS payload, runtime failure, invalid schema sync, stuck room state, unsafe side effect (including message/HTTP/timer storms), or contract violation.
+### Async races — await gap before first sync / ack (обязательно)
+
+Когда diff трогает `onJoin` seating/schema writes, `JOIN_ROOM` / full-state send path, или HTTP handler который отвечает до того, как side-effect завершён — проверь, что **первый** client-visible sync не зависит от гонки с необязательным await на **client**. Server обычно пишет seats в `onJoin` до `JOIN_ROOM`; дефект чаще на sibling client (`await` до `onStateChange`). Если server откладывает seat assign после первого encode full state без последующего patch — hard `[defect]` (client получит пустые seats).
+
+Report hard `defect` only when a reachable state deterministically causes wrong HTTP/WS payload, runtime failure, invalid schema sync, stuck room state, unsafe side effect (including message/HTTP/timer storms **or first-sync races**), or contract violation.
 
 Each hard defect includes condition, current behavior, expected invariant/evidence, file/symbol, and minimum scenario. Verdict:
 
@@ -421,6 +433,9 @@ Write in Russian.
 
 ## Handler / lifecycle-петли
 - [defect|warning] <trigger → outbound → re-entry / uncleared timer; expected 1 effect vs storm; file/symbol>
+
+## Async-гонки (first sync / seat assign)
+- [defect|warning] <onJoin mutate after first full-state encode without patch | client gap note; file/symbol>
 
 ## Предупреждения
 - [warning] <risk / ambiguity / likely gap; evidence; what would promote it to hard>

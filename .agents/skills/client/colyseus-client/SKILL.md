@@ -202,8 +202,10 @@ All connect paths go through `_enterRoom`:
 
 1. Set `status = 'connecting'`, clear `error`.
 2. `await _leaveTouristRoom()` to detach any previous tourist room (lobby stays live during the attempt).
-3. `await connect()`, then `unsubscribeLobby()` on success, then `_attachRoom(room)`.
+3. `await connect()`, then **immediately** `_attachRoom(room)` (register `onStateChange` / mirror before any other await), then `await unsubscribeLobby()` on success.
 4. On failure: `status = 'idle'`, set `error`, rethrow (lobby subscription remains).
+
+Do **not** `await unsubscribeLobby()` (or any other await) between `connect()` resolve and `_attachRoom` — the first `ROOM_STATE` can arrive in that gap and leave `seats` empty forever.
 
 ### State sync (`_attachRoom`)
 

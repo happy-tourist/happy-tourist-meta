@@ -1,6 +1,14 @@
 ---
 name: client-align-code
-description: Use when aligning branch and working-tree changes against the active OpenSpec change (primary), optional pasted clarifications, repository analogues, test readiness, preservation of previous behavior, Vue 3 props/emits/slots, Pinia auth/game/theme store public surface, reactive/async feedback loops (watch → HTTP/SDK → mutate watched state), Colyseus room protocol (tourist room / lobby / status; game messages later), hash-router requiresAuth/guest guards, and Quasar error UX (store error + q-banner).
+description: >-
+  Use when aligning branch and working-tree changes against the active OpenSpec
+  change (primary), optional pasted clarifications, repository analogues, test
+  readiness, preservation of previous behavior, Vue 3 props/emits/slots, Pinia
+  auth/game/theme store public surface, reactive/async feedback loops (watch →
+  HTTP/SDK → mutate watched state), async races (await gap before onStateChange /
+  listener attach misses first ROOM_STATE), Colyseus room protocol (tourist room /
+  lobby / status; game messages later), hash-router requiresAuth/guest guards, and
+  Quasar error UX (store error + q-banner).
 ---
 
 # Align Code
@@ -264,7 +272,36 @@ watch(auth fields) → GET/POST → patch auth.user / preference
 
 Report as hard `[defect]` when a reachable path deterministically storms HTTP/SDK/room messages or spins the effect loop. If the chain looks risky but proof is incomplete → **Warning** with the suspected cycle edges.
 
-Report hard `defect` only when a reachable state deterministically causes wrong UI, runtime failure, invalid value, stuck state, unsafe side effect (including request/effect storms), or contract violation.
+### Async races — await gap before listener / first sync (обязательно)
+
+Когда diff/ветка трогает room enter (`_enterRoom` / `create` / `join*` / `_attachRoom`), `room.onStateChange` / `onError` / `onLeave`, lobby `subscribe`/`unsubscribe`, auth `onChange`, или любой path «promise resolve → потом повесить listener / прочитать первый sync» — **отдельно** проверь гонки: первый inbound event (часто единственный) уходит в никуда, UI остаётся пустым.
+
+Контекст Colyseus: `join`/`create` resolve на `JOIN_ROOM`; полный `ROOM_STATE` (с `seats` / `started`) приходит **после** client ACK, часто в узком окне. Любой `await` между `connect()` resolve и регистрацией `onStateChange` может проглотить первый sync — последующих patch может не быть → Pinia `seats[]` навсегда `[]`, доска без фигурок.
+
+Для каждой такой цепочки независимо проверь:
+
+1. **Точка готовности I/O** — что именно означает «уже подключены» (`await client.create/join*`, `await http.get`, auth ready).
+2. **Первый критичный inbound** — `ROOM_STATE` / первый `onStateChange`, первый Lobby `rooms`/`+`, первый `auth.onChange` с user — событие, без которого UI/store ломается.
+3. **Регистрация listener / mirror** — где вешается `onStateChange` / `onMessage` / `onChange`; есть ли одноразовый mirror текущего `room.state` / уже известного snapshot.
+4. **Await-gap** — есть ли `await` (lobby leave, navigation, лишний I/O, `nextTick`) **между** resolve connect и attach listener / mirror. Любой gap → подозревай missed first event.
+5. **Идемпотентность после пропуска** — если первый sync пропущен, придёт ли повторный patch сам, или состояние «застынет» (типично для seating: один full state, дальше тишина) → hard defect.
+6. **Порядок в `_enterRoom`** — канон: `await connect()` → **сразу** `_attachRoom(room)` (listener + optional `room.state` mirror) → только потом `await unsubscribeLobby()` / прочий cleanup. Обратный порядок (`unsubscribe`/`await` → потом `_attachRoom`) — hard `[defect]`.
+
+Типичные гонки для флага:
+
+```text
+await connect()           // JOIN_ROOM done, ACK sent
+await unsubscribeLobby()  // ← gap: ROOM_STATE arrives, no listener
+_attachRoom(room)         // onStateChange too late → seats stay []
+```
+
+- `await connect()` → `await router.push` / page mount → только там `onStateChange` (listeners must stay in store, and before other awaits);
+- subscribe Lobby / auth `onChange` after first message already delivered without snapshot read;
+- fire-and-forget connect without attach on the success path.
+
+Report as hard `[defect]` when a reachable enter/subscribe path can miss the first sync/event and leave store/UI wrong with no further update. If ordering looks risky but proof is incomplete → **Warning** with the await-gap edges.
+
+Report hard `defect` only when a reachable state deterministically causes wrong UI, runtime failure, invalid value, stuck state, unsafe side effect (including request/effect storms **or missed first-sync races**), or contract violation.
 
 Each hard defect includes condition, current behavior, expected invariant/evidence, file/symbol, and minimum scenario. Verdict:
 
@@ -324,6 +361,7 @@ Typical regression patterns to flag:
 - store action/getter renamed but pages still call old names;
 - reintroducing draughts `sendMove` / `canMove` / cell encoding without a product change;
 - `onStateChange` regresses leave/rejoin or invents unsynced authority on the client;
+- `_enterRoom` awaits lobby leave (or anything else) before `_attachRoom` / `onStateChange` → missed first `ROOM_STATE`;
 - guard no longer awaits `whenReady()` or ignores `requiresAuth`/`guest`;
 - `leaveGame` / rejoin path breaks refresh recovery;
 - shared util return shape changed; callers assume old shape;
@@ -351,6 +389,7 @@ Examples:
 - AC forbids unauthenticated lobby access and route loses `requiresAuth` → hard `[extra]` / `[missing]` gating as appropriate.
 - `watch` on auth identity fires `GET /api/theme`, then success replaces `auth.user` and re-triggers the same watch → hard `[defect]` (request storm / feedback loop).
 - Watch source returns a fresh array each run and any invalidate of deps re-fires I/O even when primitives unchanged → hard `[defect]` when that I/O is proven; otherwise **Warning**.
+- `await connect()` then `await unsubscribeLobby()` then `_attachRoom` → hard `[defect]` (missed first `ROOM_STATE` / empty `seats` on Game).
 - `GamePage` `.tourist-board` sets `grid-template-rows` from `--tile` with `100%` while the board has auto height → hard `[defect]` (tile height 0 / invisible board).
 
 Hard sections below still omit when empty. **Warnings** and **Recommendations** always appear; if empty, a single line `- нет`.
@@ -396,6 +435,9 @@ Write in Russian.
 
 ## Реактивные / async-петли
 - [defect|warning] <trigger → side effect → mutated watched state → re-trigger; expected 1 call vs storm; file/symbol>
+
+## Async-гонки (await до listener / первый sync)
+- [defect|warning] <connect/subscribe resolve → await gap → missed onStateChange/ROOM_STATE|first message; attach/mirror order; file/symbol>
 
 ## Tourist board CSS (высота тайлов)
 - [defect|warning] <% / auto-height → rows 0 | safe aspect-ratio+fr; file/selector; SC-BOARD / D3>

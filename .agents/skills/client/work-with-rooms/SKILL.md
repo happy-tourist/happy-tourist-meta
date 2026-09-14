@@ -37,8 +37,8 @@ createGame / joinGame(roomId?) / joinGame()
         │  status = 'connecting'; clear error
         │  await _leaveTouristRoom()  ← prior tourist only; lobby stays live
         │  room = await connect()      ← create | joinById | joinOrCreate
+        │  _attachRoom(room)           ← BEFORE any await (catch first ROOM_STATE)
         │  await unsubscribeLobby()    ← SC-LOBBY-05 only on success
-        │  _attachRoom(room)
         ▼
   listeners (store only)
         │  onStateChange → seats / started / sessionId → status
@@ -81,8 +81,10 @@ async _enterRoom(connect: () => Promise<Room>) {
   try {
     await this._leaveTouristRoom();
     const room = await connect();
-    await this.unsubscribeLobby();
+    // MUST attach before await unsubscribeLobby — first ROOM_STATE can arrive
+    // during that gap; missing the listener leaves seats[] empty on Game.
     this._attachRoom(room);
+    await this.unsubscribeLobby();
     return room;
   } catch (e) {
     this.status = 'idle';
@@ -96,9 +98,11 @@ async _enterRoom(connect: () => Promise<Room>) {
 Wire listeners **once** in the store (never in `GamePage`):
 
 1. Assign `this.room`, `this.roomId = room.roomId`, `this.sessionId = room.sessionId`, `this.status = 'waiting'`.
-2. `room.onStateChange` — map `started` / `seats` → Pinia (see below).
+2. `room.onStateChange` — map `started` / `seats` → Pinia (see below); also mirror `room.state` once if already present.
 3. `room.onError` — set `this.error`.
 4. `room.onLeave` — call `_resetRoomState()`.
+
+**Ordering:** call `_attachRoom` immediately after `connect()` succeeds — **before** any other `await` (including `unsubscribeLobby`).
 
 ### `_resetRoomState()`
 

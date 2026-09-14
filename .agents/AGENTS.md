@@ -35,7 +35,7 @@ OpenSpec: [`openspec/config.yaml`](../openspec/config.yaml); артефакты 
 
 | Skill | Когда |
 |-------|--------|
-| [`align-code`](skills/align-code/SKILL.md) | Client + server: `*-align-code` + `*-verify-code` → сводный отчёт |
+| [`align-code`](skills/align-code/SKILL.md) | Client + server: `*-align-code` + `*-verify-code` → сводный отчёт (петли + async-гонки) |
 | [`commit`](skills/commit/SKILL.md) | Status → stage → commit → **push** по meta + client + server (main/master) |
 | [`check-changes`](skills/check-changes/SKILL.md) | Unstaged client/server → предложения: добавить/изменить/удалить skills, maps, docs, AGENTS.md |
 | [`implement-change`](skills/implement-change/SKILL.md) | Активный change: apply (блоки tasks в субагентах) → align → check-changes → commit; resume — повторный запуск (state) |
@@ -63,7 +63,7 @@ OpenSpec: [`openspec/config.yaml`](../openspec/config.yaml); артефакты 
 
 | Skill | Когда |
 |-------|--------|
-| [`client-align-code`](skills/client/client-align-code/SKILL.md) | Audit ветки / диффа против требований, skills и аналогов; реактивные/async-петли (watch → HTTP) |
+| [`client-align-code`](skills/client/client-align-code/SKILL.md) | Audit ветки / диффа против требований, skills и аналогов; реактивные/async-петли; async-гонки (await до `onStateChange` / первый `ROOM_STATE`) |
 | [`client-locate-change-points`](skills/client/client-locate-change-points/SKILL.md) | Где править / куда класть новые файлы (вкл. Google auth) |
 | [`client-verify-code`](skills/client/client-verify-code/SKILL.md) | Проверка кода / compliance skills + DRY/KISS/YAGNI |
 | [`colyseus-client`](skills/client/colyseus-client/SKILL.md) | `client.http` + room messages (не axios/BFF) |
@@ -86,7 +86,7 @@ OpenSpec: [`openspec/config.yaml`](../openspec/config.yaml); артефакты 
 
 | Skill | Когда |
 |-------|--------|
-| [`server-align-code`](skills/server/server-align-code/SKILL.md) | Audit ветки / диффа против требований, skills и аналогов; handler/lifecycle-петли |
+| [`server-align-code`](skills/server/server-align-code/SKILL.md) | Audit ветки / диффа против требований, skills и аналогов; handler/lifecycle-петли; first-sync races |
 | [`server-locate-change-points`](skills/server/server-locate-change-points/SKILL.md) | Где править / куда класть новые файлы (вкл. `config/auth`) |
 | [`server-verify-code`](skills/server/server-verify-code/SKILL.md) | Проверка кода на соответствие skills + DRY/KISS/YAGNI |
 | [`server-work-with-auth`](skills/server/server-work-with-auth/SKILL.md) | `@colyseus/auth`, Google OAuth `addProvider`, JWT `onAuth`, userdata |

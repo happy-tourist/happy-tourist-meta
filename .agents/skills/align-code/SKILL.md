@@ -5,7 +5,8 @@ description: >-
   server-verify-code for happy-tourist siblings, then prints a combined Client
   and Server report. Use when the user asks for align-code, full-stack align,
   or to audit both client and server against requirements and skill compliance
-  in one pass.
+  in one pass (includes reactive loops and async races: await gap before
+  onStateChange / first ROOM_STATE).
 ---
 
 # Align Code — client + server
@@ -13,6 +14,8 @@ description: >-
 Оркестратор: для **client** и **server** последовательно выполнить **align-code** и **verify-code**, затем выдать **единый отчёт** по обоим пакетам.
 
 Скилл **только анализирует и отчитывается** — не правит runtime-код, не коммитит. Правки — только по явной просьбе после отчёта.
+
+Child align **обязан** (Axis C) ловить не только feedback-loop штормы, но и **async-гонки**: `await` между готовностью I/O и регистрацией listener / первым sync (на client — особенно `connect()` → gap → `_attachRoom`/`onStateChange`, пропуск первого `ROOM_STATE`). Не ослаблять и не пропускать эти секции дочерних скиллов.
 
 ## Когда применять
 
@@ -96,7 +99,7 @@ Align-Code Progress:
 
 Рабочий cwd / git / чтение `src/…` — **корень client**. Skills читать из meta `.agents/skills/client/`.
 
-1. Полностью выполнить `client-align-code` (все 4 оси, формат отчёта дочернего скилла).
+1. Полностью выполнить `client-align-code` (все 4 оси, формат отчёта дочернего скилла) — включая секции **Реактивные / async-петли** и **Async-гонки** (await до listener / первый `ROOM_STATE`).
 2. Полностью выполнить `client-verify-code` (ветка vs merge-base + working tree; все Always-include skills).
 
 Сохранить результаты для сводки; **не** публиковать отдельным финальным ответом до шага 7 (допустимы краткие прогресс-апдейты).
