@@ -14,8 +14,8 @@ description: >-
 
 Use this skill when creating or relocating code under `src` (and related
 `test/` / `loadtest/` / deploy wiring). This is a **realtime Colyseus game
-server**, not an Express BFF: authoritative board-game rules will live in the Room;
-today the room is a scaffold and the client shows a static tourist board.
+server**, not an Express BFF: authoritative seating (and later move rules) live in the Room;
+the client mirrors seats and renders pieces on a local board layout.
 
 Stack: Colyseus 0.18 (`defineServer` / `defineRoom` via `@colyseus/tools`),
 `@colyseus/auth` + JWT, `@colyseus/database` + Drizzle + better-sqlite3,
@@ -34,8 +34,8 @@ Path style: relative imports with explicit `.js` suffix (NodeNext), e.g.
 intended to live in `happy-tourist-meta/.agents/skills/server/` once meta
 is available — prefer that path when choosing skills if it exists.
 
-Sibling client: `../happy-tourist.github.io` (room type `tourist`, static Game board;
-synced rules / game messages deferred until product rules land).
+Sibling client: `../happy-tourist.github.io` (room type `tourist`, board + pieces from synced seats;
+move messages deferred until product rules land).
 
 ## Core Rules
 
@@ -73,7 +73,7 @@ Env templates: `.env.example`, `.env.development`, `.env.production` (do not com
 | **`config/`** | OAuth provider registration (`addProvider`) | Room gate, user schema, custom OAuth callback (leave built-in) |
 | **`db/`** | SQLite GameDatabase; extend `colyseus_users` with defaults | Room messages; inventing a second auth store |
 | **`rooms/`** | Auth gate (`onAuth`), seats, lifecycle; future game `onMessage` + state | Raw HTTP; client-trusted board |
-| **`rooms/schema/`** | Sync fields (scaffold today; product fields later) | Validation / rules / side effects |
+| **`rooms/schema/`** | Sync fields (`started` + `seats`; moves later) | Validation / rules / side effects |
 | **`test/` / `loadtest/`** | Boot server / joinOrCreate clients | Production deploy secrets |
 
 ## Dependency Direction

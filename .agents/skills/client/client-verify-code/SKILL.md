@@ -65,7 +65,7 @@ it does **not** allow skipping skills from this list.
 | `work-with-localization` | vue-i18n boot |
 | `work-with-lobby` | live LobbyRoom subscribe / leave before enter / create/join |
 | `work-with-rooms` | Room lifecycle |
-| `work-with-game-board` | Static tourist board (no move UX) |
+| `work-with-game-board` | Tourist board + seat pieces / strip (no move UX) |
 | `work-with-env-deploy` | `VITE_*`, hash router, GH Pages |
 
 If a new code skill appears under `.agents/skills/client/` (same kind: how to
@@ -253,8 +253,8 @@ Apply always; sibling skills win when they exist and conflict on a detail.
 - Room type constant `TOURIST_ROOM = 'tourist'` in `stores/game`.
 - Room lifecycle: `create` / `joinById` / `joinOrCreate`, `onStateChange`,
   `leave` (Game messages when rules land).
-- GamePage: static tourist board; no client-invented move protocol.
-- Synced board/rules encoding — deferred until product rules land.
+- GamePage: tourist board with synced seat pieces / strip; no client-invented move protocol.
+- Move encoding / turn sync — deferred until product rules land.
 
 ### Auth and routing
 
@@ -374,7 +374,7 @@ Reminders to **open the skill** (or Built-in) — skill text wins.
   stable App `watch([() => ready, () => id, () => anonymous])`; no `auth.user`
   replace after GET (SC-THEME-10).
 - **Lobby/rooms**: live LobbyRoom `subscribeLobby`; create/join/leave through `stores/game`.
-- **Board**: static tourist CSS Grid on GamePage; no `canMove` / draughts cells.
+- **Board**: tourist CSS Grid on GamePage + pieces from seats; no `canMove` / draughts cells.
 - **Errors**: store `error` + `q-banner` (theme → `App.vue`); no empty `catch`.
 - **Env/deploy**: `VITE_*`, hash router, GH Pages SPA build.
 - **Vue SFC order** (soft): `<template>` → `<script setup>` → `<style>`.

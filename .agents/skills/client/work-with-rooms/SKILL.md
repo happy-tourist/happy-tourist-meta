@@ -21,7 +21,7 @@ Coordinate schema / protocol (room name, state shape, `move` message) with [`../
 |-------|------|------|
 | Store | `src/stores/game.ts` | `TOURIST_ROOM`, create/join/leave, `_attachRoom` listeners |
 | Lobby | `src/pages/LobbyPage.vue` | `createGame` / `joinGame` → navigate to `game` with `roomId` |
-| Game | `src/pages/GamePage.vue` | Static tourist board; rejoin by `roomId`; `leaveGame` |
+| Game | `src/pages/GamePage.vue` | Board + seat pieces / strip; rejoin by `roomId`; `leaveGame` |
 | Boot | `src/boot/colyseus.ts` | Shared `Client` (`VITE_COLYSEUS_URL`) |
 | Route | `/game/:roomId` | Hash mode; `meta.requiresAuth` |
 
@@ -41,7 +41,7 @@ createGame / joinGame(roomId?) / joinGame()
         │  _attachRoom(room)
         ▼
   listeners (store only)
-        │  onStateChange → status (synced rules fields later)
+        │  onStateChange → seats / started / sessionId → status
         │  onError → error string
         │  onLeave → _resetRoomState()
         ▼
@@ -95,14 +95,14 @@ async _enterRoom(connect: () => Promise<Room>) {
 
 Wire listeners **once** in the store (never in `GamePage`):
 
-1. Assign `this.room`, `this.roomId = room.roomId`, `this.status = 'waiting'`.
-2. `room.onStateChange` — map server state → Pinia.
+1. Assign `this.room`, `this.roomId = room.roomId`, `this.sessionId = room.sessionId`, `this.status = 'waiting'`.
+2. `room.onStateChange` — map `started` / `seats` → Pinia (see below).
 3. `room.onError` — set `this.error`.
 4. `room.onLeave` — call `_resetRoomState()`.
 
 ### `_resetRoomState()`
 
-Clear session fields: `room`, `roomId`, `status = 'idle'`. Does **not** clear lobby `rooms` / `listing` / `error` (leave that to callers when appropriate).
+Clear session fields: `room`, `roomId`, `sessionId`, `started`, `seats`, `status = 'idle'`. Does **not** clear lobby `rooms` / `listing` / `error` (leave that to callers when appropriate).
 
 ## leaveGame
 
@@ -128,18 +128,33 @@ async leaveGame() {
 
 ## onStateChange Mapping
 
-**Today** (static tourist board phase — coordinate with `../happy-tourist-server`):
+**Today** (seats / pieces phase — coordinate with `../happy-tourist-server`):
 
 | Server field | Store field |
 |--------------|-------------|
-| `status` (optional) | `status` (`'waiting' \| 'playing' \| 'finished'`) |
+| `started` | `started`; also drives `status` (`playing` if started, else `waiting`) |
+| `seats` Map (key = `sessionId`) | `seats[]` with `sessionId`, `touristId`, `side`, `row`, `col` |
+| (room) `sessionId` | `sessionId` — for `mySeat` / strip |
 
-Scaffold server state may still expose `mySynchronizedProperty`; client maps only what the product store needs. Synced board / turn / seats — **deferred** until rules land (`work-with-game` + client board skill).
+Move messages and turn/progress fields — **deferred** until rules land (`work-with-game` + client board skill).
 
 ```ts
 room.onStateChange((state) => {
-  const s = state as { status?: 'waiting' | 'playing' | 'finished' };
-  if (s.status) this.status = s.status;
+  const s = state as TouristRoomState;
+  this.sessionId = room.sessionId;
+  this.started = Boolean(s.started);
+  const next: GameSeat[] = [];
+  s.seats?.forEach((seat, sessionId) => {
+    next.push({
+      sessionId,
+      touristId: Number(seat.touristId),
+      side: String(seat.side),
+      row: Number(seat.row),
+      col: Number(seat.col),
+    });
+  });
+  this.seats = next;
+  this.status = this.started ? 'playing' : 'waiting';
 });
 
 room.onError((_code, message) => {
@@ -185,7 +200,7 @@ Normal lobby → game navigation already has `game.room` set; skip rejoin.
 
 ## Game messages
 
-**None today** — `GamePage` is a static tourist board (no `sendMove` / selection UX). When rules land, add store send helpers + server `onMessage` in lockstep; do not reintroduce legacy draughts `move` `{ from, to }` unless product explicitly revives that contract.
+**None today** — seating syncs via schema; board/pieces are non-interactive (no `sendMove` / selection UX). When move rules land, add store send helpers + server `onMessage` in lockstep; do not reintroduce legacy draughts `move` `{ from, to }` unless product explicitly revives that contract.
 
 ## Do / Don't
 
@@ -214,5 +229,5 @@ Normal lobby → game navigation already has `game.room` set; skip rejoin.
 
 - Broader Colyseus I/O: `.agents/skills/client/colyseus-client/SKILL.md`
 - Auth before rooms: `.agents/skills/client/client-work-with-auth/SKILL.md`
-- Client overview: `AGENTS.md` (game session / board cell values)
+- Client overview: `AGENTS.md` (game session / seats / board)
 - Sibling server: `../happy-tourist-server`

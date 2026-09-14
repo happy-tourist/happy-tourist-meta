@@ -106,12 +106,12 @@ await router.push({ name: 'lobby' });
 // failures: auth.error → q-banner
 ```
 
-Example shape (game enter / static board):
+Example shape (game enter / board + seats):
 
 ```ts
 // LobbyPage → game.createGame / joinGame → navigate Game
-// GamePage → static tourist LAYOUT tiles (no room.send for board UX today)
-// optional: room.onStateChange → status
+// GamePage → LAYOUT tiles + pieces from game.seats (no room.send for board UX today)
+// room.onStateChange → seats / started / sessionId → status
 ```
 
 Example shape (lobby list):

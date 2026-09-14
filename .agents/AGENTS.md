@@ -77,7 +77,7 @@ OpenSpec: [`openspec/config.yaml`](../openspec/config.yaml); артефакты 
 | [`work-with-localization`](skills/client/work-with-localization/SKILL.md) | vue-i18n boot |
 | [`work-with-lobby`](skills/client/work-with-lobby/SKILL.md) | Live LobbyRoom subscribe, leave before enter, create / join / joinOrCreate |
 | [`work-with-rooms`](skills/client/work-with-rooms/SKILL.md) | Room lifecycle, `onStateChange` / `onLeave` |
-| [`work-with-game-board`](skills/client/work-with-game-board/SKILL.md) | Static tourist board (no move UX) |
+| [`work-with-game-board`](skills/client/work-with-game-board/SKILL.md) | Tourist board + synced seat pieces / strip (no move UX) |
 | [`work-with-env-deploy`](skills/client/work-with-env-deploy/SKILL.md) | `VITE_*`, hash router, GitHub Pages |
 
 #### Server-wide skills (`.agents/skills/server/`)
@@ -94,9 +94,9 @@ OpenSpec: [`openspec/config.yaml`](../openspec/config.yaml); артефакты 
 | [`server-work-with-structure`](skills/server/server-work-with-structure/SKILL.md) | rooms / schema / db / config / app.config placement |
 | [`server-work-with-test`](skills/server/server-work-with-test/SKILL.md) | mocha + `@colyseus/testing` (rooms + `GET|POST /api/theme`) |
 | [`work-with-rooms`](skills/server/work-with-rooms/SKILL.md) | Room lifecycle, registration, seats |
-| [`work-with-schema`](skills/server/work-with-schema/SKILL.md) | `@colyseus/schema` sync (scaffold today; product fields later) |
-| [`work-with-messages`](skills/server/work-with-messages/SKILL.md) | Room messages (none for static board; add with rules) |
-| [`work-with-game`](skills/server/work-with-game/SKILL.md) | Авторитетные правила настольной игры (later); room `tourist` |
+| [`work-with-schema`](skills/server/work-with-schema/SKILL.md) | `@colyseus/schema` sync (`started` + `seats`; moves later) |
+| [`work-with-messages`](skills/server/work-with-messages/SKILL.md) | Room messages (none for seating; add with move rules) |
+| [`work-with-game`](skills/server/work-with-game/SKILL.md) | Seating today; move rules later; room `tourist` |
 | [`work-with-routes`](skills/server/work-with-routes/SKILL.md) | HTTP `createEndpoint` / thin routes (incl. `GET|POST /api/theme`) |
 | [`work-with-middleware`](skills/server/work-with-middleware/SKILL.md) | CORS, `/health`, monitor/playground |
 | [`work-with-config`](skills/server/work-with-config/SKILL.md) | env, secrets, OAuth `config/auth`, `defineServer` |

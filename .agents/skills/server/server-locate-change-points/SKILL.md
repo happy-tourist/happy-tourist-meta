@@ -42,16 +42,16 @@ Allowed dependency direction:
 
 Prefer not editing `src/index.ts` unless self-hosting / listen details require it — configure rooms and HTTP in `src/app.config.ts`.
 
-### Client contract gaps (current scaffold)
+### Client contract (current)
 
-The sibling client already assumes a tourist contract; server is still scaffold. When locating change points for gameplay/lobby, prefer aligning server to client rather than inventing a parallel protocol.
+The sibling client assumes a tourist contract; prefer aligning server to client rather than inventing a parallel protocol.
 
 | Client expectation | Server today |
 |--------------------|--------------|
 | Room type name `tourist` | Registered as `tourist` in `app.config.ts` with `.enableRealtimeListing()` |
 | Live lobby (`LobbyRoom`) | `lobby: defineRoom(LobbyRoom)` — client filters `name: tourist` |
-| Static tourist board on Game | Client-only layout; server does not sync tile geometry yet |
-| Synced rules state / game messages | Scaffold `MyRoomState` (`mySynchronizedProperty`); rules later |
+| Tourist board layout on Game | Client-only tile geometry; server does not sync layout |
+| Synced seats / started | `MyRoomState`: `started` + `seats` Map (`touristId`, `side`, `row`, `col`); move messages later |
 | Lobby `GET /rooms/tourist` | Available (HTTP fallback; UI uses live LobbyRoom) |
 
 ### HTTP surface (today)
@@ -123,8 +123,8 @@ Use these rules to pick the layer before naming files.
 | Auth to rooms | `MyRoom.onAuth` + `@colyseus/auth` JWT; secrets in `.env.*` |
 | Google OAuth provider | `src/config/auth.ts` + side-effect import from `app.config.ts`; `GOOGLE_CLIENT_*` in `.env.*` |
 | User profile columns | `src/db/schema.ts` + `src/db/index.ts` |
-| Game state sync | `src/rooms/schema/MyRoomState.ts` (scaffold; product fields later) |
-| Match flow / game messages | `src/rooms/MyRoom.ts` lifecycle + future `onMessage`; align with client when rules land |
+| Game state sync | `src/rooms/schema/MyRoomState.ts` (`started` + `seats`) |
+| Match flow / seating / future moves | `src/rooms/MyRoom.ts` lifecycle + future `onMessage`; align with client |
 | HTTP health / CORS / demo API | `src/app.config.ts` express + routes |
 | Tests | `test/MyRoom.test.ts`, `test/theme.test.ts`, … |
 | Loadtest | `loadtest/example.ts` |
@@ -136,7 +136,7 @@ Use these rules to pick the layer before naming files.
    - target feature or behavior;
    - entities (auth, lobby rooms, board/state, game messages, profile/DB, HTTP health, deploy/env);
    - whether the task changes existing behavior or adds a new flow;
-   - whether the client contract (room name `tourist`, static board today, future sync/messages, `/rooms/tourist`) is involved.
+   - whether the client contract (room name `tourist`, seats/`started`, board layout local, `/rooms/tourist`) is involved.
 
 2. Search the codebase by domain terms from the task:
    - room name / registration (`lobby`, `tourist`, `LobbyRoom`, `enableRealtimeListing`, `defineRoom`, `rooms:`);

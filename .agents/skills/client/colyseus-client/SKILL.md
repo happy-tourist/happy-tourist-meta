@@ -92,8 +92,8 @@ Local defaults: `.env.development` → `localhost:2567`. Production: `.env.produ
 | Lobby list | `stores/game.ts` → `subscribeLobby` / `unsubscribeLobby` | `joinOrCreate('lobby', { filter })` + messages `rooms` / `+` / `-` |
 | HTTP fallback | `stores/game.ts` → `refreshRooms` | `client.http.get('/rooms/tourist')` (unused by LobbyPage) |
 | Room lifecycle | `stores/game.ts` → `createGame` / `joinGame` / `leaveGame` | `client.create` / `joinById` / `joinOrCreate`, `room.leave` |
-| Game board UI | `pages/GamePage.vue` | Static tourist layout (no sendMove) |
-| Live state | `stores/game.ts` → `_attachRoom` | `room.onStateChange`, `onError`, `onLeave` |
+| Game board UI | `pages/GamePage.vue` | Tourist layout + seat pieces / strip (no sendMove) |
+| Live state | `stores/game.ts` → `_attachRoom` | `room.onStateChange` (`seats`/`started`), `onError`, `onLeave` |
 
 Allowed dependency direction: `pages` → `stores` / `boot` / `components`. Keep all `client.*` and `room.*` I/O in stores.
 
@@ -110,7 +110,7 @@ Pages already wired:
 |------|-------|
 | `LoginPage` | `auth.register` / `login` / `loginAnonymously` / `loginWithGoogle` |
 | `LobbyPage` | `subscribeLobby` / `unsubscribeLobby`, `createGame`, `joinGame`, `leaveGame`; `auth.logout` |
-| `GamePage` | `game.joinGame(roomId)` on remount, static board, `leaveGame` |
+| `GamePage` | `game.joinGame(roomId)` on remount, pieces from seats, `leaveGame` |
 | Router | `auth.whenReady()` before `requiresAuth` / `guest` guards |
 
 ## Auth (`client.auth`)
@@ -207,28 +207,43 @@ All connect paths go through `_enterRoom`:
 
 ### State sync (`_attachRoom`)
 
-**Today** — map optional room `status` only. Synced board / turn / seats and Game messages are deferred until rules land.
+**Today** — mirror seating from schema. Move messages / turn fields deferred until rules land.
 
 | Field | Meaning |
 |-------|---------|
-| `status` (optional) | `'waiting' \| 'playing' \| 'finished'` |
+| `started` | Fourth seat assigned → `true`; drives Pinia `status` `playing` / `waiting` |
+| `seats` Map | Key = `sessionId` → `touristId`, `side`, `row`, `col` |
+| `sessionId` | From `room.sessionId` — for `mySeat` / strip |
 
 Wire once in the store:
 
 ```ts
 room.onStateChange((state) => {
-  const s = state as { status?: 'waiting' | 'playing' | 'finished' };
-  if (s.status) this.status = s.status;
+  const s = state as TouristRoomState;
+  this.sessionId = room.sessionId;
+  this.started = Boolean(s.started);
+  const next: GameSeat[] = [];
+  s.seats?.forEach((seat, sessionId) => {
+    next.push({
+      sessionId,
+      touristId: Number(seat.touristId),
+      side: String(seat.side),
+      row: Number(seat.row),
+      col: Number(seat.col),
+    });
+  });
+  this.seats = next;
+  this.status = this.started ? 'playing' : 'waiting';
 });
 room.onError((_code, message) => { this.error = message || 'Room error'; });
 room.onLeave(() => { this._resetRoomState(); });
 ```
 
-`GamePage` may call `joinGame(roomId)` again if Pinia lost the room after refresh; failed rejoin → navigate to lobby. Board geometry is a **client constant** (`work-with-game-board`), not synced state.
+`GamePage` may call `joinGame(roomId)` again if Pinia lost the room after refresh; failed rejoin → navigate to lobby. Board tile geometry is a **client constant** (`work-with-game-board`); seats come from sync.
 
 ## Messages: game actions
 
-**None today** for the static tourist board. When rules land, add `room.send(...)` helpers in the game store with server `onMessage` lockstep — do not treat legacy draughts `move` `{ from, to }` as current product canon.
+**None today** for seating (schema sync only). When move rules land, add `room.send(...)` helpers in the game store with server `onMessage` lockstep — do not treat legacy draughts `move` `{ from, to }` as current product canon.
 
 ## Loading and errors
 
@@ -286,10 +301,10 @@ await router.push({ name: 'game', params: { roomId: room.roomId } });
 
 Catch at the page only if you need extra UI beyond `game.error`.
 
-### Static board on GamePage
+### Board + seats on GamePage
 
 ```ts
-// GamePage renders LAYOUT tiles; no room.send for board UX today
+// GamePage renders LAYOUT tiles + pieces from game.seats; no room.send for board UX today
 await game.leaveGame();
 await router.push({ name: 'lobby' });
 ```
@@ -313,7 +328,8 @@ Show `auth.error` in a `q-banner`. Router already blocks until `whenReady()`.
 | `import … from '@colyseus/auth'` in the SPA | Use `client.auth` from `@colyseus/sdk` |
 | Calling `client.create` / `room.send` in a page | Add/extend actions on `useGameStore` |
 | Second `new Client(...)` | Reuse singleton from `@/boot/colyseus` |
-| Treating GamePage layout as authoritative rules | Static board is UI only; rules land later on the server |
+| Treating GamePage layout as authoritative rules | Board geometry is UI only; seating/rules live on the server |
+| Inventing client-local seat assignment | Mirror `seats`/`started` from schema only |
 | Hardcoding room name in pages | Use `TOURIST_ROOM` / `LOBBY_ROOM` from `stores/game` |
 | Leaving `listing` / `loading` true after error | Always `finally` |
 | Skipping `whenReady` in router | Await before `requiresAuth` / `guest` redirects |

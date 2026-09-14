@@ -141,7 +141,7 @@ Swallow leave errors on purpose. Do not set `error` here.
 
 ### Game messages (later)
 
-No Game `room.send` today (static board). When rules land, early-return if
+No Game `room.send` today (seating syncs via schema; board non-interactive). When move rules land, early-return if
 `!this.room`; illegal actions are server-side — do not invent local move UX
 error handling unless product requirements change.
 

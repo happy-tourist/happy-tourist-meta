@@ -65,7 +65,7 @@ it does **not** allow skipping skills from this list.
 | `work-with-middleware` | Express middleware order (CORS first, monitor/playground) |
 | `work-with-rooms` | room handlers (`onCreate` / `onJoin` / `onLeave` / `onDispose`) |
 | `work-with-schema` | `@colyseus/schema` synced state |
-| `work-with-messages` | room message handlers (none for static board; later) |
+| `work-with-messages` | room message handlers (none for seating; add with moves) |
 | `work-with-game` | board game «Счастливый турист» rules (later); room `tourist` |
 | `work-with-database` | `GameDatabase`, drizzle `users` schema defaults |
 | `work-with-env-deploy` | `.env*`, secrets, PM2, GitHub Actions deploy |
@@ -221,8 +221,8 @@ Sibling client (`../happy-tourist.github.io`) assumes:
 | Client expectation | Server should provide |
 |--------------------|------------------------|
 | Room type name `tourist` | Register room as `tourist` (+ `lobby` + `.enableRealtimeListing()`) |
-| Static tourist board on Game | Client-only layout; no tile geometry sync required in this phase |
-| Synced rules state / game messages | Scaffold OK; fill when rules land |
+| Tourist board layout on Game | Client-only tile geometry; no layout sync required |
+| Synced seats / started | `MyRoomState`: `started` + `seats` Map; move messages later |
 | Live lobby (`LobbyRoom`) | `lobby` registered; tourist has realtime listing |
 
 Prefer aligning room name, schema, and messages with the client rather than
@@ -231,8 +231,7 @@ changing the client unilaterally.
 **Violations when:** new gameplay ships under a room name / state shape / message
 payload that breaks the client contract without an explicit coordinated client
 change. **Warnings when:** scaffold leftovers (`mySynchronizedProperty`) remain
-while tourist product code is being implemented beside them without a clear
-migration path.
+while tourist product seating is already shipped — remove the scaffold.
 
 ### Auth and rooms
 
@@ -251,8 +250,8 @@ of verified auth userdata.
 ### Authoritative gameplay
 
 - Once rules exist, board-game truth for «Счастливый турист» lives on the **server**.
-- Today there are **no** Game action messages; client shows a static board.
-- Do not trust client-supplied layout/state as source of truth when rules land.
+- Today seating is authoritative (`seats`/`started`); there are **no** Game move messages; client mirrors seats and renders pieces.
+- Do not trust client-supplied layout/state as source of truth.
 
 **Violations when:** server applies client board snapshots as truth; or invents
 legacy draughts `move`/`0`–`4` encoding as product without a coordinated change.
@@ -367,7 +366,7 @@ Use only to decide **where to look harder**, never to drop a skill from Always i
 |----------------------|----------------|
 | `src/app.config.ts`, `src/index.ts` | Server conventions (`defineServer`, CORS order, room registration) |
 | `src/rooms/**` | `work-with-rooms`, `work-with-messages`, `work-with-game`, auth `onAuth` |
-| `src/rooms/schema/**` | `work-with-schema`, client sync contract (scaffold today) |
+| `src/rooms/schema/**` | `work-with-schema`, client sync contract (`started`/`seats`) |
 | `src/db/**` | `work-with-database`, users defaults |
 | auth / JWT / `@colyseus/auth` | `server-work-with-auth` |
 | custom `/api/**`, `createEndpoint` | `work-with-routes` |

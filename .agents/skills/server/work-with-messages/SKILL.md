@@ -25,22 +25,22 @@ Coordinate with: `work-with-rooms` (lifecycle / registration), `work-with-schema
 | Validate → mutate `@colyseus/schema` state | Express routes / `createEndpoint` |
 | Optional per-client error feedback for bad actions | Pure board-game rules (`work-with-game`) |
 
-**Prefer changing the server to match the client** rather than inventing a parallel protocol. Today the client has **no** Game move messages (static board); do not treat legacy draughts `move` `{ from, to }` as current product canon.
+**Prefer changing the server to match the client** rather than inventing a parallel protocol. Today the client has **no** Game move messages (seating syncs via schema); do not treat legacy draughts `move` `{ from, to }` as current product canon.
 
 ## Client Contract (today)
 
 | Direction | Name | Payload / behavior |
 |-----------|------|--------------------|
-| Client → server | *(none for Game board)* | Static tourist UI; add messages when rules land |
-| Server → clients | *(synced state later)* | Schema `onStateChange` when product fields exist |
+| Client → server | *(none for Game moves)* | Seating via join lifecycle; add messages when move rules land |
+| Server → clients | Schema sync | `started` + `seats` Map → client `onStateChange` |
 | Server → client | room error channel | Client sets `game.error` from `room.onError` |
 | Lobby | HTTP fallback | `client.http.get('/rooms/tourist')` — **not** a room message |
 
-When implementing rules, document the chosen message shape here and lockstep with client `stores/game.ts`.
+When implementing move rules, document the chosen message shape here and lockstep with client `stores/game.ts`.
 
 ## Server Today
 
-- `src/rooms/MyRoom.ts` — **no** gameplay `onMessage` yet (scaffold).
+- `src/rooms/MyRoom.ts` — seating in `onJoin`/`onLeave`; **no** gameplay `onMessage` yet.
 - Room registered as `tourist` (+ `lobby` for live list); do not reintroduce `my_room`.
 
 ## Handler Pattern (when rules land)

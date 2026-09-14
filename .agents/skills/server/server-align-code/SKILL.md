@@ -77,7 +77,7 @@ For every stated `@colyseus/schema` field, independently verify:
 - who may mutate (server only — never trust client board);
 - serialization / `@type` annotations match consumer expectations.
 
-A synced field is not covered until all explicit properties are covered. Known client contract today: room `tourist` + lobby listing. Synced rules fields are deferred; scaffold `mySynchronizedProperty` is not product rules state.
+A synced field is not covered until all explicit properties are covered. Known client contract today: room `tourist` + lobby listing + `started`/`seats`. Move/turn fields are deferred; scaffold `mySynchronizedProperty` must not remain once seating ships.
 
 ### Room messages
 
