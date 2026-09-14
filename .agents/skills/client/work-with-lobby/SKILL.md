@@ -18,7 +18,7 @@ Stack: Vue 3 `<script setup>`, Quasar 2, Pinia `useGameStore` / `useAuthStore`, 
 
 Sibling server: `../happy-tourist-server`. Coordinate room name (`tourist`), `lobby` registration, and list metadata with that package.
 
-**Lobby ≠ tourist reconnect:** listing is fire-and-forget (design D7 / SC-LOBBY-08). Do **not** persist a lobby reconnection token; do **not** expect server `allowReconnection` on LobbyRoom. Tourist grace / `sessionStorage` token live in `work-with-rooms`.
+**Lobby ≠ tourist reconnect:** listing is fire-and-forget (design D7 / SC-LOBBY-08). Do **not** persist a lobby reconnection token; do **not** expect server `allowReconnection` on LobbyRoom. Tourist grace / `localStorage` token live in `work-with-rooms`.
 
 ## Quick Reference
 

@@ -92,7 +92,7 @@ Examples:
 
 - `LoginPage` — form UI; calls `useAuthStore()` (`register` / `login` / `loginAnonymously`), then `router.replace`.
 - `LobbyPage` — room list / create / join via `useGameStore()`; navigates to `game` with `roomId`.
-- `GamePage` — board + presence UI; syncs via `useGameStore()`; `rejoinGame(roomId)` on mount / soft-fail; leave → `lobby`.
+- `GamePage` — board + presence UI; syncs via `useGameStore()`; `rejoinGame(roomId)` on mount / soft-fail / browser reopen (`localStorage` token); leave → `lobby`.
 
 Do not put a second app shell (global layout host) inside a page — `App.vue` already mounts `router-view`.
 

@@ -76,7 +76,7 @@ OpenSpec: [`openspec/config.yaml`](../openspec/config.yaml); артефакты 
 | [`work-with-styles`](skills/client/work-with-styles/SKILL.md) | Quasar Dark + GET/POST `/api/theme`, header, muted chrome, tourist board CSS |
 | [`work-with-localization`](skills/client/work-with-localization/SKILL.md) | vue-i18n boot |
 | [`work-with-lobby`](skills/client/work-with-lobby/SKILL.md) | Live LobbyRoom subscribe, quiet resubscribe after drop (no reconnect hold) |
-| [`work-with-rooms`](skills/client/work-with-rooms/SKILL.md) | Room lifecycle, tourist reconnect token, `onStateChange` / `onLeave` |
+| [`work-with-rooms`](skills/client/work-with-rooms/SKILL.md) | Room lifecycle, `localStorage` tourist reconnect token, `onStateChange` / `onLeave` |
 | [`work-with-game-board`](skills/client/work-with-game-board/SKILL.md) | Tourist board + presence + 4 pieces/seat overlay + strip×4 (no move UX) |
 | [`work-with-env-deploy`](skills/client/work-with-env-deploy/SKILL.md) | `VITE_*`, hash router, GitHub Pages |
 

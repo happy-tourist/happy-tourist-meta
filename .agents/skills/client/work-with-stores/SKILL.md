@@ -81,7 +81,7 @@ Use a store for shared domain data, realtime session, or anything the router/oth
 |-------|------|-------------------|
 | **auth** | `user`, `token`, `loading`, `error`, `ready`; `isAuthenticated`, `displayName`; register/login/anonymous/Google/`logout`/`whenReady` | `LoginPage`, router `beforeEach`, `LobbyPage` logout/header, `App.vue` theme sync |
 | **theme** | Quasar Dark `preference`, `error`; async `syncFromAuthUser` (GET restore + generation + `clearStoredTheme` when unset; **no** `auth.user` replace after GET), `toggle` (guest `localStorage` `ht-theme`; registered `get` ≠ JWT-only, `post` on toggle may patch `user.theme`) | `App.vue` header toggle + stable auth identity watch |
-| **game** | lobby `rooms`/`lobbyRoom`/`lobbyWanted`/`listing`; active `room`/`roomId`/`sessionId`; mirrored `seats` (`GameSeat`: `touristId` + `pieces[]` + `connected` / `reconnectUntil`) / `started`; getters `mySeat`/`isSeated`; `status`, `error`; subscribe/unsubscribe / create/join/`rejoinGame`/leave; tourist token in `sessionStorage` | `LobbyPage`, `GamePage` |
+| **game** | lobby `rooms`/`lobbyRoom`/`lobbyWanted`/`listing`; active `room`/`roomId`/`sessionId`; mirrored `seats` (`GameSeat`: `touristId` + `pieces[]` + `connected` / `reconnectUntil`) / `started`; getters `mySeat`/`isSeated`; `status`, `error`; subscribe/unsubscribe / create/join/`rejoinGame`/leave; tourist token in `localStorage` | `LobbyPage`, `GamePage` |
 | **counter** | scaffold only | none in product flow — ignore unless cleaning scaffold |
 
 ### Auth vs theme vs game ownership
@@ -196,7 +196,7 @@ export const useGameStore = defineStore('game', {
       return this._enterRoom(() => client.create(TOURIST_ROOM, options));
     },
     async rejoinGame(roomId, options = {}) {
-      // sessionStorage reconnect(token) → fallback joinById
+      // localStorage reconnect(token) → clear stale on fail → fallback joinById
     },
     // Game messages (send*) — add when move rules land, with server lockstep
   },
@@ -206,7 +206,7 @@ export const useGameStore = defineStore('game', {
 Notes:
 - Live lobby listing uses `subscribeLobby` / LobbyRoom messages — not LobbyPage HTTP poll. `refreshRooms` HTTP remains unused fallback. Set `lobby.reconnection.enabled = false`; filter reservation/reconnect noise (see `work-with-lobby`).
 - Mirror `seats` (incl. `connected` / `reconnectUntil`) / `started` / `sessionId` in the store; keep tile geometry + presence on `GamePage` (not Pinia).
-- Persist tourist `reconnectionToken` in `sessionStorage` (`ht-tourist-reconnect`); clear on consented `leaveGame` / `_leaveTouristRoom`; keep on unexpected `onLeave` (see `work-with-rooms`).
+- Persist tourist `reconnectionToken` in `localStorage` (`ht-tourist-reconnect`); clear on consented `leaveGame` / `_leaveTouristRoom` and after failed `reconnect`; keep on unexpected `onLeave`; cross-tab steal OK (see `work-with-rooms`).
 - `leaveGame` unsubscribes lobby and swallows leave errors (room may already be closed). `GamePage` calls `rejoinGame(roomId)` on mount / soft-fail (reconnect → `joinById`).
 
 ### HMR: always `acceptHMRUpdate`

@@ -165,7 +165,7 @@ From client rooms / lobby skills — server must provide **today**:
 | Synced seats / started / connectivity | `started` + `seats` Map with `connected` / `reconnectUntil` |
 | Listing metadata | `title` / `status` via `setMetadata` for LobbyPage rows |
 
-Client: tourist token in `sessionStorage` + `reconnect` then `joinById`; lobby quiet resubscribe without token. Keep tourist rooms joinable by reconnection token within grace.
+Client: tourist token in `localStorage` + `reconnect` then `joinById`; lobby quiet resubscribe without token. Keep tourist rooms joinable by reconnection token within grace.
 
 Do not treat legacy draughts `board` / `currentTurn` / cells `0`–`4` / `move` `{ from, to }` as current product requirements.
 

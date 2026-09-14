@@ -1,10 +1,12 @@
 ## Why
 
-Перезагрузка страницы или краткий обрыв сокета сейчас воспринимаются как полный выход: seat и фигурки снимаются, после `joinById` игрок часто становится зрителем. Нужно уметь кратко восстановить то же место и показывать остальным, что соперник временно офлайн.
+Перезагрузка страницы, закрытие браузера или краткий обрыв сокета не должны сразу снимать seat: игрок должен успеть вернуться в то же место в течение короткого grace, а остальным видно, что соперник временно офлайн. Хранение token только в sessionStorage не переживает закрытие вкладки/браузера — нужен persist, который это покрывает.
 
 ## What Changes
 
-- Неожиданный disconnect seated-игрока **не** снимает seat сразу: grace **30 секунд** с сохранением pieces и возможностью вернуться в тот же seat.
+- Неожиданный disconnect seated-игрока **не** снимает seat сразу: grace **30 секунд** с сохранением pieces и возможностью вернуться в тот же seat (политика одна до и после start).
+- Client хранит tourist reconnection token в **`localStorage`**, чтобы F5, новая вкладка и закрытие/открытие браузера в пределах grace восстанавливали тот же seat; consented leave очищает token.
+- Без валидного token вход = обычный join (`joinById`): до start — seat с фигурками при свободном месте; после start — только зритель (seating не переоткрывается).
 - Сознательный выход с экрана Game (кнопка в лобби) — **сразу** снимает seat (как сейчас по смыслу leave).
 - После окончательного leave/timeout: если seated не осталось, а есть только зрители — комната закрывается; если кто-то seated остался — партия продолжается без отключившегося.
 - На Game — кружки занятых игроков (presence) с офлайн-индикатором и круговым countdown на время grace; зрители тоже видят кружки.
@@ -20,7 +22,9 @@
 
 - Конец партии, победа/поражение, forfeit как отдельное правило сверх leave/timeout.
 - Ходы, очередь ходов, задания на тайлах.
-- Persist seat по userId без Colyseus reconnection (альтернативная модель).
+- Persist seat по userId без Colyseus reconnection (альтернативная модель); cross-device revive без общего storage.
+- Защита от cross-tab «steal» seat через общий `localStorage` token (вторая вкладка MAY забрать reconnect).
+- После start снова сесть с фигурками при свободном месте — нет, только зритель.
 - Grace длиннее/короче 30 с; «держать seat до конца игры» без лимита.
 - **Reconnect / allowReconnection для LobbyRoom** — лобби не «охраняет» подписчика.
 - Новые HTTP API / auth / theme.
@@ -40,11 +44,11 @@
 ## Impact
 
 - Server: lifecycle disconnect/reconnect **только** room `tourist`; schema seat connectivity; mocha на grace / consented / empty-seated dispose; LobbyRoom без grace.
-- Client: tourist token + reconnect + presence; lobby — без token persist, без user-facing reservation/reconnect ошибок listing.
+- Client: tourist token в `localStorage` + reconnect + presence; lobby — без token persist, без user-facing reservation/reconnect ошибок listing.
 - Meta: skills rooms (tourist vs lobby policy) / board / schema.
 
 ## References
 
-- Explore (чат): D1–D4, Q1–Q9 — grace 30 с, presence layout, QCircularProgress, sessionStorage; лобби без reconnect / без reservation-шума.
+- Explore (чат): D1–D4, Q1–Q9; follow-up — `localStorage` вместо sessionStorage; Q1=после start только зритель; Q2=без token = fresh join; Q3=cross-tab steal OK; лобби без reconnect / без reservation-шума.
 - Sibling AGENTS: `../happy-tourist.github.io/AGENTS.md`, `../happy-tourist-server/AGENTS.md`.
 - Main specs: `openspec/specs/game/pieces/spec.md`, `openspec/specs/game/board/spec.md`, `openspec/specs/lobby/rooms/spec.md`.

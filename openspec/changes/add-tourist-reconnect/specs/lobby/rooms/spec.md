@@ -22,7 +22,7 @@ If establishing the lobby listing subscription fails on lobby entry (or the list
 
 ### Requirement: Lobby subscription has no reconnect hold
 
-The lobby listing room MUST NOT hold a disconnected subscriber via reconnection grace. The client MUST NOT persist a lobby reconnection token for page reload. A dropped lobby listing connection while the user remains on the lobby screen MAY be followed by a new listing subscription without showing seat-reservation or reconnect failure text to the user.
+The lobby listing room MUST NOT hold a disconnected subscriber via reconnection grace. The client MUST NOT persist a lobby reconnection token in localStorage or sessionStorage for page reload. A dropped lobby listing connection while the user remains on the lobby screen MAY be followed by a new listing subscription without showing seat-reservation or reconnect failure text to the user.
 
 #### Scenario [SC-LOBBY-08]: Lobby drop does not surface reservation expired
 

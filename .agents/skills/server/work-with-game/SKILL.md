@@ -59,7 +59,7 @@ LobbyRoom: **no** grace / `allowReconnection` — see `work-with-rooms` (D7).
 | Room name | `tourist` |
 | Board UI | Client-only `LAYOUT` in `GamePage`; server does **not** sync tile kinds |
 | Synced state | `started`, `seats` Map keyed by `sessionId` → `touristId` + four `pieces` + `connected` / `reconnectUntil` |
-| Reconnect | Colyseus token; client `sessionStorage` + `reconnect` then `joinById` |
+| Reconnect | Colyseus token; client `localStorage` + `reconnect` then `joinById` |
 | Presence | Client-only chrome from mirrored connectivity |
 | Game messages | None for seating; add with client lockstep when moves land |
 

@@ -9,7 +9,7 @@
 ## 2. Client — token, reconnect, mirror, lobby quiet
 
 - [x] 2.1 Прочитать `design.md` (D3, D5–D7), delta pieces/presence/`lobby/rooms`, skills `client/work-with-rooms`, `client/work-with-lobby`, `client/work-with-stores`, `client/colyseus-client`; сверить `stores/game` и Game mount rejoin
-- [x] 2.2 Сохранять reconnection token в `sessionStorage` **только** для tourist после enter; чистить на consented leave; на Game mount без живого room — `reconnect` затем fallback `joinById`; verify: typecheck/lint и поведение по design D3
+- [x] 2.2 Сохранять reconnection token в `sessionStorage` **только** для tourist после enter; чистить на consented leave; на Game mount без живого room — `reconnect` затем fallback `joinById`; verify: typecheck/lint и поведение по design D3 *(исторически: до revision D3 → `localStorage`; см. §5)*
 - [x] 2.3 Зеркалировать `connected` / `reconnectUntil` в store seats; verify: `npm run typecheck` в client
 - [x] 2.4 Lobby per design D7 / SC-LOBBY-08: не persist lobby token; не `allowReconnection` на lobby; optional `reconnection.enabled = false` на lobby room; drop → clear + quiet resubscribe на Lobby; не класть `seat reservation expired` / reconnect-шум lobby в user-facing listing `error` (SC-LOBBY-07 только для реального fail подписки)
 
@@ -23,3 +23,8 @@
 ## 4. Meta skills
 
 - [x] 4.1 Обновить client/server `work-with-rooms` + `work-with-lobby` (и при необходимости board/schema/game): tourist reconnect grace vs lobby fire-and-forget / quiet resubscribe; token только tourist; presence; сверить с design — без противоречий skills ↔ specs
+
+## 5. Client — `localStorage` token (D3 revision)
+
+- [x] 5.1 Перевести tourist reconnect persist с `sessionStorage` на `localStorage` (ключ/формат те же); clear на consented leave; clear stale после failed `reconnect`; не писать lobby token; verify SC-PIECE-17/18 поведению и `npm run typecheck` / `lint`
+- [x] 5.2 Обновить client skills (`work-with-rooms`, `work-with-stores`, при необходимости lobby/board) и server notes если упоминают sessionStorage: канон = `localStorage`, cross-tab steal OK, без token = fresh join

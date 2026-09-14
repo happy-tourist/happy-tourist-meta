@@ -247,7 +247,7 @@ room.onError((_code, message) => { this.error = message || 'Room error'; });
 room.onLeave(() => { this._resetRoomState(); });
 ```
 
-`GamePage` may call `rejoinGame(roomId)` if Pinia lost the room after refresh / soft-fail (`reconnect` token → `joinById`); failed rejoin → navigate to lobby. Board tile geometry is a **client constant** (`work-with-game-board`); seats + connectivity come from sync.
+`GamePage` may call `rejoinGame(roomId)` if Pinia lost the room after refresh / soft-fail / browser reopen (`localStorage` reconnection token → `reconnect`, clear stale on fail → `joinById`); failed rejoin → navigate to lobby. Board tile geometry is a **client constant** (`work-with-game-board`); seats + connectivity come from sync. Token details: `work-with-rooms`.
 
 ## Messages: game actions
 

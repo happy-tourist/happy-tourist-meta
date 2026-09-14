@@ -113,7 +113,7 @@ Do not invent room schemas, HTTP routes, or move payloads — note the server pa
 | Theme / layout chrome | `App.vue` header + `stores/theme` + `boot/theme` + `css/*` (board CSS ≠ app Dark) |
 | i18n copy | `src/i18n/`, boot `i18n` |
 
-Today: GamePage board + presence + all pieces from synced `seats` (`touristId` + four `pieces` + `connected` / `reconnectUntil`) / `started`; strip×4 if seated. Tourist reconnect via `sessionStorage` token. Move messages deferred. Room name `tourist`.
+Today: GamePage board + presence + all pieces from synced `seats` (`touristId` + four `pieces` + `connected` / `reconnectUntil`) / `started`; strip×4 if seated. Tourist reconnect via `localStorage` token. Move messages deferred. Room name `tourist`.
 
 ## Workflow
 

@@ -10,6 +10,8 @@
 | SC-PIECE-14 | covered (server mocha — grace timeout removes seat) |
 | SC-PIECE-15 | covered (server mocha — zero seated disposes room) |
 | SC-PIECE-16 | covered (server mocha — sync offline + deadline) |
+| SC-PIECE-17 | covered (client — localStorage token restores seat after browsing session end) |
+| SC-PIECE-18 | covered (client — missing/invalid token = fresh joinById) |
 
 ## MODIFIED Requirements
 
@@ -85,3 +87,24 @@ After any permanent seat removal (consented leave or grace timeout), if the room
 - **GIVEN** a tourist room with at least one seated player
 - **WHEN** that seat’s connected or offline-with-deadline status changes
 - **THEN** every client in the room observes the updated connectivity fields for that seat in synced state
+
+### Requirement: Client persists tourist reconnection credential
+
+After a seated player successfully enters a tourist room, the client MUST persist that room’s Colyseus reconnection token and room id in **`localStorage`** (not session-only storage) so that returning to the Game screen after a full browser or tab restart within the server grace can restore the same seat. The client MUST clear that credential on a consented leave. A second browser tab sharing the same storage MAY use the token to reconnect and take over the seat. The lobby listing MUST NOT use this tourist credential store.
+
+#### Scenario [SC-PIECE-17]: Token survives browser restart within grace
+
+- **GIVEN** a seated player whose client has stored a tourist reconnection token for the current room in localStorage
+- **WHEN** the browsing session ends (tab or browser closed) and the user reopens the Game for that room before the 30-second grace expires
+- **THEN** the client reconnects using the stored token
+- **AND** the player occupies the same seat with the same tourist kind and pieces
+- **AND** the seat is marked connected again
+
+#### Scenario [SC-PIECE-18]: Missing or invalid token is a fresh join
+
+- **GIVEN** the user opens the Game for a tourist room without a valid stored reconnection token for that room (or reconnect with the stored token fails)
+- **WHEN** the client joins that room
+- **THEN** the join is treated as a fresh joinById (not a seat reclaim by user id)
+- **AND** if the room has not started and a free seat slot exists, the joiner MAY receive a new seat with pieces
+- **AND** if the room has started, the joiner receives no seat (spectator only)
+- **AND** any offline grace seat held for another session remains until reconnect or timeout independently
