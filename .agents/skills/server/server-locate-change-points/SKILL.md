@@ -51,8 +51,9 @@ The sibling client assumes a tourist contract; prefer aligning server to client 
 | Room type name `tourist` | Registered as `tourist` in `app.config.ts` with `.enableRealtimeListing()` |
 | Live lobby (`LobbyRoom`) | `lobby: defineRoom(LobbyRoom)` — client filters `name: tourist` |
 | Tourist board layout on Game | Client-only tile geometry; server does not sync layout |
-| Synced seats / phase / turn / connectivity | `MyRoomState`: `phase` + `maxSeats` + `countdownRemaining` + legacy `started` + `seats` Map (`touristId` + `pieces` + `connected` / `reconnectUntil` / `ready`) + `currentTurnSessionId` |
-| Move message | `onMessage('move')` `{ side, row, col }`; pure rules in `src/game/touristMove.ts` |
+| Synced seats / phase / turn / connectivity | `MyRoomState`: `phase` + `maxSeats` + `countdownRemaining` + legacy `started` + `seats` Map (`touristId` + `pieces` (empty until playing) + `connected` / `reconnectUntil` / `ready` / `finishPlace` / `timeExpired`) + `currentTurnSessionId` + `turnUntil` + `turnBudgetSeconds` + `nextFinishPlace` |
+| Move message | `onMessage('move')` `{ side, row, col }` when playing + eligible (not finished / not time-expired); pure rules in `src/game/touristMove.ts` |
+| Turn timer | 60s multi → auto-pass; solo 300s → `timeExpired`; `setTurnBudgetsForTests` in mocha; clear on dispose |
 | Lobby `GET /rooms/tourist` | Available (HTTP fallback; UI uses live LobbyRoom) |
 
 ### HTTP surface (today)

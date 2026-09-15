@@ -74,12 +74,14 @@ Sync-driven markers around the board (SC-PRESENCE-01…05 / design D5). Page rea
 | Seated viewer | Self → **bottom** (home/north); other seats by join order → **top**, **left**, **right** |
 | Spectator | Join order among seated → **top**, **bottom**, **left**, **right**; omit missing positions |
 | Join order | Array order from sync map `forEach` as mirrored into `seats[]` |
-| Offline | `!connected && reconnectUntil > 0` → wrap avatar in `QCircularProgress` (`min=0`, `max=30`, `value` = remaining seconds from `reconnectUntil − now`) |
-| Online | Avatar only — no countdown ring |
-| Current turn | Seat with `sessionId === currentTurnSessionId` → blue ring on presence avatar; header text «Ваш ход» / «Ход соперника» / «Ход игрока» (spectator) |
+| Offline | `!connected && reconnectUntil > 0` → **inner** warning `QCircularProgress` (`min=0`, `max=30`, `value` = remaining from `reconnectUntil − now`) |
+| Reserved chrome | Always outer 52px turn ring slot (stable layout — SC-PRESENCE-11); inactive turn/grace → transparent track/value 0 (no size jump) |
+| Turn deadline | Outer determinate ring while `playing` + current turn + synced `turnUntil`/`turnBudgetSeconds`: blue (`primary`) for multi 60s; red (`negative`) when `turnBudgetSeconds === 300` (solo). **No** static blue outline / `--turn` box-shadow |
+| Dual rings | Offline current-turn: outer = turn, inner = reconnect (both visible — SC-PRESENCE-10) |
+| Header | «Ваш ход» / «Ход соперника» / «Ход игрока» (spectator) from turn, not from outline |
 | Finish place | Seat `finishPlace > 0` → numeric place badge on marker (incl. offline-in-grace); no badge when `finishPlace === 0` |
 
-Tick `nowMs` on an interval (~200 ms) while Game is mounted so the ring animates from the **server** deadline, not a local fixed “30” without `reconnectUntil`.
+Tick `nowMs` on an interval (~200 ms) while Game is mounted so turn + reconnect rings animate from **server** `turnUntil` / `reconnectUntil`.
 
 Spectators and seated players see the same occupied set; layouts differ as above. Strip finish chrome lives on the personal strip — presence only shows the **place** badge.
 
@@ -105,7 +107,7 @@ Picker open state (`sayPickerOpen`) is page-local; close if the local seat is lo
 ## Authority
 
 - Board **geometry** (`LAYOUT`) is a client constant; server does not sync tile kinds (server mirrors playable set in `touristMove.ts`).
-- **Seats**, `phase` / `maxSeats` / `countdownRemaining`, connectivity, and **`currentTurnSessionId`** are server-authoritative; client mirrors and renders.
+- **Seats**, `phase` / `maxSeats` / `countdownRemaining`, connectivity, **`currentTurnSessionId`**, **`turnUntil` / `turnBudgetSeconds`**, and seat **`timeExpired` / `finishPlace`** are server-authoritative; client mirrors and renders.
 - Local legal-target computation is a **hint** only — server rejects illegal moves.
 - Say bubbles are **ephemeral room messages**, not schema state; server whitelist + live limit are authoritative.
 - Do not reintroduce legacy draughts CellValue `0…4` / `{ from, to }` encoding.
@@ -114,25 +116,26 @@ Picker open state (`sayPickerOpen`) is page-local; close if the local seat is lo
 
 - Render `boardTiles` from `LAYOUT`.
 - Overlay **unfinished** pieces (plus short-lived disappearing finishers) at `row`/`col` (0-based schema → CSS vars / transform).
-- Render **presence** markers for occupied seats (layouts + offline ring above; blue ring on current-turn seat; place badge when `finishPlace > 0`).
-- On own online marker: say affordance + picker (finished seats keep say); ready button when `canSendReady`; for every marker: live say bubbles from `sayEvents` (TTL / stack by slot).
+- Render **presence** markers for occupied seats (dual turn/reconnect rings + reserved 52px chrome; place badge when `finishPlace > 0`).
+- On own online marker: say affordance + picker (finished / time-expired keep say); ready button when `canSendReady`; for every marker: live say bubbles from `sayEvents` (TTL / stack by slot).
 - Full-screen countdown overlay while `phase === 'countdown'`.
-- Show strip «Мои туристы» only if `mySeat` (incl. fully finished); finished slots inactive + finish icon; on own turn **in playing** select only unfinished.
-- On own turn in playing: white selection + red targets; submit via store `sendMove`.
+- Show strip «Мои туристы» only if `mySeat` **and** own pieces exist (empty before `playing` materialize); finished slots inactive + finish icon; on own turn **in playing** select only unfinished.
+- Board overlay: unfinished pieces only when seats have pieces (none in waiting/countdown).
+- On own turn in playing (not finished / not time-expired): white selection + red targets; submit via store `sendMove`.
 - Animate piece travel; on center finish keep DOM key for slide then fade (`FINISH_FADE_MS`); ignore input while `moveAnimating`.
-- Own `finishPlace` 0→N → persistent place `q-dialog` (i18n `game.finishPlaceModal*`); close keeps player in room.
-- Header status: turn labels only in playing; exit via i18n `game.leave` / `leaveConfirm` / `leaveCancel` / `leaveExit`; seated ∧ `playing` ∧ `!finishPlace` → `q-dialog` confirm before `leaveGame` + lobby (else immediate leave, incl. finished); remount without room → `rejoinGame(roomId)` via store.
+- Own `finishPlace` 0→N → place `q-dialog` (`game.finishPlaceModal*`); own `timeExpired` false→true → timeout `q-dialog` (`game.timeExpiredModal*`); close keeps player in room; clear selection on expiry.
+- Header status: turn labels only in playing; exit via i18n `game.leave` / `leaveConfirm` / `leaveCancel` / `leaveExit`; confirm only when seated ∧ `playing` ∧ `!finishPlace` ∧ `!timeExpired` (else immediate leave); remount without room → `rejoinGame(roomId)` via store.
 
 ## Do
 
 - Keep layout in one client constant; center as a single 2×2 grid area.
 - Preserve max tile 60px, gap 6, radius 12, hole = page background.
 - Keep Colyseus I/O in `stores/game`; page reads seats/phase/turn/strip/presence/`sayEvents` from store only.
-- Gate move interactivity with `isPlaying && isMyTurn && !isMySeatFinished` (and `!moveAnimating`); never select finished pieces/slots; gate say with own seated+connected; ready via `sendReady`.
-- Map `touristId` 1…4 to `tourist{N}.png`; strip shows only the local player’s four slots (finish icon on finished sides).
-- Drive offline countdown from synced `reconnectUntil`; start countdown overlay from synced `countdownRemaining`.
+- Gate move interactivity with `isPlaying && isMyTurn && !isMySeatFinished && !isMySeatTimeExpired` (and `!moveAnimating`); never select finished pieces/slots; gate say with own seated+connected; ready via `sendReady`.
+- Map `touristId` 1…4 to `tourist{N}.png`; strip only after pieces exist; finish icon on finished sides.
+- Drive turn/reconnect countdowns from synced `turnUntil` / `reconnectUntil`; countdown overlay from `countdownRemaining`.
 - Expire bubbles from server `at` + `SAY_TTL_MS`; keep max 3 live per sender in UI.
-- Confirm leave only when seated ∧ playing ∧ `finishPlace === 0`; finished seats leave immediately.
+- Confirm leave only when seated ∧ playing ∧ `finishPlace === 0` ∧ `!timeExpired`; finished / time-expired leave immediately.
 
 ## Don't
 

@@ -176,10 +176,12 @@ Board UI is custom CSS Grid (not Quasar widgets). Keep selectors local and class
 | `.tile-center` | Yellow center (`#ffeb3b`); one element with `span 2` / `span 2` |
 | `.tile--selected` / `.tile--target` | Local white / red move chrome (current-turn client only) |
 | `.piece` | Absolute `left`/`top` from `--pcol`/`--prow` + `--cell`; ~250ms transition |
+| `.presence-marker` | Occupied seat chrome; reserved **52×52** slot for dual rings (stable layout) |
+| `.presence-avatar` | Inner avatar (~28px); no static `--turn` box-shadow outline |
 | `.say-bubble` / `.say-picker` | Presence comic bubbles + picker; chrome follows Dark via `body.body--dark` overrides (not tile fills) |
 | `.say-affordance` | Small circular control on own online marker |
 
-Current-turn interactivity, say bubbles/picker, and travel animation live in `work-with-game-board` — do not reintroduce draughts `.cell` / selection classes.
+Current-turn interactivity, dual turn/reconnect rings, say bubbles/picker, and travel animation live in `work-with-game-board` — do not reintroduce draughts `.cell` / selection classes or a static blue turn outline.
 
 When editing board visuals:
 

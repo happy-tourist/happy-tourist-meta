@@ -31,7 +31,7 @@ Coordinate with: `work-with-rooms` (lifecycle / registration), `work-with-schema
 
 | Direction | Name | Payload / behavior |
 |-----------|------|--------------------|
-| Client → server | `move` | `{ side: 'N'\|'E'\|'S'\|'W', row: number, col: number }` — via `sendMove` only when `phase === 'playing'`, `isMyTurn`, and `!isMySeatFinished`. **No** separate `finish` message |
+| Client → server | `move` | `{ side: 'N'\|'E'\|'S'\|'W', row: number, col: number }` — via `sendMove` only when `phase === 'playing'`, `isMyTurn`, `!isMySeatFinished`, and `!isMySeatTimeExpired`. **No** separate `finish` message |
 | Client → server | `ready` | empty payload — via `sendReady` (waiting, ≥2 seated, under maxSeats, not yet ready) |
 | Client → server | `say` | `{ presetId: 'hello' \| 'luck' }` — via `sendSay`; whitelist only (no free text; **not** `ready`); finished seats may still say |
 | Server → clients | Schema sync | `phase` / `maxSeats` / `countdownRemaining` / `seats` (+ `ready` / `finishPlace` / piece `finished`) / `currentTurnSessionId` (+ `nextFinishPlace`) → `onStateChange` |
@@ -39,7 +39,7 @@ Coordinate with: `work-with-rooms` (lifecycle / registration), `work-with-schema
 | Server → client | room error channel | Client sets `game.error` from `room.onError` |
 | Lobby | HTTP fallback | `client.http.get('/rooms/tourist')` — **not** a room message |
 
-**`move`:** accept only when `phase === 'playing'` + seated + `finishPlace === 0` + current turn; legal one-step per `touristMove.ts` (occupancy ignores finished; reject finished mover piece). Reject (no mutate) otherwise. On accept: update piece `row`/`col`; if target is center → `piece.finished = true` and maybe assign `finishPlace = nextFinishPlace++`; then advance turn (skip finished seats).
+**`move`:** accept only when `phase === 'playing'` + seated + `finishPlace === 0` + `!timeExpired` + current turn; legal one-step per `touristMove.ts` (occupancy ignores finished; reject finished mover piece). Reject (no mutate) otherwise. On accept: update piece `row`/`col`; if target is center → `piece.finished = true` and maybe assign `finishPlace = nextFinishPlace++`; then advance turn (skip finished / time-expired seats).
 
 **`ready`:** accept only in `waiting`, seated + connected, seated count ≥ 2 and `< maxSeats`, seat not already ready. On accept: `seat.ready = true`, broadcast say preset `ready` (bypass live-say cap), maybe start countdown. Silent reject otherwise.
 

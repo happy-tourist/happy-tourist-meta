@@ -148,7 +148,7 @@ async leaveGame() {
 ```
 
 - Used for logout / explicit leave (Lobby «Выйти», GamePage «Выход из игры») — **consented** leave on server (immediate seat remove, no grace).
-- Leave-confirm UX (`q-dialog` when seated ∧ `phase === 'playing'` ∧ `finishPlace === 0`) is **page-local** on `GamePage` (`work-with-game-board` / `work-with-pages`); finished seats and spectators leave immediately; store `leaveGame` stays confirm-agnostic.
+- Leave-confirm UX (`q-dialog` when seated ∧ `phase === 'playing'` ∧ `finishPlace === 0` ∧ `!timeExpired`) is **page-local** on `GamePage` (`work-with-game-board` / `work-with-pages`); finished / time-expired seats and spectators leave immediately; store `leaveGame` stays confirm-agnostic.
 - Clear tourist token, reset Pinia, then call `leave`.
 - **Swallow** closed-room errors — do not surface them as `game.error`.
 - `_enterRoom` uses `_leaveTouristRoom` (not `leaveGame`) so a failed enter keeps the lobby list live; `_leaveTouristRoom` also clears the prior tourist token when leaving a live prior room.
@@ -162,12 +162,14 @@ async leaveGame() {
 | `phase` | `phase` (`waiting`\|`countdown`\|`playing`); drives `status` (`playing` only when phase playing) |
 | `maxSeats` / `countdownRemaining` | mirrored as-is |
 | `started` | legacy mirror of `phase === 'playing'` (prefer phase) |
-| `seats` Map (key = `sessionId`) | `seats[]` with `sessionId`, `touristId`, `pieces[]` (`side`/`row`/`col`), **`connected`**, **`reconnectUntil`**, **`ready`** |
+| `seats` Map (key = `sessionId`) | `seats[]` with `sessionId`, `touristId`, `pieces[]` (`side`/`row`/`col`/`finished`; may be empty pre-playing), **`connected`**, **`reconnectUntil`**, **`ready`**, **`finishPlace`**, **`timeExpired`** |
 | (room) `sessionId` | `sessionId` — for `mySeat` / strip×4 / presence self |
 | `currentTurnSessionId` | `currentTurnSessionId` → getter `isMyTurn` |
+| `turnUntil` / `turnBudgetSeconds` | mirrored; `0` when no active turn timer → presence outer ring + `turnRemainingSeconds` |
 
 - `connected` — `true` when online; `false` during reconnect grace (SC-PIECE-16).
-- `reconnectUntil` — unix ms deadline while offline; `0` when online (design D2). Presence countdown uses this, not a local “30” without deadline.
+- `reconnectUntil` — unix ms deadline while offline; `0` when online (design D2). Presence inner ring uses this, not a local “30” without deadline.
+- `timeExpired` — solo budget lock; mirror into `GameSeat` for leave/move gates.
 - Mirror via `_mirrorRoomState`; default `connected !== false` if field missing for older peers.
 
 Move submit stays in the store (`sendMove`); selection / legal hints stay page-local on `GamePage` (`work-with-game-board`).
@@ -181,7 +183,11 @@ next.push({
   connected: seat.connected !== false,
   reconnectUntil: Number(seat.reconnectUntil ?? 0),
   ready: Boolean(seat.ready),
+  finishPlace: Number(seat.finishPlace ?? 0),
+  timeExpired: Boolean(seat.timeExpired),
 });
+this.turnUntil = /* clamp from state.turnUntil */;
+this.turnBudgetSeconds = /* clamp from state.turnBudgetSeconds */;
 saveTouristReconnect(room); // token may rotate after soft reconnect
 ```
 

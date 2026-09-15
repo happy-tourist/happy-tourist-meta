@@ -4,7 +4,8 @@ description: >-
   Use when creating, changing, reviewing, or debugging @colyseus/schema sync
   state in the happy-tourist Colyseus server — MyRoomState phase/maxSeats/
   countdownRemaining/started/seats (touristId + pieces + finished + connected/
-  reconnectUntil/ready/finishPlace) + currentTurnSessionId + nextFinishPlace,
+  reconnectUntil/ready/finishPlace/timeExpired) + currentTurnSessionId +
+  turnUntil + turnBudgetSeconds + nextFinishPlace,
   MapSchema / ArraySchema, schema() + t.* (v5), or aligning the sync surface
   with the sibling client tourist contract.
 ---
@@ -18,12 +19,13 @@ Skills path: `happy-tourist-meta/.agents/skills/server/`. Runtime paths below ar
 relative to the server repo root.
 
 Sibling client: `../happy-tourist.github.io` (room `tourist`; board geometry local;
-seats/`phase`/`maxSeats`/`countdownRemaining`/`currentTurnSessionId`/connectivity/
-ready mirrored in `stores/game`; presence + move hints + countdown overlay on GamePage).
+seats/`phase`/`maxSeats`/`countdownRemaining`/`currentTurnSessionId`/`turnUntil`/
+`turnBudgetSeconds`/connectivity/ready/`finishPlace`/`timeExpired` mirrored in
+`stores/game`; presence dual rings + move hints + countdown overlay on GamePage).
 
 Schema is the **sync surface only**. Seating assignment, reconnect grace, start
-countdown timers, turn order (`turnOrder` room-private), and move rules live in
-the Room / `work-with-game` — not in schema definitions.
+countdown timers, turn order (`turnOrder` room-private), turn deadlines, and move
+rules live in the Room / `work-with-game` — not in schema definitions.
 
 ## Overview
 
@@ -52,7 +54,7 @@ export const Piece = schema(
   "Piece",
 );
 
-/** Seated player: unique kind + exactly four pieces (map key = side). */
+/** Seated player: unique kind; pieces empty until playing (or join mid-playing). */
 export const Seat = schema(
   {
     touristId: t.uint8(), // 1…4
@@ -62,6 +64,8 @@ export const Seat = schema(
     ready: t.boolean().default(false),
     /** Finish place; `0` until all four pieces finished. */
     finishPlace: t.uint8().default(0),
+    /** Solo turn budget elapsed; moves rejected; seat stays. */
+    timeExpired: t.boolean().default(false),
   },
   "Seat",
 );
@@ -77,6 +81,10 @@ export const MyRoomState = schema(
     currentTurnSessionId: t.string().default(""),
     /** Next finish place to assign (starts at 1; increments on full finish). */
     nextFinishPlace: t.uint8().default(1),
+    /** Unix ms turn deadline; `0` = no active turn timer. */
+    turnUntil: t.number().default(0),
+    /** Active turn budget seconds (60 multi / 300 solo); `0` when none. */
+    turnBudgetSeconds: t.uint16().default(0),
   },
   "MyRoomState",
 );
@@ -99,15 +107,18 @@ export const MyRoomState = schema(
 | `connected` | `true` online; `false` during unexpected-disconnect grace |
 | `reconnectUntil` | Unix ms deadline while offline; **`0` when online / no grace** |
 
-Room mutates these in `onDrop` / `onReconnect` / seat assign — see `work-with-rooms` / `work-with-game`. Client mirrors into Pinia `GameSeat` and drives presence `QCircularProgress` from `reconnectUntil`.
+Room mutates these in `onDrop` / `onReconnect` / seat assign — see `work-with-rooms` / `work-with-game`. Client mirrors into Pinia `GameSeat` and drives presence dual rings from `turnUntil` / `reconnectUntil`.
 
-### Turn field (D1 / game/move)
+### Turn fields (D1 / game/move + turn timer)
 
 | Field | Meaning |
 |-------|---------|
-| `currentTurnSessionId` | Synced whose turn; empty when no seated **or** every remaining seat is finished |
+| `currentTurnSessionId` | Synced whose turn; empty when no eligible seat |
+| `turnUntil` | Unix ms deadline; `0` = no active turn timer |
+| `turnBudgetSeconds` | `60` multi / `300` solo while timer active; else `0` |
+| `Seat.timeExpired` | Solo budget elapsed; moves rejected; seat remains |
 
-**Not synced:** room-private `turnOrder: string[]` in `MyRoom` (join-order queue). Client only needs «чей ход».
+**Not synced:** room-private `turnOrder: string[]` in `MyRoom` (join-order queue). Client only needs «чей ход» + deadline chrome.
 
 ### Finish fields (game/finish)
 
@@ -121,7 +132,7 @@ Finished seats remain in `seats` (count toward `maxSeats`) until consented leave
 
 **Not synced (ephemeral messages):** preset `say` bubbles — room-private `liveSays` + `broadcast('say', …)`; client keeps `sayEvents` in Pinia. Do **not** add bubble fields to schema.
 
-- Client mirrors `phase` / `maxSeats` / `countdownRemaining` + seats (+ `ready` / `finishPlace` / piece `finished`) + `currentTurnSessionId` into Pinia; GamePage draws unfinished pieces (+ short disappear), strip finish chrome, place modal/badge, leave confirm only when seated ∧ playing ∧ `finishPlace === 0`, and say bubbles from `sayEvents`.
+- Client mirrors `phase` / `maxSeats` / `countdownRemaining` + seats (+ `ready` / `finishPlace` / `timeExpired` / piece `finished`) + `currentTurnSessionId` / `turnUntil` / `turnBudgetSeconds` into Pinia; GamePage draws unfinished pieces (+ short disappear), strip only once pieces exist, place/timeout modals, leave confirm only when seated ∧ playing ∧ `finishPlace === 0` ∧ `!timeExpired`, and say bubbles from `sayEvents`.
 - Board **tile geometry** stays a client CSS Grid constant — not in schema.
 - Do **not** revive draughts `board` / cell `0`–`4` / `{ from, to }` encoding.
 

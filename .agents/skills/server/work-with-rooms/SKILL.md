@@ -30,13 +30,13 @@ Coordinate with sibling skills when they exist: `work-with-schema`, `work-with-m
 |-------|------|------|
 | Registration | `src/app.config.ts` | `lobby: defineRoom(LobbyRoom)`; `tourist: defineRoom(MyRoom).enableRealtimeListing()` |
 | Game handler | `src/rooms/MyRoom.ts` | `Room` subclass: `onAuth`, `onCreate`, `onJoin`, `onDrop`, `onReconnect`, `onLeave`, `onDispose`; `onMessage('move'|'ready'|'say')` |
-| Schema | `src/rooms/schema/MyRoomState.ts` | Synced: `phase` / `maxSeats` / `countdownRemaining` + legacy `started` + `seats` Map (`connected` / `reconnectUntil` / `ready` / `finishPlace` + piece `finished`) + `currentTurnSessionId` + `nextFinishPlace` |
-| Tests | `test/MyRoom.test.ts` | JWT, tourist connect; capacity/start (SC-START-*); seating (SC-PIECE-*); turn/move (SC-MOVE-*); finish (SC-FINISH-*); say (SC-SAY-*); lobby listing (SC-LOBBY-02/03) |
+| Schema | `src/rooms/schema/MyRoomState.ts` | Synced: `phase` / `maxSeats` / `countdownRemaining` + legacy `started` + `seats` Map (`connected` / `reconnectUntil` / `ready` / `finishPlace` / `timeExpired` + piece `finished`; pieces empty until playing) + `currentTurnSessionId` + `turnUntil` + `turnBudgetSeconds` + `nextFinishPlace` |
+| Tests | `test/MyRoom.test.ts` | JWT, tourist connect; capacity/start (SC-START-*); seating/deferred pieces (SC-PIECE-*); turn/move/timer (SC-MOVE-*); finish (SC-FINISH-*); say (SC-SAY-*); lobby listing (SC-LOBBY-02/03) |
 | Loadtest | `loadtest/example.ts` | `joinOrCreate`; `--room tourist` |
 
 Registered room keys today: **`lobby`** (built-in listing) and **`tourist`** (playable `MyRoom` with realtime listing). Client `TOURIST_ROOM` / `LOBBY_ROOM` match these names — do not reintroduce `my_room`.
 
-Constants: `RECONNECT_GRACE_SECONDS = 30`, `COUNTDOWN_SECONDS = 5` exported from `MyRoom.ts`.
+Constants: `RECONNECT_GRACE_SECONDS = 30`, `COUNTDOWN_SECONDS = 5`, `TURN_BUDGET_SECONDS = 60`, `SOLO_BUDGET_SECONDS = 300` exported from `MyRoom.ts` (tests: `setTurnBudgetsForTests` / `resetTurnBudgets`).
 
 ## Lifecycle Flow
 
@@ -55,12 +55,13 @@ client create({ maxSeats }) / joinById / joinOrCreate / reconnect('tourist')
         ▼
   onJoin(client, options, auth)
         │  seat while seats.size < maxSeats (any phase); else spectator
-        │  touristId + 4 pieces; connected=true; reconnectUntil=0; ready=false
+        │  touristId + kind; pieces deferred until playing (immediate if join mid-playing)
+        │  connected=true; reconnectUntil=0; ready=false; timeExpired=false
         │  maybeStartCountdown (full table → countdown)
         ▼
   onDrop(client)           ← unexpected disconnect (seated only)
         │  connected=false; reconnectUntil=now+30s; allowReconnection(client, 30)
-        │  spectators: no hold; does not cancel countdown
+        │  turn deadline keeps ticking; spectators: no hold; does not cancel countdown
         ▼
   onReconnect(client)      ← within grace
         │  connected=true; reconnectUntil=0; same seat/pieces
@@ -69,7 +70,7 @@ client create({ maxSeats }) / joinById / joinOrCreate / reconnect('tourist')
         │  delete seat; refreshMetadata; maybeStartCountdown (remaining all-ready)
         │  if seats.size===0 → disconnect() (spectators do not hold room)
         ▼
-  onDispose()              ← room empty / locked shut → lobby `-` update
+  onDispose()              ← clearTurnDeadline(); room empty / locked shut → lobby `-`
 ```
 
 ### Hook responsibilities
@@ -78,17 +79,19 @@ client create({ maxSeats }) / joinById / joinOrCreate / reconnect('tourist')
 |------|---------|--------|
 | `static onAuth` | `JWT.verify(token)`; return userdata | Trust client-supplied identity without JWT |
 | `onCreate` | `setState`; parse `maxSeats`; `phase=waiting`; `refreshMetadata`; register `move`/`ready`/`say`; do **not** set `maxClients = maxSeats` | Mutate board from HTTP |
-| `onJoin` | Assign seat while under `maxSeats` in any phase; unique `touristId` + 4 pieces; online connectivity; `ready=false`; maybe start countdown when full | Cap the room with `maxClients`; gate seating on legacy `started` alone |
-| `onDrop` | Seated: mark offline + `allowReconnection(client, 30)`; hold seat/pieces; do not cancel countdown | Treat unexpected drop as immediate seat delete; grace for spectators or LobbyRoom |
+| `onJoin` | Assign seat while under `maxSeats` in any phase; unique `touristId`; pieces only in `playing` (or join mid-playing); online connectivity; `ready=false`; `timeExpired=false`; maybe start countdown when full | Cap the room with `maxClients`; gate seating on legacy `started` alone; invent pieces in waiting |
+| `onDrop` | Seated: mark offline + `allowReconnection(client, 30)`; hold seat/pieces; do not cancel countdown; do **not** pause turn deadline | Treat unexpected drop as immediate seat delete; grace for spectators or LobbyRoom |
 | `onReconnect` | Restore seat online (`connected=true`, `reconnectUntil=0`) | Re-assign a new seat / touristId |
 | `onLeave` | Permanent remove seat; seats reopen while under `maxSeats`; refreshMetadata; maybeStartCountdown; if zero seats → `disconnect()` | Leave stale seats; let spectators keep an empty-seated room alive; clear others' `ready` on leave |
-| `onDispose` | Cleanup timers / logs | Assume clients still connected |
+| `onDispose` | `clearTurnDeadline()` + cleanup other timers / logs | Assume clients still connected; leave dangling turn timeouts |
 
 ## Current Room (`MyRoom.ts`)
 
 ```ts
 export const RECONNECT_GRACE_SECONDS = 30;
 export const COUNTDOWN_SECONDS = 5;
+export let TURN_BUDGET_SECONDS = 60;
+export let SOLO_BUDGET_SECONDS = 300;
 
 export class MyRoom extends Room<{ state: MyRoomState }> {
   static async onAuth(token: string, _options: any, _context: any) {
@@ -105,11 +108,11 @@ export class MyRoom extends Room<{ state: MyRoomState }> {
     this.onMessage("ready", …);
     this.onMessage("say", …);
   }
-  onJoin(client: Client, _options: any, auth: any) { /* seat if under maxSeats; maybeStartCountdown */ }
-  onDrop(client: Client, _code?: number) { /* seated: offline + allowReconnection(30) */ }
+  onJoin(client: Client, _options: any, auth: any) { /* seat+kind if under maxSeats; pieces deferred; maybeStartCountdown */ }
+  onDrop(client: Client, _code?: number) { /* seated: offline + allowReconnection(30); deadline keeps ticking */ }
   onReconnect(client: Client) { /* seat online again */ }
   onLeave(client: Client, _code?: number) { /* delete seat; empty → disconnect() */ }
-  onDispose() { /* room closed */ }
+  onDispose() { this.clearTurnDeadline(); }
 }
 ```
 
@@ -153,9 +156,10 @@ Align with client Pinia expectations:
 | Concern | Target |
 |---------|--------|
 | Capacity | No `maxClients = maxSeats`; seated ≤ `maxSeats` (2\|3\|4) via seats check; spectators may join |
-| Seats | Unique `touristId` 1…4 + exactly four pieces (one per side N/E/S/W on free start cells; see `work-with-game`); seat while free slot in **any** phase |
-| Connectivity | `connected` + `reconnectUntil` on Seat (D2); online at assign |
-| Start | `phase` waiting → countdown → playing; full table or all-ready underfilled; legacy `started` mirrors `phase === 'playing'` |
+| Seats | Unique `touristId` 1…4; pieces deferred until `playing` (four N/E/S/W on free start cells — see `work-with-game`); seat while free slot in **any** phase |
+| Connectivity | `connected` + `reconnectUntil` on Seat (D2); online at assign; `timeExpired` for solo budget lock |
+| Start | `phase` waiting → countdown → playing (+ materialize + turn deadline); full table or all-ready underfilled; legacy `started` mirrors `phase === 'playing'` |
+| Turn timer | Synced `turnUntil` / `turnBudgetSeconds` (60 multi / 300 solo); clear on dispose / no eligible (see `work-with-game`) |
 | Status metadata | `waiting` until `phase === 'playing'`; always publish `maxSeats` + occupied `seats` |
 | Unexpected drop | Hold seat 30 s + `allowReconnection`; sync offline + deadline (SC-PIECE-11…14, 16); does not cancel countdown |
 | Consented leave | Immediate seat remove; free seat reopens while under maxSeats (SC-PIECE-07/08) |

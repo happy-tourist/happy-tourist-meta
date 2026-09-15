@@ -255,9 +255,11 @@ Apply always; sibling skills win when they exist and conflict on a detail.
   `leave`, `sendMove` → `room.send('move', { side, row, col })`. `_enterRoom`
   must `_attachRoom` immediately after `connect()` — no `await` (e.g.
   `unsubscribeLobby`) before the listener, or the first `ROOM_STATE` is missed.
-- GamePage: tourist board with synced seat pieces / strip; local selection /
-  hints when `isMyTurn`; travel animation; submit only via `game.sendMove`.
-- Mirror `currentTurnSessionId`; do not invent alternate move/turn shapes.
+- GamePage: tourist board with synced seat pieces / strip (after materialize);
+  dual presence rings from `turnUntil` / `reconnectUntil`; local selection /
+  hints when `isMyTurn` and eligible; travel animation; submit only via `game.sendMove`.
+- Mirror `currentTurnSessionId` / `turnUntil` / `turnBudgetSeconds` / seat `timeExpired`;
+  do not invent alternate move/turn shapes.
 
 ### Auth and routing
 

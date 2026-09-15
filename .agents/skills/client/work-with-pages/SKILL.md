@@ -92,7 +92,7 @@ Examples:
 
 - `LoginPage` — form UI; calls `useAuthStore()` (`register` / `login` / `loginAnonymously`), then `router.replace`.
 - `LobbyPage` — room list / create / join via `useGameStore()`; navigates to `game` with `roomId`.
-- `GamePage` — unfinished pieces + finish disappear/strip/place modal; presence (turn ring + place badge); say on own online marker (`sendSay` / `sayEvents`, incl. finished); ready/countdown UX; header turn text; syncs via `useGameStore()`; `rejoinGame(roomId)` on mount / soft-fail / browser reopen; exit via i18n `game.leave*` — seated ∧ `playing` ∧ `finishPlace === 0` → `q-dialog` confirm, else immediate `leaveGame` → `lobby` (finished seats skip confirm).
+- `GamePage` — unfinished pieces + finish disappear/strip/place modal; dual presence rings (outer turn / inner reconnect) + place badge; timeout modal on `timeExpired`; say on own online marker (`sendSay` / `sayEvents`, incl. finished); ready/countdown UX; header turn text; syncs via `useGameStore()`; `rejoinGame(roomId)` on mount / soft-fail / browser reopen; exit via i18n `game.leave*` — seated ∧ `playing` ∧ `finishPlace === 0` ∧ `!timeExpired` → `q-dialog` confirm, else immediate `leaveGame` → `lobby` (finished / time-expired skip confirm).
 
 Do not put a second app shell (global layout host) inside a page — `App.vue` already mounts `router-view`.
 
@@ -198,9 +198,9 @@ If an old path changes, keep a redirect in `routes.ts`:
 | Auth | `LoginPage` | `stores/auth`; `meta.guest` |
 | Theme (chrome Dark) | `App.vue` header | `stores/theme` + `boot/theme` |
 | Lobby / rooms | `LobbyPage` | `stores/game.subscribeLobby`, create/join; `meta.requiresAuth` |
-| Game session | `GamePage` | `stores/game` leave/`rejoinGame`/`sendMove`/`sendSay`; unfinished pieces + finish UX + presence place badge + say + strip; route param `roomId`; `meta.requiresAuth` |
+| Game session | `GamePage` | `stores/game` leave/`rejoinGame`/`sendMove`/`sendSay`; unfinished pieces + finish/timeout UX + dual presence rings + say + strip; route param `roomId`; `meta.requiresAuth` |
 
-Room name `tourist` + live lobby align with `../happy-tourist-server`; Game mirrors seats/`finishPlace`/piece `finished`/`currentTurnSessionId` and renders unfinished pieces + finish chrome + local move chrome (non-finished) + ephemeral say bubbles.
+Room name `tourist` + live lobby align with `../happy-tourist-server`; Game mirrors seats/`finishPlace`/`timeExpired`/piece `finished`/`currentTurnSessionId`/`turnUntil`/`turnBudgetSeconds` and renders unfinished pieces (after materialize) + finish/timeout chrome + dual presence rings + local move chrome (eligible seats) + ephemeral say bubbles.
 
 ## Verification and Final Response
 

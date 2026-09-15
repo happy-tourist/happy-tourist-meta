@@ -2,11 +2,12 @@
 name: work-with-game
 description: >-
   Use when implementing, changing, reviewing, or debugging authoritative
-  tourist-room seating, reconnect grace, turn order (skip finished), center
-  finish / finishPlace, and one-step move rules in the happy-tourist Colyseus
-  server — Room handlers, schema seats/phase/maxSeats/ready/countdown/
-  currentTurnSessionId/connectivity/finish fields, or pure rules in
-  src/game/touristMove.ts.
+  tourist-room seating, reconnect grace, deferred pieces until playing,
+  turn order (skip finished / time-expired), turn deadlines (60s / solo 5min),
+  center finish / finishPlace, and one-step move rules in the happy-tourist
+  Colyseus server — Room handlers, schema seats/phase/maxSeats/ready/countdown/
+  currentTurnSessionId/turnUntil/turnBudgetSeconds/connectivity/finish/timeExpired
+  fields, or pure rules in src/game/touristMove.ts.
 ---
 
 # Work With Game
@@ -22,16 +23,17 @@ Pair with client board UX: `happy-tourist-meta/.agents/skills/client/work-with-g
 | Surface | Path | Role |
 | --- | --- | --- |
 | Room | `src/rooms/MyRoom.ts` | JWT `onAuth`; seat assign; start phases / ready / countdown; `turnOrder` + turn hooks; `onMessage('move'|'ready'|'say')`; `onDrop`/`onReconnect`/`onLeave` |
-| Schema | `src/rooms/schema/MyRoomState.ts` | `phase` + `maxSeats` + `countdownRemaining` + `started` (legacy) + `seats` (+ `ready` / `finishPlace`) + piece `finished` + `currentTurnSessionId` + `nextFinishPlace` |
+| Schema | `src/rooms/schema/MyRoomState.ts` | `phase` + `maxSeats` + `countdownRemaining` + `started` (legacy) + `seats` (+ `ready` / `finishPlace` / `timeExpired`) + piece `finished` + `currentTurnSessionId` + `turnUntil` + `turnBudgetSeconds` + `nextFinishPlace` |
 | Rules | `src/game/touristMove.ts` | Pure validate/apply one-step move; occupancy ignores `finished`; center landing is room side-effect |
 | Registration | `src/app.config.ts` | Room name must be `tourist` for client lobby |
 
-Constants: `RECONNECT_GRACE_SECONDS = 30`, `COUNTDOWN_SECONDS = 5` in `MyRoom.ts`.
+Constants: `RECONNECT_GRACE_SECONDS = 30`, `COUNTDOWN_SECONDS = 5`, `TURN_BUDGET_SECONDS = 60`, `SOLO_BUDGET_SECONDS = 300` in `MyRoom.ts` (test overrides via `setTurnBudgetsForTests` / `resetTurnBudgets`).
 
 ## Seating (shipped — game/pieces + game/start)
 
 - Create options: `{ maxSeats: 2|3|4 }` (invalid → default **2**). Synced `state.maxSeats`.
-- While `seats.size < maxSeats` **in any phase** (`waiting` / `countdown` / `playing`): join gets a seat — unique `touristId` 1…4, **exactly four pieces** (one per side `N|E|S|W`). Starts: N row0 cols3–6; E col9 rows3–6; S row9 cols3–6; W col0 rows3–6. New seat: `connected=true`, `reconnectUntil=0`, `ready=false`.
+- While `seats.size < maxSeats` **in any phase** (`waiting` / `countdown` / `playing`): join gets a seat — unique `touristId` 1…4, `connected=true`, `reconnectUntil=0`, `ready=false`, `finishPlace=0`, `timeExpired=false`.
+- **Pieces deferred:** in `waiting`/`countdown` — seat+kind only (no pieces). On enter `playing` — `materializePiecesForAllSeats()` (four pieces N/E/S/W on free start cells). Join already in `playing` — assign pieces immediately.
 - When `seats.size === maxSeats`: further joiners are spectators (no seat/pieces). No `maxClients = maxSeats`.
 - Metadata for lobby: `{ title, status, maxSeats, seats }` — `seats` = occupied seated count (not `clients`).
 - Assign only in Room lifecycle — client never invents seats.
@@ -42,6 +44,7 @@ Constants: `RECONNECT_GRACE_SECONDS = 30`, `COUNTDOWN_SECONDS = 5` in `MyRoom.ts
 - Full table (`seats.size === maxSeats` while `waiting`) → immediate `countdown` (5…1 via `clock.setTimeout`).
 - Underfilled (`≥2` seated, `< maxSeats`): `onMessage('ready')` one-shot → `seat.ready=true` + broadcast say preset `ready`; when all seated ready → same countdown. Solo seated: reject ready.
 - Leave/drop during countdown does **not** cancel countdown; remaining seats’ `ready` marks are **not** cleared on leave.
+- Countdown completion → `enterPlaying()`: materialize deferred pieces, set `phase=playing`, start turn deadline.
 - Legacy `started`: mirror of `phase === 'playing'`; **client/canon is phase-first** (`playing` unlocks moves). Prefer `phase`, not `started`, for new logic.
 
 ## Leave And Reconnect (shipped — D1 / D4)
@@ -56,23 +59,30 @@ Constants: `RECONNECT_GRACE_SECONDS = 30`, `COUNTDOWN_SECONDS = 5` in `MyRoom.ts
 
 LobbyRoom: **no** grace / `allowReconnection` — see `work-with-rooms` (D7).
 
-## Turn Order (shipped — D1 / D4 + game/finish)
+## Turn Order (shipped — D1 / D4 + game/finish + turn timer)
 
 - Room-private `turnOrder: string[]` (join order of seated sessionIds) — **not** in schema.
-- Synced `currentTurnSessionId` = current **eligible** seated `sessionId` (`finishPlace === 0`), or `""` if no seated / every seat finished.
+- Synced `currentTurnSessionId` = current **eligible** seated `sessionId` (`finishPlace === 0` && `!timeExpired`), or `""` if none.
 - First seated → set turn; later seats (incl. mid-game) append to end. If current is empty/ineligible (e.g. all finished), joining a new seat restores turn to the earliest eligible — do **not** jump off an already-eligible current (SC-MOVE-19).
-- Successful move → advance to next **non-finished** in circle (solo non-finished wraps to self).
+- Successful move → advance to next eligible in circle (solo eligible wraps to self).
 - Permanent seat remove: drop from `turnOrder`; if removed was current → next eligible (or `""`).
-- `onDrop` / offline grace: **do not** change `currentTurnSessionId` for **non-finished** seats (turn waits). Finished seats are never eligible, so offline finished never holds turn.
+- `onDrop` / offline grace: **do not** change `currentTurnSessionId` for **non-finished** seats (turn waits); turn deadline **keeps ticking** (SC-MOVE-26). Finished / time-expired seats are never eligible.
 - Having a current-turn seat does **not** allow moves before `phase === 'playing'`.
+
+## Turn deadline (shipped — game/move)
+
+- Only while `phase === 'playing'` with an eligible current seat: synced `turnUntil` (unix ms) + `turnBudgetSeconds` (60 multi / 300 solo). Else both `0`.
+- ≥2 eligible → 60s fresh deadline on each assign (move / pass / leave-advance / enter playing). Exactly 1 eligible → fresh **300s** (solo), including mid-turn when others finish/leave; solo seat’s own moves **preserve** remaining budget.
+- Timeout: ≥2 eligible → `advanceTurn` without moving pieces; solo → `seat.timeExpired=true`, clear deadline, reject further moves; room stays until leave/grace.
+- Waiting/countdown: no turn auto-pass. Clear deadline on dispose / countdown restart / no eligible.
 
 ## Move Rules (shipped — D2 / D3 + game/finish)
 
 - Message: `room.send('move', { side: 'N'|'E'|'S'|'W', row, col })` — `side` = own piece; `row`/`col` = target. **No** separate `finish` message.
 - Pure module `src/game/touristMove.ts`: playable = start + task + center (mirrors client `LAYOUT`); Chebyshev distance === 1; occupancy = unfinished pieces only; reject already-finished mover piece.
-- `MyRoom.onMessage('move')`: require `phase === 'playing'` + seated + `finishPlace === 0` + current turn → validate → update `row`/`col`; if target is center → `piece.finished=true`, free cell; when seat’s 4th piece finishes → assign `finishPlace = nextFinishPlace++` → `advanceTurn` (skip finished); reject → no state change.
-- Finished seat may still `say`; cannot move. Finished seats count toward `maxSeats` until leave/grace.
-- No pass; no draughts `{ from, to }` encoding.
+- `MyRoom.onMessage('move')`: require `phase === 'playing'` + seated + `finishPlace === 0` + `!timeExpired` + current turn → validate → update `row`/`col`; if target is center → `piece.finished=true`, free cell; when seat’s 4th piece finishes → assign `finishPlace = nextFinishPlace++` → `advanceTurn` (skip finished / time-expired); reject → no state change.
+- Finished / time-expired seat may still `say`; cannot move. Finished seats count toward `maxSeats` until leave/grace.
+- No player pass; only authoritative turn-timeout advances without a move. No draughts `{ from, to }` encoding.
 
 ## Authority
 
@@ -87,11 +97,11 @@ LobbyRoom: **no** grace / `allowReconnection` — see `work-with-rooms` (D7).
 | --- | --- |
 | Room name | `tourist` |
 | Board UI | Client-only `LAYOUT` in `GamePage`; server does **not** sync tile kinds |
-| Synced state | `phase`, `maxSeats`, `countdownRemaining`, `started` (legacy), `seats` Map → `touristId` + four `pieces` (+ `finished`) + connectivity + `ready` + `finishPlace`, `currentTurnSessionId`, `nextFinishPlace` |
+| Synced state | `phase`, `maxSeats`, `countdownRemaining`, `started` (legacy), `seats` Map → `touristId` + `pieces` (+ `finished`; may be empty pre-playing) + connectivity + `ready` + `finishPlace` + `timeExpired`, `currentTurnSessionId`, `turnUntil`, `turnBudgetSeconds`, `nextFinishPlace` |
 | Message | Client → server `move` `{ side, row, col }` via `sendMove` (center finish is side-effect); `ready` (empty) via `sendReady` |
 | Say (ephemeral) | `say` `{ presetId: hello\|luck }` → broadcast; readiness preset only via `ready` — see `work-with-messages` |
 | Reconnect | Colyseus token; client `localStorage` + `reconnect` then `joinById` |
-| Presence / hints | Client-only chrome; selection + red targets local to current-turn client |
+| Presence / hints | Client-only chrome (dual turn/reconnect rings); selection + red targets local to current-turn client |
 
 Client-local / room-private only (do **not** put on schema): Pinia status strings; `selectedSide` / legal hints; presence layout; say bubbles (`sayEvents` / `liveSays`); `turnOrder` (room-private). Lobby leave-before-enter / quiet listing stays in `work-with-rooms` / client `work-with-lobby`.
 

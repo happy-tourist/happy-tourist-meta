@@ -222,7 +222,7 @@ Sibling client (`../happy-tourist.github.io`) assumes:
 |--------------------|------------------------|
 | Room type name `tourist` | Register room as `tourist` (+ `lobby` + `.enableRealtimeListing()`) |
 | Tourist board layout on Game | Client-only tile geometry; no layout sync required |
-| Synced seats / phase / turn | `MyRoomState`: `phase` / `maxSeats` / `countdownRemaining` + legacy `started` + `seats` Map (+ `ready`) + `currentTurnSessionId` |
+| Synced seats / phase / turn | `MyRoomState`: `phase` / `maxSeats` / `countdownRemaining` + legacy `started` + `seats` Map (+ `ready` / `finishPlace` / `timeExpired`; pieces empty until playing) + `currentTurnSessionId` + `turnUntil` + `turnBudgetSeconds` |
 | Move / ready / say | `onMessage('move')` only when `phase === 'playing'`; `onMessage('ready')`; `onMessage('say')` whitelist |
 | Live lobby (`LobbyRoom`) | `lobby` registered; tourist has realtime listing |
 
@@ -251,9 +251,10 @@ of verified auth userdata.
 ### Authoritative gameplay
 
 - Board-game truth for «Счастливый турист» lives on the **server**.
-- Seating (`seats`/`maxSeats`/`phase`/`ready`), turn (`currentTurnSessionId` + room-private
-  `turnOrder`), and one-step `move` (only while `phase === 'playing'`) are authoritative;
-  client mirrors state and shows local hints only.
+- Seating (`seats`/`maxSeats`/`phase`/`ready`; pieces deferred until playing), turn
+  (`currentTurnSessionId` + room-private `turnOrder` + `turnUntil`/`turnBudgetSeconds` /
+  seat `timeExpired`), and one-step `move` (only while `phase === 'playing'` and eligible)
+  are authoritative; client mirrors state and shows local hints only.
 - Do not trust client-supplied layout/state as source of truth.
 
 **Violations when:** server applies client board snapshots as truth; or invents
@@ -385,7 +386,7 @@ Reminders to **open the skill** (or Built-in) — skill text wins.
 
 - **defineServer**: rooms/DB/routes/Express in `app.config.ts`; prefer not editing `index.ts`.
 - **CORS**: first middleware; prod `https://happy-tourist.github.io` + credentials.
-- **Room contract**: name `tourist`; live `lobby`; seats/`started`/`currentTurnSessionId` + `move` `{ side, row, col }`.
+- **Room contract**: name `tourist`; live `lobby`; seats/`started`/`currentTurnSessionId`/`turnUntil`/`turnBudgetSeconds`/`timeExpired` + `move` `{ side, row, col }`.
 - **Auth**: JWT in `onAuth`; `@colyseus/auth` + DB user store.
 - **Rules**: authoritative on server when they land; never trust client board.
 - **DB**: user column `.default(...)` for register/login.

@@ -3,11 +3,12 @@ name: server-work-with-test
 description: >-
   Use when planning or writing mocha + @colyseus/testing tests for
   happy-tourist-server: room connect with JWT, onAuth failures, seating /
-  reconnect grace (SC-PIECE), move messages (SC-MOVE), center finish /
-  finishPlace (SC-FINISH), preset say (SC-SAY), schema sync assertions,
-  GET /rooms listing, or preference HTTP (GET/POST /api/theme). Core
-  workflow: test plan (mocks/verify) → write test/*.test.ts → run npm test
-  from server package root and fix failures. Do not invent Jest/babel patterns.
+  deferred pieces until playing / reconnect grace (SC-PIECE), move + turn
+  deadlines (SC-MOVE; setTurnBudgetsForTests), center finish / finishPlace
+  (SC-FINISH), preset say (SC-SAY), schema sync assertions, GET /rooms
+  listing, or preference HTTP (GET/POST /api/theme). Core workflow: test
+  plan (mocks/verify) → write test/*.test.ts → run npm test from server
+  package root and fix failures. Do not invent Jest/babel patterns.
 trigger: slash
 ---
 
@@ -103,23 +104,26 @@ Use these categories only when the SUT has relevant behavior:
 - Auth failure: missing / invalid token → connect rejects (client cannot join).
 - Schema sync: after join, client-visible state matches room —
   `phase` / `maxSeats` / `countdownRemaining` (+ legacy `started`), `seats` Map
-  (`touristId` + exactly four `pieces` keyed by side `N|E|S|W` →
-  `{ side, row, col, finished }` + `connected` / `reconnectUntil` / `ready` /
-  `finishPlace`), `currentTurnSessionId`, and `nextFinishPlace`. Assert four
-  pieces / free start cells / leave-pool reopen as in SC-PIECE-01…08 /
-  SC-PIECE-19 (`test/MyRoom.test.ts`). Also cover reconnect grace SC-PIECE-11…16
-  and start capacity SC-START-* (maxSeats create, ready → countdown → playing;
-  move gated on playing).
-- Messages / turn: cover SC-MOVE-* in `test/MyRoom.test.ts` (first seated holds
-  turn; join-order rotation; legal orthogonal/diagonal; occupied/non-playable
-  reject; out-of-turn / spectator / pre-playing / finished-seat reject;
-  permanent leave advances; offline grace keeps turn for non-finished). Use
-  `forcePlaying` / `waitForPhase` helpers when isolating move rules from
-  countdown. Pure rules: `test/touristMove.test.ts` (incl. finished occupancy /
-  `finished` reject reason).
+  (`touristId` + `pieces` keyed by side `N|E|S|W` →
+  `{ side, row, col, finished }` — **empty until playing** + `connected` /
+  `reconnectUntil` / `ready` / `finishPlace` / `timeExpired`),
+  `currentTurnSessionId`, `turnUntil`, `turnBudgetSeconds`, and
+  `nextFinishPlace`. Assert deferred pieces then materialize / free start cells /
+  leave-pool reopen as in SC-PIECE-01…08 / SC-PIECE-19 (`test/MyRoom.test.ts`).
+  Also cover reconnect grace SC-PIECE-11…16 and start capacity SC-START-*
+  (maxSeats create, ready → countdown → playing; move gated on playing).
+- Messages / turn / timer: cover SC-MOVE-* in `test/MyRoom.test.ts` (first seated
+  holds turn; join-order rotation; legal orthogonal/diagonal; occupied/non-playable
+  reject; out-of-turn / spectator / pre-playing / finished / time-expired reject;
+  permanent leave advances; offline grace keeps turn for non-finished; deadline
+  keeps ticking; multi 60s auto-pass; solo 300s → `timeExpired`). Use
+  `forcePlaying` (clears deadline) / `forcePlayingWithTimer` / `waitForPhase`
+  helpers; accelerate clocks with `setTurnBudgetsForTests` + `resetTurnBudgets`
+  in `beforeEach`/`afterEach`. Pure rules: `test/touristMove.test.ts` (incl.
+  finished occupancy / `finished` reject reason).
 - Finish: cover SC-FINISH-* (center land → `piece.finished`; 4th finish →
-  `finishPlace = nextFinishPlace++`; turn skips finished; all finished clears
-  turn until mid-join restores eligible; finished may still `say`).
+  `finishPlace = nextFinishPlace++`; turn skips finished / time-expired; all
+  finished clears turn until mid-join restores eligible; finished may still `say`).
 - Preset say / ready: cover SC-SAY-* and ready-broadcast cases (known preset
   broadcast; `ready` message → say preset `ready` bypassing live cap; raw say
   `ready` rejected; non-whitelist / spectator / offline grace silent reject;
@@ -147,15 +151,16 @@ Verify JWT room connect:
 - Missing/invalid token: connect rejects / join fails
 
 Verify seating / pieces (SC-PIECE):
-- First join: seat has touristId 1…4 and exactly four pieces on N/E/S/W start cells
-- Two seats: unique touristId; no shared (row,col) among any pieces
+- First join (waiting): seat has touristId 1…4 and **no pieces** until playing
+- After enter playing / `forcePlaying`: exactly four pieces on N/E/S/W start cells
+- Two seats: unique touristId; no shared (row,col) among any pieces after materialize
 - Fill maxSeats → further joiner is spectator; leave while under maxSeats reopens seat (any phase)
-- Mid-game free seat (SC-PIECE-19): join takes seat while phase playing
+- Mid-game free seat (SC-PIECE-19): join takes seat while phase playing (pieces assigned immediately)
 
 Verify start / capacity (SC-START):
 - createRoom("tourist", { maxSeats: 2|3|4 }) → state + metadata.maxSeats; invalid → 2
 - metadata.seats = occupied seated count (not clients)
-- Full table while waiting → countdown (COUNTDOWN_SECONDS) → playing
+- Full table while waiting → countdown (COUNTDOWN_SECONDS) → playing (+ materialize + turn deadline)
 - Underfilled ≥2: all ready → same countdown; solo ready rejected
 - Leave/drop during countdown does not cancel; moves rejected until playing
 
@@ -167,10 +172,12 @@ Verify reconnect grace (SC-PIECE-11…16):
 - Last seated permanent leave closes room even with spectators
 - Observer sees connectivity fields sync (SC-PIECE-16)
 
-Verify move / turn (SC-MOVE):
-- First seated holds `currentTurnSessionId`; successful move advances join-order queue (skip finished)
-- Legal orthogonal/diagonal one-step: piece row/col update; illegal/out-of-turn/spectator/pre-playing/finished-seat: unchanged
-- Permanent leave of current advances turn; offline grace does not (non-finished)
+Verify move / turn / timer (SC-MOVE):
+- First seated holds `currentTurnSessionId`; successful move advances join-order queue (skip finished / time-expired)
+- Legal orthogonal/diagonal one-step: piece row/col update; illegal/out-of-turn/spectator/pre-playing/finished/time-expired: unchanged
+- Permanent leave of current advances turn; offline grace does not (non-finished); turnUntil keeps ticking
+- ≥2 eligible: `turnBudgetSeconds===60`; timeout → advance without move; solo: `===300`; timeout → `timeExpired`
+- `setTurnBudgetsForTests(multi, solo)` + `resetTurnBudgets()`; `forcePlaying` clears deadline; `forcePlayingWithTimer` uses `enterPlaying`
 
 Verify finish (SC-FINISH):
 - Legal move onto center → `piece.finished=true`; finished piece ignored for occupancy
