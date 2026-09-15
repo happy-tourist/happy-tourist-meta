@@ -119,7 +119,7 @@ Example shape (game enter / board + seats):
 ```ts
 // LobbyPage → game.createGame / joinGame → navigate Game
 // GamePage → LAYOUT tiles + pieces from game.seats (no room.send for board UX today)
-// room.onStateChange → seats / started / sessionId → status
+// room.onStateChange → seats / phase / maxSeats / countdownRemaining / sessionId → status
 ```
 
 Example shape (lobby list):
@@ -131,7 +131,7 @@ await game.subscribeLobby();
 
 Method presence or "looks compatible" alone is insufficient. Track each contract fact separately so one correct component cannot hide another mismatch.
 
-The client↔server contract is Colyseus Auth + room type `tourist` + live `lobby` (LobbyRoom + `.enableRealtimeListing()`) + Game board mirroring seats/`started`/`currentTurnSessionId` + `sendMove` → `move` `{ side, row, col }`. When CR/docs/server and client disagree, report `code-only` / contradiction with both sides named (`src/stores/*` vs `../happy-tourist-server`).
+The client↔server contract is Colyseus Auth + room type `tourist` + live `lobby` (LobbyRoom + `.enableRealtimeListing()`) + Game board mirroring seats/`phase`/`maxSeats`/`countdownRemaining`/`currentTurnSessionId` + `sendMove` → `move` `{ side, row, col }` + `sendReady` → `ready`. When CR/docs/server and client disagree, report `code-only` / contradiction with both sides named (`src/stores/*` vs `../happy-tourist-server`).
 
 A toast / silent catch is not blocking confirmation. When confirmation is required, wait for explicit approval; cancel/close must not perform the mutating action. With analogue-only evidence, require only what the analogue proves.
 
@@ -276,7 +276,7 @@ Report as hard `[defect]` when a reachable path deterministically storms HTTP/SD
 
 Когда diff/ветка трогает room enter (`_enterRoom` / `create` / `join*` / `_attachRoom`), `room.onStateChange` / `onError` / `onLeave`, lobby `subscribe`/`unsubscribe`, auth `onChange`, или любой path «promise resolve → потом повесить listener / прочитать первый sync» — **отдельно** проверь гонки: первый inbound event (часто единственный) уходит в никуда, UI остаётся пустым.
 
-Контекст Colyseus: `join`/`create` resolve на `JOIN_ROOM`; полный `ROOM_STATE` (с `seats` / `started`) приходит **после** client ACK, часто в узком окне. Любой `await` между `connect()` resolve и регистрацией `onStateChange` может проглотить первый sync — последующих patch может не быть → Pinia `seats[]` навсегда `[]`, доска без фигурок.
+Контекст Colyseus: `join`/`create` resolve на `JOIN_ROOM`; полный `ROOM_STATE` (с `seats` / `phase` / `maxSeats`) приходит **после** client ACK, часто в узком окне. Любой `await` между `connect()` resolve и регистрацией `onStateChange` может проглотить первый sync — последующих patch может не быть → Pinia `seats[]` навсегда `[]`, доска без фигурок.
 
 Для каждой такой цепочки независимо проверь:
 

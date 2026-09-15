@@ -202,7 +202,7 @@ Use Quasar helpers already present in login / lobby / game:
     <div class="text-h5">Лобби</div>
     <div class="text-subtitle2 text-muted">…</div>
   </div>
-  <q-btn color="primary" icon="sports_esports" label="Играть" />
+  <q-btn color="primary" icon="add" :label="$t('lobby.create')" />
   <q-banner dense rounded class="bg-negative text-white q-mb-md">…</q-banner>
 </q-page>
 ```

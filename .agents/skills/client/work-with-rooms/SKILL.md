@@ -44,8 +44,8 @@ createGame / joinGame(roomId?) / joinGame() / rejoinGame(roomId)
         │  await unsubscribeLobby()    ← SC-LOBBY-05 only on success
         ▼
   listeners (store only)
-        │  onStateChange → seats (incl. connected/reconnectUntil) / started / sessionId / currentTurnSessionId
-        │  onMessage('say') → sayEvents (ephemeral; not schema)
+        │  onStateChange → seats (incl. connected/reconnectUntil/ready) / phase / maxSeats / countdownRemaining / sessionId / currentTurnSessionId
+        │  onMessage('say') → sayEvents (ephemeral; not schema; may include readiness preset)
         │  onError → error string
         │  onLeave → _resetRoomState()  ← keeps localStorage token (unexpected drop)
         ▼
@@ -57,13 +57,14 @@ createGame / joinGame(roomId?) / joinGame() / rejoinGame(roomId)
 
 | Intent | Store action | SDK |
 |--------|--------------|-----|
-| New room | `createGame(options?)` | `client.create(TOURIST_ROOM, options)` |
+| New room | `createGame({ maxSeats? })` | `client.create(TOURIST_ROOM, { maxSeats })` |
 | Join by id | `joinGame(roomId, options?)` | `client.joinById(roomId, options)` |
-| Join or create | `joinGame()` (no id) | `client.joinOrCreate(TOURIST_ROOM, options)` |
+| Join or create | `joinGame()` (no id) | `client.joinOrCreate(TOURIST_ROOM, options)` — **not** a lobby primary CTA |
 | Rejoin after F5 | `rejoinGame(roomId)` | `client.reconnect(token)` then fallback `joinById` |
 | Leave (consented) | `leaveGame()` | clear token + `unsubscribeLobby` + `room.leave()` after `_resetRoomState` |
-| Game move | `sendMove(side, row, col)` | `room.send('move', { side, row, col })` when `isMyTurn` |
-| Game say | `sendSay(presetId)` | `room.send('say', { presetId: 'hello'\|'luck' })` when seated+connected; max 3 live / 10s |
+| Game move | `sendMove(side, row, col)` | `room.send('move', { side, row, col })` when `phase === 'playing'` and `isMyTurn` |
+| Ready to start | `sendReady()` | `room.send('ready')` when `canSendReady` |
+| Game say | `sendSay(presetId)` | `room.send('say', { presetId: 'hello'\|'luck' })` when seated+connected; max 3 live / 10s (not `ready`) |
 
 All connect paths go through `_enterRoom`. Do not call `client.create` / `joinById` / `joinOrCreate` / `reconnect` from pages.
 
@@ -105,7 +106,7 @@ Wire listeners **once** in the store (never in `GamePage`):
 
 1. Assign `this.room`, `this.roomId = room.roomId`, `this.sessionId = room.sessionId`, `this.status = 'waiting'`; clear `sayEvents`.
 2. **`saveTouristReconnect(room)`** — persist `{ roomId, token: room.reconnectionToken }` in **`localStorage`** key `ht-tourist-reconnect` (design D3; **never** lobby). `loadTouristReconnect` MAY one-shot migrate the same key from legacy `sessionStorage`.
-3. `room.onStateChange` — map `started` / `seats` (incl. connectivity) / `currentTurnSessionId` → Pinia; refresh token (may rotate); also mirror `room.state` once if already present.
+3. `room.onStateChange` — map `phase` / `maxSeats` / `countdownRemaining` / `seats` (incl. connectivity + `ready`) / `currentTurnSessionId` → Pinia; legacy `started` mirrors `phase === 'playing'`; refresh token (may rotate); also mirror `room.state` once if already present.
 4. `room.onMessage('say')` — validate whitelist payload → push ephemeral `sayEvents` (prune by `SAY_TTL_MS`; max `SAY_MAX_LIVE` per session).
 5. `room.onError` — set `this.error`.
 6. `room.onLeave` — call `_resetRoomState()` **without** clearing the tourist token (unexpected drop / soft disconnect — F5 may still `reconnect`).
@@ -114,7 +115,7 @@ Wire listeners **once** in the store (never in `GamePage`):
 
 ### `_resetRoomState()`
 
-Clear session fields: `room`, `roomId`, `sessionId`, `started`, `currentTurnSessionId`, `seats`, `sayEvents`, `status = 'idle'`. Does **not** clear lobby `rooms` / `listing` / `error` and does **not** clear the tourist reconnection token (callers that consent to leave must clear it explicitly).
+Clear session fields: `room`, `roomId`, `sessionId`, `phase`, `maxSeats`, `countdownRemaining`, legacy `started`, `currentTurnSessionId`, `seats`, `sayEvents`, `status = 'idle'`. Does **not** clear lobby `rooms` / `listing` / `error` and does **not** clear the tourist reconnection token (callers that consent to leave must clear it explicitly).
 
 ## Tourist reconnection token (D3)
 
@@ -157,8 +158,10 @@ async leaveGame() {
 
 | Server field | Store field |
 |--------------|-------------|
-| `started` | `started`; also drives `status` (`playing` if started, else `waiting`) |
-| `seats` Map (key = `sessionId`) | `seats[]` with `sessionId`, `touristId`, `pieces[]` (`side`/`row`/`col`), **`connected`**, **`reconnectUntil`** |
+| `phase` | `phase` (`waiting`\|`countdown`\|`playing`); drives `status` (`playing` only when phase playing) |
+| `maxSeats` / `countdownRemaining` | mirrored as-is |
+| `started` | legacy mirror of `phase === 'playing'` (prefer phase) |
+| `seats` Map (key = `sessionId`) | `seats[]` with `sessionId`, `touristId`, `pieces[]` (`side`/`row`/`col`), **`connected`**, **`reconnectUntil`**, **`ready`** |
 | (room) `sessionId` | `sessionId` — for `mySeat` / strip×4 / presence self |
 | `currentTurnSessionId` | `currentTurnSessionId` → getter `isMyTurn` |
 
@@ -176,6 +179,7 @@ next.push({
   pieces,
   connected: seat.connected !== false,
   reconnectUntil: Number(seat.reconnectUntil ?? 0),
+  ready: Boolean(seat.ready),
 });
 saveTouristReconnect(room); // token may rotate after soft reconnect
 ```

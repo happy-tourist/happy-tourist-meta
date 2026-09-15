@@ -3,8 +3,9 @@ name: work-with-game
 description: >-
   Use when implementing, changing, reviewing, or debugging authoritative
   tourist-room seating, reconnect grace, turn order, and one-step move rules in
-  the happy-tourist Colyseus server — Room handlers, schema seats/started/
-  currentTurnSessionId/connectivity, or pure rules in src/game/touristMove.ts.
+  the happy-tourist Colyseus server — Room handlers, schema seats/phase/
+  maxSeats/ready/countdown/currentTurnSessionId/connectivity, or pure rules in
+  src/game/touristMove.ts.
 ---
 
 # Work With Game
@@ -19,26 +20,35 @@ Pair with client board UX: `happy-tourist-meta/.agents/skills/client/work-with-g
 
 | Surface | Path | Role |
 | --- | --- | --- |
-| Room | `src/rooms/MyRoom.ts` | JWT `onAuth`; seat assign; `turnOrder` + turn hooks; `onMessage('move')` (+ `say` → see messages skill); `onDrop`/`onReconnect`/`onLeave` |
-| Schema | `src/rooms/schema/MyRoomState.ts` | `started` + `seats` + `currentTurnSessionId` |
+| Room | `src/rooms/MyRoom.ts` | JWT `onAuth`; seat assign; start phases / ready / countdown; `turnOrder` + turn hooks; `onMessage('move'|'ready'|'say')`; `onDrop`/`onReconnect`/`onLeave` |
+| Schema | `src/rooms/schema/MyRoomState.ts` | `phase` + `maxSeats` + `countdownRemaining` + `started` (legacy) + `seats` (+ `ready`) + `currentTurnSessionId` |
 | Rules | `src/game/touristMove.ts` | Pure validate/apply one-step move (no Colyseus I/O) |
 | Registration | `src/app.config.ts` | Room name must be `tourist` for client lobby |
 
-Constant: `RECONNECT_GRACE_SECONDS = 30` in `MyRoom.ts`.
+Constants: `RECONNECT_GRACE_SECONDS = 30`, `COUNTDOWN_SECONDS = 5` in `MyRoom.ts`.
 
-## Seating (shipped)
+## Seating (shipped — game/pieces + game/start)
 
-- Until `started` and `seats.size < 4`: join gets a seat — unique `touristId` 1…4 not used by any current seat, plus **exactly four pieces** (one per side `N|E|S|W`). For each side, pick a start cell uniformly from that side’s free starts (not occupied by any piece in the room). Starts: N row0 cols3–6; E col9 rows3–6; S row9 cols3–6; W col0 rows3–6. New seat: `connected=true`, `reconnectUntil=0`.
-- Fourth seated player → `started = true` (optional metadata `status: "playing"`).
-- After `started`: join does **not** get a seat or pieces (spectator). No `maxClients = 4`.
+- Create options: `{ maxSeats: 2|3|4 }` (invalid → default **2**). Synced `state.maxSeats`.
+- While `seats.size < maxSeats` **in any phase** (`waiting` / `countdown` / `playing`): join gets a seat — unique `touristId` 1…4, **exactly four pieces** (one per side `N|E|S|W`). Starts: N row0 cols3–6; E col9 rows3–6; S row9 cols3–6; W col0 rows3–6. New seat: `connected=true`, `reconnectUntil=0`, `ready=false`.
+- When `seats.size === maxSeats`: further joiners are spectators (no seat/pieces). No `maxClients = maxSeats`.
+- Metadata for lobby: `{ title, status, maxSeats, seats }` — `seats` = occupied seated count (not `clients`).
 - Assign only in Room lifecycle — client never invents seats.
+
+## Start phases / ready / countdown (shipped — game/start)
+
+- Synced `phase`: `waiting` → `countdown` → `playing`. New room starts `waiting`.
+- Full table (`seats.size === maxSeats` while `waiting`) → immediate `countdown` (5…1 via `clock.setTimeout`).
+- Underfilled (`≥2` seated, `< maxSeats`): `onMessage('ready')` one-shot → `seat.ready=true` + broadcast say preset `ready`; when all seated ready → same countdown. Solo seated: reject ready.
+- Leave/drop during countdown does **not** cancel countdown; remaining seats’ `ready` marks are **not** cleared on leave.
+- Legacy `started`: set true from countdown onward; **client/canon is phase-first** (`playing` unlocks moves). Prefer `phase`, not `started`, for new logic.
 
 ## Leave And Reconnect (shipped — D1 / D4)
 
 | Path | Behavior |
 |------|----------|
-| **Consented leave** (`client.leave` / intentional exit) | Immediate `onLeave` → delete seat (all four pieces). Before start → kind/cells back to pools. After start → `started` stays; no new seats. |
-| **Unexpected drop** (`onDrop`) | Seated only: `connected=false`, `reconnectUntil=now+30s`, `allowReconnection(client, 30)`; **hold** seat + pieces. Spectators: no grace. |
+| **Consented leave** (`client.leave` / intentional exit) | Immediate `onLeave` → delete seat (all four pieces). Kind/cells back to pools. Seats reopen while `seats.size < maxSeats` in any phase. |
+| **Unexpected drop** (`onDrop`) | Seated only: `connected=false`, `reconnectUntil=now+30s`, `allowReconnection(client, 30)`; **hold** seat + pieces. Spectators: no grace. Does not cancel countdown. |
 | **Reconnect within grace** (`onReconnect`) | Same seat/kind/pieces; `connected=true`, `reconnectUntil=0`. |
 | **Grace timeout / denied** | Permanent remove as consented leave. |
 | **Empty seated** | After permanent remove, if `seats.size === 0` → `this.disconnect()` even if spectators remain. |
@@ -49,17 +59,17 @@ LobbyRoom: **no** grace / `allowReconnection` — see `work-with-rooms` (D7).
 
 - Room-private `turnOrder: string[]` (join order of seated sessionIds) — **not** in schema.
 - Synced `currentTurnSessionId` = current seated `sessionId`, or `""` if no seated.
-- First seated → set turn; later seats append to end (before seating lock).
+- First seated → set turn; later seats (incl. mid-game) append to end.
 - Successful move → advance to next in circle (solo wraps to self).
 - Permanent seat remove: drop from `turnOrder`; if removed was current → next (or `""` if empty → dispose).
 - `onDrop` / offline grace: **do not** change `currentTurnSessionId` (turn waits).
-- `started` does **not** gate moves — turns available as soon as ≥1 seated.
+- Having a current-turn seat does **not** allow moves before `phase === 'playing'`.
 
 ## Move Rules (shipped — D2 / D3)
 
 - Message: `room.send('move', { side: 'N'|'E'|'S'|'W', row, col })` — `side` = own piece; `row`/`col` = target.
 - Pure module `src/game/touristMove.ts`: playable = start + task + center (mirrors client `LAYOUT`); Chebyshev distance === 1; occupancy includes own pieces.
-- `MyRoom.onMessage('move')`: seated + current turn only → validate/apply → update piece `row`/`col` → advance turn; reject → no state change.
+- `MyRoom.onMessage('move')`: require `phase === 'playing'` + seated + current turn → validate/apply → update piece `row`/`col` → advance turn; reject → no state change.
 - No pass; no draughts `{ from, to }` encoding.
 
 ## Authority
@@ -75,9 +85,9 @@ LobbyRoom: **no** grace / `allowReconnection` — see `work-with-rooms` (D7).
 | --- | --- |
 | Room name | `tourist` |
 | Board UI | Client-only `LAYOUT` in `GamePage`; server does **not** sync tile kinds |
-| Synced state | `started`, `seats` Map → `touristId` + four `pieces` + connectivity, `currentTurnSessionId` |
-| Message | Client → server `move` `{ side, row, col }` via game store `sendMove` |
-| Say (ephemeral) | `say` `{ presetId }` → `broadcast('say', { sessionId, presetId, at })` — see `work-with-messages`; **not** schema |
+| Synced state | `phase`, `maxSeats`, `countdownRemaining`, `started` (legacy), `seats` Map → `touristId` + four `pieces` + connectivity + `ready`, `currentTurnSessionId` |
+| Message | Client → server `move` `{ side, row, col }` via `sendMove`; `ready` (empty) via `sendReady` |
+| Say (ephemeral) | `say` `{ presetId: hello\|luck }` → broadcast; readiness preset only via `ready` — see `work-with-messages` |
 | Reconnect | Colyseus token; client `localStorage` + `reconnect` then `joinById` |
 | Presence / hints | Client-only chrome; selection + red targets local to current-turn client |
 
@@ -93,25 +103,28 @@ onMessage('move') → parse { side, row, col } → pure validate/apply (touristM
 ## Implementation Checklist
 
 - [x] Register room as `tourist` (+ `.enableRealtimeListing()`); tests/loadtest use `tourist`.
-- [x] Product sync: `started` + `seats` (+ connectivity) + `currentTurnSessionId`; seating in `onJoin` / leave/reconnect hooks (no `maxClients=4`).
-- [x] Unexpected drop grace 30 s + `allowReconnection`; consented leave immediate; empty seated → dispose; mocha SC-PIECE-07…16.
+- [x] Product sync: `phase` / `maxSeats` / `countdownRemaining` + `seats` (+ connectivity + `ready`) + `currentTurnSessionId`; seating while under maxSeats in any phase (no `maxClients` seat lock).
+- [x] Start: auto/all-ready countdown; `onMessage('ready')`; move gated on `phase === 'playing'`; mocha SC-START-* / SC-MOVE-18.
+- [x] Unexpected drop grace 30 s + `allowReconnection`; consented leave immediate; empty seated → dispose; mocha SC-PIECE-*.
 - [x] `turnOrder` + `onMessage('move')` + `src/game/touristMove.ts`; mocha SC-MOVE-*.
 
 ## Do
 
 - Keep room name `tourist` aligned with client `TOURIST_ROOM`.
 - Keep seating pools and start-cell geometry in Room (or a pure helper), not in schema files.
+- Prefer **`phase`** over legacy `started` for start/move gates.
 - Keep reconnect grace only on tourist seated players — not LobbyRoom.
 - Keep `turnOrder` room-private; sync only `currentTurnSessionId`.
-- Reject illegal moves server-side without mutating state.
+- Reject illegal / pre-playing moves server-side without mutating state.
 - Prefer pure rules modules + thin Room glue.
 
 ## Don't
 
-- Cap the room with `maxClients = 4` — spectators are allowed; seated ≤ 4 via `seats`/`started`.
+- Cap the room with `maxClients = maxSeats` — spectators are allowed; seated ≤ maxSeats via seats check.
 - Treat unexpected drop as immediate seat delete without grace, or advance turn on drop.
+- Cancel countdown solely because a seated player drops/leaves.
 - Let spectators hold a room with zero seated players.
-- Gate moves on `started`.
+- Accept moves while `phase !== 'playing'`.
 - Treat draughts cell encoding or move UX as the product canon.
 - Trust client layout constants or local hints as game authority.
 - Put authoritative logic only in Express routes.

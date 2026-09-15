@@ -5,8 +5,8 @@ description: >-
   the happy-tourist tourist server: MyRoom lifecycle (onAuth / onCreate /
   onJoin / onDrop / onReconnect / onLeave / onDispose), tourist reconnect grace
   vs LobbyRoom fire-and-forget, room registration in app.config (lobby +
-  tourist + enableRealtimeListing), maxClients / seat connectivity, JWT room
-  gate, or aligning room name with client TOURIST_ROOM.
+  tourist + enableRealtimeListing), maxSeats / seat connectivity / start phase,
+  JWT room gate, or aligning room name with client TOURIST_ROOM.
 ---
 
 # Work With Rooms
@@ -29,41 +29,45 @@ Coordinate with sibling skills when they exist: `work-with-schema`, `work-with-m
 | Layer | Path | Role |
 |-------|------|------|
 | Registration | `src/app.config.ts` | `lobby: defineRoom(LobbyRoom)`; `tourist: defineRoom(MyRoom).enableRealtimeListing()` |
-| Game handler | `src/rooms/MyRoom.ts` | `Room` subclass: `onAuth`, `onCreate`, `onJoin`, `onDrop`, `onReconnect`, `onLeave`, `onDispose` |
-| Schema | `src/rooms/schema/MyRoomState.ts` | Synced state: `started` + `seats` Map (`connected` / `reconnectUntil`) |
-| Tests | `test/MyRoom.test.ts` | JWT, tourist connect; grace / consented / dispose (SC-PIECE-07…16); turn/move (SC-MOVE-*); say presets (SC-SAY-*); lobby listing (SC-LOBBY-02/03) |
+| Game handler | `src/rooms/MyRoom.ts` | `Room` subclass: `onAuth`, `onCreate`, `onJoin`, `onDrop`, `onReconnect`, `onLeave`, `onDispose`; `onMessage('move'|'ready'|'say')` |
+| Schema | `src/rooms/schema/MyRoomState.ts` | Synced: `phase` / `maxSeats` / `countdownRemaining` + legacy `started` + `seats` Map (`connected` / `reconnectUntil` / `ready`) + `currentTurnSessionId` |
+| Tests | `test/MyRoom.test.ts` | JWT, tourist connect; capacity/start (SC-START-*); seating (SC-PIECE-*); turn/move (SC-MOVE-*); say (SC-SAY-*); lobby listing (SC-LOBBY-02/03) |
 | Loadtest | `loadtest/example.ts` | `joinOrCreate`; `--room tourist` |
 
 Registered room keys today: **`lobby`** (built-in listing) and **`tourist`** (playable `MyRoom` with realtime listing). Client `TOURIST_ROOM` / `LOBBY_ROOM` match these names — do not reintroduce `my_room`.
 
-Constant: `RECONNECT_GRACE_SECONDS = 30` exported from `MyRoom.ts` (unexpected seated drop only).
+Constants: `RECONNECT_GRACE_SECONDS = 30`, `COUNTDOWN_SECONDS = 5` exported from `MyRoom.ts`.
 
 ## Lifecycle Flow
 
 ```text
-client create / joinById / joinOrCreate / reconnect('tourist')
+client create({ maxSeats }) / joinById / joinOrCreate / reconnect('tourist')
         │
         ▼
   static onAuth(token)     ← JWT.verify; fail → reject join
         │  returns userdata → onJoin(…, auth)
         ▼
   onCreate(options)        ← once per room instance
-        │  setState(MyRoomState), setMetadata, onMessage('move'), onMessage('say')
+        │  setState; parse maxSeats (2|3|4, default 2); phase=waiting
+        │  refreshMetadata({ title, status, maxSeats, seats })
+        │  onMessage('move'|'ready'|'say')
         │  (enableRealtimeListing publishes to LobbyRoom subscribers)
         ▼
   onJoin(client, options, auth)
-        │  assign touristId + 4 pieces unless started; connected=true, reconnectUntil=0
-        │  4th seat → started + metadata playing
+        │  seat while seats.size < maxSeats (any phase); else spectator
+        │  touristId + 4 pieces; connected=true; reconnectUntil=0; ready=false
+        │  maybeStartCountdown (full table → countdown)
         ▼
   onDrop(client)           ← unexpected disconnect (seated only)
         │  connected=false; reconnectUntil=now+30s; allowReconnection(client, 30)
-        │  spectators: no hold (return early)
+        │  spectators: no hold; does not cancel countdown
         ▼
   onReconnect(client)      ← within grace
         │  connected=true; reconnectUntil=0; same seat/pieces
         ▼
   onLeave(client)          ← consented leave, grace timeout, or reconnect denied
-        │  delete seat; if seats.size===0 → disconnect() (spectators do not hold room)
+        │  delete seat; refreshMetadata; maybeStartCountdown (remaining all-ready)
+        │  if seats.size===0 → disconnect() (spectators do not hold room)
         ▼
   onDispose()              ← room empty / locked shut → lobby `-` update
 ```
@@ -73,17 +77,18 @@ client create / joinById / joinOrCreate / reconnect('tourist')
 | Hook | Do here | Don't |
 |------|---------|--------|
 | `static onAuth` | `JWT.verify(token)`; return userdata | Trust client-supplied identity without JWT |
-| `onCreate` | `this.setState(new MyRoomState())`, `setMetadata({ title, status })`; do **not** set `maxClients = 4` | Mutate board from HTTP |
-| `onJoin` | Assign unique `touristId` + 4 pieces on free start cells (N/E/S/W); set online connectivity; set `started` on 4th seat | Cap the room with `maxClients = 4` (spectators allowed) |
-| `onDrop` | Seated: mark offline + `allowReconnection(client, 30)`; hold seat/pieces | Treat unexpected drop as immediate seat delete; grace for spectators or LobbyRoom |
+| `onCreate` | `setState`; parse `maxSeats`; `phase=waiting`; `refreshMetadata`; register `move`/`ready`/`say`; do **not** set `maxClients = maxSeats` | Mutate board from HTTP |
+| `onJoin` | Assign seat while under `maxSeats` in any phase; unique `touristId` + 4 pieces; online connectivity; `ready=false`; maybe start countdown when full | Cap the room with `maxClients`; gate seating on legacy `started` alone |
+| `onDrop` | Seated: mark offline + `allowReconnection(client, 30)`; hold seat/pieces; do not cancel countdown | Treat unexpected drop as immediate seat delete; grace for spectators or LobbyRoom |
 | `onReconnect` | Restore seat online (`connected=true`, `reconnectUntil=0`) | Re-assign a new seat / touristId |
-| `onLeave` | Permanent remove seat; before start pools reopen; after start keep `started`; if zero seats → `disconnect()` | Leave stale seats; let spectators keep an empty-seated room alive |
+| `onLeave` | Permanent remove seat; seats reopen while under `maxSeats`; refreshMetadata; maybeStartCountdown; if zero seats → `disconnect()` | Leave stale seats; let spectators keep an empty-seated room alive; clear others' `ready` on leave |
 | `onDispose` | Cleanup timers / logs | Assume clients still connected |
 
 ## Current Room (`MyRoom.ts`)
 
 ```ts
 export const RECONNECT_GRACE_SECONDS = 30;
+export const COUNTDOWN_SECONDS = 5;
 
 export class MyRoom extends Room<{ state: MyRoomState }> {
   static async onAuth(token: string, _options: any, _context: any) {
@@ -91,11 +96,16 @@ export class MyRoom extends Room<{ state: MyRoomState }> {
     return userdata;
   }
 
-  onCreate(_options: any) {
+  onCreate(options: any) {
     this.setState(new MyRoomState());
-    this.setMetadata({ title: "Tourist", status: "waiting" });
+    this.state.maxSeats = parseMaxSeats(options); // 2|3|4, else 2
+    this.state.phase = "waiting";
+    this.refreshMetadata(); // title / status / maxSeats / seats
+    this.onMessage("move", …);
+    this.onMessage("ready", …);
+    this.onMessage("say", …);
   }
-  onJoin(client: Client, _options: any, auth: any) { /* assign seat unless started; online */ }
+  onJoin(client: Client, _options: any, auth: any) { /* seat if under maxSeats; maybeStartCountdown */ }
   onDrop(client: Client, _code?: number) { /* seated: offline + allowReconnection(30) */ }
   onReconnect(client: Client) { /* seat online again */ }
   onLeave(client: Client, _code?: number) { /* delete seat; empty → disconnect() */ }
@@ -105,9 +115,9 @@ export class MyRoom extends Room<{ state: MyRoomState }> {
 
 - `onAuth` is **static**; invalid JWT throws → client cannot connect.
 - `auth` in `onJoin` is the userdata returned from `onAuth`.
-- `setMetadata` feeds LobbyPage list fields (`title` / `status`); flip to `playing` when the fourth seat is assigned.
+- `refreshMetadata` feeds LobbyPage: `{ title, status, maxSeats, seats }` — `seats` = occupied seated count; `status` is `playing` only when `phase === 'playing'` (else `waiting`, including countdown).
 - Consented client `leave()` goes straight to `onLeave` (no grace). Unexpected drop uses Colyseus `onDrop` → `allowReconnection`.
-- Seating / reconnect details: `work-with-game` / `work-with-schema`.
+- Seating / start / reconnect details: `work-with-game` / `work-with-schema`.
 
 ## Registration And Live Lobby
 
@@ -125,7 +135,7 @@ rooms: {
 |---------------|--------------|
 | `joinOrCreate('lobby', { filter: { name: 'tourist' } })` | Key `lobby` → built-in `LobbyRoom` |
 | Live `rooms` / `+` / `-` updates | `.enableRealtimeListing()` on `tourist` |
-| `client.create('tourist')` / `joinOrCreate` / `joinById` / `reconnect` | Key `tourist` in `rooms` + MyRoom grace hooks |
+| `client.create('tourist', { maxSeats })` / `joinById` / `reconnect` | Key `tourist` in `rooms` + MyRoom grace hooks |
 | `client.http.get('/rooms/tourist')` | Same (HTTP listing still available; UI uses LobbyRoom) |
 
 Without `.enableRealtimeListing()`, lobby subscribers will not get create/dispose updates for `tourist`.
@@ -142,16 +152,17 @@ Align with client Pinia expectations:
 
 | Concern | Target |
 |---------|--------|
-| Capacity | No `maxClients = 4`; seated ≤ 4 via `seats` / `started`; spectators may join |
-| Seats | Unique `touristId` 1…4 + exactly four pieces (one per side N/E/S/W on free start cells; see `work-with-game`) |
+| Capacity | No `maxClients = maxSeats`; seated ≤ `maxSeats` (2\|3\|4) via seats check; spectators may join |
+| Seats | Unique `touristId` 1…4 + exactly four pieces (one per side N/E/S/W on free start cells; see `work-with-game`); seat while free slot in **any** phase |
 | Connectivity | `connected` + `reconnectUntil` on Seat (D2); online at assign |
-| Status | Metadata `waiting` until 4 seated; then `playing` + `state.started = true` |
-| Unexpected drop | Hold seat 30 s + `allowReconnection`; sync offline + deadline (SC-PIECE-11…14, 16) |
-| Consented leave | Immediate seat remove (SC-PIECE-07/08) |
+| Start | `phase` waiting → countdown → playing; full table or all-ready underfilled; legacy `started` from countdown onward |
+| Status metadata | `waiting` until `phase === 'playing'`; always publish `maxSeats` + occupied `seats` |
+| Unexpected drop | Hold seat 30 s + `allowReconnection`; sync offline + deadline (SC-PIECE-11…14, 16); does not cancel countdown |
+| Consented leave | Immediate seat remove; free seat reopens while under maxSeats (SC-PIECE-07/08) |
 | Empty seated | After permanent remove, `seats.size === 0` → `disconnect()` even with spectators (SC-PIECE-15 / D4) |
-| Authority | Server mutates schema state; client only mirrors seats / presence / renders |
+| Authority | Server mutates schema state; client only mirrors seats / presence / phase / renders |
 
-Do not trust client-local board UI. When move rules land, validation belongs in the room (see `work-with-messages` / `work-with-game`).
+Do not trust client-local board UI. Move validation belongs in the room (see `work-with-messages` / `work-with-game`).
 
 ## Client Protocol Expectations
 
@@ -162,8 +173,8 @@ From client rooms / lobby skills — server must provide **today**:
 | Room type `tourist` | Registered key today; reconnect grace **only** here |
 | Room type `lobby` | Built-in `LobbyRoom` for live list; **no** reconnect hold |
 | Tourist board layout | Client-only tile geometry; server does **not** sync layout |
-| Synced seats / started / connectivity | `started` + `seats` Map with `connected` / `reconnectUntil` |
-| Listing metadata | `title` / `status` via `setMetadata` for LobbyPage rows |
+| Synced seats / phase / connectivity | `phase` / `maxSeats` / `countdownRemaining` + `seats` Map with `connected` / `reconnectUntil` / `ready` (+ legacy `started`) |
+| Listing metadata | `title` / `status` / `maxSeats` / `seats` via `refreshMetadata` for LobbyPage rows |
 
 Client: tourist token in `localStorage` + `reconnect` then `joinById`; lobby quiet resubscribe without token. Keep tourist rooms joinable by reconnection token within grace.
 
@@ -189,7 +200,8 @@ static async onAuth(token: string, _options: any, _context: any) {
 | Keep lifecycle in `MyRoom.ts` | Put match logic in `express(app)` routes |
 | Register `lobby` + `tourist` with `.enableRealtimeListing()` | Reintroduce `my_room` or omit realtime listing |
 | `allowReconnection` only on tourist seated `onDrop` | Add LobbyRoom grace / hold listing subscribers |
-| Assign ≤4 seats via `seats`/`started`; allow spectator joins | Cap the room with `maxClients = 4` |
+| Assign ≤`maxSeats` via seats check; allow spectator joins | Cap the room with `maxClients = maxSeats`; gate seating only on legacy `started` |
+| Prefer `phase` for start/move gates | Treat fourth-seat auto-`started` as current product |
 | Dispose when last seated leaves (even with spectators) | Let spectators keep an empty-seated match alive |
 | Return userdata from `onAuth` for `onJoin` | Skip JWT verify for "dev convenience" in committed code |
 | Coordinate schema / messages / rules with sibling skills + client | Change state field names unilaterally |
@@ -200,9 +212,9 @@ static async onAuth(token: string, _options: any, _context: any) {
 1. Belongs in `MyRoom` lifecycle or `app.config` `rooms` map — not a new HTTP BFF.
 2. Registration: `lobby` + `tourist` (+ `.enableRealtimeListing()` on tourist); no LobbyRoom `allowReconnection`.
 3. `onAuth` still `JWT.verify`; userdata reaches seat assignment.
-4. Seating + consented vs unexpected leave/reconnect + empty-seated dispose are explicit; no `maxClients = 4`.
-5. Synced fields / messages match client skills (schema/messages/game) including connectivity.
-6. Tests + loadtest use `tourist`; SC-PIECE grace/leave/dispose + SC-MOVE turn/move + lobby live-list covered where applicable.
+4. Seating + start phases/ready/countdown + consented vs unexpected leave/reconnect + empty-seated dispose are explicit; no `maxClients = maxSeats`.
+5. Synced fields / messages match client skills (schema/messages/game) including connectivity, `phase`, `maxSeats`, `ready`.
+6. Tests + loadtest use `tourist`; SC-PIECE + SC-START + SC-MOVE + lobby live-list covered where applicable.
 7. Run `npm test` / `npm run build` from the server package root; fix failures before claiming done.
 
 ## Related

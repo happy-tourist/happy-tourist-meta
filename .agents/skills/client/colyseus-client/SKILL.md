@@ -31,7 +31,7 @@ There is **no** axios layer and **no** BFF. Live lobby uses `LobbyRoom` WebSocke
 | Theme preference | `stores/theme.ts` → registered `client.http.get('/api/theme')` restore (≠ JWT-only) + `post('/api/theme', { body: { theme } })` on toggle; guest uses `localStorage` only |
 | Room names | `TOURIST_ROOM = 'tourist'`; `LOBBY_ROOM = 'lobby'` in `stores/game.ts` |
 | Connect | `client.create` / `joinById` / `joinOrCreate` via game store actions |
-| Game messages | `sendMove` → `move` when `isMyTurn`; `sendSay` → `say` `{ presetId: 'hello'\|'luck' }` + `onMessage('say')` → `sayEvents` |
+| Game messages | `sendMove` → `move` when playing+`isMyTurn`; `sendReady` → `ready`; `sendSay` → `say` `{ presetId: 'hello'\|'luck' }` + `onMessage('say')` → `sayEvents` |
 | Auth | `client.auth` — register / signIn / signOut / `onChange`; token key `colyseus-auth-token` |
 | Env | `VITE_COLYSEUS_URL`, `VITE_API_URL` (typed in `env.d.ts`) |
 | Errors | Store `error` string; pages show `q-banner` |
@@ -93,7 +93,7 @@ Local defaults: `.env.development` → `localhost:2567`. Production: `.env.produ
 | HTTP fallback | `stores/game.ts` → `refreshRooms` | `client.http.get('/rooms/tourist')` (unused by LobbyPage) |
 | Room lifecycle | `stores/game.ts` → `createGame` / `joinGame` / `leaveGame` | `client.create` / `joinById` / `joinOrCreate`, `room.leave` |
 | Game board UI | `pages/GamePage.vue` | Layout + pieces / strip / presence / say bubbles; calls `sendMove` / `sendSay` (no direct `room.send`) |
-| Live state | `stores/game.ts` → `_attachRoom` | `onStateChange` (`seats`/`started`/`currentTurnSessionId`); `onMessage('say')` → `sayEvents`; `onError`, `onLeave` |
+| Live state | `stores/game.ts` → `_attachRoom` | `onStateChange` (`seats`/`phase`/`maxSeats`/`countdownRemaining`/`currentTurnSessionId`); `onMessage('say')` → `sayEvents`; `onError`, `onLeave` |
 
 Allowed dependency direction: `pages` → `stores` / `boot` / `components`. Keep all `client.*` and `room.*` I/O in stores.
 
@@ -213,8 +213,10 @@ Mirror seating + turn from schema.
 
 | Field | Meaning |
 |-------|---------|
-| `started` | Fourth seat assigned → `true`; drives Pinia `status` `playing` / `waiting` |
-| `seats` Map | Key = `sessionId` → `touristId` + `pieces` Map (key = side `N\|E\|S\|W` → `{ side, row, col }`) + connectivity |
+| `phase` | `waiting` \| `countdown` \| `playing` — primary start gate; drives Pinia `status` |
+| `maxSeats` / `countdownRemaining` | Capacity + authoritative countdown seconds |
+| `started` | Legacy; client mirrors `phase === 'playing'` |
+| `seats` Map | Key = `sessionId` → `touristId` + `pieces` + connectivity + `ready` |
 | `currentTurnSessionId` | Synced whose turn; `""` if no seated → getter `isMyTurn` |
 | `sessionId` | From `room.sessionId` — for `mySeat` / strip×4 / turn check |
 
@@ -224,62 +226,49 @@ Wire once in the store:
 room.onStateChange((state) => {
   const s = state as TouristRoomState;
   this.sessionId = room.sessionId;
-  this.started = Boolean(s.started);
+  this.phase = parsePhase(s.phase);
+  this.started = this.phase === 'playing';
+  this.maxSeats = /* 2|3|4 from s.maxSeats */;
+  this.countdownRemaining = /* floor of s.countdownRemaining */;
   this.currentTurnSessionId =
     typeof s.currentTurnSessionId === 'string' ? s.currentTurnSessionId : '';
-  const next: GameSeat[] = [];
-  s.seats?.forEach((seat, sessionId) => {
-    const pieces: GamePiece[] = [];
-    seat.pieces?.forEach((piece, sideKey) => {
-      pieces.push({
-        side: String(piece.side || sideKey),
-        row: Number(piece.row),
-        col: Number(piece.col),
-      });
-    });
-    next.push({
-      sessionId,
-      touristId: Number(seat.touristId),
-      pieces,
-      connected: Boolean(seat.connected),
-      reconnectUntil: Number(seat.reconnectUntil) || 0,
-    });
-  });
-  this.seats = next;
-  this.status = this.started ? 'playing' : 'waiting';
+  // seats[] incl. ready/connectivity …
+  this.status = this.phase === 'playing' ? 'playing' : 'waiting';
 });
-room.onError((_code, message) => { this.error = message || 'Room error'; });
-room.onLeave(() => { this._resetRoomState(); });
 ```
 
-`GamePage` may call `rejoinGame(roomId)` if Pinia lost the room after refresh / soft-fail / browser reopen (`localStorage` reconnection token → `reconnect`, clear stale on fail → `joinById`); failed rejoin → navigate to lobby. Board tile geometry is a **client constant** (`work-with-game-board`); seats + connectivity + turn come from sync. Token details: `work-with-rooms`.
+`GamePage` may call `rejoinGame(roomId)` if Pinia lost the room after refresh / soft-fail / browser reopen (`localStorage` reconnection token → `reconnect`, clear stale on fail → `joinById`); failed rejoin → navigate to lobby. Board tile geometry is a **client constant** (`work-with-game-board`); seats + phase + connectivity + turn come from sync. Token details: `work-with-rooms`.
 
 ## Messages: game actions
 
 | Direction | Name | Payload |
 |-----------|------|---------|
-| Client → server | `move` | `{ side: 'N'\|'E'\|'S'\|'W', row, col }` via `sendMove` only when `isMyTurn` |
-| Client → server | `say` | `{ presetId: 'hello' \| 'luck' }` via `sendSay` (seated + connected; max 3 live / 10s) |
-| Server → clients | `say` | `{ sessionId, presetId, at }` via `room.onMessage` → store `sayEvents` (ephemeral; not schema) |
+| Client → server | `move` | `{ side, row, col }` via `sendMove` only when `phase === 'playing'` and `isMyTurn` |
+| Client → server | `ready` | empty via `sendReady` when `canSendReady` |
+| Client → server | `say` | `{ presetId: 'hello' \| 'luck' }` via `sendSay` (not `ready`) |
+| Server → clients | `say` | `{ sessionId, presetId, at }` → `sayEvents` (incl. readiness preset from ready) |
 
 ```ts
 sendMove(side: string, row: number, col: number): boolean {
-  if (!this.room || !this.isMyTurn) return false;
+  if (!this.room || this.phase !== 'playing' || !this.isMyTurn) return false;
   this.room.send('move', { side, row, col });
   return true;
 }
 
-sendSay(presetId: SayPresetId): boolean {
-  // whitelist hello|luck; seated + connected; prune sayEvents; refuse if ≥ 3 live
-  this.room.send('say', { presetId });
+sendReady(): boolean {
+  if (!this.room || !this.canSendReady) return false;
+  this.room.send('ready');
   return true;
 }
 
-// in _attachRoom:
-room.onMessage('say', (message) => { /* validate → push sayEvents; prune by SAY_TTL_MS */ });
+sendSay(presetId: SayPresetId): boolean {
+  // whitelist hello|luck only (block ready); seated + connected; max 3 live
+  this.room.send('say', { presetId });
+  return true;
+}
 ```
 
-Do **not** use legacy draughts `{ from, to }`. Pages must not call `room.send` directly. GamePage may start travel animation only when `sendMove` returns `true`. Say UI reads `sayEvents` and calls `sendSay` only (`work-with-game-board`).
+Do **not** use legacy draughts `{ from, to }`. Pages must not call `room.send` directly. GamePage may start travel animation only when `sendMove` returns `true`. Say/ready UI uses store actions only (`work-with-game-board`).
 
 ## Loading and errors
 
@@ -367,7 +356,7 @@ Show `auth.error` in a `q-banner`. Router already blocks until `whenReady()`.
 | Calling `client.create` / `room.send` in a page | Add/extend actions on `useGameStore` |
 | Second `new Client(...)` | Reuse singleton from `@/boot/colyseus` |
 | Treating GamePage layout as authoritative rules | Board geometry is UI only; seating/turn/moves live on the server |
-| Inventing client-local seat assignment | Mirror `seats`/`started`/`currentTurnSessionId` from schema only |
+| Inventing client-local seat assignment | Mirror `seats`/`phase`/`maxSeats`/`currentTurnSessionId` from schema only |
 | Hardcoding room name in pages | Use `TOURIST_ROOM` / `LOBBY_ROOM` from `stores/game` |
 | Leaving `listing` / `loading` true after error | Always `finally` |
 | Skipping `whenReady` in router | Await before `requiresAuth` / `guest` redirects |
@@ -379,7 +368,7 @@ Show `auth.error` in a `q-banner`. Router already blocks until `whenReady()`.
 
 1. Belongs in `stores/auth` or `stores/game` (not a page).
 2. Uses shared `client` from `@/boot/colyseus`.
-3. Lobby list: LobbyRoom subscribe; rooms: `create` / `joinById` / `joinOrCreate`; Game `sendMove` → `move`; `sendSay` → `say` + `onMessage('say')`. HTTP only as unused fallback.
+3. Lobby list: LobbyRoom subscribe; rooms: `create({ maxSeats })` / `joinById` (no Play shortcut); Game `sendMove` → `move`; `sendReady` → `ready`; `sendSay` → `say` + `onMessage('say')`. HTTP only as unused fallback.
 4. Room types use `TOURIST_ROOM` / `LOBBY_ROOM`.
 5. Loading flag cleared in `finally`; failures set store `error`.
 6. State fields / message payloads match `../happy-tourist-server` (lockstep), including `currentTurnSessionId`.

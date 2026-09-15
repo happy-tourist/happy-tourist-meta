@@ -102,21 +102,22 @@ Use these categories only when the SUT has relevant behavior:
 - Room connect: `sessionId` matches; `onAuth` userdata reaches `onJoin`.
 - Auth failure: missing / invalid token → connect rejects (client cannot join).
 - Schema sync: after join, client-visible state matches room —
-  `started`, `seats` Map (`touristId` + exactly four `pieces` keyed by side
-  `N|E|S|W` → `{ side, row, col }` + `connected` / `reconnectUntil`), and
+  `phase` / `maxSeats` / `countdownRemaining` (+ legacy `started`), `seats` Map
+  (`touristId` + exactly four `pieces` keyed by side `N|E|S|W` →
+  `{ side, row, col }` + `connected` / `reconnectUntil` / `ready`), and
   `currentTurnSessionId`. Assert four pieces / free start cells / leave-pool
-  reopen as in SC-PIECE-01…08 (`test/MyRoom.test.ts`). Also cover reconnect
-  grace SC-PIECE-11…16 (unexpected drop holds seat; reconnect restores; grace
-  timeout removes; empty-seated dispose; connectivity sync).
+  reopen as in SC-PIECE-01…08 / SC-PIECE-19 (`test/MyRoom.test.ts`). Also cover
+  reconnect grace SC-PIECE-11…16 and start capacity SC-START-* (maxSeats create,
+  ready → countdown → playing; move gated on playing).
 - Messages / turn: cover SC-MOVE-* in `test/MyRoom.test.ts` (first seated holds
   turn; join-order rotation; legal orthogonal/diagonal; occupied/non-playable
-  reject; out-of-turn / spectator reject; permanent leave advances; offline grace
-  keeps turn). Pure rules without room I/O: `test/touristMove.test.ts`. Do **not**
-  assert draughts-era `board` / `players[sessionId].color`.
-- Preset say: cover SC-SAY-* in `test/MyRoom.test.ts` (known preset broadcast;
-  non-whitelist / spectator / offline grace silent reject; off-turn seated OK;
-  spectators receive; max 3 live / `SAY_TTL_MS` then send again). Assert via
-  `waitForMessage('say')` / observer flags — **not** schema fields.
+  reject; out-of-turn / spectator / pre-playing reject; permanent leave advances;
+  offline grace keeps turn). Use `forcePlaying` / `waitForPhase` helpers when
+  isolating move rules from countdown. Pure rules: `test/touristMove.test.ts`.
+- Preset say / ready: cover SC-SAY-* and ready-broadcast cases (known preset
+  broadcast; `ready` message → say preset `ready` bypassing live cap; raw say
+  `ready` rejected; non-whitelist / spectator / offline grace silent reject;
+  max 3 live / `SAY_TTL_MS`). Assert via `waitForMessage('say')` — **not** schema.
 - Listing: live LobbyRoom — after `createRoom("tourist")`, lobby client
   receives `+`; after dispose, receives `-` (SC-LOBBY-02/03). HTTP
   `GET /rooms/tourist` remains optional fallback.
@@ -142,29 +143,38 @@ Verify JWT room connect:
 Verify seating / pieces (SC-PIECE):
 - First join: seat has touristId 1…4 and exactly four pieces on N/E/S/W start cells
 - Two seats: unique touristId; no shared (row,col) among any pieces
-- Fourth seat → started true; fifth → no seat; leave before start frees kind+cells
+- Fill maxSeats → further joiner is spectator; leave while under maxSeats reopens seat (any phase)
+- Mid-game free seat (SC-PIECE-19): join takes seat while phase playing
+
+Verify start / capacity (SC-START):
+- createRoom("tourist", { maxSeats: 2|3|4 }) → state + metadata.maxSeats; invalid → 2
+- metadata.seats = occupied seated count (not clients)
+- Full table while waiting → countdown (COUNTDOWN_SECONDS) → playing
+- Underfilled ≥2: all ready → same countdown; solo ready rejected
+- Leave/drop during countdown does not cancel; moves rejected until playing
 
 Verify reconnect grace (SC-PIECE-11…16):
 - Unexpected drop (client.reconnection.enabled=false; leave(false)): seat held;
   connected=false; reconnectUntil ≈ now+RECONNECT_GRACE_SECONDS*1000
 - reconnect(token) within grace: same sessionId/touristId/pieces; connected=true; reconnectUntil=0
-- Grace timeout: seat removed; kind/cells reusable before start
+- Grace timeout: seat removed; kind/cells reusable while under maxSeats
 - Last seated permanent leave closes room even with spectators
 - Observer sees connectivity fields sync (SC-PIECE-16)
 
 Verify move / turn (SC-MOVE):
 - First seated holds `currentTurnSessionId`; successful move advances join-order queue
-- Legal orthogonal/diagonal one-step: piece row/col update; illegal/out-of-turn/spectator: unchanged
+- Legal orthogonal/diagonal one-step: piece row/col update; illegal/out-of-turn/spectator/pre-playing: unchanged
 - Permanent leave of current advances turn; offline grace does not
 
-Verify preset say (SC-SAY):
+Verify preset say (SC-SAY) + ready:
 - Known `presetId` hello|luck → all clients get `say` `{ sessionId, presetId, at }`
+- `ready` message → seat.ready + say preset `ready` (bypass live cap); raw say `ready` rejected
 - Unknown / free text / spectator / offline grace → no broadcast
 - Seated off-turn may say; spectators see seated say
 - Fourth concurrent live say rejected; after `SAY_TTL_MS` may send again
 
 Verify live lobby listing:
-- joinOrCreate("lobby", { filter: { name: "tourist" } }); createRoom("tourist") → lobby receives +
+- joinOrCreate("lobby", { filter: { name: "tourist" } }); createRoom("tourist", { maxSeats }) → lobby receives +
 - room.disconnect() → lobby receives -
 
 Verify theme preference HTTP:
@@ -216,44 +226,46 @@ Always use `createRoom("tourist", …)` matching `app.config.ts`. Include lobby 
 
 Canonical coverage lives in `test/MyRoom.test.ts`:
 
-- First join → exactly four pieces on sides N/E/S/W on that side’s start cells; `connected=true`, `reconnectUntil=0`.
+- First join → exactly four pieces on sides N/E/S/W on that side’s start cells; `connected=true`, `reconnectUntil=0`, `ready=false`.
 - Unique `touristId` among seats; no shared cell among any pieces in the room.
-- Fourth seated → `started === true`; fifth → no seat / no extra pieces.
-- Consented leave before start → kind + cells reusable; after start → no reseat.
+- Fill `maxSeats` → further joiners are spectators; leave while under maxSeats reopens a seat (any phase); mid-game free seat (SC-PIECE-19).
+- Start: create `{ maxSeats }`; full table or all-ready underfilled → countdown → playing (SC-START-*).
 - Unexpected drop → hold seat for `RECONNECT_GRACE_SECONDS` (SC-PIECE-11…14); `reconnect(token)` restores online; grace timeout removes; empty seated → dispose with spectators (SC-PIECE-15); connectivity sync (SC-PIECE-16).
 
-Helpers in that file (`assertFourPiecesOnSides`, `listPieces`, `allRoomPieces`, `unexpectedDrop`, `assertOfflineGrace`)
+Helpers in that file (`assertFourPiecesOnSides`, `listPieces`, `allRoomPieces`, `unexpectedDrop`, `assertOfflineGrace`, `forcePlaying`, `waitForPhase`)
 are the preferred assertion style — extend them rather than inventing a parallel
-seat-flat `side`/`row`/`col` model. Grace-timeout cases may need `this.timeout(…)` above the default 15s.
+seat-flat `side`/`row`/`col` model. Grace-timeout / countdown cases may need `this.timeout(…)` above the default 15s.
 
 ### Turn / move (SC-MOVE)
 
 Canonical coverage: `test/MyRoom.test.ts` (SC-MOVE-*) + pure `test/touristMove.test.ts`.
 
 - First seated → `currentTurnSessionId`; join-order rotation after legal move; solo wraps to self.
-- Legal orthogonal/diagonal one-step updates piece `row`/`col` and advances turn.
-- Occupied / non-playable / out-of-turn / spectator → no state change.
+- Legal orthogonal/diagonal one-step updates piece `row`/`col` and advances turn — only when `phase === 'playing'` (use `forcePlaying` to skip countdown in isolation tests).
+- Occupied / non-playable / out-of-turn / spectator / pre-playing → no state change.
 - Permanent leave of current advances turn; `onDrop` grace does not change turn.
 - Pure module tests cover playable set, Chebyshev, occupancy without room I/O.
 
 Server is authoritative; never assert by trusting a client-only board copy.
 
-### Preset say (SC-SAY)
+### Preset say (SC-SAY) + ready
 
-Canonical coverage: `test/MyRoom.test.ts` (SC-SAY-*).
+Canonical coverage: `test/MyRoom.test.ts` (SC-SAY-* / ready cases).
 
 - Accept `hello` / `luck` → `broadcast('say', { sessionId, presetId, at })` to seated + spectators.
+- `ready` message → `seat.ready` + say preset `ready` (bypass live cap); reject raw say `presetId: 'ready'`.
 - Reject non-whitelist, spectator, offline-grace seat without broadcast (silent).
-- Turn ownership not required; max `SAY_MAX_LIVE` (3) concurrent per session within `SAY_TTL_MS` (10s).
+- Turn ownership not required; max `SAY_MAX_LIVE` (3) concurrent per session within `SAY_TTL_MS` (10s) — readiness broadcast bypasses the cap.
 - Do **not** assert say via schema — use `client.waitForMessage('say')` / message listeners.
-- TTL cases may need `this.timeout(SAY_TTL_MS + …)` above the default.
+- TTL / countdown cases may need `this.timeout(…)` above the default.
 
 ### Schema sync assertions
 
 - After `connectTo`, read synced state from the client SDK view or room state
   the harness exposes; assert fields the client SPA expects:
-  `started`, `seats` → `touristId` + four `pieces` `{ side, row, col }` +
-  `connected` / `reconnectUntil`, and `currentTurnSessionId`.
+  `phase` / `maxSeats` / `countdownRemaining` (+ legacy `started`), `seats` →
+  `touristId` + four `pieces` `{ side, row, col }` + `connected` /
+  `reconnectUntil` / `ready`, and `currentTurnSessionId`.
 - Do not assert legacy draughts fields (`board`, `currentTurn`,
   `players[].color`) — they are not in product schema.
 

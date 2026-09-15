@@ -2,7 +2,7 @@
 name: work-with-messages
 description: >-
   Use when adding, changing, reviewing, or debugging Colyseus room messages in
-  the happy-tourist tourist server — onMessage handlers (move, say), validating
+  the happy-tourist tourist server — onMessage handlers (move, ready, say), validating
   client intents before mutating schema state or broadcasting ephemeral events,
   optional error feedback, or aligning message contracts with the client. Not
   for lobby listing (LobbyRoom / HTTP fallback).
@@ -20,9 +20,9 @@ Coordinate with: `work-with-rooms` (lifecycle / registration), `work-with-schema
 
 | In scope | Out of scope |
 |----------|--------------|
-| `this.onMessage(...)` for game actions (`move`, `say`) | Lobby listing — client uses **LobbyRoom** (`rooms` / `+` / `-`) |
+| `this.onMessage(...)` for game actions (`move`, `ready`, `say`) | Lobby listing — client uses **LobbyRoom** (`rooms` / `+` / `-`) |
 | Payload shape / type guards for client intents | Auth join gate — `onAuth` + JWT (`server-work-with-auth`) |
-| Validate → mutate `@colyseus/schema` state (`move`) or ephemeral broadcast (`say`) | Express routes / `createEndpoint` |
+| Validate → mutate `@colyseus/schema` state (`move` / `ready`) or ephemeral broadcast (`say`) | Express routes / `createEndpoint` |
 | Optional per-client error feedback for bad actions | Pure board-game rules (`work-with-game` / `touristMove.ts`); free-form chat |
 
 **Prefer changing the server to match the client** rather than inventing a parallel protocol. Do not treat legacy draughts `move` `{ from, to }` as product canon.
@@ -31,20 +31,23 @@ Coordinate with: `work-with-rooms` (lifecycle / registration), `work-with-schema
 
 | Direction | Name | Payload / behavior |
 |-----------|------|--------------------|
-| Client → server | `move` | `{ side: 'N'\|'E'\|'S'\|'W', row: number, col: number }` — via game store `sendMove` only when `isMyTurn` |
-| Client → server | `say` | `{ presetId: 'hello' \| 'luck' }` — via game store `sendSay`; whitelist only (no free text) |
-| Server → clients | Schema sync | `started` + `seats` + `currentTurnSessionId` → client `onStateChange` |
-| Server → all clients | `say` | `broadcast('say', { sessionId, presetId, at })` — ephemeral; not schema |
+| Client → server | `move` | `{ side: 'N'\|'E'\|'S'\|'W', row: number, col: number }` — via `sendMove` only when `phase === 'playing'` and `isMyTurn` |
+| Client → server | `ready` | empty payload — via `sendReady` (waiting, ≥2 seated, under maxSeats, not yet ready) |
+| Client → server | `say` | `{ presetId: 'hello' \| 'luck' }` — via `sendSay`; whitelist only (no free text; **not** `ready`) |
+| Server → clients | Schema sync | `phase` / `maxSeats` / `countdownRemaining` / `seats` (+ `ready`) / `currentTurnSessionId` → `onStateChange` |
+| Server → all clients | `say` | `broadcast('say', { sessionId, presetId, at })` — ephemeral; includes readiness preset from successful `ready` |
 | Server → client | room error channel | Client sets `game.error` from `room.onError` |
 | Lobby | HTTP fallback | `client.http.get('/rooms/tourist')` — **not** a room message |
 
-**`move`:** accept only when seated + current turn; legal one-step per `touristMove.ts`. Reject (no mutate) otherwise. On accept: update piece `row`/`col`, advance turn.
+**`move`:** accept only when `phase === 'playing'` + seated + current turn; legal one-step per `touristMove.ts`. Reject (no mutate) otherwise. On accept: update piece `row`/`col`, advance turn.
 
-**`say`:** accept only when seated + `connected` (not spectator / offline grace); `presetId` ∈ `{ hello, luck }`; at most **3** live says per `sessionId` within **10s** TTL (`SAY_TTL_MS` / `SAY_MAX_LIVE` in `MyRoom.ts`). Room-private `liveSays: { sessionId, at }[]` (not schema). Silent reject otherwise. On accept: `broadcast('say', { sessionId, presetId, at })` where `at` is server ms timestamp. Turn ownership is **not** required. Display strings live on the client only (`hello` → «Всем привет», `luck` → «Удачи»).
+**`ready`:** accept only in `waiting`, seated + connected, seated count ≥ 2 and `< maxSeats`, seat not already ready. On accept: `seat.ready = true`, broadcast say preset `ready` (bypass live-say cap), maybe start countdown. Silent reject otherwise.
+
+**`say`:** accept only when seated + `connected`; `presetId` ∈ `{ hello, luck }` (**reject** `ready` — use `ready` message). At most **3** live says per `sessionId` within **10s** TTL. Display: `hello` → «Всем привет», `luck` → «Удачи», `ready` → «Готов начать!» (client i18n).
 
 ## Server Today
 
-- `src/rooms/MyRoom.ts` — seating lifecycle + `onMessage('move')` → `handleMove`; `onMessage('say')` → `handleSay`.
+- `src/rooms/MyRoom.ts` — seating + start + `onMessage('move'|'ready'|'say')`.
 - Pure move rules: `src/game/touristMove.ts`.
 - Room registered as `tourist` (+ `lobby` for live list); do not reintroduce `my_room`.
 
@@ -54,19 +57,24 @@ Register handlers in the room (typically `onCreate`), not in Express:
 
 ```ts
 this.onMessage('move', (client, message) => {
-  // 1. Shape-check { side, row, col }
-  // 2. Resolve seat; require currentTurnSessionId === client.sessionId
-  // 3. Validate/apply via touristMove pure rules
-  // 4. On success: mutate piece row/col + advance turn
-  // 5. On failure: do not mutate; silent reject OK
+  // 1. Require phase === 'playing'
+  // 2. Shape-check { side, row, col }
+  // 3. Resolve seat; require currentTurnSessionId === client.sessionId
+  // 4. Validate/apply via touristMove pure rules
+  // 5. On success: mutate piece row/col + advance turn
+});
+
+this.onMessage('ready', (client) => {
+  // 1. phase === 'waiting'; seated+connected; ≥2 and < maxSeats; !seat.ready
+  // 2. seat.ready = true; broadcast say preset 'ready' (bypass live cap)
+  // 3. maybeStartCountdown()
 });
 
 this.onMessage('say', (client, message) => {
   // 1. Seat exists + seat.connected
-  // 2. presetId ∈ whitelist hello|luck
-  // 3. Prune liveSays by SAY_TTL_MS; reject if ≥ SAY_MAX_LIVE for sessionId
-  // 4. Push { sessionId, at }; broadcast('say', { sessionId, presetId, at })
-  // 5. Never mutate schema for say
+  // 2. presetId ∈ hello|luck (reject 'ready')
+  // 3. Prune liveSays; reject if ≥ SAY_MAX_LIVE
+  // 4. broadcast('say', { sessionId, presetId, at })
 });
 ```
 
@@ -105,9 +113,9 @@ this.onMessage('say', (client, message) => {
 ## Change Checklist
 
 1. Handler registered on the tourist room via `this.onMessage`.
-2. Payload matches the client store (`sendMove` / `sendSay`).
+2. Payload matches the client store (`sendMove` / `sendReady` / `sendSay`).
 3. Illegal actions do not mutate schema (and `say` rejects do not broadcast).
-4. Move rules delegated to `work-with-game` / `touristMove.ts`; say stays I/O + whitelist + live-limit in the room handler.
+4. Move rules delegated to `work-with-game` / `touristMove.ts`; start/ready/countdown in room; say stays I/O + whitelist + live-limit in the room handler.
 5. Update `test/` / `loadtest/` when the message contract becomes testable.
 6. Run `npm test` from the server package root; fix failures before claiming done.
 

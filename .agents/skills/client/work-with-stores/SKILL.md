@@ -81,14 +81,14 @@ Use a store for shared domain data, realtime session, or anything the router/oth
 |-------|------|-------------------|
 | **auth** | `user`, `token`, `loading`, `error`, `ready`; `isAuthenticated`, `displayName`; register/login/anonymous/Google/`logout`/`whenReady` | `LoginPage`, router `beforeEach`, `LobbyPage` logout/header, `App.vue` theme sync |
 | **theme** | Quasar Dark `preference`, `error`; async `syncFromAuthUser` (GET restore + generation + `clearStoredTheme` when unset; **no** `auth.user` replace after GET), `toggle` (guest `localStorage` `ht-theme`; registered `get` ≠ JWT-only, `post` on toggle may patch `user.theme`) | `App.vue` header toggle + stable auth identity watch |
-| **game** | lobby `rooms`/`lobbyRoom`/`lobbyWanted`/`listing`; active `room`/`roomId`/`sessionId`; mirrored `seats` (`GameSeat`: `touristId` + `pieces[]` + connectivity) / `started` / `currentTurnSessionId`; getters `mySeat`/`isSeated`/`isMyTurn`; `sendMove`; `sendSay` + ephemeral `sayEvents`; `status`, `error`; subscribe/unsubscribe / create/join/`rejoinGame`/leave; tourist token in `localStorage` | `LobbyPage`, `GamePage` |
+| **game** | lobby `rooms`/`lobbyRoom`/`lobbyWanted`/`listing`; active `room`/`roomId`/`sessionId`; mirrored `seats` (`GameSeat`: `touristId` + `pieces[]` + connectivity + `ready`) / `phase` / `maxSeats` / `countdownRemaining` / legacy `started` / `currentTurnSessionId`; getters `mySeat`/`isSeated`/`isMyTurn`/`isPlaying`/`canSendReady`; `sendMove`; `sendReady`; `sendSay` + ephemeral `sayEvents`; `status`, `error`; subscribe/unsubscribe / create/join/`rejoinGame`/leave; tourist token in `localStorage` | `LobbyPage`, `GamePage` |
 | **counter** | scaffold only | none in product flow — ignore unless cleaning scaffold |
 
 ### Auth vs theme vs game ownership
 
 - **auth** owns Colyseus Auth only (`client.auth.*`, token sync via `onChange`). It does not create rooms or call Dark/`GET|POST /api/theme`.
 - **theme** owns chrome Dark preference and preference HTTP (`client.http.get('/api/theme')` on restore, `post` on toggle). Wired from `App.vue`; does not own auth session or rooms. See `work-with-styles`.
-- **game** owns room listing, room lifecycle, tourist reconnect token, seat/turn sync (`seats` + `started` + `currentTurnSessionId` / `sessionId` from `onStateChange`), `sendMove` → `room.send('move', { side, row, col })` only when `isMyTurn`, and `sendSay` → `room.send('say', { presetId })` plus `onMessage('say')` → `sayEvents` (whitelist `hello`|`luck`; TTL 10s / max 3 live). It does not call `client.auth` or theme APIs. Do not put `side`/`row`/`col` on `GameSeat` itself — those live on each `GamePiece`. Selection/hints/`moveAnimating`/say picker stay page-local on `GamePage`.
+- **game** owns room listing, room lifecycle, tourist reconnect token, seat/turn/start sync (`seats` + `phase` / `maxSeats` / `countdownRemaining` / `currentTurnSessionId` / `sessionId` from `onStateChange`; legacy `started` mirrors `phase === 'playing'`), `sendMove` → `room.send('move', …)` only when playing + `isMyTurn`, `sendReady` → `room.send('ready')`, and `sendSay` → `room.send('say', { presetId })` plus `onMessage('say')` → `sayEvents` (picker whitelist `hello`|`luck`; readiness preset arrives via ready broadcast; TTL 10s / max 3 live). It does not call `client.auth` or theme APIs. Do not put `side`/`row`/`col` on `GameSeat` itself — those live on each `GamePiece`. Selection/hints/`moveAnimating`/say picker stay page-local on `GamePage`.
 - Cross-cutting: router awaits `useAuthStore().whenReady()` then enforces `requiresAuth` / `guest`. `App.vue` uses `watch([() => auth.ready, () => auth.user?.id, () => auth.user?.anonymous], …)` → `theme.syncFromAuthUser` (GET restore; not JWT `user.theme`-only). Do **not** use `watch(() => [ready, id, anonymous])` (new array each run) or replace `auth.user` after GET — that storms `GET /api/theme` (SC-THEME-10). POST toggle may patch `auth.user.theme` because the watch does not depend on it. Game pages assume auth already passed.
 - Room constants: `TOURIST_ROOM = 'tourist'`, `LOBBY_ROOM = 'lobby'`. Board tile geometry + presence + move chrome stay on `GamePage`.
 
@@ -117,8 +117,9 @@ Pages call store actions; stores call `client` / `room`.
 // Do — in stores/game.ts
 await client.joinOrCreate(LOBBY_ROOM, { filter: { name: TOURIST_ROOM } });
 await client.create(TOURIST_ROOM, options);
-this.room.send('move', { side, row, col }); // only from sendMove when isMyTurn
-this.room.send('say', { presetId }); // only from sendSay (hello|luck)
+this.room.send('move', { side, row, col }); // only from sendMove when playing + isMyTurn
+this.room.send('ready'); // only from sendReady when canSendReady
+this.room.send('say', { presetId }); // only from sendSay (hello|luck — not ready)
 
 // Do — in stores/auth.ts
 await client.auth.signInWithEmailAndPassword(email, password);
@@ -177,7 +178,10 @@ export const useGameStore = defineStore('game', {
     room: null,
     roomId: null,
     sessionId: null,
-    started: false,
+    phase: 'waiting',
+    maxSeats: 2,
+    countdownRemaining: 0,
+    started: false, // legacy mirror of phase === 'playing'
     currentTurnSessionId: '',
     seats: [],
     status: 'idle',
@@ -197,23 +201,30 @@ export const useGameStore = defineStore('game', {
         state.sessionId === state.currentTurnSessionId &&
         state.seats.some((s) => s.sessionId === state.sessionId),
       ),
+    isPlaying: (state) => state.phase === 'playing',
+    canSendReady: (state) => { /* waiting + ≥2 + under maxSeats + own !ready */ },
   },
   actions: {
     async subscribeLobby() { /* lobbyWanted + joinOrCreate lobby + quiet resubscribe */ },
     async unsubscribeLobby() { /* lobbyWanted=false; leave lobbyRoom */ },
-    async createGame(options = {}) {
+    async createGame(options: { maxSeats?: 2 | 3 | 4 } = {}) {
       return this._enterRoom(() => client.create(TOURIST_ROOM, options));
     },
     async rejoinGame(roomId, options = {}) {
       // localStorage reconnect(token) → clear stale on fail → fallback joinById
     },
     sendMove(side, row, col) {
-      if (!this.room || !this.isMyTurn) return false;
+      if (!this.room || this.phase !== 'playing' || !this.isMyTurn) return false;
       this.room.send('move', { side, row, col });
       return true;
     },
+    sendReady() {
+      if (!this.room || !this.canSendReady) return false;
+      this.room.send('ready');
+      return true;
+    },
     sendSay(presetId) {
-      // whitelist hello|luck; seated + connected; max 3 live by at + SAY_TTL_MS
+      // whitelist hello|luck only (block ready); seated + connected; max 3 live
       this.room.send('say', { presetId });
       return true;
     },
@@ -223,7 +234,7 @@ export const useGameStore = defineStore('game', {
 
 Notes:
 - Live lobby listing uses `subscribeLobby` / LobbyRoom messages — not LobbyPage HTTP poll. `refreshRooms` HTTP remains unused fallback. Set `lobby.reconnection.enabled = false`; filter reservation/reconnect noise (see `work-with-lobby`).
-- Mirror `seats` (incl. connectivity) / `started` / `currentTurnSessionId` / `sessionId` in the store; keep tile geometry + presence + selection/hints + say picker on `GamePage` (not Pinia). Ephemeral `sayEvents` stay in the store (room I/O).
+- Mirror `seats` (incl. connectivity + `ready`) / `phase` / `maxSeats` / `countdownRemaining` / `currentTurnSessionId` / `sessionId` in the store; keep tile geometry + presence + selection/hints + say picker on `GamePage` (not Pinia). Ephemeral `sayEvents` stay in the store (room I/O).
 - Persist tourist `reconnectionToken` in `localStorage` (`ht-tourist-reconnect`); clear on consented `leaveGame` / `_leaveTouristRoom` and after failed `reconnect`; keep on unexpected `onLeave`; cross-tab steal OK (see `work-with-rooms`).
 - `leaveGame` unsubscribes lobby and swallows leave errors (room may already be closed). `GamePage` calls `rejoinGame(roomId)` on mount / soft-fail (reconnect → `joinById`).
 

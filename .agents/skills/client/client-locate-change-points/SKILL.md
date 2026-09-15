@@ -113,7 +113,7 @@ Do not invent room schemas, HTTP routes, or move payloads — note the server pa
 | Theme / layout chrome | `App.vue` header + `stores/theme` + `boot/theme` + `css/*` (board CSS ≠ app Dark) |
 | i18n copy | `src/i18n/`, boot `i18n` |
 
-Today: GamePage board + presence + all pieces from synced `seats` (`touristId` + four `pieces` + `connected` / `reconnectUntil`) / `started` / `currentTurnSessionId`; strip×4 if seated; on `isMyTurn` select/hints → `sendMove`. Tourist reconnect via `localStorage` token. Room name `tourist`.
+Today: GamePage board + presence + all pieces from synced `seats` (`touristId` + four `pieces` + `connected` / `reconnectUntil` / `ready`) / `phase` / `maxSeats` / `countdownRemaining` / `currentTurnSessionId`; strip×4 if seated; countdown overlay; ready affordance; on `isPlaying && isMyTurn` select/hints → `sendMove`. Tourist reconnect via `localStorage` token. Room name `tourist`.
 
 ## Workflow
 

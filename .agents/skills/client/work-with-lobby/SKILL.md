@@ -3,16 +3,16 @@ name: work-with-lobby
 description: >-
   Guides live lobby room list via LobbyRoom subscribe/unsubscribe, quiet
   resubscribe after drop (no reconnect hold / no reservation noise), leave
-  policy before enter tourist, create / join / joinOrCreate, and navigation to
-  /game/:roomId in the happy-tourist tourist client. Use when changing
-  LobbyPage, game.subscribeLobby / unsubscribeLobby / createGame / joinGame,
-  LOBBY_ROOM / TOURIST_ROOM listing, lobby loading flags, game.error banners,
-  or logout from the lobby.
+  policy before enter tourist, create-with-maxSeats modal / join-by-id (no Play
+  shortcut), and navigation to /game/:roomId in the happy-tourist tourist
+  client. Use when changing LobbyPage, game.subscribeLobby / unsubscribeLobby /
+  createGame / joinGame, LOBBY_ROOM / TOURIST_ROOM listing, lobby loading flags,
+  game.error banners, or logout from the lobby.
 ---
 
 # Work With Lobby
 
-Use this skill for the **lobby** in the happy-tourist tourist client (`happy-tourist.github.io`): live room list via built-in Colyseus `LobbyRoom`, create / join / joinOrCreate, then enter the game route.
+Use this skill for the **lobby** in the happy-tourist tourist client (`happy-tourist.github.io`): live room list via built-in Colyseus `LobbyRoom`, create (with maxSeats) / join-by-id, then enter the game route. **No** primary «Играть» / `joinOrCreate` shortcut.
 
 Stack: Vue 3 `<script setup>`, Quasar 2, Pinia `useGameStore` / `useAuthStore`, `@colyseus/sdk` 0.18.
 
@@ -31,9 +31,10 @@ Sibling server: `../happy-tourist-server`. Coordinate room name (`tourist`), `lo
 | SDK auto-reconnect | After join: `lobby.reconnection.enabled = false` (avoid reservation churn) |
 | Drop while on Lobby | Clear `lobbyRoom`; if `lobbyWanted` → `_quietResubscribeLobby` (no user-facing reservation text) |
 | Leave lobby | `unsubscribeLobby` after successful tourist connect (`_enterRoom`); also on LobbyPage unmount and `leaveGame` / logout |
-| Play | `joinGame()` (no id) → `client.joinOrCreate(TOURIST_ROOM)` |
-| Create | `createGame()` → `client.create(TOURIST_ROOM)` |
-| Join by id | `joinGame(roomId)` → `client.joinById(roomId)` |
+| Create | Modal radio 2/3/4 (default 2) → `createGame({ maxSeats })` → `client.create(TOURIST_ROOM, { maxSeats })` |
+| Join by id | List row / «Войти» → `joinGame(roomId)` → `client.joinById(roomId)` |
+| Capacity caption | `metadata.seats` / `metadata.maxSeats` as `occupied/maxSeats` (not `clients`/`maxClients`) |
+| Play shortcut | **Removed** — do not restore «Играть» / bare `joinOrCreate` without product request |
 | After enter | `router.push({ name: 'game', params: { roomId } })` |
 | Loading | Store `listing` during subscribe connect; page refs `creating`, `joining` |
 | Errors | `game.error` + `q-banner` for **real** subscribe fail (SC-LOBBY-07); filter lobby reconnect / `seat reservation expired` noise (SC-LOBBY-08) |
@@ -50,7 +51,7 @@ Sibling server: `../happy-tourist-server`. Coordinate room name (`tourist`), `lo
 | Quiet-resubscribe on drop while `lobbyWanted` | Surface `seat reservation expired` / `FAILED_TO_RECONNECT` as listing `error` |
 | Mount → `subscribeLobby`; unmount → `unsubscribeLobby` | Leave lobby WS open after navigate to game or login |
 | Call `unsubscribeLobby` after successful `tourist` connect (`_enterRoom`); keep lobby on failed enter | Keep lobby + tourist sockets both live on GamePage |
-| Play → `joinGame()`; Create → `createGame()`; list click → `joinGame(roomId)` | Invent parallel enter helpers on the page |
+| Create modal → `createGame({ maxSeats })`; list click → `joinGame(roomId)` | Invent parallel enter helpers; restore «Играть» / bare `joinOrCreate` |
 | Navigate to `/game/:roomId` only after a successful enter | Stay on lobby with a live room and no route change |
 | Bind listing loading / `creating` / `joining` | Leave buttons clickable during connect |
 | Show `game.error` with `q-banner` for real listing failure | Duplicate a second error channel; treat transient reconnect noise as SC-LOBBY-07 |
@@ -61,13 +62,13 @@ Sibling server: `../happy-tourist-server`. Coordinate room name (`tourist`), `lo
 
 | Layer | Path | Role |
 |-------|------|------|
-| Page | `src/pages/LobbyPage.vue` | List UI, subscribe lifecycle, Play / Create / Join, logout |
+| Page | `src/pages/LobbyPage.vue` | List UI, subscribe lifecycle, create-with-maxSeats modal / Join, logout |
 | Store | `src/stores/game.ts` | LobbyRoom subscribe + room enter / leave |
 | Auth | `src/stores/auth.ts` | `displayName`, `logout` |
 | Client | `src/boot/colyseus.ts` | Shared `Client` (`VITE_COLYSEUS_URL`) |
 | Route | `src/router/routes.ts` | `/lobby` → name `lobby`; `/game/:roomId` → name `game` |
 
-List row shape (`RoomAvailable<GameRoomMeta>`): `roomId`, `clients`, `maxClients`, `metadata?.title`, `metadata?.status` (`waiting` \| `playing` \| `finished`).
+List row shape (`RoomAvailable<GameRoomMeta>`): `roomId`, `clients`, `maxClients` (raw Colyseus), plus product metadata `metadata?.title`, `metadata?.status` (`waiting` \| `playing` \| `finished`), `metadata?.seats`, `metadata?.maxSeats`. Capacity caption uses **metadata seats/maxSeats**, not `clients`/`maxClients`.
 
 ## Live list — `subscribeLobby` / `unsubscribeLobby`
 
@@ -152,14 +153,13 @@ No `setInterval`. Returning to `/lobby` remounts and resubscribes (SC-LOBBY-06).
 
 | UI | Page handler | Store | SDK |
 |----|--------------|-------|-----|
-| «Играть» (Play) | `onPlay` | `joinGame()` | `joinOrCreate(TOURIST_ROOM)` |
-| «Создать игру» (Create) | `onCreate` | `createGame()` | `create(TOURIST_ROOM)` |
+| «Создать игру» → modal confirm | `onConfirmCreate` | `createGame({ maxSeats })` | `create(TOURIST_ROOM, { maxSeats })` |
 | List row / «Войти» | `onJoin(roomId)` | `joinGame(roomId)` | `joinById(roomId)` |
 
 All go through `_enterRoom`: clear prior tourist room → connect → `_attachRoom` → `unsubscribeLobby` on success → return `Room`. Page then navigates:
 
 ```ts
-const room = await game.joinGame(); // or createGame / joinGame(id)
+const room = await game.createGame({ maxSeats: 3 });
 await router.push({ name: 'game', params: { roomId: room.roomId } });
 ```
 
@@ -170,8 +170,8 @@ Page `catch` is empty on purpose — failure already sets `game.error`.
 | Flag | Where | Covers |
 |------|-------|--------|
 | `game.listing` | store | `subscribeLobby` connect window |
-| `joining` | LobbyPage `ref` | Play + join-by-id |
-| `creating` | LobbyPage `ref` | Create |
+| `joining` | LobbyPage `ref` | join-by-id |
+| `creating` | LobbyPage `ref` | Create modal confirm |
 
 Reset page refs in `finally`. Store clears `listing` in `finally` of subscribe.
 
@@ -184,28 +184,19 @@ Reset page refs in `finally`. Store clears `listing` in `finally` of subscribe.
 
 ## Patterns
 
-### Play (joinOrCreate)
+### Create with maxSeats modal
 
 ```ts
-joining.value = true;
+createMaxSeats.value = 2; // default
+createModalOpen.value = true;
+// on confirm:
+creating.value = true;
 try {
-  const room = await game.joinGame();
+  const room = await game.createGame({ maxSeats: createMaxSeats.value });
+  createModalOpen.value = false;
   await router.push({ name: 'game', params: { roomId: room.roomId } });
 } catch {
   // error in store
-} finally {
-  joining.value = false;
-}
-```
-
-### Create
-
-```ts
-creating.value = true;
-try {
-  const room = await game.createGame();
-  await router.push({ name: 'game', params: { roomId: room.roomId } });
-} catch {
 } finally {
   creating.value = false;
 }
@@ -224,14 +215,15 @@ await router.push({ name: 'game', params: { roomId } });
 2. `lobby.reconnection.enabled = false`; no lobby token in storage.
 3. Drop while `lobbyWanted` → quiet resubscribe; filter reservation / reconnect noise from `game.error`.
 4. Lobby mounts subscribe; unmount / logout / successful enter unsubscribe lobby WS; failed enter keeps subscription.
-5. Play / Create / Join map to `joinGame()` / `createGame()` / `joinGame(roomId)`.
-6. Successful enter navigates to `/game/:roomId` (route name `game`) with no active lobby subscription.
-7. `listing` / `creating` / `joining` bound; cleared in `finally`.
-8. SC-LOBBY-07 only for real listing unavailability; logout still works.
-9. Logout goes through auth store (after `leaveGame`).
-10. Room name and list metadata match `../happy-tourist-server` (`lobby` + `tourist` + realtime listing; no LobbyRoom grace).
-11. No `client.*` calls from LobbyPage — only store actions.
-12. Run `npm run lint` / `typecheck` from the client package root; fix failures before claiming done.
+5. Create modal → `createGame({ maxSeats })`; join listed → `joinGame(roomId)`; **no** Play / bare `joinOrCreate` UI.
+6. Capacity caption uses `metadata.seats`/`metadata.maxSeats`.
+7. Successful enter navigates to `/game/:roomId` (route name `game`) with no active lobby subscription.
+8. `listing` / `creating` / `joining` bound; cleared in `finally`.
+9. SC-LOBBY-07 only for real listing unavailability; logout still works.
+10. Logout goes through auth store (after `leaveGame`).
+11. Room name and list metadata match `../happy-tourist-server` (`lobby` + `tourist` + realtime listing; metadata seats/maxSeats).
+12. No `client.*` calls from LobbyPage — only store actions.
+13. Run `npm run lint` / `typecheck` from the client package root; fix failures before claiming done.
 
 ## Common mistakes
 
@@ -242,7 +234,8 @@ await router.push({ name: 'game', params: { roomId } });
 | Persisting lobby reconnection token | Only tourist token (`work-with-rooms`); lobby is D7 fire-and-forget |
 | Showing `seat reservation expired` in listing banner | Filter via `isLobbyReconnectNoise`; quiet resubscribe |
 | Keeping lobby WS on GamePage | `unsubscribeLobby` after successful connect in `_enterRoom`; `leaveGame` on logout/leave |
-| Play calling `createGame` | Play = `joinGame()` → `joinOrCreate` |
+| Restoring «Играть» / `joinOrCreate` shortcut | Create with maxSeats or join listed room only |
+| Showing `clients`/`maxClients` as capacity | Use metadata `seats`/`maxSeats` |
 | Join without `roomId` when clicking a list row | Pass `room.roomId` into `joinGame(roomId)` |
 | Enter success but no navigation | `push({ name: 'game', params: { roomId } })` |
 | Calling `client.create` / `joinById` in the page | Use `createGame` / `joinGame` on the store |

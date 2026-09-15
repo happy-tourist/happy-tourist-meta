@@ -222,8 +222,8 @@ Sibling client (`../happy-tourist.github.io`) assumes:
 |--------------------|------------------------|
 | Room type name `tourist` | Register room as `tourist` (+ `lobby` + `.enableRealtimeListing()`) |
 | Tourist board layout on Game | Client-only tile geometry; no layout sync required |
-| Synced seats / started / turn | `MyRoomState`: `started` + `seats` Map + `currentTurnSessionId` |
-| Move message | `onMessage('move')` `{ side, row, col }`; pure rules in `src/game/touristMove.ts` |
+| Synced seats / phase / turn | `MyRoomState`: `phase` / `maxSeats` / `countdownRemaining` + legacy `started` + `seats` Map (+ `ready`) + `currentTurnSessionId` |
+| Move / ready / say | `onMessage('move')` only when `phase === 'playing'`; `onMessage('ready')`; `onMessage('say')` whitelist |
 | Live lobby (`LobbyRoom`) | `lobby` registered; tourist has realtime listing |
 
 Prefer aligning room name, schema, and messages with the client rather than
@@ -251,9 +251,9 @@ of verified auth userdata.
 ### Authoritative gameplay
 
 - Board-game truth for «Счастливый турист» lives on the **server**.
-- Seating (`seats`/`started`), turn (`currentTurnSessionId` + room-private
-  `turnOrder`), and one-step `move` are authoritative; client mirrors state and
-  shows local hints only.
+- Seating (`seats`/`maxSeats`/`phase`/`ready`), turn (`currentTurnSessionId` + room-private
+  `turnOrder`), and one-step `move` (only while `phase === 'playing'`) are authoritative;
+  client mirrors state and shows local hints only.
 - Do not trust client-supplied layout/state as source of truth.
 
 **Violations when:** server applies client board snapshots as truth; or invents

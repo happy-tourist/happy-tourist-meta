@@ -75,9 +75,9 @@ OpenSpec: [`openspec/config.yaml`](../openspec/config.yaml); артефакты 
 | [`work-with-stores`](skills/client/work-with-stores/SKILL.md) | Pinia `auth` / `theme` / `game` |
 | [`work-with-styles`](skills/client/work-with-styles/SKILL.md) | Quasar Dark + GET/POST `/api/theme`, header, muted chrome, tourist board CSS |
 | [`work-with-localization`](skills/client/work-with-localization/SKILL.md) | vue-i18n boot |
-| [`work-with-lobby`](skills/client/work-with-lobby/SKILL.md) | Live LobbyRoom subscribe, quiet resubscribe after drop (no reconnect hold) |
+| [`work-with-lobby`](skills/client/work-with-lobby/SKILL.md) | Live LobbyRoom subscribe, create-with-maxSeats modal (no Play shortcut), quiet resubscribe |
 | [`work-with-rooms`](skills/client/work-with-rooms/SKILL.md) | Room lifecycle, `localStorage` tourist reconnect token, `onStateChange` / `onLeave` |
-| [`work-with-game-board`](skills/client/work-with-game-board/SKILL.md) | Tourist board + presence + say bubbles/picker + strip×4 + current-turn select/hints/`sendMove`/`sendSay` |
+| [`work-with-game-board`](skills/client/work-with-game-board/SKILL.md) | Tourist board + presence + ready/countdown + say + strip×4 + `sendMove`/`sendReady`/`sendSay` |
 | [`work-with-env-deploy`](skills/client/work-with-env-deploy/SKILL.md) | `VITE_*`, hash router, GitHub Pages |
 
 #### Server-wide skills (`.agents/skills/server/`)
@@ -92,11 +92,11 @@ OpenSpec: [`openspec/config.yaml`](../openspec/config.yaml); артефакты 
 | [`server-work-with-auth`](skills/server/server-work-with-auth/SKILL.md) | `@colyseus/auth`, Google OAuth `addProvider`, JWT `onAuth`, userdata |
 | [`server-work-with-errors`](skills/server/server-work-with-errors/SKILL.md) | Auth/game failures, HTTP health, client-facing errors |
 | [`server-work-with-structure`](skills/server/server-work-with-structure/SKILL.md) | rooms / schema / db / config / app.config placement |
-| [`server-work-with-test`](skills/server/server-work-with-test/SKILL.md) | mocha + `@colyseus/testing` (SC-PIECE + SC-MOVE + SC-SAY + lobby + `GET|POST /api/theme`) |
-| [`work-with-rooms`](skills/server/work-with-rooms/SKILL.md) | Room lifecycle (`onDrop`/`onReconnect`), registration, seats |
-| [`work-with-schema`](skills/server/work-with-schema/SKILL.md) | `@colyseus/schema` sync (`started` + `seats` + connectivity + `currentTurnSessionId`) |
-| [`work-with-messages`](skills/server/work-with-messages/SKILL.md) | Room `onMessage('move')` + `onMessage('say')` whitelist broadcast (ephemeral; not schema) |
-| [`work-with-game`](skills/server/work-with-game/SKILL.md) | Seating + reconnect + turn order + one-step move (`src/game/touristMove.ts`); room `tourist` |
+| [`server-work-with-test`](skills/server/server-work-with-test/SKILL.md) | mocha + `@colyseus/testing` (SC-PIECE + SC-START + SC-MOVE + SC-SAY + lobby + `GET|POST /api/theme`) |
+| [`work-with-rooms`](skills/server/work-with-rooms/SKILL.md) | Room lifecycle (`onDrop`/`onReconnect`), registration, maxSeats / phase / seats |
+| [`work-with-schema`](skills/server/work-with-schema/SKILL.md) | `@colyseus/schema` sync (`phase` / `maxSeats` / countdown + `seats` + connectivity/`ready` + turn) |
+| [`work-with-messages`](skills/server/work-with-messages/SKILL.md) | Room `onMessage('move'|'ready'|'say')` (say ephemeral; readiness via `ready`) |
+| [`work-with-game`](skills/server/work-with-game/SKILL.md) | Seating + start/ready/countdown + reconnect + turn + one-step move (`touristMove.ts`); room `tourist` |
 | [`work-with-routes`](skills/server/work-with-routes/SKILL.md) | HTTP `createEndpoint` / thin routes (incl. `GET|POST /api/theme`) |
 | [`work-with-middleware`](skills/server/work-with-middleware/SKILL.md) | CORS, `/health`, monitor/playground |
 | [`work-with-config`](skills/server/work-with-config/SKILL.md) | env, secrets, OAuth `config/auth`, `defineServer` |

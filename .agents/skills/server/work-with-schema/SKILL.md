@@ -2,10 +2,10 @@
 name: work-with-schema
 description: >-
   Use when creating, changing, reviewing, or debugging @colyseus/schema sync
-  state in the happy-tourist Colyseus server — MyRoomState started/seats
-  (touristId + pieces map + connected/reconnectUntil) + currentTurnSessionId,
-  MapSchema / ArraySchema, schema() + t.* (v5), or aligning the sync surface
-  with the sibling client tourist contract.
+  state in the happy-tourist Colyseus server — MyRoomState phase/maxSeats/
+  countdownRemaining/started/seats (touristId + pieces + connected/reconnectUntil/
+  ready) + currentTurnSessionId, MapSchema / ArraySchema, schema() + t.* (v5),
+  or aligning the sync surface with the sibling client tourist contract.
 ---
 
 # Work With Schema
@@ -17,12 +17,12 @@ Skills path: `happy-tourist-meta/.agents/skills/server/`. Runtime paths below ar
 relative to the server repo root.
 
 Sibling client: `../happy-tourist.github.io` (room `tourist`; board geometry local;
-seats/`started`/`currentTurnSessionId`/connectivity mirrored in `stores/game`;
-presence + move hints on GamePage).
+seats/`phase`/`maxSeats`/`countdownRemaining`/`currentTurnSessionId`/connectivity/
+ready mirrored in `stores/game`; presence + move hints + countdown overlay on GamePage).
 
-Schema is the **sync surface only**. Seating assignment, reconnect grace, turn
-order (`turnOrder` room-private), and move rules live in the Room /
-`work-with-game` — not in schema definitions.
+Schema is the **sync surface only**. Seating assignment, reconnect grace, start
+countdown timers, turn order (`turnOrder` room-private), and move rules live in
+the Room / `work-with-game` — not in schema definitions.
 
 ## Overview
 
@@ -30,7 +30,7 @@ order (`turnOrder` room-private), and move rules live in the Room /
 | --- | --- |
 | Sync state | `src/rooms/schema/MyRoomState.ts` |
 | API | `@colyseus/schema` **v5**: `schema({...})`, `t.*`, `SchemaType` |
-| Room wiring | Room sets `this.setState(...)` / mutates seats + `currentTurnSessionId` in join/leave/move hooks |
+| Room wiring | Room sets `this.setState(...)` / mutates seats + phase/countdown + `currentTurnSessionId` |
 | Client consumer | `../happy-tourist.github.io` — `stores/game.ts` `onStateChange`; GamePage presence + move UX |
 
 Package: `@colyseus/schema` `^5.0.14` (see `package.json`).
@@ -55,22 +55,35 @@ export const Seat = schema(
     touristId: t.uint8(), // 1…4
     pieces: t.map(Piece),
     connected: t.boolean().default(true),
-    /** Unix ms deadline while offline in grace; `0` when online. */
     reconnectUntil: t.number().default(0),
+    ready: t.boolean().default(false),
   },
   "Seat",
 );
 
 export const MyRoomState = schema(
   {
+    /** Legacy; prefer phase === "playing". */
     started: t.boolean().default(false),
+    phase: t.string().default("waiting"), // waiting | countdown | playing
+    maxSeats: t.uint8().default(2), // 2|3|4
+    countdownRemaining: t.uint8().default(0), // 5…1 during countdown
     seats: t.map(Seat), // key = sessionId
-    /** sessionId of seated player whose turn it is; `""` if no seated. */
     currentTurnSessionId: t.string().default(""),
   },
   "MyRoomState",
 );
 ```
+
+### Start / capacity fields (game/start)
+
+| Field | Meaning |
+|-------|---------|
+| `phase` | `waiting` \| `countdown` \| `playing` — **primary** start gate |
+| `maxSeats` | Table capacity from create options (2\|3\|4) |
+| `countdownRemaining` | Authoritative second 5…1 while countdown; else 0 |
+| `started` | Legacy mirror (true from countdown onward); client prefers `phase` |
+| `Seat.ready` | One-shot ready-to-start while underfilled waiting |
 
 ### Connectivity fields (D2 / SC-PIECE-16)
 
@@ -91,7 +104,7 @@ Room mutates these in `onDrop` / `onReconnect` / seat assign — see `work-with-
 
 **Not synced (ephemeral messages):** preset `say` bubbles — room-private `liveSays` + `broadcast('say', …)`; client keeps `sayEvents` in Pinia. Do **not** add bubble fields to schema.
 
-- Client mirrors `started` + seats + `currentTurnSessionId` into Pinia; GamePage draws tokens, strip×4, presence, local move chrome when `isMyTurn`, and say bubbles from `sayEvents`.
+- Client mirrors `phase` / `maxSeats` / `countdownRemaining` + seats (+ `ready`) + `currentTurnSessionId` into Pinia; GamePage draws tokens, strip×4, presence, countdown overlay, local move chrome when `isPlaying && isMyTurn`, and say bubbles from `sayEvents`.
 - Board **tile geometry** stays a client CSS Grid constant — not in schema.
 - Do **not** revive draughts `board` / cell `0`–`4` / `{ from, to }` encoding.
 
@@ -134,7 +147,7 @@ lockstep. Initialize collections in Room `onCreate` (not inside schema “logic�
 
 ## Do
 
-- Keep schema fields to **what must sync** (today: `started` + `seats` incl. connectivity + `currentTurnSessionId`).
+- Keep schema fields to **what must sync** (today: `phase` / `maxSeats` / `countdownRemaining` + `seats` incl. connectivity/`ready` + `currentTurnSessionId`; legacy `started` OK).
 - Mutate state from the **Room** after validating actions; treat client payloads as intents only.
 - Align field names with `../happy-tourist.github.io` (`stores/game`) in the same change.
 - Use `schema()` + `t.*` + `export type X = SchemaType<typeof X>`.
@@ -142,7 +155,7 @@ lockstep. Initialize collections in Room `onCreate` (not inside schema “logic�
 
 ## Don't
 
-- Put rules, seating pools, `turnOrder`, reconnect timers, say/`liveSays`, win detection, or rating DB writes inside schema files.
+- Put rules, seating pools, `turnOrder`, countdown timers, reconnect timers, say/`liveSays`, win detection, or rating DB writes inside schema files.
 - Trust or echo a client-supplied full board/layout as truth.
 - Invent parallel field names without changing the client in the same effort.
 - Mix decorator `@type` Schema classes with the v5 `schema()` style in this package.
@@ -155,9 +168,9 @@ lockstep. Initialize collections in Room `onCreate` (not inside schema “logic�
 
 When changing schema:
 
-1. Field names match client Pinia / GamePage (`started`, `seats` → `touristId` + `pieces` + connectivity, `currentTurnSessionId`).
-2. Room owns seating, reconnect, turn order, and messages — schema does not define messages or `turnOrder`.
-3. Sibling client `onStateChange` / presence / `isMyTurn` is updated together when fields appear.
+1. Field names match client Pinia / GamePage (`phase`, `maxSeats`, `countdownRemaining`, `seats` → `touristId` + `pieces` + connectivity + `ready`, `currentTurnSessionId`).
+2. Room owns seating, reconnect, start countdown, turn order, and messages — schema does not define messages or `turnOrder`.
+3. Sibling client `onStateChange` / presence / `isPlaying` / `isMyTurn` is updated together when fields appear.
 4. Prefer server → client alignment over unilateral client rewrites.
 
 ## Related
