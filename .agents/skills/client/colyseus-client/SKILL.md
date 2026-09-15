@@ -216,8 +216,8 @@ Mirror seating + turn from schema.
 | `phase` | `waiting` \| `countdown` \| `playing` — primary start gate; drives Pinia `status` |
 | `maxSeats` / `countdownRemaining` | Capacity + authoritative countdown seconds |
 | `started` | Legacy; client mirrors `phase === 'playing'` |
-| `seats` Map | Key = `sessionId` → `touristId` + `pieces` + connectivity + `ready` |
-| `currentTurnSessionId` | Synced whose turn; `""` if no seated → getter `isMyTurn` |
+| `seats` Map | Key = `sessionId` → `touristId` + `pieces` (+ `finished`) + connectivity + `ready` + `finishPlace` |
+| `currentTurnSessionId` | Synced whose turn; `""` if no seated / all finished → getter `isMyTurn` |
 | `sessionId` | From `room.sessionId` — for `mySeat` / strip×4 / turn check |
 
 Wire once in the store:

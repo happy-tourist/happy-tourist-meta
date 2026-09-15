@@ -2,9 +2,10 @@
 name: work-with-game
 description: >-
   Use when implementing, changing, reviewing, or debugging authoritative
-  tourist-room seating, reconnect grace, turn order, and one-step move rules in
-  the happy-tourist Colyseus server — Room handlers, schema seats/phase/
-  maxSeats/ready/countdown/currentTurnSessionId/connectivity, or pure rules in
+  tourist-room seating, reconnect grace, turn order (skip finished), center
+  finish / finishPlace, and one-step move rules in the happy-tourist Colyseus
+  server — Room handlers, schema seats/phase/maxSeats/ready/countdown/
+  currentTurnSessionId/connectivity/finish fields, or pure rules in
   src/game/touristMove.ts.
 ---
 
@@ -21,8 +22,8 @@ Pair with client board UX: `happy-tourist-meta/.agents/skills/client/work-with-g
 | Surface | Path | Role |
 | --- | --- | --- |
 | Room | `src/rooms/MyRoom.ts` | JWT `onAuth`; seat assign; start phases / ready / countdown; `turnOrder` + turn hooks; `onMessage('move'|'ready'|'say')`; `onDrop`/`onReconnect`/`onLeave` |
-| Schema | `src/rooms/schema/MyRoomState.ts` | `phase` + `maxSeats` + `countdownRemaining` + `started` (legacy) + `seats` (+ `ready`) + `currentTurnSessionId` |
-| Rules | `src/game/touristMove.ts` | Pure validate/apply one-step move (no Colyseus I/O) |
+| Schema | `src/rooms/schema/MyRoomState.ts` | `phase` + `maxSeats` + `countdownRemaining` + `started` (legacy) + `seats` (+ `ready` / `finishPlace`) + piece `finished` + `currentTurnSessionId` + `nextFinishPlace` |
+| Rules | `src/game/touristMove.ts` | Pure validate/apply one-step move; occupancy ignores `finished`; center landing is room side-effect |
 | Registration | `src/app.config.ts` | Room name must be `tourist` for client lobby |
 
 Constants: `RECONNECT_GRACE_SECONDS = 30`, `COUNTDOWN_SECONDS = 5` in `MyRoom.ts`.
@@ -55,21 +56,22 @@ Constants: `RECONNECT_GRACE_SECONDS = 30`, `COUNTDOWN_SECONDS = 5` in `MyRoom.ts
 
 LobbyRoom: **no** grace / `allowReconnection` — see `work-with-rooms` (D7).
 
-## Turn Order (shipped — D1 / D4)
+## Turn Order (shipped — D1 / D4 + game/finish)
 
 - Room-private `turnOrder: string[]` (join order of seated sessionIds) — **not** in schema.
-- Synced `currentTurnSessionId` = current seated `sessionId`, or `""` if no seated.
-- First seated → set turn; later seats (incl. mid-game) append to end.
-- Successful move → advance to next in circle (solo wraps to self).
-- Permanent seat remove: drop from `turnOrder`; if removed was current → next (or `""` if empty → dispose).
-- `onDrop` / offline grace: **do not** change `currentTurnSessionId` (turn waits).
+- Synced `currentTurnSessionId` = current **eligible** seated `sessionId` (`finishPlace === 0`), or `""` if no seated / every seat finished.
+- First seated → set turn; later seats (incl. mid-game) append to end. If current is empty/ineligible (e.g. all finished), joining a new seat restores turn to the earliest eligible — do **not** jump off an already-eligible current (SC-MOVE-19).
+- Successful move → advance to next **non-finished** in circle (solo non-finished wraps to self).
+- Permanent seat remove: drop from `turnOrder`; if removed was current → next eligible (or `""`).
+- `onDrop` / offline grace: **do not** change `currentTurnSessionId` for **non-finished** seats (turn waits). Finished seats are never eligible, so offline finished never holds turn.
 - Having a current-turn seat does **not** allow moves before `phase === 'playing'`.
 
-## Move Rules (shipped — D2 / D3)
+## Move Rules (shipped — D2 / D3 + game/finish)
 
-- Message: `room.send('move', { side: 'N'|'E'|'S'|'W', row, col })` — `side` = own piece; `row`/`col` = target.
-- Pure module `src/game/touristMove.ts`: playable = start + task + center (mirrors client `LAYOUT`); Chebyshev distance === 1; occupancy includes own pieces.
-- `MyRoom.onMessage('move')`: require `phase === 'playing'` + seated + current turn → validate/apply → update piece `row`/`col` → advance turn; reject → no state change.
+- Message: `room.send('move', { side: 'N'|'E'|'S'|'W', row, col })` — `side` = own piece; `row`/`col` = target. **No** separate `finish` message.
+- Pure module `src/game/touristMove.ts`: playable = start + task + center (mirrors client `LAYOUT`); Chebyshev distance === 1; occupancy = unfinished pieces only; reject already-finished mover piece.
+- `MyRoom.onMessage('move')`: require `phase === 'playing'` + seated + `finishPlace === 0` + current turn → validate → update `row`/`col`; if target is center → `piece.finished=true`, free cell; when seat’s 4th piece finishes → assign `finishPlace = nextFinishPlace++` → `advanceTurn` (skip finished); reject → no state change.
+- Finished seat may still `say`; cannot move. Finished seats count toward `maxSeats` until leave/grace.
 - No pass; no draughts `{ from, to }` encoding.
 
 ## Authority
@@ -85,8 +87,8 @@ LobbyRoom: **no** grace / `allowReconnection` — see `work-with-rooms` (D7).
 | --- | --- |
 | Room name | `tourist` |
 | Board UI | Client-only `LAYOUT` in `GamePage`; server does **not** sync tile kinds |
-| Synced state | `phase`, `maxSeats`, `countdownRemaining`, `started` (legacy), `seats` Map → `touristId` + four `pieces` + connectivity + `ready`, `currentTurnSessionId` |
-| Message | Client → server `move` `{ side, row, col }` via `sendMove`; `ready` (empty) via `sendReady` |
+| Synced state | `phase`, `maxSeats`, `countdownRemaining`, `started` (legacy), `seats` Map → `touristId` + four `pieces` (+ `finished`) + connectivity + `ready` + `finishPlace`, `currentTurnSessionId`, `nextFinishPlace` |
+| Message | Client → server `move` `{ side, row, col }` via `sendMove` (center finish is side-effect); `ready` (empty) via `sendReady` |
 | Say (ephemeral) | `say` `{ presetId: hello\|luck }` → broadcast; readiness preset only via `ready` — see `work-with-messages` |
 | Reconnect | Colyseus token; client `localStorage` + `reconnect` then `joinById` |
 | Presence / hints | Client-only chrome; selection + red targets local to current-turn client |
@@ -96,8 +98,10 @@ Client-local / room-private only (do **not** put on schema): Pinia status string
 ## Architecture Preference
 
 ```
-onMessage('move') → parse { side, row, col } → pure validate/apply (touristMove)
-                  → if ok: write piece row/col + advance currentTurnSessionId
+onMessage('move') → parse { side, row, col } → reject if finished seat/piece
+                  → pure validate (touristMove; occupancy ignores finished)
+                  → if ok: write row/col; if center → finished + maybe finishPlace
+                  → advance currentTurnSessionId (skip finishPlace > 0)
 ```
 
 ## Implementation Checklist

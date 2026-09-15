@@ -3,9 +3,10 @@ name: work-with-schema
 description: >-
   Use when creating, changing, reviewing, or debugging @colyseus/schema sync
   state in the happy-tourist Colyseus server — MyRoomState phase/maxSeats/
-  countdownRemaining/started/seats (touristId + pieces + connected/reconnectUntil/
-  ready) + currentTurnSessionId, MapSchema / ArraySchema, schema() + t.* (v5),
-  or aligning the sync surface with the sibling client tourist contract.
+  countdownRemaining/started/seats (touristId + pieces + finished + connected/
+  reconnectUntil/ready/finishPlace) + currentTurnSessionId + nextFinishPlace,
+  MapSchema / ArraySchema, schema() + t.* (v5), or aligning the sync surface
+  with the sibling client tourist contract.
 ---
 
 # Work With Schema
@@ -45,6 +46,8 @@ export const Piece = schema(
     side: t.string(), // "N"|"E"|"S"|"W"
     row: t.uint8(),
     col: t.uint8(),
+    /** True after landing on a center cell; off-board for occupancy. */
+    finished: t.boolean().default(false),
   },
   "Piece",
 );
@@ -57,6 +60,8 @@ export const Seat = schema(
     connected: t.boolean().default(true),
     reconnectUntil: t.number().default(0),
     ready: t.boolean().default(false),
+    /** Finish place; `0` until all four pieces finished. */
+    finishPlace: t.uint8().default(0),
   },
   "Seat",
 );
@@ -70,6 +75,8 @@ export const MyRoomState = schema(
     countdownRemaining: t.uint8().default(0), // 5…1 during countdown
     seats: t.map(Seat), // key = sessionId
     currentTurnSessionId: t.string().default(""),
+    /** Next finish place to assign (starts at 1; increments on full finish). */
+    nextFinishPlace: t.uint8().default(1),
   },
   "MyRoomState",
 );
@@ -98,13 +105,23 @@ Room mutates these in `onDrop` / `onReconnect` / seat assign — see `work-with-
 
 | Field | Meaning |
 |-------|---------|
-| `currentTurnSessionId` | Synced whose turn; empty string when no seated players |
+| `currentTurnSessionId` | Synced whose turn; empty when no seated **or** every remaining seat is finished |
 
 **Not synced:** room-private `turnOrder: string[]` in `MyRoom` (join-order queue). Client only needs «чей ход».
 
+### Finish fields (game/finish)
+
+| Field | Meaning |
+|-------|---------|
+| `Piece.finished` | `true` after legal move onto a center cell; ignored for occupancy / board render |
+| `Seat.finishPlace` | `0` until all four pieces finished; then `1…n` (monotonic room order) |
+| `nextFinishPlace` | Next place to assign (starts `1`; increment after each full finish) |
+
+Finished seats remain in `seats` (count toward `maxSeats`) until consented leave / grace timeout. No room phase `finished`.
+
 **Not synced (ephemeral messages):** preset `say` bubbles — room-private `liveSays` + `broadcast('say', …)`; client keeps `sayEvents` in Pinia. Do **not** add bubble fields to schema.
 
-- Client mirrors `phase` / `maxSeats` / `countdownRemaining` + seats (+ `ready`) + `currentTurnSessionId` into Pinia; GamePage draws tokens, strip×4, presence, countdown overlay, local move chrome when `isPlaying && isMyTurn`, and say bubbles from `sayEvents`.
+- Client mirrors `phase` / `maxSeats` / `countdownRemaining` + seats (+ `ready` / `finishPlace` / piece `finished`) + `currentTurnSessionId` into Pinia; GamePage draws unfinished pieces (+ short disappear), strip finish chrome, place modal/badge, leave confirm only when seated ∧ playing ∧ `finishPlace === 0`, and say bubbles from `sayEvents`.
 - Board **tile geometry** stays a client CSS Grid constant — not in schema.
 - Do **not** revive draughts `board` / cell `0`–`4` / `{ from, to }` encoding.
 
@@ -147,7 +164,7 @@ lockstep. Initialize collections in Room `onCreate` (not inside schema “logic�
 
 ## Do
 
-- Keep schema fields to **what must sync** (today: `phase` / `maxSeats` / `countdownRemaining` + `seats` incl. connectivity/`ready` + `currentTurnSessionId`; legacy `started` OK).
+- Keep schema fields to **what must sync** (today: `phase` / `maxSeats` / `countdownRemaining` + `seats` incl. connectivity/`ready`/`finishPlace` + piece `finished` + `currentTurnSessionId` + `nextFinishPlace`; legacy `started` OK).
 - Mutate state from the **Room** after validating actions; treat client payloads as intents only.
 - Align field names with `../happy-tourist.github.io` (`stores/game`) in the same change.
 - Use `schema()` + `t.*` + `export type X = SchemaType<typeof X>`.
@@ -168,7 +185,7 @@ lockstep. Initialize collections in Room `onCreate` (not inside schema “logic�
 
 When changing schema:
 
-1. Field names match client Pinia / GamePage (`phase`, `maxSeats`, `countdownRemaining`, `seats` → `touristId` + `pieces` + connectivity + `ready`, `currentTurnSessionId`).
+1. Field names match client Pinia / GamePage (`phase`, `maxSeats`, `countdownRemaining`, `seats` → `touristId` + `pieces` (+ `finished`) + connectivity + `ready` + `finishPlace`, `currentTurnSessionId`; client need not mirror `nextFinishPlace`).
 2. Room owns seating, reconnect, start countdown, turn order, and messages — schema does not define messages or `turnOrder`.
 3. Sibling client `onStateChange` / presence / `isPlaying` / `isMyTurn` is updated together when fields appear.
 4. Prefer server → client alignment over unilateral client rewrites.

@@ -30,8 +30,8 @@ Coordinate with sibling skills when they exist: `work-with-schema`, `work-with-m
 |-------|------|------|
 | Registration | `src/app.config.ts` | `lobby: defineRoom(LobbyRoom)`; `tourist: defineRoom(MyRoom).enableRealtimeListing()` |
 | Game handler | `src/rooms/MyRoom.ts` | `Room` subclass: `onAuth`, `onCreate`, `onJoin`, `onDrop`, `onReconnect`, `onLeave`, `onDispose`; `onMessage('move'|'ready'|'say')` |
-| Schema | `src/rooms/schema/MyRoomState.ts` | Synced: `phase` / `maxSeats` / `countdownRemaining` + legacy `started` + `seats` Map (`connected` / `reconnectUntil` / `ready`) + `currentTurnSessionId` |
-| Tests | `test/MyRoom.test.ts` | JWT, tourist connect; capacity/start (SC-START-*); seating (SC-PIECE-*); turn/move (SC-MOVE-*); say (SC-SAY-*); lobby listing (SC-LOBBY-02/03) |
+| Schema | `src/rooms/schema/MyRoomState.ts` | Synced: `phase` / `maxSeats` / `countdownRemaining` + legacy `started` + `seats` Map (`connected` / `reconnectUntil` / `ready` / `finishPlace` + piece `finished`) + `currentTurnSessionId` + `nextFinishPlace` |
+| Tests | `test/MyRoom.test.ts` | JWT, tourist connect; capacity/start (SC-START-*); seating (SC-PIECE-*); turn/move (SC-MOVE-*); finish (SC-FINISH-*); say (SC-SAY-*); lobby listing (SC-LOBBY-02/03) |
 | Loadtest | `loadtest/example.ts` | `joinOrCreate`; `--room tourist` |
 
 Registered room keys today: **`lobby`** (built-in listing) and **`tourist`** (playable `MyRoom` with realtime listing). Client `TOURIST_ROOM` / `LOBBY_ROOM` match these names — do not reintroduce `my_room`.

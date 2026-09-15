@@ -3,11 +3,11 @@ name: server-work-with-test
 description: >-
   Use when planning or writing mocha + @colyseus/testing tests for
   happy-tourist-server: room connect with JWT, onAuth failures, seating /
-  reconnect grace (SC-PIECE), move messages (SC-MOVE), preset say (SC-SAY),
-  schema sync assertions, GET /rooms listing, or preference HTTP
-  (GET/POST /api/theme). Core workflow: test plan (mocks/verify) → write
-  test/*.test.ts → run npm test from server package root and fix failures.
-  Do not invent Jest/babel patterns.
+  reconnect grace (SC-PIECE), move messages (SC-MOVE), center finish /
+  finishPlace (SC-FINISH), preset say (SC-SAY), schema sync assertions,
+  GET /rooms listing, or preference HTTP (GET/POST /api/theme). Core
+  workflow: test plan (mocks/verify) → write test/*.test.ts → run npm test
+  from server package root and fix failures. Do not invent Jest/babel patterns.
 trigger: slash
 ---
 
@@ -104,16 +104,22 @@ Use these categories only when the SUT has relevant behavior:
 - Schema sync: after join, client-visible state matches room —
   `phase` / `maxSeats` / `countdownRemaining` (+ legacy `started`), `seats` Map
   (`touristId` + exactly four `pieces` keyed by side `N|E|S|W` →
-  `{ side, row, col }` + `connected` / `reconnectUntil` / `ready`), and
-  `currentTurnSessionId`. Assert four pieces / free start cells / leave-pool
-  reopen as in SC-PIECE-01…08 / SC-PIECE-19 (`test/MyRoom.test.ts`). Also cover
-  reconnect grace SC-PIECE-11…16 and start capacity SC-START-* (maxSeats create,
-  ready → countdown → playing; move gated on playing).
+  `{ side, row, col, finished }` + `connected` / `reconnectUntil` / `ready` /
+  `finishPlace`), `currentTurnSessionId`, and `nextFinishPlace`. Assert four
+  pieces / free start cells / leave-pool reopen as in SC-PIECE-01…08 /
+  SC-PIECE-19 (`test/MyRoom.test.ts`). Also cover reconnect grace SC-PIECE-11…16
+  and start capacity SC-START-* (maxSeats create, ready → countdown → playing;
+  move gated on playing).
 - Messages / turn: cover SC-MOVE-* in `test/MyRoom.test.ts` (first seated holds
   turn; join-order rotation; legal orthogonal/diagonal; occupied/non-playable
-  reject; out-of-turn / spectator / pre-playing reject; permanent leave advances;
-  offline grace keeps turn). Use `forcePlaying` / `waitForPhase` helpers when
-  isolating move rules from countdown. Pure rules: `test/touristMove.test.ts`.
+  reject; out-of-turn / spectator / pre-playing / finished-seat reject;
+  permanent leave advances; offline grace keeps turn for non-finished). Use
+  `forcePlaying` / `waitForPhase` helpers when isolating move rules from
+  countdown. Pure rules: `test/touristMove.test.ts` (incl. finished occupancy /
+  `finished` reject reason).
+- Finish: cover SC-FINISH-* (center land → `piece.finished`; 4th finish →
+  `finishPlace = nextFinishPlace++`; turn skips finished; all finished clears
+  turn until mid-join restores eligible; finished may still `say`).
 - Preset say / ready: cover SC-SAY-* and ready-broadcast cases (known preset
   broadcast; `ready` message → say preset `ready` bypassing live cap; raw say
   `ready` rejected; non-whitelist / spectator / offline grace silent reject;
@@ -162,9 +168,15 @@ Verify reconnect grace (SC-PIECE-11…16):
 - Observer sees connectivity fields sync (SC-PIECE-16)
 
 Verify move / turn (SC-MOVE):
-- First seated holds `currentTurnSessionId`; successful move advances join-order queue
-- Legal orthogonal/diagonal one-step: piece row/col update; illegal/out-of-turn/spectator/pre-playing: unchanged
-- Permanent leave of current advances turn; offline grace does not
+- First seated holds `currentTurnSessionId`; successful move advances join-order queue (skip finished)
+- Legal orthogonal/diagonal one-step: piece row/col update; illegal/out-of-turn/spectator/pre-playing/finished-seat: unchanged
+- Permanent leave of current advances turn; offline grace does not (non-finished)
+
+Verify finish (SC-FINISH):
+- Legal move onto center → `piece.finished=true`; finished piece ignored for occupancy
+- Seat’s 4th finished piece → `finishPlace = nextFinishPlace` then increment; seat stays seated
+- Finished seat cannot `move`; may still `say`; turn never assigned to `finishPlace > 0`
+- When every remaining seat is finished, `currentTurnSessionId === ""`; mid-join eligible seat restores turn
 
 Verify preset say (SC-SAY) + ready:
 - Known `presetId` hello|luck → all clients get `say` `{ sessionId, presetId, at }`
@@ -240,13 +252,22 @@ seat-flat `side`/`row`/`col` model. Grace-timeout / countdown cases may need `th
 
 Canonical coverage: `test/MyRoom.test.ts` (SC-MOVE-*) + pure `test/touristMove.test.ts`.
 
-- First seated → `currentTurnSessionId`; join-order rotation after legal move; solo wraps to self.
-- Legal orthogonal/diagonal one-step updates piece `row`/`col` and advances turn — only when `phase === 'playing'` (use `forcePlaying` to skip countdown in isolation tests).
-- Occupied / non-playable / out-of-turn / spectator / pre-playing → no state change.
-- Permanent leave of current advances turn; `onDrop` grace does not change turn.
-- Pure module tests cover playable set, Chebyshev, occupancy without room I/O.
+- First seated → `currentTurnSessionId`; join-order rotation after legal move (skip `finishPlace > 0`); solo non-finished wraps to self.
+- Legal orthogonal/diagonal one-step updates piece `row`/`col` and advances turn — only when `phase === 'playing'` and seat not finished (use `forcePlaying` to skip countdown in isolation tests).
+- Occupied / non-playable / out-of-turn / spectator / pre-playing / finished-seat → no state change.
+- Permanent leave of current advances turn; `onDrop` grace does not change turn (non-finished).
+- Pure module tests cover playable set, Chebyshev, occupancy (ignores finished) without room I/O.
 
 Server is authoritative; never assert by trusting a client-only board copy.
+
+### Finish (SC-FINISH)
+
+Canonical coverage: `test/MyRoom.test.ts` (SC-FINISH-*) + finished cases in `test/touristMove.test.ts`.
+
+- Center land → `piece.finished=true`; finished pieces do not occupy cells.
+- 4th finished piece on a seat → `finishPlace = nextFinishPlace++`; seat remains seated.
+- Finished seat rejects `move`; may still `say`; never holds `currentTurnSessionId`.
+- All remaining seats finished → `currentTurnSessionId === ""`; mid-join eligible seat restores turn.
 
 ### Preset say (SC-SAY) + ready
 
@@ -264,8 +285,9 @@ Canonical coverage: `test/MyRoom.test.ts` (SC-SAY-* / ready cases).
 - After `connectTo`, read synced state from the client SDK view or room state
   the harness exposes; assert fields the client SPA expects:
   `phase` / `maxSeats` / `countdownRemaining` (+ legacy `started`), `seats` →
-  `touristId` + four `pieces` `{ side, row, col }` + `connected` /
-  `reconnectUntil` / `ready`, and `currentTurnSessionId`.
+  `touristId` + four `pieces` `{ side, row, col, finished }` + `connected` /
+  `reconnectUntil` / `ready` / `finishPlace`, `currentTurnSessionId`, and
+  `nextFinishPlace`.
 - Do not assert legacy draughts fields (`board`, `currentTurn`,
   `players[].color`) — they are not in product schema.
 

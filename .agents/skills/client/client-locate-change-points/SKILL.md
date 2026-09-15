@@ -108,12 +108,12 @@ Do not invent room schemas, HTTP routes, or move payloads — note the server pa
 |--------|------------|
 | Auth (email/password, anonymous, Google, logout) | `pages/LoginPage.vue` + `stores/auth.ts`; router guards in `router/index.ts` |
 | Lobby (list / create / join; quiet resubscribe) | `pages/LobbyPage.vue` + `stores/game` `subscribeLobby` / `createGame` / `joinGame` |
-| Game board (layout, pieces, presence, strip×4, turn select/`sendMove`, rejoin) | `pages/GamePage.vue` + `stores/game` `onStateChange` / `sendMove` / `rejoinGame(roomId)` |
+| Game board (layout, unfinished pieces, finish UX, presence/place badge, strip×4, turn select/`sendMove`, rejoin) | `pages/GamePage.vue` + `stores/game` `onStateChange` / `sendMove` / `rejoinGame(roomId)` |
 | Env / deploy | `.env.*`, `env.d.ts`, `boot/colyseus.ts`, `.github/workflows/deploy.yml` |
 | Theme / layout chrome | `App.vue` header + `stores/theme` + `boot/theme` + `css/*` (board CSS ≠ app Dark) |
 | i18n copy | `src/i18n/`, boot `i18n` |
 
-Today: GamePage board + presence + all pieces from synced `seats` (`touristId` + four `pieces` + `connected` / `reconnectUntil` / `ready`) / `phase` / `maxSeats` / `countdownRemaining` / `currentTurnSessionId`; strip×4 if seated; countdown overlay; ready affordance; on `isPlaying && isMyTurn` select/hints → `sendMove`. Tourist reconnect via `localStorage` token. Room name `tourist`.
+Today: GamePage board + presence (place badge) + unfinished pieces from synced `seats` (`touristId` + four `pieces` (+ `finished`) + `connected` / `reconnectUntil` / `ready` / `finishPlace`) / `phase` / `maxSeats` / `countdownRemaining` / `currentTurnSessionId`; strip×4 with finish icons if seated; place modal; countdown overlay; ready affordance; on `isPlaying && isMyTurn && !isMySeatFinished` select/hints → `sendMove`. Tourist reconnect via `localStorage` token. Room name `tourist`.
 
 ## Workflow
 

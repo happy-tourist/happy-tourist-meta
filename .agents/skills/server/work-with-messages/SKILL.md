@@ -31,15 +31,15 @@ Coordinate with: `work-with-rooms` (lifecycle / registration), `work-with-schema
 
 | Direction | Name | Payload / behavior |
 |-----------|------|--------------------|
-| Client → server | `move` | `{ side: 'N'\|'E'\|'S'\|'W', row: number, col: number }` — via `sendMove` only when `phase === 'playing'` and `isMyTurn` |
+| Client → server | `move` | `{ side: 'N'\|'E'\|'S'\|'W', row: number, col: number }` — via `sendMove` only when `phase === 'playing'`, `isMyTurn`, and `!isMySeatFinished`. **No** separate `finish` message |
 | Client → server | `ready` | empty payload — via `sendReady` (waiting, ≥2 seated, under maxSeats, not yet ready) |
-| Client → server | `say` | `{ presetId: 'hello' \| 'luck' }` — via `sendSay`; whitelist only (no free text; **not** `ready`) |
-| Server → clients | Schema sync | `phase` / `maxSeats` / `countdownRemaining` / `seats` (+ `ready`) / `currentTurnSessionId` → `onStateChange` |
+| Client → server | `say` | `{ presetId: 'hello' \| 'luck' }` — via `sendSay`; whitelist only (no free text; **not** `ready`); finished seats may still say |
+| Server → clients | Schema sync | `phase` / `maxSeats` / `countdownRemaining` / `seats` (+ `ready` / `finishPlace` / piece `finished`) / `currentTurnSessionId` (+ `nextFinishPlace`) → `onStateChange` |
 | Server → all clients | `say` | `broadcast('say', { sessionId, presetId, at })` — ephemeral; includes readiness preset from successful `ready` |
 | Server → client | room error channel | Client sets `game.error` from `room.onError` |
 | Lobby | HTTP fallback | `client.http.get('/rooms/tourist')` — **not** a room message |
 
-**`move`:** accept only when `phase === 'playing'` + seated + current turn; legal one-step per `touristMove.ts`. Reject (no mutate) otherwise. On accept: update piece `row`/`col`, advance turn.
+**`move`:** accept only when `phase === 'playing'` + seated + `finishPlace === 0` + current turn; legal one-step per `touristMove.ts` (occupancy ignores finished; reject finished mover piece). Reject (no mutate) otherwise. On accept: update piece `row`/`col`; if target is center → `piece.finished = true` and maybe assign `finishPlace = nextFinishPlace++`; then advance turn (skip finished seats).
 
 **`ready`:** accept only in `waiting`, seated + connected, seated count ≥ 2 and `< maxSeats`, seat not already ready. On accept: `seat.ready = true`, broadcast say preset `ready` (bypass live-say cap), maybe start countdown. Silent reject otherwise.
 
@@ -59,9 +59,9 @@ Register handlers in the room (typically `onCreate`), not in Express:
 this.onMessage('move', (client, message) => {
   // 1. Require phase === 'playing'
   // 2. Shape-check { side, row, col }
-  // 3. Resolve seat; require currentTurnSessionId === client.sessionId
-  // 4. Validate/apply via touristMove pure rules
-  // 5. On success: mutate piece row/col + advance turn
+  // 3. Resolve seat; reject if finishPlace > 0; require currentTurnSessionId === client.sessionId
+  // 4. Reject unknown/finished piece; validate via touristMove (occupancy ignores finished)
+  // 5. On success: mutate row/col; if center → finished + maybe finishPlace; advance turn (skip finished)
 });
 
 this.onMessage('ready', (client) => {

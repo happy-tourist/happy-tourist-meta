@@ -72,9 +72,9 @@ Env templates: `.env.example`, `.env.development`, `.env.production` (do not com
 | **`app.config.ts`** | Wire `database`, register rooms, thin `routes` / `express` (CORS first, health, dev monitor/playground); import `./config/auth.js` | Game rules, board mutation |
 | **`config/`** | OAuth provider registration (`addProvider`) | Room gate, user schema, custom OAuth callback (leave built-in) |
 | **`db/`** | SQLite GameDatabase; extend `colyseus_users` with defaults | Room messages; inventing a second auth store |
-| **`rooms/`** | Auth gate (`onAuth`), seats, start phases/ready/countdown, reconnect grace, turn order, `onMessage('move'|'ready'|'say')` + schema writes (move/ready) / ephemeral broadcast (say) | Raw HTTP; client-trusted board; pure geometry tables (prefer `src/game/`) |
-| **`rooms/schema/`** | Sync fields (`phase` / `maxSeats` / `countdownRemaining` + `seats` → `touristId` + `pieces` + connectivity/`ready` + `currentTurnSessionId`; legacy `started`) | Validation / rules / side effects |
-| **`game/`** | Pure tourist move rules (playable cells, Chebyshev, occupancy) | Room lifecycle, schema `@type`, HTTP |
+| **`rooms/`** | Auth gate (`onAuth`), seats, start phases/ready/countdown, reconnect grace, turn order (skip finished), `onMessage('move'|'ready'|'say')` + schema writes (move/ready/finish side-effects) / ephemeral broadcast (say) | Raw HTTP; client-trusted board; pure geometry tables (prefer `src/game/`) |
+| **`rooms/schema/`** | Sync fields (`phase` / `maxSeats` / `countdownRemaining` + `seats` → `touristId` + `pieces` (+ `finished`) + connectivity/`ready`/`finishPlace` + `currentTurnSessionId` + `nextFinishPlace`; legacy `started`) | Validation / rules / side effects |
+| **`game/`** | Pure tourist move rules (playable cells, Chebyshev, occupancy ignores finished) | Room lifecycle, schema `@type`, HTTP |
 | **`test/` / `loadtest/`** | Boot server / joinOrCreate clients | Production deploy secrets |
 
 ## Dependency Direction
@@ -234,7 +234,7 @@ ecosystem.config.cjs
 
 **Test** — `boot(appConfig)`, `JWT.sign(...)`, `createRoom("tourist")`, `connectTo`, assert `sessionId`; lobby `+`/`-` cases when listing changes.
 
-**Client contract** — room `tourist` + live `lobby`; synced `phase` / `maxSeats` / `countdownRemaining` / `seats` (+ `ready`) / `currentTurnSessionId` (+ legacy `started`) + `move` `{ side, row, col }` + `ready` + ephemeral `say` `{ presetId }` → broadcast `{ sessionId, presetId, at }`; HTTP `/rooms/tourist` is fallback only.
+**Client contract** — room `tourist` + live `lobby`; synced `phase` / `maxSeats` / `countdownRemaining` / `seats` (+ `ready` / `finishPlace` / piece `finished`) / `currentTurnSessionId` / `nextFinishPlace` (+ legacy `started`) + `move` `{ side, row, col }` (center → finish side-effect) + `ready` + ephemeral `say` `{ presetId }` → broadcast `{ sessionId, presetId, at }`; HTTP `/rooms/tourist` is fallback only.
 
 ## Creating New Pieces — Checklist
 

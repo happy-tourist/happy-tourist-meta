@@ -148,7 +148,7 @@ async leaveGame() {
 ```
 
 - Used for logout / explicit leave (Lobby «Выйти», GamePage «Выход из игры») — **consented** leave on server (immediate seat remove, no grace).
-- Leave-confirm UX (`q-dialog` when seated ∧ `phase === 'playing'`) is **page-local** on `GamePage` (`work-with-game-board` / `work-with-pages`); store `leaveGame` stays confirm-agnostic.
+- Leave-confirm UX (`q-dialog` when seated ∧ `phase === 'playing'` ∧ `finishPlace === 0`) is **page-local** on `GamePage` (`work-with-game-board` / `work-with-pages`); finished seats and spectators leave immediately; store `leaveGame` stays confirm-agnostic.
 - Clear tourist token, reset Pinia, then call `leave`.
 - **Swallow** closed-room errors — do not surface them as `game.error`.
 - `_enterRoom` uses `_leaveTouristRoom` (not `leaveGame`) so a failed enter keeps the lobby list live; `_leaveTouristRoom` also clears the prior tourist token when leaving a live prior room.

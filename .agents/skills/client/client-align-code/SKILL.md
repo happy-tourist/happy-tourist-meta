@@ -131,7 +131,7 @@ await game.subscribeLobby();
 
 Method presence or "looks compatible" alone is insufficient. Track each contract fact separately so one correct component cannot hide another mismatch.
 
-The client↔server contract is Colyseus Auth + room type `tourist` + live `lobby` (LobbyRoom + `.enableRealtimeListing()`) + Game board mirroring seats/`phase`/`maxSeats`/`countdownRemaining`/`currentTurnSessionId` + `sendMove` → `move` `{ side, row, col }` + `sendReady` → `ready`. When CR/docs/server and client disagree, report `code-only` / contradiction with both sides named (`src/stores/*` vs `../happy-tourist-server`).
+The client↔server contract is Colyseus Auth + room type `tourist` + live `lobby` (LobbyRoom + `.enableRealtimeListing()`) + Game board mirroring seats/`finishPlace`/piece `finished`/`phase`/`maxSeats`/`countdownRemaining`/`currentTurnSessionId` + `sendMove` → `move` `{ side, row, col }` (center finish is schema side-effect) + `sendReady` → `ready`. When CR/docs/server and client disagree, report `code-only` / contradiction with both sides named (`src/stores/*` vs `../happy-tourist-server`).
 
 A toast / silent catch is not blocking confirmation. When confirmation is required, wait for explicit approval; cancel/close must not perform the mutating action. With analogue-only evidence, require only what the analogue proves.
 
