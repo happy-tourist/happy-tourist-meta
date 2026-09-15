@@ -24,3 +24,10 @@
 - [x] 4.2 В `game` store зеркалить phase/maxSeats/ready/countdown; `sendReady()`; status/playing из phase; whitelist say + i18n readiness
 - [x] 4.3 GamePage: fullscreen overlay countdown для всех; кнопка «Готов начать» у own say при eligible; lock move chrome/submit до `playing`
 - [x] 4.4 Из sibling client: `npm run lint` и `npm run typecheck` — без ошибок по затронутым файлам
+
+## 5. Client — выход из игры и confirm
+
+- [x] 5.1 Прочитать delta `specs/game/leave`, skills `client/work-with-pages`, `client/work-with-localization`, `client/work-with-game-board` и текущий `GamePage` `onLeave` / phase+seat
+- [x] 5.2 Добавить i18n: label «Выход из игры», confirm «Вы уверены? Если выйдете, прогресс будет сброшен.», Отмена / Выйти — строки в locale файлах
+- [x] 5.3 `GamePage`: подпись из i18n; seated ∧ `phase === 'playing'` → `q-dialog`, иначе сразу `onLeave`; Cancel закрывает; Confirm → consented leave → lobby — SC-LEAVE-01…05
+- [x] 5.4 Из sibling `happy-tourist.github.io`: `npm run lint` и `npm run typecheck` — без ошибок по затронутым файлам

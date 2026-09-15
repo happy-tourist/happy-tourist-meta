@@ -14,6 +14,7 @@
 - Gate `move` до `playing`; seats открыты пока `seats.size < maxSeats` в любой фазе.
 - Lobby: modal maxSeats; `occupied/maxSeats`; без «Играть».
 - Game: overlay countdown; кнопка ready у say; lock move chrome.
+- Game: «Выход из игры» + confirm leave для seated ∧ `playing`.
 
 **Non-Goals:**
 
@@ -21,6 +22,7 @@
 - Конец партии.
 - Новые npm-зависимости.
 - Переписывание reconnect grace (только «не отменять countdown»).
+- Browser back / beforeunload; soft-disconnect вместо leave-confirm.
 
 ## Decisions
 
@@ -61,12 +63,17 @@
 |-------|-----|
 | `src/pages/LobbyPage.vue` | modal radio 2/3/4; убрать «Играть»; capacity `seats/maxSeats` из metadata |
 | `src/stores/game.ts` | mirror phase/maxSeats/ready/countdown; `createGame({ maxSeats })`; `sendReady`; status из phase |
-| `src/pages/GamePage.vue` | overlay; ready btn у own say affordance; lock move chrome if not playing |
-| `src/i18n/*` | create modal, countdown text, ready btn, say.ready |
+| `src/pages/GamePage.vue` | overlay; ready btn у own say affordance; lock move chrome if not playing; exit label + leave confirm |
+| `src/i18n/*` | create modal, countdown text, ready btn, say.ready, exit/leaveConfirm |
 
 ### D7 — Explore prerequisites (закрыты)
 
 Все D1–D6 / Q1–Q5 / M1–M2 из explore закрыты продуктово; в design нет открытых блокеров. Skills `work-with-game`, `work-with-lobby`, `work-with-game-board`, `work-with-messages` обновить после кода (check-changes / align) — не блокер реализации.
+
+### D8 — Leave confirm (client UX)
+
+- **Выбор:** `needsLeaveConfirm = isSeated && phase === 'playing'`; `q-dialog` на GamePage; Cancel закрывает; Confirm → существующий `onLeave` / consented leave. Label «Выход из игры» через i18n.
+- **Альтернатива:** confirm и в `countdown` / soft-disconnect 30 с — отвергнуто (explore).
 
 ## Risks / Trade-offs
 
@@ -75,6 +82,7 @@
 - [Mid-game seat + фигуры] → Тот же assign path, что join в waiting; turnOrder append (уже паттерн).
 - [Старые клиенты] → BREAKING; деплой server+client вместе.
 - [Тесты SC-PIECE-05/08] → Переписать под maxSeats / reopen seats; не оставлять «always 4 / no reopen».
+- [Hardcoded «Лобби»] → i18n exit label; confirm только seated+playing.
 
 ## Migration Plan
 

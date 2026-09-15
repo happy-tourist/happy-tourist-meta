@@ -41,7 +41,7 @@ Constants: `RECONNECT_GRACE_SECONDS = 30`, `COUNTDOWN_SECONDS = 5` in `MyRoom.ts
 - Full table (`seats.size === maxSeats` while `waiting`) → immediate `countdown` (5…1 via `clock.setTimeout`).
 - Underfilled (`≥2` seated, `< maxSeats`): `onMessage('ready')` one-shot → `seat.ready=true` + broadcast say preset `ready`; when all seated ready → same countdown. Solo seated: reject ready.
 - Leave/drop during countdown does **not** cancel countdown; remaining seats’ `ready` marks are **not** cleared on leave.
-- Legacy `started`: set true from countdown onward; **client/canon is phase-first** (`playing` unlocks moves). Prefer `phase`, not `started`, for new logic.
+- Legacy `started`: mirror of `phase === 'playing'`; **client/canon is phase-first** (`playing` unlocks moves). Prefer `phase`, not `started`, for new logic.
 
 ## Leave And Reconnect (shipped — D1 / D4)
 

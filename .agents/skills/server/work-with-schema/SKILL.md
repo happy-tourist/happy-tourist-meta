@@ -63,7 +63,7 @@ export const Seat = schema(
 
 export const MyRoomState = schema(
   {
-    /** Legacy; prefer phase === "playing". */
+    /** Legacy mirror of phase === "playing" (prefer reading phase). */
     started: t.boolean().default(false),
     phase: t.string().default("waiting"), // waiting | countdown | playing
     maxSeats: t.uint8().default(2), // 2|3|4
@@ -82,7 +82,7 @@ export const MyRoomState = schema(
 | `phase` | `waiting` \| `countdown` \| `playing` — **primary** start gate |
 | `maxSeats` | Table capacity from create options (2\|3\|4) |
 | `countdownRemaining` | Authoritative second 5…1 while countdown; else 0 |
-| `started` | Legacy mirror (true from countdown onward); client prefers `phase` |
+| `started` | Legacy mirror of `phase === 'playing'`; client prefers `phase` |
 | `Seat.ready` | One-shot ready-to-start while underfilled waiting |
 
 ### Connectivity fields (D2 / SC-PIECE-16)

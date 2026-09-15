@@ -40,7 +40,7 @@ OpenSpec: [`openspec/config.yaml`](../openspec/config.yaml); артефакты 
 | [`check-changes`](skills/check-changes/SKILL.md) | Unstaged client/server → предложения: добавить/изменить/удалить skills, maps, docs, AGENTS.md |
 | [`implement-change`](skills/implement-change/SKILL.md) | Активный change: apply (блоки tasks в субагентах) → align → check-changes → commit; resume — повторный запуск (state) |
 | [`end-implement-change`](skills/end-implement-change/SKILL.md) | Закрытие change: update → sync-specs → archive → commit (без вопросов) |
-| [`openspec-propose`](skills/openspec-propose/SKILL.md) | Propose: proposal → specs → design → tasks; при активном change по той же теме — править его, не создавать новый |
+| [`openspec-propose`](skills/openspec-propose/SKILL.md) | Propose: proposal → specs → design → tasks; при ровно одном active change — всегда дописывать в него (новый каталог только по явной просьбе) |
 | [`openspec-new-change`](skills/openspec-new-change/SKILL.md) | Создать change и начать артефакты по схеме |
 | [`openspec-continue-change`](skills/openspec-continue-change/SKILL.md) | Продолжить создание недостающих артефактов change |
 | [`openspec-update-change`](skills/openspec-update-change/SKILL.md) | Правка существующих артефактов change без кода |
@@ -74,10 +74,10 @@ OpenSpec: [`openspec/config.yaml`](../openspec/config.yaml); артефакты 
 | [`work-with-pages`](skills/client/work-with-pages/SKILL.md) | Routes + guards login/lobby/game; App theme header |
 | [`work-with-stores`](skills/client/work-with-stores/SKILL.md) | Pinia `auth` / `theme` / `game` |
 | [`work-with-styles`](skills/client/work-with-styles/SKILL.md) | Quasar Dark + GET/POST `/api/theme`, header, muted chrome, tourist board CSS |
-| [`work-with-localization`](skills/client/work-with-localization/SKILL.md) | vue-i18n boot |
+| [`work-with-localization`](skills/client/work-with-localization/SKILL.md) | vue-i18n boot; `game.say` / ready / countdown / leave keys |
 | [`work-with-lobby`](skills/client/work-with-lobby/SKILL.md) | Live LobbyRoom subscribe, create-with-maxSeats modal (no Play shortcut), quiet resubscribe |
-| [`work-with-rooms`](skills/client/work-with-rooms/SKILL.md) | Room lifecycle, `localStorage` tourist reconnect token, `onStateChange` / `onLeave` |
-| [`work-with-game-board`](skills/client/work-with-game-board/SKILL.md) | Tourist board + presence + ready/countdown + say + strip×4 + `sendMove`/`sendReady`/`sendSay` |
+| [`work-with-rooms`](skills/client/work-with-rooms/SKILL.md) | Room lifecycle, tourist reconnect token, consented leave (confirm is page-local) |
+| [`work-with-game-board`](skills/client/work-with-game-board/SKILL.md) | Board + presence + ready/countdown + say + strip×4 + leave confirm + `sendMove`/`sendReady`/`sendSay` |
 | [`work-with-env-deploy`](skills/client/work-with-env-deploy/SKILL.md) | `VITE_*`, hash router, GitHub Pages |
 
 #### Server-wide skills (`.agents/skills/server/`)

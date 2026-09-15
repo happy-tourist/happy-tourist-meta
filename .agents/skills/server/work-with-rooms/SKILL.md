@@ -155,7 +155,7 @@ Align with client Pinia expectations:
 | Capacity | No `maxClients = maxSeats`; seated ≤ `maxSeats` (2\|3\|4) via seats check; spectators may join |
 | Seats | Unique `touristId` 1…4 + exactly four pieces (one per side N/E/S/W on free start cells; see `work-with-game`); seat while free slot in **any** phase |
 | Connectivity | `connected` + `reconnectUntil` on Seat (D2); online at assign |
-| Start | `phase` waiting → countdown → playing; full table or all-ready underfilled; legacy `started` from countdown onward |
+| Start | `phase` waiting → countdown → playing; full table or all-ready underfilled; legacy `started` mirrors `phase === 'playing'` |
 | Status metadata | `waiting` until `phase === 'playing'`; always publish `maxSeats` + occupied `seats` |
 | Unexpected drop | Hold seat 30 s + `allowReconnection`; sync offline + deadline (SC-PIECE-11…14, 16); does not cancel countdown |
 | Consented leave | Immediate seat remove; free seat reopens while under maxSeats (SC-PIECE-07/08) |

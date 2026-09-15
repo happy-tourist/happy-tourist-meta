@@ -18,7 +18,7 @@ Product: настольная игра «Счастливый турист». On
 
 | Surface | Path | Role |
 | --- | --- | --- |
-| Game page | `src/pages/GamePage.vue` | CSS Grid field; pieces overlay; presence + say bubbles/picker; strip×4; local selection/hints; travel animation; leave → lobby |
+| Game page | `src/pages/GamePage.vue` | CSS Grid field; pieces overlay; presence + say bubbles/picker; strip×4; local selection/hints; travel animation; «Выход из игры» + leave confirm when seated ∧ `playing` → lobby |
 | Game store | `src/stores/game.ts` | Room I/O; mirror `seats` / `phase` / `maxSeats` / `countdownRemaining` / `currentTurnSessionId` / `sessionId`; `isMyTurn` / `isPlaying` / `canSendReady`; `sendMove` / `sendReady` / `sendSay` + `sayEvents` |
 
 | Concern | Location |
@@ -117,7 +117,7 @@ Picker open state (`sayPickerOpen`) is page-local; close if the local seat is lo
 - Show strip «Мои туристы» only if `mySeat`; on own turn **in playing** allow select + destination click.
 - On own turn in playing: white selection + red targets; submit via store `sendMove`.
 - Animate piece travel for everyone; ignore input while `moveAnimating`.
-- Header status: turn labels only in playing; leave → `leaveGame` + lobby; remount without room → `rejoinGame(roomId)` via store.
+- Header status: turn labels only in playing; exit via i18n `game.leave` / `leaveConfirm` / `leaveCancel` / `leaveExit`; seated ∧ `phase === 'playing'` → `q-dialog` confirm before `leaveGame` + lobby (else immediate leave); remount without room → `rejoinGame(roomId)` via store.
 
 ## Do
 
