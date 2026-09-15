@@ -4,9 +4,9 @@
 |-------------|----------|
 | SC-MOVE-01 | covered (server mocha) |
 | SC-MOVE-04 | covered (server mocha — additionally requires playing) |
-| SC-MOVE-18 | pending (server mocha) |
-| SC-MOVE-19 | pending (server mocha) |
-| SC-MOVE-20 | pending (client UX) |
+| SC-MOVE-18 | covered (server mocha) |
+| SC-MOVE-19 | covered (server mocha) |
+| SC-MOVE-20 | covered (client UX) |
 
 ## MODIFIED Requirements
 

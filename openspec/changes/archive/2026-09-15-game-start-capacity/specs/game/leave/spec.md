@@ -6,11 +6,11 @@
 
 | Scenario ID | Coverage |
 |-------------|----------|
-| SC-LEAVE-01 | pending (client UX) |
-| SC-LEAVE-02 | pending (client UX) |
-| SC-LEAVE-03 | pending (client UX) |
-| SC-LEAVE-04 | pending (client UX) |
-| SC-LEAVE-05 | pending (client UX) |
+| SC-LEAVE-01 | covered (client UX) |
+| SC-LEAVE-02 | covered (client UX) |
+| SC-LEAVE-03 | covered (client UX) |
+| SC-LEAVE-04 | covered (client UX) |
+| SC-LEAVE-05 | covered (client UX) |
 
 ## ADDED Requirements
 

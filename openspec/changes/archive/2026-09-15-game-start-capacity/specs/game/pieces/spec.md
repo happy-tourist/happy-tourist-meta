@@ -3,11 +3,11 @@
 | Scenario ID | Coverage |
 |-------------|----------|
 | SC-PIECE-01 | covered (server mocha — reaffirm under maxSeats) |
-| SC-PIECE-05 | pending (server mocha — rewrite) |
-| SC-PIECE-06 | pending (server mocha — rewrite) |
-| SC-PIECE-08 | pending (server mocha — rewrite) |
-| SC-PIECE-19 | pending (server mocha) |
-| SC-PIECE-20 | pending (server mocha) |
+| SC-PIECE-05 | covered (server mocha) |
+| SC-PIECE-06 | covered (server mocha) |
+| SC-PIECE-08 | covered (server mocha) |
+| SC-PIECE-19 | covered (server mocha) |
+| SC-PIECE-20 | covered-by-reuse (server mocha SC-PIECE-15) |
 
 ## MODIFIED Requirements
 
@@ -82,7 +82,7 @@ A **consented** leave by a seated player (intentional exit from the match UI bac
 - **THEN** that player’s four pieces are removed from synced state
 - **AND** a subsequent joiner MAY receive the freed tourist kind and MAY occupy formerly taken start cells
 
-#### Scenario [SC-PIECE-08]: Leave after start does not reopen seating
+#### Scenario [SC-PIECE-08]: Leave after full table reopens seating
 
 - **GIVEN** a tourist room in phase `playing` with maxSeats 4 and four seated players
 - **WHEN** one seated player performs a consented leave (intentional exit to the lobby)

@@ -1,3 +1,5 @@
+# game/start Specification
+
 ## Purpose
 
 Фазы старта партии в room `tourist`: ожидание игроков, подтверждение готовности при недоборе, общий countdown 5…1 и переход в playing, после которого разрешены ходы. Связано с `game/pieces` (ёмкость seats), `game/say` (preset готовности), `game/move` (gate ходов), `lobby/rooms` (create maxSeats).
@@ -6,20 +8,20 @@
 
 | Scenario ID | Coverage |
 |-------------|----------|
-| SC-START-01 | pending (server mocha) |
-| SC-START-02 | pending (server mocha) |
-| SC-START-03 | pending (server mocha) |
-| SC-START-04 | pending (server mocha) |
-| SC-START-05 | pending (server mocha) |
-| SC-START-06 | pending (server mocha) |
-| SC-START-07 | pending (server mocha) |
-| SC-START-08 | pending (client UX) |
-| SC-START-09 | pending (client UX) |
-| SC-START-10 | pending (client UX) |
-| SC-START-11 | pending (server mocha) |
-| SC-START-12 | pending (server mocha) |
+| SC-START-01 | covered (server mocha) |
+| SC-START-02 | covered (server mocha — with SC-START-03) |
+| SC-START-03 | covered (server mocha) |
+| SC-START-04 | covered (server mocha) |
+| SC-START-05 | covered (server mocha) |
+| SC-START-06 | covered (server mocha) |
+| SC-START-07 | covered (server mocha) |
+| SC-START-08 | covered (client UX) |
+| SC-START-09 | covered (client UX) |
+| SC-START-10 | covered (client UX) |
+| SC-START-11 | covered (server mocha) |
+| SC-START-12 | covered (server mocha) |
 
-## ADDED Requirements
+## Requirements
 
 ### Requirement: Synced start phase
 

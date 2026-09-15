@@ -2,10 +2,10 @@
 
 | Scenario ID | Coverage |
 |-------------|----------|
-| SC-LOBBY-09 | pending (client UX) |
-| SC-LOBBY-10 | pending (client UX) |
-| SC-LOBBY-11 | pending (client UX) |
-| SC-LOBBY-12 | pending (client + listing metadata) |
+| SC-LOBBY-09 | covered (client UX) |
+| SC-LOBBY-10 | covered (client UX) |
+| SC-LOBBY-11 | covered (client UX) |
+| SC-LOBBY-12 | covered (client UX) |
 
 ## ADDED Requirements
 

@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Рассадка в room `tourist`: до четырёх seated-игроков; у каждого уникальный вид туриста и **четыре одинаковые** фигурки — по одной на сторонах N/E/S/W на свободных стартовых клетках; личная полоса из четырёх слотов 1:1 с полевыми (статусы later).
+Рассадка в room `tourist`: ёмкость `maxSeats` (2|3|4); у каждого seated уникальный вид туриста и **четыре одинаковые** фигурки — по одной на сторонах N/E/S/W на свободных стартовых клетках; seats открыты пока есть свободный слот (включая mid-game); личная полоса из четырёх слотов 1:1 с полевыми (статусы later). Фазы старта — `game/start`.
 
 ## Traceability
 
@@ -15,7 +15,7 @@
 | SC-PIECE-05 | covered (server mocha) |
 | SC-PIECE-06 | covered (server mocha) |
 | SC-PIECE-07 | covered (server mocha — consented leave before start) |
-| SC-PIECE-08 | covered (server mocha — consented leave after start) |
+| SC-PIECE-08 | covered (server mocha — consented leave reopens seat under maxSeats) |
 | SC-PIECE-09 | covered (client GamePage strip ×4) |
 | SC-PIECE-10 | covered (client GamePage spectator no strip) |
 | SC-PIECE-11 | covered (server mocha — unexpected hold before start) |
@@ -26,16 +26,18 @@
 | SC-PIECE-16 | covered (server mocha — sync offline + deadline) |
 | SC-PIECE-17 | covered (client — localStorage token restores seat after browsing session end) |
 | SC-PIECE-18 | covered (client — missing/invalid token = fresh joinById) |
+| SC-PIECE-19 | covered (server mocha) |
+| SC-PIECE-20 | covered-by-reuse (server mocha SC-PIECE-15) |
 
 ## Requirements
 
 ### Requirement: Four pieces per seated player
 
-Until the tourist room has started, when an authenticated client joins and fewer than four seated players exist, the server SHALL assign that client a unique tourist kind from `1`…`4` not used by any current seat, and SHALL place exactly four pieces for that client — one on each board side `N`, `E`, `S`, and `W`. For each side the start cell MUST be chosen uniformly at random from the start cells of that side that are not already occupied by any piece in the room. All four pieces of the same player MUST use that player’s tourist kind. The assignment MUST be synchronized to all clients in the room.
+Until the tourist room has no free seat under its maxSeats, when an authenticated client joins and fewer seated players exist than maxSeats, the server SHALL assign that client a unique tourist kind from `1`…`4` not used by any current seat, and SHALL place exactly four pieces for that client — one on each board side `N`, `E`, `S`, and `W`. For each side the start cell MUST be chosen uniformly at random from the start cells of that side that are not already occupied by any piece in the room. All four pieces of the same player MUST use that player’s tourist kind. The assignment MUST be synchronized to all clients in the room. This seating rule applies in any start phase (`waiting`, `countdown`, or `playing`) whenever a free seat slot exists.
 
 #### Scenario [SC-PIECE-01]: First join receives four pieces on all sides
 
-- **GIVEN** a tourist room that has not started and has no seated players
+- **GIVEN** a tourist room that has no seated players and has free seat capacity
 - **WHEN** an authenticated client joins the room
 - **THEN** the client is assigned exactly one tourist kind from `1`…`4`
 - **AND** the client has exactly four pieces, one on each side `N`, `E`, `S`, and `W`
@@ -44,68 +46,83 @@ Until the tourist room has started, when an authenticated client joins and fewer
 
 #### Scenario [SC-PIECE-02]: Tourist kinds stay unique among players
 
-- **GIVEN** a tourist room that has not started and already has one or more seated players
+- **GIVEN** a tourist room that already has one or more seated players and still has free seat capacity
 - **WHEN** another authenticated client joins and receives a seat
 - **THEN** the new tourist kind is not equal to any currently seated player’s kind
 - **AND** all four of the new player’s pieces use that same new kind
 
 #### Scenario [SC-PIECE-03]: Start cells lie on the assigned side and stay free
 
-- **GIVEN** a tourist room that has not started
+- **GIVEN** a tourist room with free seat capacity
 - **WHEN** a client is assigned pieces on the four sides
 - **THEN** each piece’s row and column match a start cell of that piece’s side on the agreed tourist layout
 - **AND** no two pieces in the room share the same row and column
 
 #### Scenario [SC-PIECE-04]: Second player uses remaining cells on each side
 
-- **GIVEN** a tourist room that has not started and already has one seated player with four pieces
+- **GIVEN** a tourist room that already has one seated player with four pieces and still has free seat capacity
 - **WHEN** a second authenticated client joins and receives a seat
 - **THEN** the second player also has one piece on each side `N`, `E`, `S`, and `W`
 - **AND** none of the second player’s cells equal any cell already occupied by the first player
 
 ### Requirement: Spectators and hard stop after four seated players
 
-The room MUST allow clients beyond four connections. After four seated players have been assigned, the room SHALL be considered started. While the room is started, joining clients MUST NOT receive a seat or pieces.
+The room MUST allow clients beyond maxSeats connections. The room’s maxSeats MUST be one of 2, 3, or 4 as set at create. While the number of seated players is strictly less than maxSeats, joining authenticated clients MUST receive a seat and pieces (including during `countdown` and `playing`). When seated count equals maxSeats, joining clients MUST NOT receive a seat or pieces (spectators / guests). Filling the last free seat while phase is `waiting` triggers start countdown per `game/start` (this requirement does not itself define countdown). The legacy meaning of `started` as a permanent seating lock after exactly four seats MUST NOT apply.
 
 #### Scenario [SC-PIECE-05]: Fourth seated player starts the room
 
-- **GIVEN** a tourist room that has not started and has three seated players
+- **GIVEN** a tourist room in phase `waiting` whose maxSeats equals 4 and that has three seated players
 - **WHEN** a fourth authenticated client joins and receives a seat with four pieces
-- **THEN** the room is marked started
+- **THEN** seated count equals maxSeats
 - **AND** subsequent joining clients receive no seat and no pieces
+- **AND** start countdown begins per `game/start`
 
 #### Scenario [SC-PIECE-06]: Fifth connection is a spectator
 
-- **GIVEN** a tourist room that already has four seated players (and is therefore started)
+- **GIVEN** a tourist room that already has seated count equal to maxSeats
 - **WHEN** another authenticated client joins
 - **THEN** that client receives no tourist kind and no pieces
 - **AND** existing seats and pieces remain unchanged
 
+#### Scenario [SC-PIECE-19]: Mid-game join takes a free seat
+
+- **GIVEN** a tourist room in phase `playing` with maxSeats 4 and two seated players
+- **WHEN** another authenticated client joins
+- **THEN** that client receives a seat and four pieces on free start cells
+- **AND** every client observes the new seat and pieces
+
 ### Requirement: Leave before and after start
 
-A **consented** leave by a seated player (intentional exit from the match UI back to the lobby) SHALL permanently remove that player’s seat and all four pieces. If the room has not started, the tourist kind and occupied cells MUST return to the available pools. If the room has started, the server MUST NOT assign seats to new joiners after that removal. An **unexpected** disconnect is governed by the reconnect grace requirement and MUST NOT be treated as an immediate consented leave.
+A **consented** leave by a seated player (intentional exit from the match UI back to the lobby) SHALL permanently remove that player’s seat and all four pieces. The tourist kind and occupied cells MUST return to the available pools whenever a seat is permanently removed, regardless of start phase. After that removal, if seated count is again below maxSeats, a subsequent joiner MUST be allowed to receive a seat and pieces. An **unexpected** disconnect is governed by the reconnect grace requirement and MUST NOT be treated as an immediate consented leave. Ready marks of remaining seats are not cleared by this leave (see `game/start`). If seated count reaches zero, the room is disposed even if spectators remain (unchanged).
 
 #### Scenario [SC-PIECE-07]: Leave before start frees kind and cells
 
-- **GIVEN** a tourist room that has not started and has at least one seated player
+- **GIVEN** a tourist room in phase `waiting` with at least one seated player
 - **WHEN** that seated player performs a consented leave (intentional exit to the lobby)
 - **THEN** that player’s four pieces are removed from synced state
 - **AND** a subsequent joiner MAY receive the freed tourist kind and MAY occupy formerly taken start cells
 
-#### Scenario [SC-PIECE-08]: Leave after start does not reopen seating
+#### Scenario [SC-PIECE-08]: Leave after full table reopens seating
 
-- **GIVEN** a started tourist room with four seated players
+- **GIVEN** a tourist room in phase `playing` with maxSeats 4 and four seated players
 - **WHEN** one seated player performs a consented leave (intentional exit to the lobby)
 - **THEN** that player’s four pieces are removed from synced state
-- **AND** a subsequent joiner still receives no seat
+- **AND** a subsequent joiner receives a seat and pieces while seated count is below maxSeats
+
+#### Scenario [SC-PIECE-20]: Empty seated disposes room
+
+- **GIVEN** a tourist room with exactly one seated player and any number of spectators
+- **WHEN** that seated player permanently leaves
+- **THEN** the room is disposed
+- **AND** spectators do not keep the room alive
 
 ### Requirement: Unexpected disconnect grace and reconnect
 
-When a seated player disconnects unexpectedly (for example page reload or network drop), the server MUST keep that seat and all four pieces in synced state for a grace period of exactly **30 seconds** and MUST allow the same client session to reconnect into that seat within the grace. During the grace the seat MUST be marked offline with a synchronized reconnect deadline visible to all clients in the room. The same grace policy applies whether or not the room has started.
+When a seated player disconnects unexpectedly (for example page reload or network drop), the server MUST keep that seat and all four pieces in synced state for a grace period of exactly **30 seconds** and MUST allow the same client session to reconnect into that seat within the grace. During the grace the seat MUST be marked offline with a synchronized reconnect deadline visible to all clients in the room. The same grace policy applies in any start phase.
 
 #### Scenario [SC-PIECE-11]: Unexpected disconnect before start holds the seat
 
-- **GIVEN** a tourist room that has not started and has at least one seated player who is marked connected
+- **GIVEN** a tourist room in phase `waiting` with at least one seated player who is marked connected
 - **WHEN** that seated player disconnects unexpectedly
 - **THEN** that player’s seat and four pieces remain in synced state
 - **AND** the seat is marked offline with a reconnect deadline 30 seconds from the disconnect
@@ -113,11 +130,11 @@ When a seated player disconnects unexpectedly (for example page reload or networ
 
 #### Scenario [SC-PIECE-12]: Unexpected disconnect after start holds the seat
 
-- **GIVEN** a started tourist room with four seated players
+- **GIVEN** a tourist room in phase `playing` with seated count equal to maxSeats
 - **WHEN** one seated player disconnects unexpectedly
 - **THEN** that player’s seat and four pieces remain in synced state
 - **AND** the seat is marked offline with a reconnect deadline 30 seconds from the disconnect
-- **AND** the room remains started and does not assign a seat to a new joiner solely because of that disconnect
+- **AND** the room does not free that seat for a new joiner solely because of that disconnect (grace holds the seat)
 
 #### Scenario [SC-PIECE-13]: Reconnect within grace restores the same seat
 
@@ -132,12 +149,12 @@ When a seated player disconnects unexpectedly (for example page reload or networ
 - **GIVEN** a seated player whose seat is held offline within the grace
 - **WHEN** the 30-second grace expires without a successful reconnect
 - **THEN** that player’s seat and four pieces are removed from synced state
-- **AND** if the room has not started, kind and cells return to the available pools
-- **AND** if the room has started, seating remains closed to new joiners
+- **AND** kind and cells return to the available pools
+- **AND** if seated count is again below maxSeats, a subsequent joiner MAY receive a seat
 
 ### Requirement: Dispose when no seated players remain
 
-After any permanent seat removal (consented leave or grace timeout), if the room has **zero** seated players left, the server SHALL close the room even if spectator clients are still connected. If at least one seated player remains, the room MUST continue and MUST NOT reopen seating solely because another seated player left after start.
+After any permanent seat removal (consented leave or grace timeout), if the room has **zero** seated players left, the server SHALL close the room even if spectator clients are still connected. If at least one seated player remains and seated count is below maxSeats, a subsequent joiner MAY receive a seat.
 
 #### Scenario [SC-PIECE-15]: Last seated removal closes the room with spectators present
 
@@ -169,8 +186,8 @@ After a seated player successfully enters a tourist room, the client MUST persis
 - **GIVEN** the user opens the Game for a tourist room without a valid stored reconnection token for that room (or reconnect with the stored token fails)
 - **WHEN** the client joins that room
 - **THEN** the join is treated as a fresh joinById (not a seat reclaim by user id)
-- **AND** if the room has not started and a free seat slot exists, the joiner MAY receive a new seat with pieces
-- **AND** if the room has started, the joiner receives no seat (spectator only)
+- **AND** if seated count is below maxSeats, the joiner MAY receive a new seat with pieces
+- **AND** if seated count equals maxSeats, the joiner receives no seat (spectator only)
 - **AND** any offline grace seat held for another session remains until reconnect or timeout independently
 
 ### Requirement: Board pieces and personal four-slot strip

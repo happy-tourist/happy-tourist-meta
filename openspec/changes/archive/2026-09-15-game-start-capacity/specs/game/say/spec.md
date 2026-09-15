@@ -3,8 +3,8 @@
 | Scenario ID | Coverage |
 |-------------|----------|
 | SC-SAY-01 | covered (server mocha — whitelist still includes greeting/luck) |
-| SC-SAY-13 | pending (server mocha) |
-| SC-SAY-14 | pending (client i18n / bubble) |
+| SC-SAY-13 | covered (server mocha) |
+| SC-SAY-14 | covered (client i18n / bubble) |
 
 ## MODIFIED Requirements
 
