@@ -1,3 +1,5 @@
+# game/finish Specification
+
 ## Purpose
 
 Финиш партии в room `tourist`: турист, вошедший в центр, сходит с поля; игрок, проводивший всех четырёх, получает место, остаётся за столом без ходов (say/strip/presence) и освобождает seat только при выходе. Связано с `game/move`, `game/pieces`, `game/leave`, `game/presence`.
@@ -6,19 +8,19 @@
 
 | Scenario ID | Coverage |
 |-------------|----------|
-| SC-FINISH-01 | pending (server mocha) |
-| SC-FINISH-02 | pending (server mocha) |
-| SC-FINISH-03 | pending (server mocha) |
-| SC-FINISH-04 | pending (server mocha) |
-| SC-FINISH-05 | pending (client UX) |
-| SC-FINISH-06 | pending (client UX) |
-| SC-FINISH-07 | pending (server mocha) |
-| SC-FINISH-08 | pending (server mocha) |
-| SC-FINISH-09 | pending (server mocha) |
-| SC-FINISH-10 | pending (client UX) |
-| SC-FINISH-11 | pending (server mocha) |
+| SC-FINISH-01 | covered (server mocha) |
+| SC-FINISH-02 | covered (server mocha) |
+| SC-FINISH-03 | covered (server mocha + client UX modal) |
+| SC-FINISH-04 | covered (server mocha + client UX modal) |
+| SC-FINISH-05 | covered (server: no auto-dispose; client stays in room) |
+| SC-FINISH-06 | covered (server mocha move reject; client strip/say) |
+| SC-FINISH-07 | covered (server mocha) |
+| SC-FINISH-08 | covered (server mocha) |
+| SC-FINISH-09 | covered (client UX strip) |
+| SC-FINISH-10 | covered (client UX strip) |
+| SC-FINISH-11 | covered (server mocha) |
 
-## ADDED Requirements
+## Requirements
 
 ### Requirement: Entering any center cell finishes a piece
 

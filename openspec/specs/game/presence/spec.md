@@ -2,7 +2,7 @@
 
 ## Purpose
 
-На экране Game показывает занятые места за столом кружками туристов: раскладка относительно игрока или зрителя, офлайн-состояние с круговым countdown на время reconnect grace.
+На экране Game показывает занятые места за столом кружками туристов: раскладка относительно игрока или зрителя, офлайн-состояние с круговым countdown на время reconnect grace, значок места финиша для finished-seat (`game/finish`).
 
 ## Traceability
 
@@ -13,6 +13,8 @@
 | SC-PRESENCE-03 | covered (client spectator layout) |
 | SC-PRESENCE-04 | covered (client offline circular countdown) |
 | SC-PRESENCE-05 | covered (client only occupied seats) |
+| SC-PRESENCE-06 | covered (client UX) |
+| SC-PRESENCE-07 | covered (client UX) |
 
 ## Requirements
 
@@ -71,3 +73,20 @@ While a seat is offline within reconnect grace, its presence marker MUST show a 
 - **THEN** a circular countdown progress is shown for the remaining grace time
 - **AND** the tourist kind image remains visible in the marker
 - **AND** when the seat becomes connected again, the countdown ring is not shown
+
+### Requirement: Finish place badge on presence marker
+
+When a seated player has a synchronized finish place, every client that shows that seat’s presence marker on the Game screen SHALL display a finish indicator on that marker that includes the place number (1, 2, …). Seats without a finish place MUST NOT show that place badge. The badge MUST remain while the finished seat remains occupied (including offline within reconnect grace).
+
+#### Scenario [SC-PRESENCE-06]: Finished seat shows place on presence
+
+- **GIVEN** a seated player has finish place `2` and is connected
+- **WHEN** any client views that seat’s presence marker on Game
+- **THEN** the marker shows a finish indicator that includes the place `2`
+- **AND** the tourist kind image remains visible in the marker
+
+#### Scenario [SC-PRESENCE-07]: Non-finished seat has no place badge
+
+- **GIVEN** a seated player who has unfinished pieces and no finish place
+- **WHEN** any client views that seat’s presence marker
+- **THEN** no finish-place badge is shown on that marker

@@ -2,9 +2,9 @@
 
 | Scenario ID | Coverage |
 |-------------|----------|
-| SC-LEAVE-02 | pending (client UX — active playing still confirms) |
-| SC-LEAVE-05 | pending (client UX — includes finished) |
-| SC-LEAVE-06 | pending (client UX) |
+| SC-LEAVE-02 | covered (client UX — active playing still confirms) |
+| SC-LEAVE-05 | covered (client UX — includes finished) |
+| SC-LEAVE-06 | covered (client UX) |
 
 Related: finished seat — `game/finish`.
 

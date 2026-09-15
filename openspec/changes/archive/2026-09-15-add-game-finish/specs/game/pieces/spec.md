@@ -2,9 +2,9 @@
 
 | Scenario ID | Coverage |
 |-------------|----------|
-| SC-PIECE-09 | pending (client UX — strip finish chrome) |
+| SC-PIECE-09 | covered (client UX — strip finish chrome) |
 | SC-PIECE-10 | covered-by-reuse (client spectator no strip) |
-| SC-PIECE-21 | pending (server mocha) |
+| SC-PIECE-21 | covered (server mocha) |
 
 Related: finish semantics — `game/finish`.
 

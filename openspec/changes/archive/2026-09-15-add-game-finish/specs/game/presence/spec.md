@@ -2,8 +2,8 @@
 
 | Scenario ID | Coverage |
 |-------------|----------|
-| SC-PRESENCE-06 | pending (client UX) |
-| SC-PRESENCE-07 | pending (client UX) |
+| SC-PRESENCE-06 | covered (client UX) |
+| SC-PRESENCE-07 | covered (client UX) |
 
 Related: finish place assignment — `game/finish`.
 

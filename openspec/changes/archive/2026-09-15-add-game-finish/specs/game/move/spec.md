@@ -3,16 +3,16 @@
 | Scenario ID | Coverage |
 |-------------|----------|
 | SC-MOVE-01 | covered-by-reuse (server mocha) |
-| SC-MOVE-02 | pending (server mocha — skip finished) |
-| SC-MOVE-03 | pending (server mocha — solo non-finished) |
-| SC-MOVE-08 | pending (server mocha — center finishes piece) |
+| SC-MOVE-02 | covered (server mocha — skip finished via SC-MOVE-21) |
+| SC-MOVE-03 | covered-by-reuse (server mocha — solo; finished skip via SC-MOVE-21) |
+| SC-MOVE-08 | covered (server mocha — center finishes piece / SC-FINISH-01) |
 | SC-MOVE-16 | covered-by-reuse (server mocha) |
 | SC-MOVE-17 | covered-by-reuse (server mocha — active offline) |
 | SC-MOVE-19 | covered-by-reuse (server mocha) |
-| SC-MOVE-21 | pending (server mocha) |
-| SC-MOVE-22 | pending (server mocha) |
-| SC-MOVE-23 | pending (server mocha) |
-| SC-MOVE-24 | pending (client UX) |
+| SC-MOVE-21 | covered (server mocha) |
+| SC-MOVE-22 | covered (server mocha) |
+| SC-MOVE-23 | covered (server mocha) |
+| SC-MOVE-24 | covered (client UX) |
 
 Related: piece finish side-effects — `game/finish`.
 
