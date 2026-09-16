@@ -3,8 +3,8 @@
 | Scenario ID | Coverage |
 |-------------|----------|
 | SC-START-01 | covered-by-reuse (server mocha) |
-| SC-START-02 | pending (server mocha — playing materializes pieces) |
-| SC-START-13 | pending (server mocha) |
+| SC-START-02 | covered (server mocha — playing materializes pieces) |
+| SC-START-13 | covered (server mocha) |
 
 Related: deferred pieces — `game/pieces`; turn timers begin in playing — `game/move`.
 

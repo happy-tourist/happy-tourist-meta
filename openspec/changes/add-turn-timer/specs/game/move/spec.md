@@ -10,7 +10,7 @@
 | SC-MOVE-30 | covered (server mocha) |
 | SC-MOVE-31 | covered (client timeout modal) |
 | SC-MOVE-32 | covered (client isInteractive lock) |
-| SC-MOVE-19 | pending (server mocha — playing join is spectator; turn order unchanged) |
+| SC-MOVE-19 | covered (server mocha — playing join is spectator; turn order unchanged) |
 
 Related: presence rings — `game/presence`; deferred pieces — `game/pieces` / `game/start`; leave without confirm — `game/leave`.
 

@@ -3,7 +3,7 @@
 | Scenario ID | Coverage |
 |-------------|----------|
 | SC-FINISH-06 | covered-by-reuse (server mocha + client) |
-| SC-FINISH-07 | pending (server mocha — no seat after leave in playing) |
+| SC-FINISH-07 | covered (server mocha — no seat after leave in playing) |
 | SC-FINISH-08 | covered-by-reuse (server mocha) |
 
 Related: seating gate — `game/pieces` (new seats only in `waiting`).

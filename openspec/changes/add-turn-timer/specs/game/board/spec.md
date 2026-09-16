@@ -2,8 +2,8 @@
 
 | Scenario ID | Coverage |
 |-------------|----------|
-| SC-BOARD-02 | pending (client GamePage --gap/--radius 2px) |
-| SC-BOARD-03 | pending (client full-width board without side presence gutters) |
+| SC-BOARD-02 | covered (client GamePage --gap/--radius 2px) |
+| SC-BOARD-03 | covered (client full-width board without side presence gutters) |
 
 Related: presence row layout — `game/presence` (opponents top / self bottom).
 
