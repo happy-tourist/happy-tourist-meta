@@ -3,14 +3,26 @@
 | Scenario ID | Coverage |
 |-------------|----------|
 | SC-PRESENCE-04 | covered-by-reuse (client Game presence chrome — dual with turn) |
-| SC-PRESENCE-08 | pending (client UX) |
-| SC-PRESENCE-09 | pending (client UX) |
-| SC-PRESENCE-10 | pending (client UX) |
-| SC-PRESENCE-11 | pending (client UX) |
+| SC-PRESENCE-08 | covered (client GamePage turn ring) |
+| SC-PRESENCE-09 | covered (client GamePage solo red ring) |
+| SC-PRESENCE-10 | covered (client GamePage dual sibling rings) |
+| SC-PRESENCE-11 | covered (client reserved 52px outer chrome) |
+| SC-PRESENCE-12 | covered (client sibling avatar img + rings) |
 
 Related: turn deadlines — `game/move`; reconnect grace — `game/pieces`.
 
 ## ADDED Requirements
+
+### Requirement: Tourist avatar always visible on occupied presence
+
+Every occupied presence marker on the Game screen SHALL keep the seat’s tourist kind image visible in the marker at all times (connected or offline-in-grace, with or without active turn/reconnect rings). Rings MUST surround that image without replacing or omitting it. Implementations MUST NOT rely on placing the image only inside a Quasar `q-circular-progress` default slot without `show-value` (that slot is not rendered), and MUST NOT nest circular-progress components such that the image never appears in the DOM.
+
+#### Scenario [SC-PRESENCE-12]: Occupied marker always shows tourist image
+
+- **GIVEN** any occupied seated player’s presence marker on Game (with or without active turn deadline and/or reconnect grace countdown)
+- **WHEN** any client views that marker
+- **THEN** the tourist kind image for that seat is visible in the marker
+- **AND** any active turn and/or reconnect countdown rings appear around that image without hiding it
 
 ### Requirement: Turn countdown ring on presence
 
@@ -21,6 +33,7 @@ While phase is `playing` and a seated player’s seat holds the synchronized cur
 - **GIVEN** a tourist room in phase `playing` with at least two non-finished seated players and a current-turn seat with a 60-second deadline
 - **WHEN** any client views that seat’s presence marker
 - **THEN** a blue circular countdown for remaining turn time is shown
+- **AND** the tourist kind image remains visible in the marker
 - **AND** no static blue outline-only turn indicator is shown on that marker
 
 #### Scenario [SC-PRESENCE-09]: Solo budget shows red countdown
@@ -28,6 +41,7 @@ While phase is `playing` and a seated player’s seat holds the synchronized cur
 - **GIVEN** a tourist room in phase `playing` with exactly one non-finished seated player under the five-minute solo budget
 - **WHEN** any client (including a spectator) views that seat’s presence marker
 - **THEN** a red circular countdown for the remaining solo budget is shown
+- **AND** the tourist kind image remains visible in the marker
 
 ### Requirement: Dual turn and reconnect countdowns
 
@@ -39,6 +53,7 @@ When a seat simultaneously has an active turn deadline ring and an offline recon
 - **WHEN** any client views that seat’s presence marker
 - **THEN** both the turn countdown ring and the reconnect grace countdown ring are visible together
 - **AND** the turn ring is outside the reconnect ring
+- **AND** the tourist kind image remains visible in the marker
 
 ### Requirement: Reserved presence marker chrome size
 

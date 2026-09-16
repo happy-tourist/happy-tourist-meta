@@ -5,8 +5,9 @@ description: >-
   server-verify-code for happy-tourist siblings, then prints a combined Client
   and Server report. Use when the user asks for align-code, full-stack align,
   or to audit both client and server against requirements and skill compliance
-  in one pass (includes reactive loops and async races: await gap before
-  onStateChange / first ROOM_STATE).
+  in one pass (includes reactive loops, async races: await gap before
+  onStateChange / first ROOM_STATE, and client Quasar nested-slot / overlay
+  hide risks e.g. nested q-circular-progress around presence avatars).
 ---
 
 # Align Code — client + server
@@ -15,7 +16,7 @@ description: >-
 
 Скилл **только анализирует и отчитывается** — не правит runtime-код, не коммитит. Правки — только по явной просьбе после отчёта.
 
-Child align **обязан** (Axis C) ловить не только feedback-loop штормы, но и **async-гонки**: `await` между готовностью I/O и регистрацией listener / первым sync (на client — особенно `connect()` → gap → `_attachRoom`/`onStateChange`, пропуск первого `ROOM_STATE`). Не ослаблять и не пропускать эти секции дочерних скиллов.
+Child align **обязан** (Axis C) ловить не только feedback-loop штормы, но и **async-гонки**: `await` между готовностью I/O и регистрацией listener / первым sync (на client — особенно `connect()` → gap → `_attachRoom`/`onStateChange`, пропуск первого `ROOM_STATE`), а также на client — **Quasar nested slots / overlays**, которые прячут обязательный chrome (вложенный `q-circular-progress` → пустые presence-аватары). Не ослаблять и не пропускать эти секции дочерних скиллов.
 
 ## Когда применять
 
@@ -99,7 +100,7 @@ Align-Code Progress:
 
 Рабочий cwd / git / чтение `src/…` — **корень client**. Skills читать из meta `.agents/skills/client/`.
 
-1. Полностью выполнить `client-align-code` (все 4 оси, формат отчёта дочернего скилла) — включая секции **Реактивные / async-петли** и **Async-гонки** (await до listener / первый `ROOM_STATE`).
+1. Полностью выполнить `client-align-code` (все 4 оси, формат отчёта дочернего скилла) — включая секции **Реактивные / async-петли**, **Async-гонки** (await до listener / первый `ROOM_STATE`) и **Quasar nested slots / overlays** (presence / progress).
 2. Полностью выполнить `client-verify-code` (ветка vs merge-base + working tree; все Always-include skills).
 
 Сохранить результаты для сводки; **не** публиковать отдельным финальным ответом до шага 7 (допустимы краткие прогресс-апдейты).

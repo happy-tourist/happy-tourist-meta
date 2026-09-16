@@ -2,17 +2,17 @@
 
 | Scenario ID | Coverage |
 |-------------|----------|
-| SC-PIECE-01 | pending (server mocha — kind without pieces pre-playing) |
+| SC-PIECE-01 | covered (server mocha — kind without pieces pre-playing) |
 | SC-PIECE-02 | covered-by-reuse (server mocha — unique kinds) |
-| SC-PIECE-03 | pending (server mocha — spawn on playing) |
-| SC-PIECE-04 | pending (server mocha — second seat cells after spawn) |
-| SC-PIECE-05 | pending (server mocha — full table seat without pieces until playing) |
+| SC-PIECE-03 | covered (server mocha — spawn on playing) |
+| SC-PIECE-04 | covered (server mocha — second seat cells after spawn) |
+| SC-PIECE-05 | covered (server mocha — full table seat without pieces until playing) |
 | SC-PIECE-06 | covered-by-reuse (server mocha — spectator) |
 | SC-PIECE-09 | covered-by-reuse (client UX) |
 | SC-PIECE-10 | covered-by-reuse (client UX) |
-| SC-PIECE-17 | pending (client UX — empty board before playing) |
-| SC-PIECE-18 | pending (server mocha — materialize on playing) |
-| SC-PIECE-19 | pending (server mocha — mid-playing join still gets pieces) |
+| SC-PIECE-17 | covered (client hasOwnPieces gate) |
+| SC-PIECE-18 | covered (server mocha — materialize on playing) |
+| SC-PIECE-19 | covered (server mocha — mid-playing join still gets pieces) |
 
 Related: phase transition — `game/start`; turn timers — `game/move`.
 

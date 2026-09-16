@@ -176,8 +176,10 @@ Board UI is custom CSS Grid (not Quasar widgets). Keep selectors local and class
 | `.tile-center` | Yellow center (`#ffeb3b`); one element with `span 2` / `span 2` |
 | `.tile--selected` / `.tile--target` | Local white / red move chrome (current-turn client only) |
 | `.piece` | Absolute `left`/`top` from `--pcol`/`--prow` + `--cell`; ~250ms transition |
-| `.presence-marker` | Occupied seat chrome; reserved **52×52** slot for dual rings (stable layout) |
-| `.presence-avatar` | Inner avatar (~28px); no static `--turn` box-shadow outline |
+| `.presence-marker` | Occupied seat chrome; reserved **52×52** `position: relative` slot for dual rings + avatar (stable layout — SC-PRESENCE-11) |
+| `.presence-progress--outer` | Turn ring (52px); `position: absolute; inset: 0; z-index: 0`; `pointer-events: none` |
+| `.presence-progress--inner` | Reconnect ring (40px); absolute centered; `z-index: 1`; `pointer-events: none` |
+| `.presence-avatar` | **Sibling** tourist PNG (~28px) on top of rings — `z-index: 2`; `pointer-events: none`; no static `--turn` box-shadow; do **not** rely on progress default slot without `show-value` (SC-PRESENCE-12) |
 | `.say-bubble` / `.say-picker` | Presence comic bubbles + picker; chrome follows Dark via `body.body--dark` overrides (not tile fills) |
 | `.say-affordance` | Small circular control on own online marker |
 

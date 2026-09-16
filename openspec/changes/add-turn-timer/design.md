@@ -46,7 +46,8 @@ Explore prerequisites (закрыты): D1 pass; D2 tick during grace; D3 server
 
 ### D5 — Presence chrome
 
-- **Выбор:** всегда один контейнер размера outer ring (как текущий progress 52px); nested: outer `q-circular-progress` (turn, color primary/blue или negative/red), inner reconnect (warning) или прозрачный track. Удалить CSS `--turn` box-shadow. Solo img ветку не использовать для смены размера.
+- **Выбор (исправлено после регресса пустых маркеров):** контейнер 52px; **sibling** rings — outer turn `q-circular-progress` (52px, absolute behind; primary/blue или negative/red), inner reconnect (40px, warning или transparent). **Avatar:** всегда отдельный `<img class="presence-avatar">` sibling поверх колец (как pre-timer solo img) — **не** default slot `q-circular-progress`. Quasar рисует default slot **только при `show-value`**; без него `<img>` в шаблоне не попадает в DOM. Не вкладывать progress в progress.
+- Удалить CSS `--turn` box-shadow. Не использовать solo-img ветку для смены размера маркера (размер держит reserved outer chrome).
 - Max outer = `turnBudgetSeconds`; value = remaining from `turnUntil - now`.
 
 ### D6 — Точки врезки (server)
@@ -62,7 +63,7 @@ Explore prerequisites (закрыты): D1 pass; D2 tick during grace; D3 server
 | Место | Что |
 |-------|-----|
 | `src/stores/game.ts` | mirror `turnUntil`, `turnBudgetSeconds`, `timeExpired`; helpers |
-| `src/pages/GamePage.vue` | dual rings; reserved size; timeout modal; clear selection; leave confirm gate |
+| `src/pages/GamePage.vue` | sibling dual rings + sibling avatar img; reserved size; timeout modal; clear selection; leave confirm gate |
 | `src/i18n/*` | copy модалки timeout (смысл: не успели довести туристов) |
 
 ### D8 — Skills при apply
@@ -73,7 +74,7 @@ Server: `work-with-schema`, `work-with-game`, `work-with-rooms`, `server-work-wi
 
 - [Долгие mocha на 60s/300s] → В тестах уменьшать константы через export / inject budget, или `clock` fake; не ждать реальных 5 мин в CI.
 - [Рассинхрон wall clock client] → Рисуем remaining от synced `turnUntil`; tick `nowMs` локально (как reconnect).
-- [Два q-circular-progress вложенность] → Проверить Quasar nesting; fallback — SVG rings / CSS conic, без смены контракта.
+- [Пустые presence без avatar] → Не класть img в slot progress без `show-value`; канон — sibling `<img>` поверх колец (D5). Align Axis C: nested progress + missing `show-value` → hard defect.
 - [Старые клиенты без timeExpired] → Согласованный деплой; defaults безопасны (`timeExpired=false`, `turnUntil=0`).
 
 ## Migration Plan

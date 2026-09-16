@@ -8,7 +8,9 @@ description: >-
   HTTP/SDK → mutate watched state), async races (await gap before onStateChange /
   listener attach misses first ROOM_STATE), Colyseus room protocol (tourist room /
   lobby / status; turn + `sendMove` / `move`), hash-router requiresAuth/guest guards, and
-  Quasar error UX (store error + q-banner).
+  Quasar error UX (store error + q-banner), and Quasar nested-slot / overlay
+  compositions that hide required visible content (e.g. nested q-circular-progress
+  around presence avatars).
 ---
 
 # Align Code
@@ -301,7 +303,30 @@ _attachRoom(room)         // onStateChange too late → seats stay []
 
 Report as hard `[defect]` when a reachable enter/subscribe path can miss the first sync/event and leave store/UI wrong with no further update. If ordering looks risky but proof is incomplete → **Warning** with the await-gap edges.
 
-Report hard `defect` only when a reachable state deterministically causes wrong UI, runtime failure, invalid value, stuck state, unsafe side effect (including request/effect storms **or missed first-sync races**), or contract violation.
+### Quasar nested slots / visual overlays (обязательно при касании presence / progress / stacked chrome)
+
+Когда diff/ветка трогает `GamePage` presence, `q-circular-progress`, stacked rings/badges, absolute overlays поверх аватара/иконки, или вложенные Quasar-компоненты со **default slot** — **отдельно** проверь, не прячет ли композиция обязательный видимый контент (tourist PNG, badge, affordance).
+
+Контекст Quasar `QCircularProgress`:
+
+- Default slot (центр) рендерится **только если `show-value` / `showValue` true**. Без этого prop содержимое слота (`<img>`, текст) **не попадает в DOM** — в DevTools только SVG колец, аватара нет (типичный регресс dual rings).
+- **Вложенный** `q-circular-progress` внутри default slot другого часто тоже не показывает внутренний слот/`<img>`.
+
+Для каждой такой композиции независимо проверь:
+
+1. **Обязательный видимый якорь** — что AC/spec требует всегда видеть (presence avatar по `touristId`, place badge, say affordance) при occupied seat / активном chrome (SC-PRESENCE-04/12).
+2. **`show-value`** — если контент кладут в default slot `q-circular-progress`, есть ли `show-value` (или `showValue`)? Нет → слот мёртв → hard defect при требуемом avatar/label.
+3. **Структура слотов** — есть ли `q-circular-progress` **внутри** default slot другого; контент ещё глубже.
+4. **Safe pattern (канон presence)** — **siblings**: outer turn ring absolute behind; optional inner reconnect ring; **отдельный** `<img class="presence-avatar">` sibling поверх (как pre-timer solo img). Не зависеть от slot progress для avatar. Не вкладывать progress в progress.
+5. **Unsafe patterns** — img только в slot без `show-value`; nested `<q-circular-progress>…<q-circular-progress>…<img/>…`; overlay без дырки/`z-index`, перекрывающий avatar.
+6. **Оба кольца сразу** — dual turn+reconnect оба видимы (SC-PRESENCE-10), reserved outer size (SC-PRESENCE-11), avatar всегда в DOM.
+7. **Аналоги / регресс** — раньше connected marker был plain `<img>` вне progress; diff убрал sibling img → high-risk regression, пока sibling img или `show-value` не доказаны.
+
+Report as hard `[defect]` when a reachable Game/presence state deterministically omits the required avatar (or other mandated chrome) because of missing `show-value`, nested Quasar slots, or overlay stacking. If nesting/slot/`show-value` looks risky but proof is incomplete → **Warning** with the component chain.
+
+**Canonical fix (add-turn-timer / SC-PRESENCE-12):** outer turn `q-circular-progress` (52px, absolute behind) + inner reconnect `q-circular-progress` (40px, absolute centered) + sibling `<img class="presence-avatar">` on top — all three direct children of `.presence-marker`; neither progress wraps the img.
+
+Report hard `defect` only when a reachable state deterministically causes wrong UI, runtime failure, invalid value, stuck state, unsafe side effect (including request/effect storms **or missed first-sync races** **or nested-slot / overlay hide**), or contract violation.
 
 Each hard defect includes condition, current behavior, expected invariant/evidence, file/symbol, and minimum scenario. Verdict:
 
@@ -391,6 +416,9 @@ Examples:
 - Watch source returns a fresh array each run and any invalidate of deps re-fires I/O even when primitives unchanged → hard `[defect]` when that I/O is proven; otherwise **Warning**.
 - `await connect()` then `await unsubscribeLobby()` then `_attachRoom` → hard `[defect]` (missed first `ROOM_STATE` / empty `seats` on Game).
 - `GamePage` `.tourist-board` sets `grid-template-rows` from `--tile` with `100%` while the board has auto height → hard `[defect]` (tile height 0 / invisible board).
+- Nested `q-circular-progress` → inner `<img class="presence-avatar">` never paints while outer/inner rings show empty chrome → hard `[defect]` (hidden presence avatars).
+- `<img>` (or label) only in `q-circular-progress` default slot **without** `show-value` → hard `[defect]` (slot not in DOM; only SVG rings in markup).
+- Dual turn+reconnect as **siblings** + sibling `<img>` on top (or slot **with** `show-value`) → OK; do not flag that as nesting/`show-value` miss.
 
 Hard sections below still omit when empty. **Warnings** and **Recommendations** always appear; if empty, a single line `- нет`.
 
@@ -441,6 +469,9 @@ Write in Russian.
 
 ## Tourist board CSS (высота тайлов)
 - [defect|warning] <% / auto-height → rows 0 | safe aspect-ratio+fr; file/selector; SC-BOARD / D3>
+
+## Quasar nested slots / overlays (presence / progress)
+- [defect|warning] <missing show-value on slotted content | nested q-circular-progress | overlay covers avatar; required visible chrome; safe sibling img+rings; file/symbol; SC-PRESENCE-12>
 
 ## Предупреждения
 - [warning] <risk / ambiguity / likely gap; evidence; what would promote it to hard>

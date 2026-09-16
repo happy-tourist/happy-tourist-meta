@@ -21,3 +21,9 @@
 - [x] 3.3 До `playing`: не показывать pieces на доске / moveable strip для seats без pieces; после materialize — как сейчас — SC-PIECE-17
 - [x] 3.4 `needsLeaveConfirm = seated ∧ playing ∧ !finishPlace ∧ !timeExpired` — SC-LEAVE-05/07
 - [x] 3.5 Из sibling client: `npm run lint` и `npm run typecheck` — без ошибок по затронутым файлам
+
+## 4. Client — restore presence avatar (Quasar slot / sibling)
+
+- [x] 4.1 Presence: вынести tourist `<img>` sibling поверх sibling turn/reconnect rings (как pre-timer solo img); не класть avatar только в default slot `q-circular-progress` без `show-value`; не nested progress — SC-PRESENCE-04/12
+- [x] 4.2 Обновить `client/work-with-game-board` (канон sibling img + rings) и `client-align-code` Axis C: hard defect если img в slot без `show-value` или nested `q-circular-progress` прячет avatar
+- [x] 4.3 Из sibling client: `npm run lint` и `npm run typecheck` — без ошибок по затронутым файлам

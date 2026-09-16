@@ -2,14 +2,14 @@
 
 | Scenario ID | Coverage |
 |-------------|----------|
-| SC-MOVE-25 | pending (server mocha) |
-| SC-MOVE-26 | pending (server mocha) |
-| SC-MOVE-27 | pending (server mocha) |
-| SC-MOVE-28 | pending (server mocha) |
-| SC-MOVE-29 | pending (server mocha) |
-| SC-MOVE-30 | pending (server mocha) |
-| SC-MOVE-31 | pending (client UX) |
-| SC-MOVE-32 | pending (client UX) |
+| SC-MOVE-25 | covered (server mocha) |
+| SC-MOVE-26 | covered (server mocha) |
+| SC-MOVE-27 | covered (server mocha) |
+| SC-MOVE-28 | covered (server mocha) |
+| SC-MOVE-29 | covered (server mocha) |
+| SC-MOVE-30 | covered (server mocha) |
+| SC-MOVE-31 | covered (client timeout modal) |
+| SC-MOVE-32 | covered (client isInteractive lock) |
 
 Related: presence rings — `game/presence`; deferred pieces — `game/pieces` / `game/start`; leave without confirm — `game/leave`.
 

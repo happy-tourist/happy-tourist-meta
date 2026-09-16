@@ -77,13 +77,25 @@ Sync-driven markers around the board (SC-PRESENCE-01…05 / design D5). Page rea
 | Offline | `!connected && reconnectUntil > 0` → **inner** warning `QCircularProgress` (`min=0`, `max=30`, `value` = remaining from `reconnectUntil − now`) |
 | Reserved chrome | Always outer 52px turn ring slot (stable layout — SC-PRESENCE-11); inactive turn/grace → transparent track/value 0 (no size jump) |
 | Turn deadline | Outer determinate ring while `playing` + current turn + synced `turnUntil`/`turnBudgetSeconds`: blue (`primary`) for multi 60s; red (`negative`) when `turnBudgetSeconds === 300` (solo). **No** static blue outline / `--turn` box-shadow |
-| Dual rings | Offline current-turn: outer = turn, inner = reconnect (both visible — SC-PRESENCE-10). Implement as **siblings** (outer absolute behind, inner with avatar slot) — do **not** nest `q-circular-progress` (Quasar nesting hides the img) |
+| Dual rings | Offline current-turn: outer = turn, inner = reconnect (both visible — SC-PRESENCE-10). **Siblings** only (outer absolute behind) — do **not** nest `q-circular-progress`. **Avatar:** always sibling `<img class="presence-avatar">` on top (pre-timer pattern); do **not** put avatar only in progress default slot without `show-value` (Quasar omits that slot from the DOM — SC-PRESENCE-12) |
 | Header | «Ваш ход» / «Ход соперника» / «Ход игрока» (spectator) from turn, not from outline |
 | Finish place | Seat `finishPlace > 0` → numeric place badge on marker (incl. offline-in-grace); no badge when `finishPlace === 0` |
 
 Tick `nowMs` on an interval (~200 ms) while Game is mounted so turn + reconnect rings animate from **server** `turnUntil` / `reconnectUntil`.
 
 Spectators and seated players see the same occupied set; layouts differ as above. Strip finish chrome lives on the personal strip — presence only shows the **place** badge.
+
+### Presence DOM (canonical — SC-PRESENCE-04/10/11/12)
+
+Inside `.presence-marker` (52×52, `position: relative`), **three siblings** — never nest progress in progress, never put avatar only in progress default slot without `show-value`:
+
+```html
+<q-circular-progress class="presence-progress presence-progress--outer" size="52px" … />
+<q-circular-progress class="presence-progress presence-progress--inner" size="40px" … />
+<img class="presence-avatar" :src="touristSrc(touristId)" alt="" />
+```
+
+CSS: outer ring `position: absolute; inset: 0; z-index: 0`; inner ring absolute centered (`top/left: 50%`, `transform: translate(-50%, -50%)`, `z-index: 1`); avatar `position: relative; z-index: 2` (~28px). Rings and avatar use `pointer-events: none` so say affordance / marker clicks pass through. Place badge / say affordance sit above with higher z-index (`z-index: 3+`).
 
 ## Say Bubbles At Presence (game/say — D3/D4 / SC-SAY-07…12)
 

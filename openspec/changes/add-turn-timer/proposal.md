@@ -7,6 +7,7 @@
 - Авторитетный таймер хода **60 с** в фазе `playing`: по истечении ход переходит следующему без хода фигурой; тикает и во время reconnect grace текущего.
 - Когда остаётся один non-finished seated (остальные финишировали или вышли) — **5 мин** красный бюджет; по истечении — lock ходов + модалка «не успели довести туристов»; комната живёт, пока есть seats.
 - Presence: обводка хода убирается; снаружи синий (или красный solo) ring, внутри warning reconnect; место под кольца всегда зарезервировано.
+- Presence avatar: tourist PNG **всегда** виден на occupied marker (как до dual rings) — не прятать в слоте `q-circular-progress` без `show-value` и не вкладывать progress в progress.
 - Pieces появляются только при переходе в `playing` (в `waiting`/`countdown` — seat без фигур на доске); join уже в `playing` — сразу pieces.
 
 ## Scope
@@ -40,7 +41,7 @@
 ### Modified Capabilities
 
 - `game/move`: authoritative turn timer; 60 с → pass; solo 5 мин → lock + модалка; moves rejected when time-expired.
-- `game/presence`: dual circular countdowns (turn + reconnect); reserved marker size; remove static turn outline.
+- `game/presence`: dual circular countdowns (turn + reconnect); reserved marker size; remove static turn outline; tourist avatar always visible on occupied markers.
 - `game/pieces`: no board pieces until `playing`; spawn on phase transition; mid-`playing` join unchanged (seat + pieces).
 - `game/leave`: no leave confirm for time-expired seated player.
 - `game/start`: entering `playing` materializes pieces for seats that waited without them.
@@ -48,7 +49,7 @@
 ## Impact
 
 - **Server:** synced turn deadline / solo vs normal budget / time-expired flag; room clock; piece spawn deferred to `playing`; mocha на timeout и deferred pieces.
-- **Client:** Game presence chrome, i18n модалки, зеркало synced deadlines в game store; board/strip пустые до pieces.
+- **Client:** Game presence chrome (sibling rings + sibling avatar img), i18n модалки, зеркало synced deadlines в game store; board/strip пустые до pieces; align skill ловит Quasar slot/`show-value` и nested progress.
 - **Контракт:** room `tourist` через synced state (+ clock side-effects); без новых HTTP routes.
 - **Docs/skills:** канон в OpenSpec meta; runtime в siblings per `docs/projects-map.md`.
 
