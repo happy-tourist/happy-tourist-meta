@@ -1,8 +1,6 @@
 ## Context
 
-См. `proposal.md` — Why. Timer, deferred pieces, seating gate и presence/board layout уже в runtime. Остаётся client polish: (1) compact leave icon; (2) починка клика say (overflow / hit-area).
-
-Пакеты: **client** only для остатка. Чеклист — `tasks.md` (блок 8).
+См. `proposal.md` — Why. Timer, deferred pieces, seating gate, presence/board layout, compact leave (`logout` icon-only) и say hit/overflow (`.presence-row-scroll`) — в runtime. Чеклист — `tasks.md` (блоки 1–8 отмечены).
 
 Explore prerequisites (закрыты): timer D1–D7 / Q1; layout D1–D9; seating S1=B / S2; polish H1 icon-only / H2 `logout` / S1 leave+say.
 
