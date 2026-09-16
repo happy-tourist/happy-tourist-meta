@@ -121,10 +121,10 @@ Use these categories only when the SUT has relevant behavior:
   occupied/non-playable reject; out-of-turn / spectator / pre-playing / finished /
   time-expired / no-steps reject; **successful `move` does not advance turn**;
   `peek`/`peekAnswer`/`endTurn`; private `budgets`/`peekOpen`; grant +1/+1;
-  solo infinite; auto-end; timeout force-wrong open peek; permanent leave
+  solo infinite; auto-end; timeout force incorrect KEEP open peek; permanent leave
   advances; offline grace keeps turn for non-finished; deadline keeps ticking;
   multi 60s auto-pass; solo 300s → `timeExpired`). Also SC-BOARD-07… (reward bag,
-  remove tile, walkable holes). Use `forcePlaying` (clears deadline) /
+  Correct removes tile / Incorrect KEEP, walkable holes). Use `forcePlaying` (clears deadline) /
   `forcePlayingWithTimer` / `waitForPhase` helpers; accelerate clocks with
   `setTurnBudgetsForTests` + `resetTurnBudgets` in `beforeEach`/`afterEach`.
   Pure rules: `test/touristMove.test.ts` (incl. finished occupancy /
@@ -185,10 +185,11 @@ Verify move / turn / timer / budgets (SC-MOVE + SC-BOARD):
   full-seat finish (skip finished / time-expired)
 - Legal orthogonal/diagonal one-step: piece row/col update; illegal/out-of-turn/
   spectator/pre-playing/finished/time-expired/no-steps: unchanged
-- `peek` → private `peekOpen`; `peekAnswer` removes `"r,c"` into `removedTaskKeys`
-  (still walkable); Correct grants reward steps; multi one-peek/turn; solo infinite
+- `peek` → private `peekOpen`; `peekAnswer` Correct → +reward steps + `"r,c"` in
+  `removedTaskKeys` (still walkable); Incorrect KEEP tile + reward; multi one-peek/turn;
+  solo infinite
 - Permanent leave of current advances turn; offline grace does not (non-finished);
-  turnUntil keeps ticking; open peek → force incorrect on timeout/leave
+  turnUntil keeps ticking; open peek → force incorrect KEEP on timeout/leave/endTurn
 - ≥2 eligible: `turnBudgetSeconds===60`; timeout → advance without move; solo:
   `===300`; timeout → `timeExpired`
 - `setTurnBudgetsForTests(multi, solo)` + `resetTurnBudgets()`; `forcePlaying` clears deadline; `forcePlayingWithTimer` uses `enterPlaying`

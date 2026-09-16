@@ -88,17 +88,17 @@ Behavior:
 - Enter `playing`: budgets start **0/0**; seed rewards; clear `removedTaskKeys`; grant current seat.
 - Multi (≥2 eligible) on becoming current: `steps++`, `peeks++`, reset `peekedThisTurn`. Solo (1 eligible): `infinite=true` — no +1/+1, no end-turn, unlimited peeks.
 - `move`: spend 1 step (finite); **keep** turn; then `maybeAutoEndTurn`.
-- `peek` `{ side }` → private `peekOpen` `{ side, row, col, reward }`; `peekAnswer` `{ correct }` → spend peek (finite), Correct adds reward steps, always remove tile; multi marks `peekedThisTurn`.
-- `endTurn` (no payload): multi only; open peek → force incorrect first; then `advanceTurn` (+1/+1 next).
+- `peek` `{ side }` → private `peekOpen` `{ side, row, col, reward }`; `peekAnswer` `{ correct }` → spend peek (finite); Correct adds reward steps + remove tile; Incorrect KEEP tile + reward; multi marks `peekedThisTurn`.
+- `endTurn` (no payload): multi only; open peek → force incorrect KEEP first; then `advanceTurn` (+1/+1 next).
 - Auto-end: after move / peekAnswer / budget change, if multi and no legal move and no legal peek → `advanceTurn`.
-- Timeout + open peek → force incorrect (remove tile) then advance / solo `timeExpired` (SC-MOVE-42).
-- Consented/permanent leave with open peek → same force incorrect (remove tile) before seat delete.
+- Timeout + open peek → force incorrect KEEP then advance / solo `timeExpired` (SC-MOVE-42).
+- Consented/permanent leave with open peek → same force incorrect KEEP before seat delete.
 
 ## Turn deadline (shipped — game/move)
 
 - Only while `phase === 'playing'` with an eligible current seat: synced `turnUntil` (unix ms) + `turnBudgetSeconds` (60 multi / 300 solo). Else both `0`.
 - ≥2 eligible → 60s fresh deadline on each **turn assign** (endTurn / auto / leave-advance / enter playing / finish-advance). Exactly 1 eligible → fresh **300s** (solo), including mid-turn when others finish/leave; solo seat’s own moves **preserve** remaining budget.
-- Timeout: ≥2 eligible → force-close open peek as wrong if any, then `advanceTurn` without moving pieces; solo → `seat.timeExpired=true`, clear deadline, reject further moves/peeks; room stays until leave/grace.
+- Timeout: ≥2 eligible → force-close open peek as incorrect KEEP if any, then `advanceTurn` without moving pieces; solo → `seat.timeExpired=true`, clear deadline, reject further moves/peeks; room stays until leave/grace.
 - Waiting/countdown: no turn auto-pass. Clear deadline on dispose / countdown restart / no eligible.
 
 ## Move Rules (shipped — D2 / D3 + game/finish + steps)
@@ -139,7 +139,7 @@ onMessage('move') → parse { side, row, col } → reject if finished / no steps
                   → if ok: write row/col; spend step; if center → finished + maybe finishPlace
                   → do NOT advance solely on move; maybeAutoEndTurn / finish-advance
 
-onMessage('peek'|'peekAnswer'|'endTurn') → budgets / remove tile / advanceTurn
+onMessage('peek'|'peekAnswer'|'endTurn') → budgets / remove tile only on Correct / advanceTurn
 ```
 
 ## Implementation Checklist

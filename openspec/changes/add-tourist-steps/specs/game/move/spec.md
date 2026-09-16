@@ -17,7 +17,7 @@
 | SC-MOVE-45 | pending (client UX) |
 | SC-MOVE-46 | pending (client UX — keep-focus after move) |
 | SC-MOVE-04 | pending-update (server mocha — move no longer advances turn) |
-| SC-MOVE-28 | pending-update (server mocha — timeout + open peek = wrong) |
+| SC-MOVE-28 | pending-update (server mocha — timeout + open peek = wrong, KEEP tile) |
 
 Related: board peek / removed tiles — `game/board`; presence counters / end-turn — `game/presence`; solo finish — `game/finish`.
 
@@ -111,14 +111,15 @@ When phase is `playing` and exactly one seated player remains eligible to move, 
 
 ### Requirement: Turn timeout forces open peek as incorrect
 
-When a multiplayer 60-second turn deadline elapses, the server SHALL advance the turn as previously specified for timeout among eligible seats. If that seat had an unresolved peek modal open, the server MUST resolve that peek as **incorrect** (no step reward) and MUST remove the peeked task tile for all clients per `game/board` before or as part of advancing the turn.
+When a multiplayer 60-second turn deadline elapses, the server SHALL advance the turn as previously specified for timeout among eligible seats. If that seat had an unresolved peek modal open, the server MUST resolve that peek as **incorrect** (no step reward) and MUST NOT remove the peeked task tile (same as «Неправильно» in `game/board`) before or as part of advancing the turn.
 
-#### Scenario [SC-MOVE-42]: Timeout with open peek is a loss and removes the tile
+#### Scenario [SC-MOVE-42]: Timeout with open peek is incorrect and keeps the tile
 
 - **GIVEN** it is a multiplayer turn, the current seat has an unresolved peek on a task cell, and the 60-second deadline elapses
 - **WHEN** the server applies the turn timeout
 - **THEN** that peek is resolved as incorrect with no steps added
-- **AND** that task tile is removed for every client
+- **AND** that task tile remains present for every client
+- **AND** the peeks budget decreases by 1 in finite mode
 - **AND** the turn advances to the next eligible seat
 
 ### Requirement: Keep local selection after a successful non-finishing move
@@ -282,14 +283,15 @@ The server SHALL accept a move message only when the room start phase is `playin
 
 ### Requirement: Turn timeout advances among eligible seats
 
-When phase is `playing`, at least two seated players remain eligible to move, and the current-turn seat’s 60-second deadline elapses, the server SHALL advance the turn to the next eligible seated player in join order without requiring a move, without moving any piece except as required to resolve an open peek as incorrect. The newly current seat MUST receive a fresh 60-second deadline and the +1 step / +1 peek grant. This timeout pass MUST apply even if the timed-out seat is still offline within reconnect grace.
+When phase is `playing`, at least two seated players remain eligible to move, and the current-turn seat’s 60-second deadline elapses, the server SHALL advance the turn to the next eligible seated player in join order without requiring a move, without moving any piece. An open peek MUST be force-resolved as incorrect without removing the task tile (`game/board`). The newly current seat MUST receive a fresh 60-second deadline and the +1 step / +1 peek grant. This timeout pass MUST apply even if the timed-out seat is still offline within reconnect grace.
 
 #### Scenario [SC-MOVE-28]: Sixty-second timeout passes the turn
 
 - **GIVEN** a tourist room in phase `playing` with two or more eligible seated players and a current-turn seat whose 60-second deadline has just elapsed
 - **WHEN** the server applies the turn timeout
 - **THEN** the current turn becomes the next eligible seated player in join order
-- **AND** no piece positions change solely because of that timeout (except peek-tile removal when an open peek is forced incorrect)
+- **AND** no piece positions change solely because of that timeout
+- **AND** an open peek, if any, is resolved as incorrect without removing that task tile
 - **AND** the new current-turn seat has a fresh 60-second deadline and +1 step / +1 peek
 
 ### Requirement: Solo endgame five-minute budget

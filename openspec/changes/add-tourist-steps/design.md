@@ -6,7 +6,7 @@ Change `add-tourist-steps` ломает модель «один move = коне�
 
 **Goals**
 
-- Server-authoritative steps/peeks, peek resolve, removed task cells, end-turn / auto-end / timeout-with-open-peek.
+- Server-authoritative steps/peeks, peek resolve (Correct removes tile; Incorrect keeps it), removed task cells, end-turn / auto-end / timeout-with-open-peek.
 - Client UX: counters + «Завершить ход» у своего presence; глаз + stub-модалка; дыры на доске; keep-focus после move; анимации +N ~2 с; соло ∞ модалка.
 - Private budgets: не в публичном `Seat` schema — room-private + `client.send` владельцу (паттерн как `turnOrder` / say).
 
@@ -27,7 +27,7 @@ Change `add-tourist-steps` ломает модель «один move = коне�
 5. **Не advance после move** — убрать `advanceTurn()` из успешного `handleMove`; вызывать из `endTurn`, auto-check, timeout; при grant хода: `steps++`, `peeks++` если не solo-infinite.
 6. **Solo** — при `eligible === 1`: `infinite = true`, модалка budgets; без endTurn; 5:00 как сейчас; time-expired режет move/peek.
 7. **Auto-end** — после каждого успешного move/peekAnswer и при смене budgets: если multi и нет legal move и нет legal peek → `advanceTurn()`.
-8. **Timeout + open peek** — force `peekAnswer` incorrect → remove tile → `advanceTurn()`.
+8. **Incorrect peek KEEP tile** — любой incorrect resolve (`peekAnswer` false, multiplayer timeout с открытой модалкой, leave mid-peek, `endTurn` с open peek): −peek (finite), `peekedThisTurn` в multi, **без** `markTaskRemoved`; скрытая награда на клетке остаётся. Только **Correct** снимает тайл и (в finite) добавляет reward к steps. Затем timeout/endTurn — `advanceTurn()` как раньше.
 9. **Client анимации** — локально на рост `steps`/`peeks` (+1 grant, +N reward); длительность fall-in около **2 с** (`BUDGET_FALL_MS` / CSS); без отдельного sync-события «анимируй».
 10. **Keep-focus после move** — после успешного `sendMove` **не** обнулять `selectedSide`, если кусок остался unfinished (не центр-финиш). После окончания move-anim снова показывать белую рамку; красные targets если steps>0 (или ∞); глаз если peeks позволяют и выбранный кусок на ещё живом `*`. Ambient-подсветка других peekable клеток **не** нужна — только иконка глаза над выбранным. Сброс selection: смена хода / not playing / finished / time-expired (как сейчас).
 
@@ -36,7 +36,7 @@ Change `add-tourist-steps` ломает модель «один move = коне�
 | Точка | Что сделать |
 |-------|-------------|
 | `src/rooms/schema/MyRoomState.ts` | Sync поле(я) removed task cells |
-| `src/rooms/MyRoom.ts` | private budgets/rewards; messages; move без advance; endTurn; peek flow; solo infinite; auto-end; timeout force wrong |
+| `src/rooms/MyRoom.ts` | private budgets/rewards; messages; move без advance; endTurn; peek flow (remove tile **only** on correct); solo infinite; auto-end; timeout/leave force incorrect **without** remove |
 | `src/game/touristMove.ts` (или соседний pure module) | playable includes removed `*`; helpers «есть legal move / peek» |
 | `test/MyRoom.test.ts` | SC-MOVE-33… / SC-BOARD-07… |
 
@@ -55,6 +55,7 @@ Change `add-tourist-steps` ломает модель «один move = коне�
 ## Risks / Trade-offs
 
 - Авто-end при `steps=0` и peeks>0 но не на `*` — игрок «сжигает» просмотры до следующего хода; принято явно.
+- Incorrect KEEP: тот же `*` можно открыть снова на следующем ходе (награда та же) — stub Correct/Wrong без «сжигания» клетки при промахе.
 - Room-private budgets проще filter schema, но нужны аккуратные resend на reconnect.
 - Клиентские подсказки peek/move не truth — сервер отвергает.
 

@@ -35,7 +35,7 @@ Coordinate with: `work-with-rooms` (lifecycle / registration), `work-with-schema
 |-----------|------|--------------------|
 | Client → server | `move` | `{ side: 'N'\|'E'\|'S'\|'W', row: number, col: number }` — via `sendMove` when `phase === 'playing'`, `isMyTurn`, `!isMySeatFinished`, `!isMySeatTimeExpired`. Spends a step; **does not** advance turn |
 | Client → server | `peek` | `{ side }` — via `sendPeek`; own unfinished piece on present `*`; server replies with private `peekOpen` |
-| Client → server | `peekAnswer` | `{ correct: boolean }` — via `sendPeekAnswer`; Correct/Wrong stub |
+| Client → server | `peekAnswer` | `{ correct: boolean }` — via `sendPeekAnswer`; Correct removes tile; Incorrect KEEP |
 | Client → server | `endTurn` | empty — via `sendEndTurn` when `canSendEndTurn` (multi finite only) |
 | Client → server | `ready` | empty — via `sendReady` (waiting, ≥2 seated, under maxSeats, not yet ready) |
 | Client → server | `say` | `{ presetId: 'hello' \| 'luck' }` — via `sendSay`; whitelist only (no free text; **not** `ready`); finished seats may still say |
@@ -50,9 +50,9 @@ Coordinate with: `work-with-rooms` (lifecycle / registration), `work-with-schema
 
 **`peek`:** current turn + peek budget (or infinite) + multi one-peek/turn gate; piece on present task cell; set room `openPeek` + `client.send('peekOpen', …)`. Silent reject otherwise.
 
-**`peekAnswer`:** resolve open peek for that seat; Correct adds reward steps (finite); always spend peek (finite), mark `peekedThisTurn` in multi, push `"r,c"` to `removedTaskKeys`, `sendBudgets`; then maybe auto-end.
+**`peekAnswer`:** resolve open peek for that seat; spend peek (finite), mark `peekedThisTurn` in multi; Correct adds reward steps (finite) and pushes `"r,c"` to `removedTaskKeys`; Incorrect KEEP tile + hidden reward; `sendBudgets`; then maybe auto-end.
 
-**`endTurn`:** multi (≥2 eligible) + current + not finished/expired; force-close open peek as incorrect if any; `advanceTurn` (+1/+1 next). Solo infinite → reject.
+**`endTurn`:** multi (≥2 eligible) + current + not finished/expired; force-close open peek as incorrect KEEP if any; `advanceTurn` (+1/+1 next). Solo infinite → reject.
 
 **`ready`:** accept only in `waiting`, seated + connected, seated count ≥ 2 and `< maxSeats`, seat not already ready. On accept: `seat.ready = true`, broadcast say preset `ready` (bypass live-say cap), maybe start countdown. Silent reject otherwise.
 
@@ -85,11 +85,11 @@ this.onMessage('peek', (client, message) => {
 
 this.onMessage('peekAnswer', (client, message) => {
   // 1. Shape-check { correct: boolean }; must own openPeek
-  // 2. resolveOpenPeek → remove tile + spend peek + maybe grant steps; maybeAutoEndTurn
+  // 2. resolveOpenPeek → spend peek; Correct → +steps + remove tile; Incorrect KEEP; maybeAutoEndTurn
 });
 
 this.onMessage('endTurn', (client) => {
-  // 1. multi + current + eligible; force-close open peek as wrong if any
+  // 1. multi + current + eligible; force-close open peek as incorrect KEEP if any
   // 2. advanceTurn (+1/+1 next)
 });
 
@@ -136,7 +136,7 @@ this.onMessage('say', (client, message) => {
 | Keep `move` `{ side, row, col }` lockstep with client `sendMove` | Reintroduce draughts `move`/`{from,to}` without a product change |
 | Keep `peek` / `peekAnswer` / `endTurn` + private `budgets` / `peekOpen` lockstep with store | Advance turn solely because `move` succeeded |
 | Keep `say` `{ presetId }` + broadcast `{ sessionId, presetId, at }` lockstep with `sendSay` / `onMessage('say')` | Accept free-form text or unknown preset ids |
-| Validate then mutate schema (`move` / remove tile); broadcast-only for `say` | Trust client board hints; sync say bubbles or steps/peeks into schema |
+| Validate then mutate schema (`move` / remove tile on Correct only); broadcast-only for `say` | Trust client board hints; sync say bubbles or steps/peeks into schema |
 | Treat lobby as LobbyRoom live list | Add a gameplay room message for room listing |
 | Follow `server-work-with-errors` | Invent BFF-style error envelopes for room actions |
 

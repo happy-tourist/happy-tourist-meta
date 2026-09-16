@@ -35,3 +35,9 @@
 - [x] 5.3 +N fall: CSS/`BUDGET_FALL_MS` ≈ **2 с** — SC-PRESENCE-20
 - [x] 5.4 Обновить `client/work-with-game-board` (keep-focus; +N ~2 с; без ambient peekable)
 - [x] 5.5 Из sibling client: `npm run lint` и `npm run typecheck` — без ошибок по затронутым файлам
+
+## 6. Server — incorrect peek KEEP tile
+
+- [x] 6.1 `resolveOpenPeek`: `markTaskRemoved` только при `correct === true`; incorrect (кнопка / timeout / leave / endTurn) — −peek + `peekedThisTurn`, тайл и reward остаются — mocha: SC-BOARD-09, SC-MOVE-42 (и leave/endTurn mid-peek)
+- [x] 6.2 Обновить skills `server/work-with-game` / `server/work-with-messages` (и AGENTS при необходимости) — incorrect KEEP
+- [x] 6.3 Из sibling `happy-tourist-server`: `npm test` — обновлённые SC-BOARD-09 / SC-MOVE-42 зелёные

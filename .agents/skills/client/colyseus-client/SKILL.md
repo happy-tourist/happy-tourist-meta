@@ -219,7 +219,7 @@ Mirror seating + turn from schema.
 | `started` | Legacy; client mirrors `phase === 'playing'` |
 | `seats` Map | Key = `sessionId` → `touristId` + `pieces` (+ `finished`) + connectivity + `ready` + `finishPlace` |
 | `currentTurnSessionId` | Synced whose turn; `""` if no seated / all finished → getter `isMyTurn` |
-| `removedTaskKeys` | Synced `"r,c"` holes after peek; still walkable |
+| `removedTaskKeys` | Synced `"r,c"` holes after **correct** peek only; still walkable. Incorrect KEEP → no hole |
 | `sessionId` | From `room.sessionId` — for `mySeat` / strip×4 / turn check |
 
 Private (not schema) — wire in `_attachRoom`:

@@ -41,7 +41,7 @@ Product: настольная игра «Счастливый турист». On
 
 - Grid: **10×10** sparse; empty corners are holes (no tile element; page background shows through).
 - Kinds: `start` (green), `task` (brown), `center` (yellow).
-- After peek resolve: synced `game.removedTaskKeys` (`"r,c"`) → task tile omitted (same hole chrome as empty corners); cell stays walkable for move hints.
+- After **correct** peek only: synced `game.removedTaskKeys` (`"r,c"`) → task tile omitted (same hole chrome as empty corners); cell stays walkable for move hints. Incorrect / forced-incorrect KEEP leaves the brown tile and hidden reward (no hole).
 - `.tourist-board`: `width: 100%`, `max-width: calc(10 * 60px + 9 * 2px)`, `aspect-ratio: 1`, `--gap: 2px`, `--radius: 2px`, `grid-template-*: repeat(10, 1fr)`; tile `border-radius: var(--radius)`. Do **not** size rows with `%` of auto height (tracks collapse to 0).
 - Container: full width of Game content (no side presence gutters); mobile edge-to-edge relative to page content; wide screens capped by max tile 60px (via board max-width + square aspect).
 - Tile colors are **fixed fills**, independent of Quasar Dark chrome (see `work-with-styles` / theme specs).
