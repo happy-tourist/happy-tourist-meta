@@ -7,12 +7,12 @@ Change `add-tourist-steps` ломает модель «один move = коне�
 **Goals**
 
 - Server-authoritative steps/peeks, peek resolve, removed task cells, end-turn / auto-end / timeout-with-open-peek.
-- Client UX: counters + «Завершить ход» у своего presence; глаз + stub-модалка; дыры на доске; анимации +N; соло ∞ модалка.
+- Client UX: counters + «Завершить ход» у своего presence; глаз + stub-модалка; дыры на доске; keep-focus после move; анимации +N ~2 с; соло ∞ модалка.
 - Private budgets: не в публичном `Seat` schema — room-private + `client.send` владельцу (паттерн как `turnOrder` / say).
 
 **Non-Goals**
 
-- Вопросы/ловушки/магазин; кап «до 10»; публичные чужие счётчики; смена таймеров layout.
+- Вопросы/ловушки/магазин; кап «до 10»; публичные чужие счётчики; смена таймеров layout; ambient-подсветка peekable клеток.
 
 ## Decisions
 
@@ -28,7 +28,8 @@ Change `add-tourist-steps` ломает модель «один move = коне�
 6. **Solo** — при `eligible === 1`: `infinite = true`, модалка budgets; без endTurn; 5:00 как сейчас; time-expired режет move/peek.
 7. **Auto-end** — после каждого успешного move/peekAnswer и при смене budgets: если multi и нет legal move и нет legal peek → `advanceTurn()`.
 8. **Timeout + open peek** — force `peekAnswer` incorrect → remove tile → `advanceTurn()`.
-9. **Client анимации** — локально на рост `steps`/`peeks` (+1 grant, +N reward); без отдельного sync-события «анимируй».
+9. **Client анимации** — локально на рост `steps`/`peeks` (+1 grant, +N reward); длительность fall-in около **2 с** (`BUDGET_FALL_MS` / CSS); без отдельного sync-события «анимируй».
+10. **Keep-focus после move** — после успешного `sendMove` **не** обнулять `selectedSide`, если кусок остался unfinished (не центр-финиш). После окончания move-anim снова показывать белую рамку; красные targets если steps>0 (или ∞); глаз если peeks позволяют и выбранный кусок на ещё живом `*`. Ambient-подсветка других peekable клеток **не** нужна — только иконка глаза над выбранным. Сброс selection: смена хода / not playing / finished / time-expired (как сейчас).
 
 ## Server
 
@@ -46,7 +47,7 @@ Change `add-tourist-steps` ломает модель «один move = коне�
 | Точка | Что сделать |
 |-------|-------------|
 | `src/stores/game.ts` | listen `budgets`; send `peek` / `peekAnswer` / `endTurn`; mirror `removedTaskKeys` |
-| `src/pages/GamePage.vue` | counters + кнопка у self presence; eye + dialog Correct/Wrong; tile hole render; +N anim; solo modal; hide end-turn in solo |
+| `src/pages/GamePage.vue` | counters + кнопка у self presence; eye + dialog Correct/Wrong; tile hole render; keep-focus после move; +N anim ~2 с; solo modal; hide end-turn in solo |
 | `src/i18n` | строки модалок / кнопки |
 
 Слои: Colyseus I/O в Pinia; UI в GamePage (+ тонкие components при необходимости). Skills: `work-with-game-board`, `work-with-messages`, `work-with-schema`, `colyseus-client`, `work-with-localization`.

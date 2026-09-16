@@ -39,7 +39,7 @@ Coordinate with: `work-with-rooms` (lifecycle / registration), `work-with-schema
 | Client → server | `endTurn` | empty — via `sendEndTurn` when `canSendEndTurn` (multi finite only) |
 | Client → server | `ready` | empty — via `sendReady` (waiting, ≥2 seated, under maxSeats, not yet ready) |
 | Client → server | `say` | `{ presetId: 'hello' \| 'luck' }` — via `sendSay`; whitelist only (no free text; **not** `ready`); finished seats may still say |
-| Server → owner | `budgets` | `{ steps, peeks, infinite }` — private; grant / change / reconnect |
+| Server → owner | `budgets` | `{ steps, peeks, infinite, peekedThisTurn }` — private; grant / change / reconnect |
 | Server → owner | `peekOpen` | `{ side, row, col, reward: 1\|2\|3 }` — private modal payload |
 | Server → clients | Schema sync | `phase` / `maxSeats` / `countdownRemaining` / `seats` (+ `ready` / `finishPlace` / piece `finished`) / `currentTurnSessionId` / `removedTaskKeys` (+ `nextFinishPlace`) → `onStateChange` |
 | Server → all clients | `say` | `broadcast('say', { sessionId, presetId, at })` — ephemeral; includes readiness preset from successful `ready` |

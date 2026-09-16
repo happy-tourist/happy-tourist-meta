@@ -27,3 +27,11 @@
 - [x] 4.1 Обновить `server/work-with-game`, `server/work-with-messages`, `server/work-with-schema` под budgets / peek / endTurn / removed tiles
 - [x] 4.2 Обновить `client/work-with-game-board`, `client/colyseus-client` (или stores) под counters / peek / end-turn
 - [x] 4.3 При необходимости — краткие строки в sibling AGENTS Business Entities (без дублирования specs)
+
+## 5. Client — keep-focus после move + медленнее +N
+
+- [x] 5.1 `GamePage`: после успешного non-finishing `sendMove` **не** сбрасывать `selectedSide`; после move-anim снова белая рамка + красные targets при steps>0/∞ — SC-MOVE-46
+- [x] 5.2 Глаз без повторного select, если keep-focus на живом `*` и peeks позволяют; дыра / не `*` — без глаза — SC-BOARD-14
+- [x] 5.3 +N fall: CSS/`BUDGET_FALL_MS` ≈ **2 с** — SC-PRESENCE-20
+- [x] 5.4 Обновить `client/work-with-game-board` (keep-focus; +N ~2 с; без ambient peekable)
+- [x] 5.5 Из sibling client: `npm run lint` и `npm run typecheck` — без ошибок по затронутым файлам

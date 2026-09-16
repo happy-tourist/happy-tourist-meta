@@ -226,7 +226,7 @@ Private (not schema) — wire in `_attachRoom`:
 
 | Message | Pinia fields |
 |---------|--------------|
-| `budgets` `{ steps, peeks, infinite }` | `steps`, `peeks`, `budgetsInfinite` |
+| `budgets` `{ steps, peeks, infinite, peekedThisTurn }` | `steps`, `peeks`, `budgetsInfinite`, `peekedThisTurn` |
 | `peekOpen` `{ side, row, col, reward }` | `openPeek` |
 
 Wire once in the store:
@@ -246,8 +246,8 @@ room.onStateChange((state) => {
   this.status = this.phase === 'playing' ? 'playing' : 'waiting';
 });
 
-room.onMessage('budgets', (message) => { /* steps / peeks / budgetsInfinite */ });
-room.onMessage('peekOpen', (message) => { /* openPeek */ });
+room.onMessage('budgets', (message) => { /* steps / peeks / budgetsInfinite / peekedThisTurn */ });
+room.onMessage('peekOpen', (message) => { /* openPeek; multi → optimistic peekedThisTurn */ });
 ```
 
 `GamePage` may call `rejoinGame(roomId)` if Pinia lost the room after refresh / soft-fail / browser reopen (`localStorage` reconnection token → `reconnect`, clear stale on fail → `joinById`); failed rejoin → navigate to lobby. Board tile geometry is a **client constant** (`work-with-game-board`); seats + phase + connectivity + turn + removed tiles come from sync; own budgets from private messages. Token details: `work-with-rooms`.
@@ -262,7 +262,7 @@ room.onMessage('peekOpen', (message) => { /* openPeek */ });
 | Client → server | `endTurn` | empty via `sendEndTurn` when `canSendEndTurn` |
 | Client → server | `ready` | empty via `sendReady` when `canSendReady` |
 | Client → server | `say` | `{ presetId: 'hello' \| 'luck' }` via `sendSay` (not `ready`) |
-| Server → owner | `budgets` | `{ steps, peeks, infinite }` |
+| Server → owner | `budgets` | `{ steps, peeks, infinite, peekedThisTurn }` |
 | Server → owner | `peekOpen` | `{ side, row, col, reward: 1\|2\|3 }` |
 | Server → clients | `say` | `{ sessionId, presetId, at }` → `sayEvents` (incl. readiness preset from ready) |
 

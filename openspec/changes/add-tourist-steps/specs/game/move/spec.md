@@ -15,6 +15,7 @@
 | SC-MOVE-43 | pending (server mocha) |
 | SC-MOVE-44 | pending (server mocha) |
 | SC-MOVE-45 | pending (client UX) |
+| SC-MOVE-46 | pending (client UX — keep-focus after move) |
 | SC-MOVE-04 | pending-update (server mocha — move no longer advances turn) |
 | SC-MOVE-28 | pending-update (server mocha — timeout + open peek = wrong) |
 
@@ -119,6 +120,18 @@ When a multiplayer 60-second turn deadline elapses, the server SHALL advance the
 - **THEN** that peek is resolved as incorrect with no steps added
 - **AND** that task tile is removed for every client
 - **AND** the turn advances to the next eligible seat
+
+### Requirement: Keep local selection after a successful non-finishing move
+
+After the current-turn client successfully submits a move that leaves that piece unfinished (not a center finish), that client’s Game UI MUST keep local selection on the same piece side when the turn remains theirs. After the piece move animation finishes, if the seat still has steps remaining (or infinite budgets), red legal destination hints MUST show for that selected piece from its new cell without requiring the user to re-select it. Selection MUST still clear when the piece finishes, when the seat loses the turn, when phase leaves `playing`, or when time-expired / finished-seat rules clear interaction. Other clients MUST NOT observe this selection.
+
+#### Scenario [SC-MOVE-46]: Selection and step hints remain after a multi-step move
+
+- **GIVEN** it is the user’s turn with steps ≥ 2 (finite) or infinite budgets, and one own unfinished piece is selected
+- **WHEN** the user submits a successful non-center move for that piece and the move animation finishes while the turn remains theirs
+- **THEN** that same piece remains selected with white selection chrome
+- **AND** if steps remain (or infinite), red legal destination outlines show from the new cell without a second selection click
+- **AND** other clients do not show that selection chrome
 
 ## MODIFIED Requirements
 

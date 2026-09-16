@@ -7,6 +7,7 @@
 | SC-PRESENCE-17 | pending (client UX) |
 | SC-PRESENCE-18 | pending (client UX) |
 | SC-PRESENCE-19 | pending (client UX) |
+| SC-PRESENCE-20 | pending (client UX — +N anim ~2s) |
 
 Related: budgets / end-turn / solo ∞ — `game/move`; peek modal — `game/board`.
 
@@ -14,7 +15,7 @@ Related: budgets / end-turn / solo ∞ — `game/move`; peek modal — `game/boa
 
 ### Requirement: Own step and peek counters beside the avatar
 
-While the user is a seated player on the Game screen in phase `playing`, the system SHALL show that user’s private **steps** and **peeks** counters next to their own presence marker. When a budget is infinite (solo mode), the counter MUST display an infinity indication rather than a finite number. Other seated players’ and spectators’ clients MUST NOT show another seat’s step or peek counters. Spectators MUST NOT see step/peek counters for any seat. When the user’s finite budgets increase, the client SHOULD play a short local “+N falls into the counter” animation for steps and peeks grants (turn grant and successful peek rewards).
+While the user is a seated player on the Game screen in phase `playing`, the system SHALL show that user’s private **steps** and **peeks** counters next to their own presence marker. When a budget is infinite (solo mode), the counter MUST display an infinity indication rather than a finite number. Other seated players’ and spectators’ clients MUST NOT show another seat’s step or peek counters. Spectators MUST NOT see step/peek counters for any seat. When the user’s finite budgets increase, the client SHOULD play a local “+N falls into the counter” animation for steps and peeks grants (turn grant and successful peek rewards) lasting approximately **two seconds**.
 
 #### Scenario [SC-PRESENCE-15]: Seated user sees only own counters
 
@@ -29,6 +30,13 @@ While the user is a seated player on the Game screen in phase `playing`, the sys
 - **WHEN** the user views their presence marker
 - **THEN** steps and peeks counters show infinity
 - **AND** other clients still do not see those budget values
+
+#### Scenario [SC-PRESENCE-20]: Budget grant animation lasts about two seconds
+
+- **GIVEN** the user’s finite steps or peeks budget increases while they view their own presence marker
+- **WHEN** the local +N fall animation plays
+- **THEN** the animation is visibly slower than a sub-second flash and completes in about two seconds
+- **AND** other clients do not see that animation
 
 ### Requirement: End-turn control next to own avatar
 

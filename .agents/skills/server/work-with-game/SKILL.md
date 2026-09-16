@@ -77,7 +77,7 @@ Room-private (not schema):
 
 | Bookkeeping | Meaning |
 |-------------|---------|
-| `budgets: Map<sessionId, { steps, peeks, infinite, peekedThisTurn }>` | Owner-only; resend via `client.send('budgets', { steps, peeks, infinite })` on grant / change / reconnect |
+| `budgets: Map<sessionId, { steps, peeks, infinite, peekedThisTurn }>` | Owner-only; resend via `client.send('budgets', { steps, peeks, infinite, peekedThisTurn })` on grant / change / reconnect |
 | `taskRewards: Map<"r,c", 1\|2\|3>` | Pregen on `enterPlaying` — bag **28×1 / 14×2 / 6×3**; revealed only in private `peekOpen` |
 | `openPeek` | At most one unresolved peek for current seat |
 
@@ -124,7 +124,7 @@ Behavior:
 | Board UI | Client-only `LAYOUT` in `GamePage`; server does **not** sync tile kinds; holes from synced `removedTaskKeys` |
 | Synced state | `phase`, `maxSeats`, `countdownRemaining`, `started` (legacy), `seats` Map → `touristId` + `pieces` (+ `finished`; may be empty pre-playing) + connectivity + `ready` + `finishPlace` + `timeExpired`, `currentTurnSessionId`, `turnUntil`, `turnBudgetSeconds`, `nextFinishPlace`, `removedTaskKeys` |
 | Messages | `move` `{ side, row, col }` via `sendMove` (no turn advance); `peek` `{ side }` / `peekAnswer` `{ correct }` / `endTurn` via store; `ready` via `sendReady` |
-| Private | Server → owner `budgets` `{ steps, peeks, infinite }`; `peekOpen` `{ side, row, col, reward }` |
+| Private | Server → owner `budgets` `{ steps, peeks, infinite, peekedThisTurn }`; `peekOpen` `{ side, row, col, reward }` |
 | Say (ephemeral) | `say` `{ presetId: hello\|luck }` → broadcast; readiness preset only via `ready` — see `work-with-messages` |
 | Reconnect | Colyseus token; client `localStorage` + `reconnect` then `joinById`; resend `budgets` on reclaim |
 | Presence / hints | Client-only chrome (own counters + end-turn + eye); selection + red targets local to current-turn client |
