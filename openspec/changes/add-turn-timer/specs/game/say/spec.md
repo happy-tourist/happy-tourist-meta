@@ -2,9 +2,10 @@
 
 | Scenario ID | Coverage |
 |-------------|----------|
-| SC-SAY-07 | pending (client say affordance top-right on own marker) |
-| SC-SAY-11 | pending (client bubbles toward board — replaces side-slot stack) |
-| SC-SAY-12 | pending (client bubbles toward board; newer closer to avatar) |
+| SC-SAY-07 | covered (client say affordance top-right on own marker) |
+| SC-SAY-11 | covered (client bubbles toward board — replaces side-slot stack) |
+| SC-SAY-12 | covered (client bubbles toward board; newer closer to avatar) |
+| SC-SAY-15 | covered (client say affordance/picker activatable — no overflow clip) |
 
 Related: presence row layout and affordance corners — `game/presence`.
 
@@ -12,7 +13,7 @@ Related: presence row layout and affordance corners — `game/presence`.
 
 ### Requirement: Own-marker affordance and preset picker
 
-While the user is seated and connected on the Game screen, the system SHALL show a speech-bubble affordance only at the **top-right** of that user’s own presence marker. Activating the affordance MUST reveal exactly two preset choices with the display texts «Всем привет» and «Удачи». Choosing a preset MUST close the picker immediately and submit that preset’s identifier. Spectators MUST NOT see a send affordance. Other players’ markers MUST NOT show a send affordance for the local user.
+While the user is seated and connected on the Game screen, the system SHALL show a speech-bubble affordance only at the **top-right** of that user’s own presence marker. Activating the affordance MUST reveal exactly two preset choices with the display texts «Всем привет» and «Удачи». Choosing a preset MUST close the picker immediately and submit that preset’s identifier. Spectators MUST NOT see a send affordance. Other players’ markers MUST NOT show a send affordance for the local user. The affordance and its open picker MUST remain pointer- and touch-activatable: presence row overflow MUST NOT clip them out of hit-testing or hide the open picker, and the affordance hit target MUST be large enough for touch (at least about 32 CSS pixels on each side).
 
 #### Scenario [SC-SAY-07]: Seated player opens picker on own marker
 
@@ -26,6 +27,14 @@ While the user is seated and connected on the Game screen, the system SHALL show
 - **GIVEN** the user is a spectator on the Game screen
 - **WHEN** the Game presence layout is shown
 - **THEN** no say send affordance is available to that user
+
+#### Scenario [SC-SAY-15]: Affordance and picker stay activatable
+
+- **GIVEN** the user is seated and connected with their own presence marker visible (top or bottom row)
+- **WHEN** the user taps or clicks the speech-bubble affordance
+- **THEN** the preset picker becomes visible without being clipped away by the presence row
+- **AND** the affordance itself receives the activation (is not blocked by rings, avatar, or row overflow)
+- **AND** the user can choose a preset from the picker
 
 ### Requirement: Bubble stack orientation by presence slot
 

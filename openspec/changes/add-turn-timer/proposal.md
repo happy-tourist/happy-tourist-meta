@@ -6,6 +6,8 @@
 
 Mid-game / mid-countdown подсадка ломает «закрытый стол» и solo 5:00 — новые seats только пока фаза `waiting`.
 
+После row-layout на мобилке хедер с текстом «Выход из игры» + статус уезжает на две строки и прыгает при смене статуса. Облачко say на своём маркере визуально есть, но активация/picker ломаются из‑за overflow клипа ряда.
+
 ## What Changes
 
 - Авторитетный таймер хода **60 с** в фазе `playing`: по истечении ход переходит следующему без хода фигурой; тикает и во время reconnect grace текущего.
@@ -18,6 +20,8 @@ Mid-game / mid-countdown подсадка ломает «закрытый сто
 - **Marker chrome:** avatar по размеру как strip-турист; turn/reconnect rings вокруг аватара; finish badge top-left у всех; ready affordance top-left только у себя; say affordance top-right только у себя.
 - **Say bubbles:** всегда в сторону доски; зазор между маркерами достаточный, чтобы bubbles не перекрывались.
 - **Board tile chrome:** gap **2px**, corner radius **2px**; full-width board на узком viewport.
+- **Leave control:** на Game — только иконка выхода (Material `logout`), без видимого текста; accessible name остаётся «Выход из игры».
+- **Say affordance:** клик/тап по облачку открывает picker; ряд presence не клипает affordance и picker; hit-area достаточна для тача.
 
 ## Scope
 
@@ -26,12 +30,12 @@ Mid-game / mid-countdown подсадка ломает «закрытый сто
   - `game/move` — дедлайн хода; solo 5 мин; time-expired; turn order без mid-game append seats;
   - `game/presence` — rings; row layout; avatar/affordance chrome;
   - `game/pieces` — deferred pieces; **seating только в `waiting`**; leave/grace не reopen после countdown/playing;
-  - `game/leave` — time-expired без confirm;
+  - `game/leave` — time-expired без confirm; **icon-only exit control**;
   - `game/start` — materialize на `playing`; countdown закрывает рассадку;
   - `game/finish` — finished seats + seating lock (нет mid-game seat после leave в playing);
-  - `game/say` — bubbles к доске; say affordance top-right;
+  - `game/say` — bubbles к доске; say affordance top-right; **кликабельность / без overflow-clip**;
   - `game/board` — gap/radius 2px; full-width.
-- **Client UX:** Game layout/chrome/timeout/leave.
+- **Client UX:** Game layout/chrome/timeout/leave; compact leave + say hit.
 - **Server:** timer/pieces + `onJoin` seating gate по phase.
 
 ## Out of scope
@@ -44,6 +48,7 @@ Mid-game / mid-countdown подсадка ломает «закрытый сто
 - Новые say-пресеты под timeout.
 - Sticky END-latch сверх phase gate (все finished / solo started) — отложено; сейчас достаточно `phase !== waiting`.
 - Таблица рекордов; смена maxSeats.
+- Скрытие `roomId` на узком viewport; смена текста статуса; другие иконки leave (`exit_to_app` / `meeting_room`).
 
 ## Capabilities
 
@@ -56,16 +61,16 @@ Mid-game / mid-countdown подсадка ломает «закрытый сто
 - `game/move`: turn timer; solo budget; time-expired; no mid-playing seat append to turn order.
 - `game/presence`: dual rings; row layout; avatar≈strip; affordance corners.
 - `game/pieces`: deferred pieces until `playing`; **new seats only while `waiting`**; leave/grace after countdown/playing do not reopen seating.
-- `game/leave`: no leave confirm for time-expired.
+- `game/leave`: no leave confirm for time-expired; icon-only exit (`logout`) with accessible «Выход из игры».
 - `game/start`: materialize on `playing`; countdown implies seating closed for newcomers.
 - `game/finish`: finished occupancy; no mid-game seat after leave once past waiting.
-- `game/say`: bubbles toward board; say affordance top-right.
+- `game/say`: bubbles toward board; say affordance top-right; activatable without overflow clip.
 - `game/board`: gap/radius 2px; edge-to-edge board width.
 
 ## Impact
 
 - **Server:** turn deadline; deferred pieces; `onJoin` rejects new seats when phase is `countdown` or `playing`; mocha seating + timer.
-- **Client:** presence row/chrome; board gap/radius; timeout modal; skills/docs.
+- **Client:** presence row/chrome; board gap/radius; timeout modal; compact leave; say hit/overflow; skills/docs.
 - **Контракт:** room `tourist` synced state; без новых HTTP/say messages.
 - **Docs/skills:** OpenSpec meta + sibling AGENTS per `docs/projects-map.md`.
 
@@ -74,5 +79,6 @@ Mid-game / mid-countdown подсадка ломает «закрытый сто
 - Explore (timer): D1–D7 / Q1; solo red / modal.
 - Explore (layout): opponents top; self bottom; spectator all-top; avatar≈strip; corners; bubbles toward board; gap/radius 2.
 - Explore (seating): S1=B — no new seats after start; S2 — no new seats once countdown started; reconnect OK.
+- Explore (polish): H1 icon-only leave; H2 Material `logout`; S1 leave + say click only.
 - Main specs: `openspec/specs/game/{move,presence,pieces,leave,start,finish,board,say}/spec.md`.
 - Sibling AGENTS; `docs/projects-map.md`.

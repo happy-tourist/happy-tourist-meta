@@ -1,10 +1,10 @@
 ## Context
 
-См. `proposal.md` — Why. Timer/deferred pieces уже в runtime; остаётся: (1) seating gate — новые seats только в `waiting`; (2) client polish — presence row, full-width board, avatar/rings, affordances, bubbles, gap/radius 2px.
+См. `proposal.md` — Why. Timer, deferred pieces, seating gate и presence/board layout уже в runtime. Остаётся client polish: (1) compact leave icon; (2) починка клика say (overflow / hit-area).
 
-Пакеты: **server** (seating gate + mocha) затем **client** (layout). Чеклист — `tasks.md` (блоки 5–7).
+Пакеты: **client** only для остатка. Чеклист — `tasks.md` (блок 8).
 
-Explore prerequisites (закрыты): timer D1–D7 / Q1; layout D1–D9; seating S1=B / S2 (no seats once countdown; no seats in playing).
+Explore prerequisites (закрыты): timer D1–D7 / Q1; layout D1–D9; seating S1=B / S2; polish H1 icon-only / H2 `logout` / S1 leave+say.
 
 ## Goals / Non-Goals
 
@@ -14,7 +14,9 @@ Explore prerequisites (закрыты): timer D1–D7 / Q1; layout D1–D9; seat
 - Deferred piece spawn на `playing` (уже в коде).
 - **Seating:** `onJoin` выдаёт seat только при `phase === 'waiting'` и `seats.size < maxSeats`; иначе spectator. Reconnect существующего seat без изменений. Leave/grace после `countdown`/`playing` не открывают новые seats.
 - Client: dual circular progress + sibling avatar; solo modal; mirror state в Pinia (уже в коде).
-- Client layout polish: top opponents row / bottom self; spectator all-top; no left/right presence gutters; board full content width; avatar sized like strip tourist; rings scale around avatar; finish/ready/say corners; bubbles toward board; tile gap/radius 2px; stable marker chrome.
+- Client layout polish: top opponents row / bottom self; spectator all-top; no left/right presence gutters; board full content width; avatar sized like strip tourist; rings scale around avatar; finish/ready/say corners; bubbles toward board; tile gap/radius 2px; stable marker chrome (уже в коде).
+- **Leave:** Game header exit — Material icon `logout` without visible label; accessible name «Выход из игры» (стабильная одна строка хедера на мобилке).
+- **Say:** own-marker speech affordance and preset picker remain pointer/touch activatable; presence row overflow MUST NOT clip them; hit-area usable on touch.
 
 **Non-Goals:**
 
@@ -23,6 +25,7 @@ Explore prerequisites (закрыты): timer D1–D7 / Q1; layout D1–D9; seat
 - Sticky END-latch (all-finished / solo-started) сверх phase gate — позже при необходимости.
 - Новые npm-зависимости.
 - Смена maxSeats / server say protocol.
+- Скрытие roomId; смена статуса; другие иконки leave.
 
 ## Decisions
 
@@ -76,7 +79,7 @@ Explore prerequisites (закрыты): timer D1–D7 / Q1; layout D1–D9; seat
 
 ### D8 — Skills при apply
 
-Server: `work-with-schema`, `work-with-game`, `work-with-rooms`, `server-work-with-test` (seating gate + mocha). Client polish: `work-with-game-board`, `work-with-styles`, `work-with-pages`, `client-align-code` / `client-verify-code`.
+Server: `work-with-schema`, `work-with-game`, `work-with-rooms`, `server-work-with-test` (seating gate + mocha). Client polish: `work-with-game-board`, `work-with-styles`, `work-with-pages`, `work-with-localization`, `client-align-code` / `client-verify-code` (leave icon + say hit).
 
 ### D9 — Presence row layout (client)
 
@@ -108,19 +111,32 @@ BOTTOM: [Me]                   (seated only)
 - `--gap: 2px`, `--radius: 2px` (было 6 / 12); max tile side 60px на wide viewport без изменений.
 - Пересчитать `max-width` формулы доски под новый gap: `10 * 60px + 9 * 2px`.
 
+### D14 — Compact leave control (client)
+
+- **Выбор (H1/H2):** на Game header `q-btn` exit — `icon="logout"`, **без** `:label`; accessible name через `aria-label` / i18n `game.leave` («Выход из игры»). Тот же Material set, что Lobby logout.
+- **Альтернативы:** `exit_to_app` / `meeting_room` — out of scope; короткий текст «Выход» — отвергнуто (H1 = icon only).
+- Точка врезки: `GamePage.vue` header; skills `work-with-pages` / `work-with-localization` при упоминании label leave.
+
+### D15 — Say affordance hit + no overflow clip (client)
+
+- **Проблема:** `.presence-row { overflow-x: auto }` часто форсирует clip по Y → affordance/picker над/под маркером не принимают тач или невидимы.
+- **Выбор:** ряд не клипает chrome маркера (overflow visible на ряду; при необходимости горизонтальный scroll на отдельной обёртке, не на том же боксе что клипает Y). Affordance и picker: `pointer-events: auto`, z-index выше rings/avatar; hit-area ≥ ~32–44 CSS px на тач (визуал иконки может остаться ~22px).
+- Точка врезки: `GamePage.vue` presence CSS + say button/picker; skill `work-with-game-board`.
+
 ## Risks / Trade-offs
 
 - [Долгие mocha на 60s/300s] → ускорять константы / fake clock (уже в тестах).
 - [Рассинхрон wall clock client] → remaining от synced `turnUntil`.
 - [Пустые presence без avatar] → sibling img; Axis C hard defect.
 - [4 крупных маркера на узком телефоне] → gap anti-overlap + optional horizontal scroll ряда; не уменьшать avatar ниже strip.
-- [Прыжок layout] → убрать side columns; reserved marker box = outer ring size always.
+- [Прыжок layout] → убрать side columns; reserved marker box = outer ring size always; leave icon-only снижает wrap хедера.
 - [Mid-game join expectations] → seating only in waiting; обновить mocha SC-PIECE-08/19 и связанные.
+- [Say overflow clip] → D15: не совмещать overflow-x scroll и visible Y на одном элементе.
 
 ## Migration Plan
 
 - Server schema defaults backward-compatible (уже выкатано).
-- Client layout — согласованный деплой с обновлёнными specs/skills.
+- Client layout / leave / say — согласованный деплой с обновлёнными specs/skills.
 - Rollback: revert client GamePage/CSS (+ meta specs если нужно).
 
 ## Open Questions

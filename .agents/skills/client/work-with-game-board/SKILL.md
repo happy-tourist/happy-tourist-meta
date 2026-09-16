@@ -19,7 +19,7 @@ Product: настольная игра «Счастливый турист». On
 
 | Surface | Path | Role |
 | --- | --- | --- |
-| Game page | `src/pages/GamePage.vue` | CSS Grid field; unfinished pieces overlay (+ short center disappear); presence + place badge + say; strip×4 with finish icons; local selection/hints; place `q-dialog`; leave confirm when seated ∧ `playing` ∧ `finishPlace === 0` → lobby |
+| Game page | `src/pages/GamePage.vue` | CSS Grid field; unfinished pieces overlay (+ short center disappear); presence + place badge + say; strip×4 with finish icons; local selection/hints; place `q-dialog`; icon-only leave; confirm when seated ∧ `playing` ∧ `finishPlace === 0` ∧ `!timeExpired` → lobby |
 | Game store | `src/stores/game.ts` | Room I/O; mirror `seats` (+ piece `finished` / seat `finishPlace`) / `phase` / `maxSeats` / `countdownRemaining` / `currentTurnSessionId` / `sessionId`; `unfinishedBoardPieces` / `isMySeatFinished` / `myFinishedStripSides`; `isMyTurn` / `isPlaying` / `canSendReady`; `sendMove` / `sendReady` / `sendSay` + `sayEvents` |
 
 | Concern | Location |
@@ -27,8 +27,8 @@ Product: настольная игра «Счастливый турист». On
 | Layout constant | `LAYOUT` string grid in `GamePage.vue` (`.` hole, `1` start, `*` task, `7` center) |
 | Tile build | `buildBoardTiles()` → `div.tile` with `gridColumn` / `gridRow` |
 | Pieces | `unfinishedBoardPieces` (+ short-lived disappearing finishers) → `img.piece`; PNG from `touristId` |
-| Presence | Occupied seats → top/bottom `.presence-row` (no left/right); dual rings + 72px avatar; finish/ready top-left; say top-right |
-| Say (game/say) | Affordance top-right on **own** online marker; bubbles toward board from `game.sayEvents` |
+| Presence | Occupied seats → top/bottom `.presence-row-scroll` → `.presence-row` (no left/right); dual rings + 72px avatar; finish/ready top-left; say top-right |
+| Say (game/say) | Affordance top-right on **own** online marker (hit-area ≥ ~32px); bubbles toward board from `game.sayEvents`; row overflow must not clip (SC-SAY-15) |
 | Strip | Below board when `mySeat`: four slots `N→E→S→W`; finished slots inactive + finish icon (top-right) |
 | Move UX | Local `selectedSide` + `legalTargets` only when `isPlaying && isMyTurn && !isMySeatFinished && !moveAnimating`; never select finished pieces |
 | Finish UX | Center land → slide + fade (`disappearingKeys`); own `finishPlace` 0→N → place modal; stay in room after close |
@@ -98,9 +98,9 @@ Inside `.presence-marker` (96×96 = outer ring, `position: relative`), **three s
 <img class="presence-avatar" :src="touristSrc(touristId)" alt="" />
 ```
 
-CSS: outer ring `position: absolute; inset: 0; z-index: 0`; inner ring absolute centered (`top/left: 50%`, `transform: translate(-50%, -50%)`, `z-index: 1`); avatar `position: relative; z-index: 2` (**72×72**, matches `.my-tourist-slot`). Rings and avatar use `pointer-events: none` so affordances / marker clicks pass through. Finish badge / ready (top-left) and say (top-right) sit above with `z-index: 3+`.
+CSS: outer ring `position: absolute; inset: 0; z-index: 0`; inner ring absolute centered (`top/left: 50%`, `transform: translate(-50%, -50%)`, `z-index: 1`); avatar `position: relative; z-index: 2` (**72×72**, matches `.my-tourist-slot`). Rings and avatar use `pointer-events: none` so affordances / marker clicks pass through. Finish badge / ready (top-left) and say (top-right) sit above with `z-index: 3+` (say affordance / picker higher, `pointer-events: auto`). Say affordance hit-area ≥ ~32 CSS px (icon glyph may be smaller — SC-SAY-15).
 
-Layout shell: `.presence-frame` is a **column flex** — `.presence-row--top` → `.tourist-board` → `.presence-row--bottom` (omit empty rows). Row `gap: 48px` + `overflow-x: auto`; do **not** shrink avatar below strip size.
+Layout shell: `.presence-frame` is a **column flex** — `.presence-row-scroll` (top) → `.tourist-board` → `.presence-row-scroll` (bottom) (omit empty rows). Inside each scroll wrapper: `.presence-row` with `gap: 48px`, **`overflow: visible`**, and `pointer-events: auto`. Horizontal scroll lives on `.presence-row-scroll` only (wrapper stays `pointer-events: none` so padding/margin Y absorb does not steal board clicks) — do **not** put `overflow-x: auto` on the same box as the markers (browsers force Y clip and hide say chrome — D15 / SC-SAY-15). Do **not** shrink avatar below strip size.
 
 ## Say Bubbles At Presence (game/say — D3/D4/D11 / SC-SAY-07…12)
 
@@ -109,7 +109,7 @@ Ephemeral preset phrases near presence markers. Protocol + Pinia I/O: `work-with
 | Rule | Behavior |
 |------|----------|
 | Who may send | Seated + `connected` only; anytime (not turn-gated). Spectators / offline grace: no affordance |
-| Affordance | Only on marker with `sessionId === game.sessionId` and connected (`canSendSay`) — **top-right** (`chat_bubble_outline`) |
+| Affordance | Only on marker with `sessionId === game.sessionId` and connected (`canSendSay`) — **top-right** (`chat_bubble_outline`); hit-area ≥ ~32px; `pointer-events: auto` + z-index above rings/avatar; row overflow MUST NOT clip (SC-SAY-15) |
 | Ready | **Top-left** on own marker when `canSendReady` → `game.sendReady()` (not `sendSay('ready')`); i18n `game.readyButton` |
 | Countdown | Full-screen overlay while `phase === 'countdown'` from synced `countdownRemaining` (all clients) |
 | Picker | Click affordance → two presets «Всем привет» (`hello`) / «Удачи» (`luck`) via i18n `game.say.*`; choose → `game.sendSay(presetId)` and close immediately; click away closes |
@@ -117,7 +117,7 @@ Ephemeral preset phrases near presence markers. Protocol + Pinia I/O: `work-with
 | TTL | Disappear after **10s** from server `at` (`SAY_TTL_MS`); prefer `at`, not local receive time |
 | Max live | At most **3** per sender; store refuses 4th locally; server enforces the same |
 | Stack toward board | Top-row markers → bubbles **below** avatar (`.say-bubbles--top`); bottom self → bubbles **above** (`.say-bubbles--bottom`). Newer closer to avatar. **No left/right side-slot stacks** (SC-SAY-11/12 / D11) |
-| Row gap | Horizontal gap between markers so concurrent neighbor bubbles do not overlap; horizontal scroll OK if needed |
+| Row gap | Horizontal gap between markers so concurrent neighbor bubbles do not overlap; horizontal scroll on `.presence-row-scroll` wrapper OK if needed (row itself stays `overflow: visible`) |
 | I/O | Page never `room.send` / `room.onMessage` — only `sendSay` / `sendReady` + read `sayEvents` |
 
 Picker open state (`sayPickerOpen`) is page-local; close if the local seat is lost or goes offline.
@@ -142,7 +142,7 @@ Picker open state (`sayPickerOpen`) is page-local; close if the local seat is lo
 - On own turn in playing (not finished / not time-expired): white selection + red targets; submit via store `sendMove`.
 - Animate piece travel; on center finish keep DOM key for slide then fade (`FINISH_FADE_MS`); ignore input while `moveAnimating`.
 - Own `finishPlace` 0→N → place `q-dialog` (`game.finishPlaceModal*`); own `timeExpired` false→true → timeout `q-dialog` (`game.timeExpiredModal*`); close keeps player in room; clear selection on expiry.
-- Header status: turn labels only in playing; exit via i18n `game.leave` / `leaveConfirm` / `leaveCancel` / `leaveExit`; confirm only when seated ∧ `playing` ∧ `!finishPlace` ∧ `!timeExpired` (else immediate leave); remount without room → `rejoinGame(roomId)` via store.
+- Header status: turn labels only in playing; exit **icon-only** Material `logout` with accessible name via `aria-label` / i18n `game.leave` (no visible text label); confirm copy via `leaveConfirm` / `leaveCancel` / `leaveExit`; confirm only when seated ∧ `playing` ∧ `!finishPlace` ∧ `!timeExpired` (else immediate leave); remount without room → `rejoinGame(roomId)` via store.
 
 ## Do
 

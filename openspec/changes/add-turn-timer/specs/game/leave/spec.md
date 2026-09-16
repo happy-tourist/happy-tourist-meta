@@ -2,13 +2,25 @@
 
 | Scenario ID | Coverage |
 |-------------|----------|
-| SC-LEAVE-05 | pending (client UX — includes time-expired) |
+| SC-LEAVE-01 | covered (client UX — icon-only exit) |
+| SC-LEAVE-05 | covered (client UX — includes time-expired) |
 | SC-LEAVE-06 | covered-by-reuse (client UX — finished) |
-| SC-LEAVE-07 | pending (client UX) |
+| SC-LEAVE-07 | covered (client UX) |
 
 Related: time-expired lock — `game/move`; finished leave — `game/finish`.
 
 ## MODIFIED Requirements
+
+### Requirement: Exit control label
+
+On the game screen the primary control that returns the user to the lobby SHALL be presented as an **icon-only** exit control using the Material Icons glyph `logout` (no visible text label on the control). The control MUST expose an accessible name equivalent to leaving the game (product Russian accessible name «Выход из игры», localized per client locale files). The control MUST NOT use a visible text label such as «Выход из игры» that consumes horizontal header space on narrow viewports.
+
+#### Scenario [SC-LEAVE-01]: Exit control wording
+
+- **GIVEN** the user is on the game screen of a tourist room
+- **WHEN** the primary leave-to-lobby control is shown
+- **THEN** the control shows the `logout` icon without a visible text label
+- **AND** its accessible name is «Выход из игры» (localized per client locale files)
 
 ### Requirement: No confirm when leave is not progress-critical
 

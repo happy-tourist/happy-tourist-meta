@@ -98,3 +98,11 @@
 - [x] 7.4 Обновить server skills / AGENTS при упоминании mid-game seat (work-with-game / work-with-rooms)
 - [x] 7.5 Из sibling `happy-tourist-server`: `npm test` — обновлённые SC-PIECE / SC-FINISH / SC-MOVE seating зелёные
 
+## 8. Client — compact leave + say click
+
+- [x] 8.1 Прочитать `design.md` D14–D15, delta `specs/game/{leave,say}`, skills `client/work-with-pages`, `client/work-with-localization`, `client/work-with-game-board` и текущий `GamePage` header / presence-row CSS
+- [x] 8.2 Leave: `icon="logout"`, убрать visible label; `aria-label` / i18n `game.leave` — SC-LEAVE-01
+- [x] 8.3 Say: убрать overflow-clip ряда (scroll на обёртке при необходимости); `pointer-events` / z-index; hit-area ≥ ~32px — SC-SAY-15 (+ SC-SAY-07)
+- [x] 8.4 Обновить skills/docs при упоминании leave label / presence-row overflow (`work-with-pages`, `work-with-game-board`)
+- [x] 8.5 Из sibling client: `npm run lint` и `npm run typecheck` — без ошибок по затронутым файлам
+

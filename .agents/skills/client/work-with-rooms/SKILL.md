@@ -147,7 +147,7 @@ async leaveGame() {
 }
 ```
 
-- Used for logout / explicit leave (Lobby «Выйти», GamePage «Выход из игры») — **consented** leave on server (immediate seat remove, no grace).
+- Used for logout / explicit leave (Lobby «Выйти», GamePage icon-only `logout` with accessible name `game.leave` / «Выход из игры») — **consented** leave on server (immediate seat remove, no grace).
 - Leave-confirm UX (`q-dialog` when seated ∧ `phase === 'playing'` ∧ `finishPlace === 0` ∧ `!timeExpired`) is **page-local** on `GamePage` (`work-with-game-board` / `work-with-pages`); finished / time-expired seats and spectators leave immediately; store `leaveGame` stays confirm-agnostic.
 - Clear tourist token, reset Pinia, then call `leave`.
 - **Swallow** closed-room errors — do not surface them as `game.error`.
@@ -205,7 +205,7 @@ In `GamePage`:
    - On failure (grace expired / invalid) → **clear stale token**, then fallback `joinById` (spectator / new seat before start).
 3. If rejoin throws → `router.replace({ name: 'lobby' })`.
 4. If **`!game.room`** and no `roomId` → lobby.
-5. Also **`watch(game.room)`**: when a live room becomes null while still on Game (SDK soft-fail), call the same rejoin helper — **unless** consented `leaveGame` is in progress (guard with a local flag so «Выход из игры» does not immediately `joinById` again).
+5. Also **`watch(game.room)`**: when a live room becomes null while still on Game (SDK soft-fail), call the same rejoin helper — **unless** consented `leaveGame` is in progress (guard with a local flag so Game exit / `leaveGame` does not immediately `joinById` again).
 
 ```ts
 // onMounted + watch(game.room lost) → ensureTouristRoom()

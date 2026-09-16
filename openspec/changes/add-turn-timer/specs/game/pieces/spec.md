@@ -41,7 +41,7 @@ When the start phase transitions from `countdown` to `playing`, the server SHALL
 
 While the start phase is `waiting` and fewer seated players exist than maxSeats, when an authenticated client joins, the server SHALL assign that client a unique tourist kind from `1`…`4` not used by any current seat and MUST NOT place pieces yet; pieces for those seats are created when playing begins per the materialize requirement. All four pieces of the same player MUST use that player’s tourist kind. The assignment MUST be synchronized to all clients in the room. New seats MUST NOT be assigned while the phase is `countdown` or `playing` (see spectators requirement).
 
-#### Scenario [SC-PIECE-01]: First join receives kind without pieces until playing
+#### Scenario [SC-PIECE-01]: First join receives four pieces on all sides
 
 - **GIVEN** a tourist room in phase `waiting` that has no seated players and has free seat capacity
 - **WHEN** an authenticated client joins the room
@@ -91,7 +91,7 @@ The room MUST allow clients beyond maxSeats connections. The room’s maxSeats M
 - **THEN** that client receives no tourist kind and no pieces
 - **AND** existing seats and pieces remain unchanged
 
-#### Scenario [SC-PIECE-19]: Join in countdown or playing is spectator
+#### Scenario [SC-PIECE-19]: Mid-game join takes a free seat
 
 - **GIVEN** a tourist room in phase `playing` with maxSeats 4 and two seated players
 - **WHEN** another authenticated client joins

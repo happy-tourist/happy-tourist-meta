@@ -16,7 +16,7 @@ There is **no** country config, phone masks, locale switcher, or brand localizat
 
 ## Reality check
 
-Boot and message catalog exist; Login / Lobby still mostly **hardcode Russian**. Scaffold keys (`failed` / `success`) are barely used. **Exceptions already on i18n:** `game.say.*` (preset labels / affordance — never put display copy in the wire `presetId`); `game.readyButton` / `game.countdownSoon`; leave UX `game.leave` / `game.leaveConfirm` / `game.leaveCancel` / `game.leaveExit`; finish UX `game.finishPlaceModal` / `game.finishPlaceModalOk` / `game.finishStripAria` / `game.finishPlaceBadgeAria`; solo timeout UX `game.timeExpiredModal` / `game.timeExpiredModalOk`. Product copy lives under locale key **`en-US`** (Russian strings) — there is no separate `ru-RU` catalog.
+Boot and message catalog exist; Login / Lobby still mostly **hardcode Russian**. Scaffold keys (`failed` / `success`) are barely used. **Exceptions already on i18n:** `game.say.*` (preset labels / affordance — never put display copy in the wire `presetId`); `game.readyButton` / `game.countdownSoon`; leave UX `game.leave` (accessible name for icon-only Game exit — no visible `:label`) / `game.leaveConfirm` / `game.leaveCancel` / `game.leaveExit`; finish UX `game.finishPlaceModal` / `game.finishPlaceModalOk` / `game.finishStripAria` / `game.finishPlaceBadgeAria`; solo timeout UX `game.timeExpiredModal` / `game.timeExpiredModalOk`. Product copy lives under locale key **`en-US`** (Russian strings) — there is no separate `ru-RU` catalog.
 
 When adding **new** user-facing strings, prefer i18n keys via `$t` / `useI18n`. Do not mass-migrate hardcoded Russian unless the user asks.
 
