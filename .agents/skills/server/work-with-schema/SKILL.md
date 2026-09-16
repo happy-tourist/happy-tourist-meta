@@ -87,8 +87,8 @@ export const MyRoomState = schema(
     /** Active turn budget seconds (60 multi / 300 solo); `0` when none. */
     turnBudgetSeconds: t.uint16().default(0),
     /**
-     * Task cells removed after **correct** peek only (`"r,c"`). Still walkable; hole chrome on client.
-     * Incorrect KEEP does not append here.
+     * Task cells removed after **correct** peek only (`"r,c"`). Not landable; hole chrome on client.
+     * Standing on a hole is OK. Incorrect KEEP does not append here.
      */
     removedTaskKeys: t.array("string"),
   },
@@ -140,7 +140,7 @@ Finished seats remain in `seats` (count toward `maxSeats`) until consented leave
 
 | Field | Meaning |
 |-------|---------|
-| `removedTaskKeys` | `ArraySchema<string>` of `"r,c"` after **correct** peek only; all clients see holes; cells stay walkable. Incorrect KEEP does not sync a removal |
+| `removedTaskKeys` | `ArraySchema<string>` of `"r,c"` after **correct** peek only; all clients see holes; **not landable** (stand OK). Incorrect KEEP does not sync a removal |
 
 **Not synced (room-private + messages):** step/peek budgets (`budgets` Map + `client.send('budgets')`); task reward bag (`taskRewards`); open peek (`openPeek` + `client.send('peekOpen')`). Do **not** put steps/peeks on `Seat`.
 

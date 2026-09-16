@@ -3,7 +3,8 @@ name: work-with-stores
 description: >-
   Instructions for Pinia stores in the happy-tourist Vue 3 client:
   setup vs options defineStore, auth vs game vs theme ownership, local page
-  state vs Pinia, Colyseus I/O in stores, acceptHMRUpdate, and Quasar pinia
+  state vs Pinia, Colyseus I/O in stores (budgets peeks∞ / finite steps,
+  removed-task holes, peek/end-turn), acceptHMRUpdate, and Quasar pinia
   entry. Use when adding, changing, reviewing, or debugging Pinia stores,
   shared game/auth/theme state, or page-to-store wiring.
 ---
@@ -71,7 +72,7 @@ Use local `ref()` / `reactive()` for:
 Examples:
 - `LoginPage.vue`: `email`, `password`, `displayName`, `isRegister`, `showPassword`.
 - `LobbyPage.vue`: `creating`, `joining` (page spinners); room list and errors come from `game`.
-- `GamePage.vue`: `LAYOUT` tiles + piece assets; presence layout / grace tick / `consentedLeaving`; `unfinishedBoardPieces` + disappearing finishers for board overlay; strip×4 from `mySeat` (+ finish icons); local `selectedSide` / `moveAnimating` / legal hints / +N fall anim / place / peek / solo-∞ / timeout modals; say picker open state (not Pinia). One-peek-per-turn gate from store `peekedThisTurn`.
+- `GamePage.vue`: `LAYOUT` tiles + piece assets; presence layout / grace tick / `consentedLeaving`; `unfinishedBoardPieces` + disappearing finishers for board overlay; strip×4 from `mySeat` (+ finish icons); local `selectedSide` / `moveAnimating` / legal hints (exclude removed holes) / +N fall anim / place / peek / solo-peeks∞ / dual timer-vs-steps end modals; say picker open state (not Pinia).
 
 ### Pinia state
 
@@ -88,7 +89,7 @@ Use a store for shared domain data, realtime session, or anything the router/oth
 
 - **auth** owns Colyseus Auth only (`client.auth.*`, token sync via `onChange`). It does not create rooms or call Dark/`GET|POST /api/theme`.
 - **theme** owns chrome Dark preference and preference HTTP (`client.http.get('/api/theme')` on restore, `post` on toggle). Wired from `App.vue`; does not own auth session or rooms. See `work-with-styles`.
-- **game** owns room listing, room lifecycle, tourist reconnect token, seat/turn/start/finish/timer sync (`seats` + piece `finished` / seat `finishPlace` / `timeExpired` + `phase` / `maxSeats` / `countdownRemaining` / `currentTurnSessionId` / `turnUntil` / `turnBudgetSeconds` / `removedTaskKeys` / `sessionId` from `onStateChange`; legacy `started` mirrors `phase === 'playing'`), private budgets (`onMessage('budgets')` → `steps`/`peeks`/`budgetsInfinite`/`peekedThisTurn`; `onMessage('peekOpen')` → `openPeek` + optimistic `peekedThisTurn`), `sendMove` → `room.send('move', …)` only when playing + `isMyTurn` + not finished + not time-expired (**does not** advance turn locally — server ends via endTurn/auto/timeout), `sendPeek` / `sendPeekAnswer` / `sendEndTurn` (`canSendEndTurn` hides solo infinite), `sendReady` → `room.send('ready')`, and `sendSay` → `room.send('say', { presetId })` plus `onMessage('say')` → `sayEvents` (picker whitelist `hello`|`luck`; readiness preset arrives via ready broadcast; TTL 10s / max 3 live). It does not call `client.auth` or theme APIs. Do not put `side`/`row`/`col` on `GameSeat` itself — those live on each `GamePiece`. Selection/hints/`moveAnimating`/peekedThisTurnLocal/+N anim/say picker/place/peek/solo/timeout modals stay page-local on `GamePage`.
+- **game** owns room listing, room lifecycle, tourist reconnect token, seat/turn/start/finish/timer sync (`seats` + piece `finished` / seat `finishPlace` / `timeExpired` + `phase` / `maxSeats` / `countdownRemaining` / `currentTurnSessionId` / `turnUntil` / `turnBudgetSeconds` / `removedTaskKeys` / `sessionId` from `onStateChange`; legacy `started` mirrors `phase === 'playing'`), private budgets (`onMessage('budgets')` → `steps`/`peeks`/`budgetsInfinite` = peeks∞ only/`peekedThisTurn` legacy; `onMessage('peekOpen')` → `openPeek`), `sendMove` → `room.send('move', …)` only when playing + `isMyTurn` + not finished + not time-expired + `steps > 0` (**does not** advance turn locally — server ends via endTurn/auto/timeout), `sendPeek` / `sendPeekAnswer` / `sendEndTurn` (`canSendEndTurn` hides solo peeks∞), `sendReady` → `room.send('ready')`, and `sendSay` → `room.send('say', { presetId })` plus `onMessage('say')` → `sayEvents` (picker whitelist `hello`|`luck`; readiness preset arrives via ready broadcast; TTL 10s / max 3 live). It does not call `client.auth` or theme APIs. Do not put `side`/`row`/`col` on `GameSeat` itself — those live on each `GamePiece`. Selection/hints/`moveAnimating`/+N anim/say picker/place/peek/solo-peeks∞/dual end modals stay page-local on `GamePage`.
 - Cross-cutting: router awaits `useAuthStore().whenReady()` then enforces `requiresAuth` / `guest`. `App.vue` uses `watch([() => auth.ready, () => auth.user?.id, () => auth.user?.anonymous], …)` → `theme.syncFromAuthUser` (GET restore; not JWT `user.theme`-only). Do **not** use `watch(() => [ready, id, anonymous])` (new array each run) or replace `auth.user` after GET — that storms `GET /api/theme` (SC-THEME-10). POST toggle may patch `auth.user.theme` because the watch does not depend on it. Game pages assume auth already passed.
 - Room constants: `TOURIST_ROOM = 'tourist'`, `LOBBY_ROOM = 'lobby'`. Board tile geometry + presence + move/peek chrome stay on `GamePage`.
 

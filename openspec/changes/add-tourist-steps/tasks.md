@@ -41,3 +41,20 @@
 - [x] 6.1 `resolveOpenPeek`: `markTaskRemoved` только при `correct === true`; incorrect (кнопка / timeout / leave / endTurn) — −peek + `peekedThisTurn`, тайл и reward остаются — mocha: SC-BOARD-09, SC-MOVE-42 (и leave/endTurn mid-peek)
 - [x] 6.2 Обновить skills `server/work-with-game` / `server/work-with-messages` (и AGENTS при необходимости) — incorrect KEEP
 - [x] 6.3 Из sibling `happy-tourist-server`: `npm test` — обновлённые SC-BOARD-09 / SC-MOVE-42 зелёные
+
+## 7. Server — auto-end, multi peek, unlandable holes, solo peeks∞
+
+- [x] 7.1 Auto-end: держать ход при peeks≥1 и unfinished на живом `*`; иначе auto-end как раньше — mocha: SC-MOVE-38, SC-MOVE-47
+- [x] 7.2 Снять gate `peekedThisTurn` / лимит 1 peek/ход; peek пока peeks (или solo ∞) и на живом `*` — mocha: SC-MOVE-39, SC-BOARD-08
+- [x] 7.3 `touristMove` / validate: landing на `removedTaskKeys` reject; stand на дыре ok; hasLegalMove без дыр — mocha: SC-MOVE-49, SC-BOARD-11/15
+- [x] 7.4 Solo: infinite только peeks; steps finite; без +1/+1 grant в соло; step-loss (steps=0 ∧ ¬hasLegalPeek) → timeExpired — mocha: SC-MOVE-40/41/45/48
+- [x] 7.5 Budgets payload / syncSolo: peeks∞ flag без steps∞; skills `work-with-game` / `work-with-messages` / `work-with-schema` / `server-work-with-test`
+- [x] 7.6 Из sibling `happy-tourist-server`: `npm test` — обновлённые SC зелёные
+
+## 8. Client — holes, solo counters/modals, dual end copy
+
+- [x] 8.1 Red targets / legal moves: не предлагать removed holes; фишка на дыре остаётся — SC-BOARD-11/12/15, SC-MOVE-46
+- [x] 8.2 Presence: соло ∞ только peeks, steps числом; соло-модалка peeks-unlimited — SC-PRESENCE-16/19
+- [x] 8.3 i18n + UX: разные модалки timer-expired vs steps-exhausted — SC-PRESENCE-21, SC-MOVE-45/48
+- [x] 8.4 Обновить `client/work-with-game-board`, `work-with-localization` (и stores/AGENTS при необходимости)
+- [x] 8.5 Из sibling client: `npm run lint` и `npm run typecheck` — без ошибок по затронутым файлам

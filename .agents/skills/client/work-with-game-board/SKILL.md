@@ -20,8 +20,8 @@ Product: настольная игра «Счастливый турист». On
 
 | Surface | Path | Role |
 | --- | --- | --- |
-| Game page | `src/pages/GamePage.vue` | CSS Grid field; unfinished pieces overlay (+ short center disappear); holes for `removedTaskKeys`; presence + place badge + say + own budgets/end-turn; strip×4 with finish icons; local selection/hints/peek eye; place / timeout / peek / solo-∞ `q-dialog`; icon-only leave; confirm when seated ∧ `playing` ∧ `finishPlace === 0` ∧ `!timeExpired` → lobby |
-| Game store | `src/stores/game.ts` | Room I/O; mirror `seats` (+ piece `finished` / seat `finishPlace`) / `phase` / `maxSeats` / `countdownRemaining` / `currentTurnSessionId` / `removedTaskKeys` / `sessionId`; private `steps`/`peeks`/`budgetsInfinite`/`peekedThisTurn`/`openPeek` from `budgets`/`peekOpen`; `unfinishedBoardPieces` / `isMySeatFinished` / `myFinishedStripSides`; `isMyTurn` / `isPlaying` / `canSendReady` / `canSendEndTurn`; `sendMove` / `sendPeek` / `sendPeekAnswer` / `sendEndTurn` / `sendReady` / `sendSay` + `sayEvents` |
+| Game page | `src/pages/GamePage.vue` | CSS Grid field; unfinished pieces overlay (+ short center disappear); holes for `removedTaskKeys` (not landable; piece may stand on hole); presence + place badge + say + own budgets/end-turn; strip×4 with finish icons; local selection/hints/peek eye; place / timer-vs-steps end / peek / solo-peeks∞ `q-dialog`; icon-only leave; confirm when seated ∧ `playing` ∧ `finishPlace === 0` ∧ `!timeExpired` → lobby |
+| Game store | `src/stores/game.ts` | Room I/O; mirror `seats` (+ piece `finished` / seat `finishPlace`) / `phase` / `maxSeats` / `countdownRemaining` / `currentTurnSessionId` / `removedTaskKeys` / `sessionId`; private `steps`/`peeks`/`budgetsInfinite` (peeks∞ only)/`peekedThisTurn` (legacy)/`openPeek` from `budgets`/`peekOpen`; `unfinishedBoardPieces` / `isMySeatFinished` / `myFinishedStripSides`; `isMyTurn` / `isPlaying` / `canSendReady` / `canSendEndTurn`; `sendMove` / `sendPeek` / `sendPeekAnswer` / `sendEndTurn` / `sendReady` / `sendSay` + `sayEvents` |
 
 | Concern | Location |
 | --- | --- |
@@ -32,7 +32,7 @@ Product: настольная игра «Счастливый турист». On
 | Say (game/say) | Affordance top-right on **own** online marker (hit-area ≥ ~32px); bubbles toward board from `game.sayEvents`; row overflow must not clip (SC-SAY-15) |
 | Strip | Below board when `mySeat`: four slots `N→E→S→W`; finished slots inactive + finish icon (top-right) |
 | Move UX | Local `selectedSide` + `legalTargets` only when `isPlaying && isMyTurn && !isMySeatFinished && !moveAnimating`; **keep-focus** after non-finishing move (SC-MOVE-46); never select finished pieces; move does **not** end the turn |
-| Peek UX | Eye only on **selected** own piece on present `*` (peeks remain / infinite; multi one-peek/turn via store `peekedThisTurn` from `budgets`, restored on reconnect); keep-focus → eye without re-click (SC-BOARD-14); **no** ambient peekable tile chrome; modal from `game.openPeek` → Correct/Wrong → `sendPeekAnswer` |
+| Peek UX | Eye only on **selected** own piece on present `*` (peeks remain / solo peeks∞; multi peek while peeks remain — no one-peek/turn gate); keep-focus → eye without re-click (SC-BOARD-14); **no** ambient peekable tile chrome; modal from `game.openPeek` → Correct/Wrong → `sendPeekAnswer` |
 | Finish UX | Center land → slide + fade (`disappearingKeys`); own `finishPlace` 0→N → place modal; stay in room after close |
 | Center | One element with `span 2` / `span 2` (solid 2×2), not four cells |
 | Room enter | Out of scope — see `work-with-lobby` / `work-with-rooms` (`rejoinGame`) |
@@ -41,7 +41,7 @@ Product: настольная игра «Счастливый турист». On
 
 - Grid: **10×10** sparse; empty corners are holes (no tile element; page background shows through).
 - Kinds: `start` (green), `task` (brown), `center` (yellow).
-- After **correct** peek only: synced `game.removedTaskKeys` (`"r,c"`) → task tile omitted (same hole chrome as empty corners); cell stays walkable for move hints. Incorrect / forced-incorrect KEEP leaves the brown tile and hidden reward (no hole).
+- After **correct** peek only: synced `game.removedTaskKeys` (`"r,c"`) → task tile omitted (same hole chrome as empty corners); cell is **not** a legal landing target (red hints exclude it). A piece already on that cell **remains** (stand-on-hole OK — SC-BOARD-12). Incorrect / forced-incorrect KEEP leaves the brown tile and hidden reward (no hole).
 - `.tourist-board`: `width: 100%`, `max-width: calc(10 * 60px + 9 * 2px)`, `aspect-ratio: 1`, `--gap: 2px`, `--radius: 2px`, `grid-template-*: repeat(10, 1fr)`; tile `border-radius: var(--radius)`. Do **not** size rows with `%` of auto height (tracks collapse to 0).
 - Container: full width of Game content (no side presence gutters); mobile edge-to-edge relative to page content; wide screens capped by max tile 60px (via board max-width + square aspect).
 - Tile colors are **fixed fills**, independent of Quasar Dark chrome (see `work-with-styles` / theme specs).
@@ -52,11 +52,11 @@ Product: настольная игра «Счастливый турист». On
 |------|----------|
 | Who interacts | Only seated **non-finished** client with `isPlaying && sessionId === currentTurnSessionId` and not mid-own-animation |
 | Select | Click own **unfinished** piece on board or matching strip slot → `selectedSide`; white outline on that cell |
-| Hints | Legal one-step neighbors (Chebyshev 1, playable LAYOUT cell **or** removed-task hole, unoccupied by unfinished) → red outline; **local only**; hidden while `steps === 0` (finite) |
+| Hints | Legal one-step neighbors (Chebyshev 1, playable LAYOUT cell **excluding** removed-task holes, unoccupied by unfinished) → red outline; **local only**; hidden while `steps === 0` (steps always finite, incl. solo) |
 | Reselect | May change `selectedSide` among own unfinished pieces until submit |
 | Submit | Activate red destination → `game.sendMove(side, row, col)`; **turn stays** (end via button / auto / timeout) |
-| Keep-focus | After successful **non-finishing** move: **do not** clear `selectedSide`. After move-anim ends, white frame + red targets (if steps>0/∞) return from the new cell without re-select (SC-MOVE-46). Center finish → clear selection |
-| Peek | Eye only when **selected** piece stands on still-present `*` and peeks allow (∞ in solo; multi one peek/turn via `game.peekedThisTurn` from `budgets`) → `sendPeek(side)`; after keep-focus, eye appears without re-click (SC-BOARD-14). Hole / non-`*` → no eye. **No** ambient highlight of other peekable cells |
+| Keep-focus | After successful **non-finishing** move: **do not** clear `selectedSide`. After move-anim ends, white frame + red targets (if steps>0) return from the new cell without re-select (SC-MOVE-46). Center finish → clear selection |
+| Peek | Eye only when **selected** piece stands on still-present `*` and peeks allow (solo peeks∞; multi while peeks>0 — no `peekedThisTurn` gate) → `sendPeek(side)`; after keep-focus, eye appears without re-click (SC-BOARD-14). Hole / non-`*` → no eye. **No** ambient highlight of other peekable cells |
 | Clear selection | Piece finishes; lose turn / not playing; time-expired / finished seat (same watchers as before) |
 | Finished | Finished pieces stay off the board after disappear; finished strip slots show finish icon and never select/submit; finished seat has no move chrome |
 | Others | Spectators / not-your-turn / not playing / finished seat: no selection, no red/white move chrome, no `sendMove` / peek |
@@ -72,7 +72,7 @@ Do **not** sync selection or hints — page-local refs only. Do **not** assume `
 
 ## Presence (occupied seats)
 
-Sync-driven markers in rows above/below the board (SC-PRESENCE-01…20 / design D5/D9–D11). Page reads mirrored `game.seats` + own `steps`/`peeks`/`budgetsInfinite`/`peekedThisTurn` only — no Colyseus I/O here.
+Sync-driven markers in rows above/below the board (SC-PRESENCE-01…20 / design D5/D9–D11). Page reads mirrored `game.seats` + own `steps`/`peeks`/`budgetsInfinite` only — no Colyseus I/O here (`peekedThisTurn` is legacy store mirror, unused by page).
 
 | Rule | Behavior |
 |------|----------|
@@ -89,10 +89,11 @@ Sync-driven markers in rows above/below the board (SC-PRESENCE-01…20 / design 
 | Finish place | Seat `finishPlace > 0` → numeric badge at **top-left** of marker (SC-PRESENCE-14) |
 | Ready | Own marker only, **top-left** when `canSendReady` (does not overlap finish by phase) |
 | Say affordance | Own online marker only, **top-right** (SC-PRESENCE-14 / SC-SAY-07); never on opponents / spectators |
-| Own budgets | Own seated marker only while `playing`: steps + peeks (∞ when `budgetsInfinite`); never on opponents / spectators (SC-PRESENCE-15/16) |
-| +N anim | Local fall animation when finite `steps`/`peeks` increase (grant / peek reward); duration ≈ **2 s** (`BUDGET_FALL_MS` + CSS) — page-local, no sync event (SC-PRESENCE-20) |
-| End-turn | «Завершить ход» on own marker when `canSendEndTurn` → `sendEndTurn`; hide in solo infinite (SC-PRESENCE-18) |
-| Solo ∞ modal | When `budgetsInfinite` flips false→true → unlimited modal (SC-PRESENCE-19); close keeps player in room |
+| Own budgets | Own seated marker only while `playing`: steps (always number) + peeks (∞ when `budgetsInfinite` = solo peeks∞); never on opponents / spectators (SC-PRESENCE-15/16) |
+| +N anim | Local fall animation when finite `steps`/`peeks` increase (grant / peek reward); steps always; peeks skipped while peeks∞; duration ≈ **2 s** (`BUDGET_FALL_MS` + CSS) — page-local, no sync event (SC-PRESENCE-20) |
+| End-turn | «Завершить ход» on own marker when `canSendEndTurn` → `sendEndTurn`; hide in solo peeks∞ (SC-PRESENCE-18) |
+| Solo peeks∞ modal | When `budgetsInfinite` flips false→true → peeks-unlimited / steps-finite modal (SC-PRESENCE-19); close keeps player in room |
+| Solo end modals | Own `timeExpired` false→true → timer-expired **or** steps-exhausted copy (infer: steps=0 ∧ ¬on live `*` → steps; else timer) — SC-PRESENCE-21 / SC-MOVE-45/48 |
 
 Tick `nowMs` on an interval (~200 ms) while Game is mounted so turn + reconnect rings animate from **server** `turnUntil` / `reconnectUntil`.
 
@@ -152,7 +153,7 @@ Picker open state (`sayPickerOpen`) is page-local; close if the local seat is lo
 - Board overlay: unfinished pieces only when seats have pieces (none in waiting/countdown).
 - On own turn in playing (not finished / not time-expired): white selection + red targets; submit via store `sendMove`; keep-focus after non-finishing move; peek eye (selected present `*` only — no ambient peekable chrome) + Correct/Wrong modal via `sendPeek` / `sendPeekAnswer`.
 - Animate piece travel; on center finish keep DOM key for slide then fade (`FINISH_FADE_MS`) and clear selection; ignore input while `moveAnimating`.
-- Own `finishPlace` 0→N → place `q-dialog` (`game.finishPlaceModal*`); own `timeExpired` false→true → timeout `q-dialog` (`game.timeExpiredModal*`); solo ∞ modal when budgets become infinite; close keeps player in room; clear selection on expiry.
+- Own `finishPlace` 0→N → place `q-dialog` (`game.finishPlaceModal*`); own `timeExpired` false→true → dual end `q-dialog` (`game.timeExpiredModal*` vs `game.stepsExhaustedModal*`); solo peeks∞ modal when `budgetsInfinite` becomes true; close keeps player in room; clear selection on expiry.
 - Budget +N fall ≈ 2 s (`BUDGET_FALL_MS` / `.budget-fall` CSS — SC-PRESENCE-20).
 - Header status: turn labels only in playing; exit **icon-only** Material `logout` with accessible name via `aria-label` / i18n `game.leave` (no visible text label); confirm copy via `leaveConfirm` / `leaveCancel` / `leaveExit`; confirm only when seated ∧ `playing` ∧ `!finishPlace` ∧ `!timeExpired` (else immediate leave); remount without room → `rejoinGame(roomId)` via store.
 
@@ -160,7 +161,7 @@ Picker open state (`sayPickerOpen`) is page-local; close if the local seat is lo
 
 - Keep layout in one client constant; center as a single 2×2 grid area.
 - Preserve max tile 60px, gap 2, radius 2, hole = page background (incl. removed `*`).
-- Keep Colyseus I/O in `stores/game`; page reads seats/phase/turn/strip/presence/`sayEvents`/`steps`/`peeks`/`peekedThisTurn`/`openPeek`/`removedTaskKeys` from store only.
+- Keep Colyseus I/O in `stores/game`; page reads seats/phase/turn/strip/presence/`sayEvents`/`steps`/`peeks`/`budgetsInfinite`/`openPeek`/`removedTaskKeys` from store only.
 - Gate move interactivity with `isPlaying && isMyTurn && !isMySeatFinished && !isMySeatTimeExpired` (and `!moveAnimating`); never select finished pieces/slots; gate say with own seated+connected; ready via `sendReady`; end-turn via `canSendEndTurn`.
 - Map `touristId` 1…4 to `tourist{N}.png`; strip only after pieces exist; finish icon on finished sides.
 - Drive turn/reconnect countdowns from synced `turnUntil` / `reconnectUntil`; countdown overlay from `countdownRemaining`.

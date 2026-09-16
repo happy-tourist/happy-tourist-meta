@@ -39,20 +39,20 @@ Coordinate with: `work-with-rooms` (lifecycle / registration), `work-with-schema
 | Client → server | `endTurn` | empty — via `sendEndTurn` when `canSendEndTurn` (multi finite only) |
 | Client → server | `ready` | empty — via `sendReady` (waiting, ≥2 seated, under maxSeats, not yet ready) |
 | Client → server | `say` | `{ presetId: 'hello' \| 'luck' }` — via `sendSay`; whitelist only (no free text; **not** `ready`); finished seats may still say |
-| Server → owner | `budgets` | `{ steps, peeks, infinite, peekedThisTurn }` — private; grant / change / reconnect |
+| Server → owner | `budgets` | `{ steps, peeks, infinite, peekedThisTurn }` — private; `infinite` = **peeks∞ only** (steps always finite); `peekedThisTurn` legacy (no gate) |
 | Server → owner | `peekOpen` | `{ side, row, col, reward: 1\|2\|3 }` — private modal payload |
 | Server → clients | Schema sync | `phase` / `maxSeats` / `countdownRemaining` / `seats` (+ `ready` / `finishPlace` / piece `finished`) / `currentTurnSessionId` / `removedTaskKeys` (+ `nextFinishPlace`) → `onStateChange` |
 | Server → all clients | `say` | `broadcast('say', { sessionId, presetId, at })` — ephemeral; includes readiness preset from successful `ready` |
 | Server → client | room error channel | Client sets `game.error` from `room.onError` |
 | Lobby | HTTP fallback | `client.http.get('/rooms/tourist')` — **not** a room message |
 
-**`move`:** accept only when `phase === 'playing'` + seated + `finishPlace === 0` + `!timeExpired` + current turn + (`infinite` ∨ `steps > 0`); legal one-step per `touristMove.ts` (occupancy ignores finished; removed `*` still walkable). Reject (no mutate) otherwise. On accept: update piece `row`/`col`; finite → spend 1 step + `sendBudgets`; if target is center → `piece.finished = true` and maybe assign `finishPlace`; **do not** `advanceTurn` solely for move — then `maybeAutoEndTurn` / finish-advance.
+**`move`:** accept only when `phase === 'playing'` + seated + `finishPlace === 0` + `!timeExpired` + current turn + `steps > 0`; legal one-step per `touristMove.ts` (occupancy ignores finished; **landing on removed holes rejected**; stand/leave OK). Reject (no mutate) otherwise. On accept: update piece `row`/`col`; always spend 1 step + `sendBudgets`; if target is center → `piece.finished = true` and maybe assign `finishPlace`; **do not** `advanceTurn` solely for move — then `maybeAutoEndTurn` / solo step-loss / finish-advance.
 
-**`peek`:** current turn + peek budget (or infinite) + multi one-peek/turn gate; piece on present task cell; set room `openPeek` + `client.send('peekOpen', …)`. Silent reject otherwise.
+**`peek`:** current turn + peek budget (or solo peeks∞); **no** one-peek/turn gate; piece on present task cell; set room `openPeek` + `client.send('peekOpen', …)`. Silent reject otherwise.
 
-**`peekAnswer`:** resolve open peek for that seat; spend peek (finite), mark `peekedThisTurn` in multi; Correct adds reward steps (finite) and pushes `"r,c"` to `removedTaskKeys`; Incorrect KEEP tile + hidden reward; `sendBudgets`; then maybe auto-end.
+**`peekAnswer`:** resolve open peek for that seat; spend peek (finite peeks only); Correct adds reward steps (always, including solo) and pushes `"r,c"` to `removedTaskKeys`; Incorrect KEEP tile + hidden reward; `sendBudgets`; then maybe auto-end / solo step-loss.
 
-**`endTurn`:** multi (≥2 eligible) + current + not finished/expired; force-close open peek as incorrect KEEP if any; `advanceTurn` (+1/+1 next). Solo infinite → reject.
+**`endTurn`:** multi (≥2 eligible) + current + not finished/expired; force-close open peek as incorrect KEEP if any; `advanceTurn` (+1/+1 next). Solo peeks∞ → reject.
 
 **`ready`:** accept only in `waiting`, seated + connected, seated count ≥ 2 and `< maxSeats`, seat not already ready. On accept: `seat.ready = true`, broadcast say preset `ready` (bypass live-say cap), maybe start countdown. Silent reject otherwise.
 
@@ -79,13 +79,13 @@ this.onMessage('move', (client, message) => {
 });
 
 this.onMessage('peek', (client, message) => {
-  // 1. playing + current + peek budget / one-peek gate
+  // 1. playing + current + peek budget (or solo peeks∞); no one-peek gate
   // 2. piece on present *; openPeek + client.send('peekOpen', { side, row, col, reward })
 });
 
 this.onMessage('peekAnswer', (client, message) => {
   // 1. Shape-check { correct: boolean }; must own openPeek
-  // 2. resolveOpenPeek → spend peek; Correct → +steps + remove tile; Incorrect KEEP; maybeAutoEndTurn
+  // 2. resolveOpenPeek → spend peek (finite); Correct → +steps + remove tile; Incorrect KEEP; maybeAutoEndTurn / solo step-loss
 });
 
 this.onMessage('endTurn', (client) => {

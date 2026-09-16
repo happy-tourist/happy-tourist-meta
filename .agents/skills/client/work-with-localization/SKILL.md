@@ -16,7 +16,7 @@ There is **no** country config, phone masks, locale switcher, or brand localizat
 
 ## Reality check
 
-Boot and message catalog exist; Login / Lobby still mostly **hardcode Russian**. Scaffold keys (`failed` / `success`) are barely used. **Exceptions already on i18n:** `game.say.*` (preset labels / affordance — never put display copy in the wire `presetId`); `game.readyButton` / `game.countdownSoon`; leave UX `game.leave` (accessible name for icon-only Game exit — no visible `:label`) / `game.leaveConfirm` / `game.leaveCancel` / `game.leaveExit`; finish UX `game.finishPlaceModal` / `game.finishPlaceModalOk` / `game.finishStripAria` / `game.finishPlaceBadgeAria`; solo timeout UX `game.timeExpiredModal` / `game.timeExpiredModalOk`; budgets/peek UX `game.stepsCounterAria` / `game.peeksCounterAria` / `game.budgetInfinity` / `game.endTurn` / `game.peekModal` / `game.peekCorrect` / `game.peekWrong` / `game.peekAffordance` / `game.soloUnlimitedModal` / `game.soloUnlimitedModalOk`. Product copy lives under locale key **`en-US`** (Russian strings) — there is no separate `ru-RU` catalog.
+Boot and message catalog exist; Login / Lobby still mostly **hardcode Russian**. Scaffold keys (`failed` / `success`) are barely used. **Exceptions already on i18n:** `game.say.*` (preset labels / affordance — never put display copy in the wire `presetId`); `game.readyButton` / `game.countdownSoon`; leave UX `game.leave` (accessible name for icon-only Game exit — no visible `:label`) / `game.leaveConfirm` / `game.leaveCancel` / `game.leaveExit`; finish UX `game.finishPlaceModal` / `game.finishPlaceModalOk` / `game.finishStripAria` / `game.finishPlaceBadgeAria`; solo end UX `game.timeExpiredModal` / `game.timeExpiredModalOk` (timer) + `game.stepsExhaustedModal` / `game.stepsExhaustedModalOk` (steps loss — SC-PRESENCE-21); budgets/peek UX `game.stepsCounterAria` / `game.peeksCounterAria` / `game.budgetInfinity` / `game.endTurn` / `game.peekModal` / `game.peekCorrect` / `game.peekWrong` / `game.peekAffordance` / `game.soloUnlimitedModal` / `game.soloUnlimitedModalOk` (peeks∞ / steps finite). Product copy lives under locale key **`en-US`** (Russian strings) — there is no separate `ru-RU` catalog.
 
 When adding **new** user-facing strings, prefer i18n keys via `$t` / `useI18n`. Do not mass-migrate hardcoded Russian unless the user asks.
 
@@ -85,6 +85,9 @@ export default {
     finishPlaceModalOk: 'ОК',
     timeExpiredModal: 'Вы не успели довести туристов до финиша вовремя.',
     timeExpiredModalOk: 'ОК',
+    stepsExhaustedModal:
+      'Шаги закончились, и под туристами нет плиток для просмотра. Игра для вас окончена.',
+    stepsExhaustedModalOk: 'ОК',
     finishStripAria: 'Финиш',
     finishPlaceBadgeAria: 'Место {n}',
     stepsCounterAria: 'Шаги',
@@ -96,7 +99,7 @@ export default {
     peekWrong: 'Неправильно',
     peekAffordance: 'Посмотреть под плиткой',
     soloUnlimitedModal:
-      'Вы один в игре. Шаги и просмотры безлимитны, просмотры плиток не ограничены за ход.',
+      'Вы один в игре. Просмотры безлимитны, шаги по-прежнему ограничены.',
     soloUnlimitedModalOk: 'ОК',
   },
   // lobby: { title: 'Lobby' },

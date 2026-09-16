@@ -121,14 +121,14 @@ Use these categories only when the SUT has relevant behavior:
   occupied/non-playable reject; out-of-turn / spectator / pre-playing / finished /
   time-expired / no-steps reject; **successful `move` does not advance turn**;
   `peek`/`peekAnswer`/`endTurn`; private `budgets`/`peekOpen`; grant +1/+1;
-  solo infinite; auto-end; timeout force incorrect KEEP open peek; permanent leave
+  solo peeks∞ / finite steps; auto-end (keep turn when peeks∧live `*`); timeout force incorrect KEEP open peek; permanent leave
   advances; offline grace keeps turn for non-finished; deadline keeps ticking;
-  multi 60s auto-pass; solo 300s → `timeExpired`). Also SC-BOARD-07… (reward bag,
-  Correct removes tile / Incorrect KEEP, walkable holes). Use `forcePlaying` (clears deadline) /
+  multi 60s auto-pass; solo 300s → `timeExpired`; solo step-loss → `timeExpired`). Also SC-BOARD-07… (reward bag,
+  Correct removes tile / Incorrect KEEP, holes **not landable**). Use `forcePlaying` (clears deadline) /
   `forcePlayingWithTimer` / `waitForPhase` helpers; accelerate clocks with
   `setTurnBudgetsForTests` + `resetTurnBudgets` in `beforeEach`/`afterEach`.
   Pure rules: `test/touristMove.test.ts` (incl. finished occupancy /
-  `finished` reject / `hasLegalMove` / `hasLegalPeek` / removed `*` walkable).
+  `finished` reject / `hasLegalMove` / `hasLegalPeek` / removed holes not landable).
 - Finish: cover SC-FINISH-* (center land → `piece.finished`; 4th finish →
   `finishPlace = nextFinishPlace++`; turn skips finished / time-expired; all
   finished clears turn; join in playing is spectator (no mid-join seat); finished may still `say`).
@@ -186,8 +186,8 @@ Verify move / turn / timer / budgets (SC-MOVE + SC-BOARD):
 - Legal orthogonal/diagonal one-step: piece row/col update; illegal/out-of-turn/
   spectator/pre-playing/finished/time-expired/no-steps: unchanged
 - `peek` → private `peekOpen`; `peekAnswer` Correct → +reward steps + `"r,c"` in
-  `removedTaskKeys` (still walkable); Incorrect KEEP tile + reward; multi one-peek/turn;
-  solo infinite
+  `removedTaskKeys` (**not landable**); Incorrect KEEP tile + reward; multi peeks while peeks remain;
+  solo peeks∞ / finite steps; step-loss without live `*` → `timeExpired`
 - Permanent leave of current advances turn; offline grace does not (non-finished);
   turnUntil keeps ticking; open peek → force incorrect KEEP on timeout/leave/endTurn
 - ≥2 eligible: `turnBudgetSeconds===60`; timeout → advance without move; solo:

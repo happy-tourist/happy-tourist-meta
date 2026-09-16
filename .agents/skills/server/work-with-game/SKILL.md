@@ -25,7 +25,7 @@ Pair with client board UX: `happy-tourist-meta/.agents/skills/client/work-with-g
 | --- | --- | --- |
 | Room | `src/rooms/MyRoom.ts` | JWT `onAuth`; seat assign; start / ready / countdown; `turnOrder` + private `budgets` / `taskRewards` / `openPeek`; `onMessage('move'\|'peek'\|'peekAnswer'\|'endTurn'\|'ready'\|'say')`; `onDrop`/`onReconnect`/`onLeave` |
 | Schema | `src/rooms/schema/MyRoomState.ts` | `phase` + `maxSeats` + `countdownRemaining` + `started` (legacy) + `seats` (+ `ready` / `finishPlace` / `timeExpired`) + piece `finished` + `currentTurnSessionId` + `turnUntil` + `turnBudgetSeconds` + `nextFinishPlace` + `removedTaskKeys` |
-| Rules | `src/game/touristMove.ts` | Pure validate/apply one-step move; playable includes removed `*`; `hasLegalMove` / `hasLegalPeek`; occupancy ignores `finished`; center landing is room side-effect |
+| Rules | `src/game/touristMove.ts` | Pure validate/apply one-step move; playable layout; landing excludes removed holes; `hasLegalMove` / `hasLegalPeek`; occupancy ignores `finished`; center landing is room side-effect |
 | Registration | `src/app.config.ts` | Room name must be `tourist` for client lobby |
 
 Constants: `RECONNECT_GRACE_SECONDS = 30`, `COUNTDOWN_SECONDS = 5`, `TURN_BUDGET_SECONDS = 60`, `SOLO_BUDGET_SECONDS = 300` in `MyRoom.ts` (test overrides via `setTurnBudgetsForTests` / `resetTurnBudgets`).
@@ -66,7 +66,7 @@ LobbyRoom: **no** grace / `allowReconnection` — see `work-with-rooms` (D7).
 - Room-private `turnOrder: string[]` (join order of seated sessionIds) — **not** in schema.
 - Synced `currentTurnSessionId` = current **eligible** seated `sessionId` (`finishPlace === 0` && `!timeExpired`), or `""` if none.
 - First seated → set turn; later seats append only while joining in `waiting`. Join during `countdown`/`playing` is spectator — turn order unchanged (SC-MOVE-19).
-- **Successful `move` does NOT advance the turn** (SC-MOVE-35). Advance via: `endTurn`, auto-end (no legal move ∧ no legal peek), turn timeout, or full-seat finish (`finishPlace` assigned).
+- **Successful `move` does NOT advance the turn** (SC-MOVE-35). Advance via: `endTurn`, auto-end (no legal move ∧ not (peeks≥1 ∧ live `*`)), turn timeout, or full-seat finish (`finishPlace` assigned).
 - Permanent seat remove: drop from `turnOrder`; if removed was current → next eligible (or `""`).
 - `onDrop` / offline grace: **do not** change `currentTurnSessionId` for **non-finished** seats (turn waits); turn deadline **keeps ticking** (SC-MOVE-26). Finished / time-expired seats are never eligible.
 - Having a current-turn seat does **not** allow moves before `phase === 'playing'`.
@@ -77,21 +77,22 @@ Room-private (not schema):
 
 | Bookkeeping | Meaning |
 |-------------|---------|
-| `budgets: Map<sessionId, { steps, peeks, infinite, peekedThisTurn }>` | Owner-only; resend via `client.send('budgets', { steps, peeks, infinite, peekedThisTurn })` on grant / change / reconnect |
+| `budgets: Map<sessionId, { steps, peeks, infinite, peekedThisTurn }>` | Owner-only; `infinite` = **peeks∞ only** (steps always finite). Resend `client.send('budgets', { steps, peeks, infinite, peekedThisTurn })`. `peekedThisTurn` kept for client mirror — **no** one-peek/turn gate |
 | `taskRewards: Map<"r,c", 1\|2\|3>` | Pregen on `enterPlaying` — bag **28×1 / 14×2 / 6×3**; revealed only in private `peekOpen` |
 | `openPeek` | At most one unresolved peek for current seat |
 
-Synced: `removedTaskKeys: string[]` (`"r,c"`) — holes for all clients; cells stay **walkable**.
+Synced: `removedTaskKeys: string[]` (`"r,c"`) — holes for all clients; **not landable** (stand OK; leave OK).
 
 Behavior:
 
-- Enter `playing`: budgets start **0/0**; seed rewards; clear `removedTaskKeys`; grant current seat.
-- Multi (≥2 eligible) on becoming current: `steps++`, `peeks++`, reset `peekedThisTurn`. Solo (1 eligible): `infinite=true` — no +1/+1, no end-turn, unlimited peeks.
-- `move`: spend 1 step (finite); **keep** turn; then `maybeAutoEndTurn`.
-- `peek` `{ side }` → private `peekOpen` `{ side, row, col, reward }`; `peekAnswer` `{ correct }` → spend peek (finite); Correct adds reward steps + remove tile; Incorrect KEEP tile + reward; multi marks `peekedThisTurn`.
+- Enter `playing`: budgets start **0/0**; seed rewards; clear `removedTaskKeys`; grant current seat (multi +1/+1).
+- Multi (≥2 eligible) on becoming current: `steps++`, `peeks++`. Solo (1 eligible): `infinite=true` (peeks∞); **no** +1/+1; steps carry finite; no end-turn.
+- `move`: always spend 1 step; **keep** turn; then `maybeAutoEndTurn` / solo step-loss check. Landing on removed hole → reject.
+- `peek` `{ side }` → private `peekOpen`; while peeks>0 (or solo ∞) and on live `*` — multi peeks per turn allowed. `peekAnswer` → spend peek (finite); Correct +reward steps + remove tile; Incorrect KEEP.
 - `endTurn` (no payload): multi only; open peek → force incorrect KEEP first; then `advanceTurn` (+1/+1 next).
-- Auto-end: after move / peekAnswer / budget change, if multi and no legal move and no legal peek → `advanceTurn`.
-- Timeout + open peek → force incorrect KEEP then advance / solo `timeExpired` (SC-MOVE-42).
+- Auto-end (multi): advance only if no legal move **and not** (peeks≥1 ∧ unfinished on live `*`) (SC-MOVE-38/47).
+- Solo step-loss: `steps===0` ∧ ¬hasLegalPeek on live `*` → `timeExpired` (SC-MOVE-48); distinct from timer (SC-MOVE-45).
+- Timeout + open peek → force incorrect KEEP then advance / solo timer `timeExpired` (SC-MOVE-42).
 - Consented/permanent leave with open peek → same force incorrect KEEP before seat delete.
 
 ## Turn deadline (shipped — game/move)
@@ -104,8 +105,8 @@ Behavior:
 ## Move Rules (shipped — D2 / D3 + game/finish + steps)
 
 - Message: `room.send('move', { side: 'N'|'E'|'S'|'W', row, col })` — `side` = own piece; `row`/`col` = target. **No** separate `finish` message.
-- Pure module `src/game/touristMove.ts`: playable = start + task + center + **removed task cells** (mirrors client `LAYOUT` holes); Chebyshev distance === 1; occupancy = unfinished pieces only; reject already-finished mover piece; helpers `hasLegalMove` / `hasLegalPeek(removedKeys)`.
-- `MyRoom.onMessage('move')`: require `phase === 'playing'` + seated + `finishPlace === 0` + `!timeExpired` + current turn + (`infinite` ∨ `steps > 0`) → validate → update `row`/`col`; finite → `steps--` + `sendBudgets`; if target is center → `piece.finished=true`; when seat’s 4th piece finishes → assign `finishPlace = nextFinishPlace++` then advance (skip finished / time-expired); else **do not** advance solely because move succeeded — run auto-end check. Reject → no state change.
+- Pure module `src/game/touristMove.ts`: playable = start + task + center; **landing on `removedKeys` rejected**; stand/leave from hole OK; Chebyshev distance === 1; occupancy = unfinished only; helpers `hasLegalMove(..., removedKeys)` / `hasLegalPeek(removedKeys)`.
+- `MyRoom.onMessage('move')`: require `phase === 'playing'` + seated + `finishPlace === 0` + `!timeExpired` + current turn + `steps > 0` → validate (holes not landable) → update `row`/`col`; always `steps--` + `sendBudgets`; if target is center → `piece.finished=true`; when seat’s 4th piece finishes → assign `finishPlace = nextFinishPlace++` then advance; else **do not** advance solely because move succeeded — run auto-end / solo step-loss. Reject → no state change.
 - Finished / time-expired seat may still `say`; cannot move/peek. Finished seats count toward `maxSeats` until leave/grace.
 - Player end-turn via `endTurn`; also auto-end and timeout. No draughts `{ from, to }` encoding.
 
@@ -124,7 +125,7 @@ Behavior:
 | Board UI | Client-only `LAYOUT` in `GamePage`; server does **not** sync tile kinds; holes from synced `removedTaskKeys` |
 | Synced state | `phase`, `maxSeats`, `countdownRemaining`, `started` (legacy), `seats` Map → `touristId` + `pieces` (+ `finished`; may be empty pre-playing) + connectivity + `ready` + `finishPlace` + `timeExpired`, `currentTurnSessionId`, `turnUntil`, `turnBudgetSeconds`, `nextFinishPlace`, `removedTaskKeys` |
 | Messages | `move` `{ side, row, col }` via `sendMove` (no turn advance); `peek` `{ side }` / `peekAnswer` `{ correct }` / `endTurn` via store; `ready` via `sendReady` |
-| Private | Server → owner `budgets` `{ steps, peeks, infinite, peekedThisTurn }`; `peekOpen` `{ side, row, col, reward }` |
+| Private | Server → owner `budgets` `{ steps, peeks, infinite` (peeks∞ only)`, peekedThisTurn }`; `peekOpen` `{ side, row, col, reward }` |
 | Say (ephemeral) | `say` `{ presetId: hello\|luck }` → broadcast; readiness preset only via `ready` — see `work-with-messages` |
 | Reconnect | Colyseus token; client `localStorage` + `reconnect` then `joinById`; resend `budgets` on reclaim |
 | Presence / hints | Client-only chrome (own counters + end-turn + eye); selection + red targets local to current-turn client |
@@ -148,7 +149,7 @@ onMessage('peek'|'peekAnswer'|'endTurn') → budgets / remove tile only on Corre
 - [x] Product sync: `phase` / `maxSeats` / `countdownRemaining` + `seats` (+ connectivity + `ready`) + `currentTurnSessionId` + `removedTaskKeys`; new seat only while `waiting` under maxSeats (no `maxClients` seat lock; no mid-game seat).
 - [x] Start: auto/all-ready countdown; `onMessage('ready')`; move gated on `phase === 'playing'`; mocha SC-START-* / SC-MOVE-18.
 - [x] Unexpected drop grace 30 s + `allowReconnection`; consented leave immediate; empty seated → dispose; mocha SC-PIECE-*.
-- [x] `turnOrder` + private budgets + `onMessage('move'|'peek'|'peekAnswer'|'endTurn')` + `touristMove.ts` (removed `*` walkable); mocha SC-MOVE-33… / SC-BOARD-07….
+- [x] `turnOrder` + private budgets + `onMessage('move'|'peek'|'peekAnswer'|'endTurn')` + `touristMove.ts` (holes not landable; peeks∞ solo; multi peek); mocha SC-MOVE-33…49 / SC-BOARD-07….
 
 ## Do
 

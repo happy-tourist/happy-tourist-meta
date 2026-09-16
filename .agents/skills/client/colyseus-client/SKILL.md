@@ -4,8 +4,9 @@ description: >-
   Use when adding, changing, or reviewing Colyseus client I/O in the
   happy-tourist tourist SPA: Client singleton from src/boot/colyseus.ts,
   LobbyRoom live listing (subscribeLobby), room create/join/leave,
-  room.send move/peek/endTurn/say messages, private budgets/peekOpen,
-  client.auth register/sign-in/sign-out, Pinia auth/game stores, or
+  room.send move/peek/endTurn/say messages, private budgets/peekOpen
+  (infinite=peeks∞ only; holes not landable), client.auth
+  register/sign-in/sign-out, Pinia auth/game stores, or
   VITE_COLYSEUS_URL / VITE_API_URL env wiring.
 ---
 
@@ -219,14 +220,14 @@ Mirror seating + turn from schema.
 | `started` | Legacy; client mirrors `phase === 'playing'` |
 | `seats` Map | Key = `sessionId` → `touristId` + `pieces` (+ `finished`) + connectivity + `ready` + `finishPlace` |
 | `currentTurnSessionId` | Synced whose turn; `""` if no seated / all finished → getter `isMyTurn` |
-| `removedTaskKeys` | Synced `"r,c"` holes after **correct** peek only; still walkable. Incorrect KEEP → no hole |
+| `removedTaskKeys` | Synced `"r,c"` holes after **correct** peek only; **not landable** (stand-on-hole OK). Incorrect KEEP → no hole |
 | `sessionId` | From `room.sessionId` — for `mySeat` / strip×4 / turn check |
 
 Private (not schema) — wire in `_attachRoom`:
 
 | Message | Pinia fields |
 |---------|--------------|
-| `budgets` `{ steps, peeks, infinite, peekedThisTurn }` | `steps`, `peeks`, `budgetsInfinite`, `peekedThisTurn` |
+| `budgets` `{ steps, peeks, infinite, peekedThisTurn }` | `steps` (always finite), `peeks`, `budgetsInfinite` (peeks∞ only), `peekedThisTurn` (legacy) |
 | `peekOpen` `{ side, row, col, reward }` | `openPeek` |
 
 Wire once in the store:
@@ -246,8 +247,8 @@ room.onStateChange((state) => {
   this.status = this.phase === 'playing' ? 'playing' : 'waiting';
 });
 
-room.onMessage('budgets', (message) => { /* steps / peeks / budgetsInfinite / peekedThisTurn */ });
-room.onMessage('peekOpen', (message) => { /* openPeek; multi → optimistic peekedThisTurn */ });
+room.onMessage('budgets', (message) => { /* steps / peeks / budgetsInfinite=peeks∞ / peekedThisTurn legacy */ });
+room.onMessage('peekOpen', (message) => { /* openPeek */ });
 ```
 
 `GamePage` may call `rejoinGame(roomId)` if Pinia lost the room after refresh / soft-fail / browser reopen (`localStorage` reconnection token → `reconnect`, clear stale on fail → `joinById`); failed rejoin → navigate to lobby. Board tile geometry is a **client constant** (`work-with-game-board`); seats + phase + connectivity + turn + removed tiles come from sync; own budgets from private messages. Token details: `work-with-rooms`.
@@ -368,7 +369,7 @@ Catch at the page only if you need extra UI beyond `game.error`.
 ```ts
 // GamePage: LAYOUT + pieces + presence + budgets + peek + say; remount → rejoinGame(roomId)
 // Own turn: select → red targets → game.sendMove(side, row, col); eye → sendPeek / sendPeekAnswer
-// Multi: «Завершить ход» → game.sendEndTurn(); solo infinite hides end-turn
+// Multi: «Завершить ход» → game.sendEndTurn(); solo peeks∞ hides end-turn
 // Own online marker: picker → game.sendSay('hello'|'luck'); bubbles from game.sayEvents
 await game.leaveGame(); // consented — clears tourist reconnect token
 await router.push({ name: 'lobby' });

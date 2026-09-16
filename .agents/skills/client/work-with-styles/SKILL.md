@@ -5,9 +5,9 @@ description: >-
   the happy-tourist client: Quasar Dark plugin + theme boot/store, App.vue
   header toggle, guest localStorage vs registered GET/POST /api/theme (restore
   ≠ JWT-only), muted chrome text, quasar.variables.scss tokens, app.scss, page
-  scoped CSS (especially GamePage board gap/radius 2 + presence row/ring/avatar
-  + own budgets/end-turn + peek affordance), Quasar utility classes, Material
-  Icons / Roboto, or color props on Quasar components.
+  scoped CSS (especially GamePage board gap/radius 2 + `.tile--removed` holes
+  + presence row/ring/avatar + own budgets/end-turn + peek affordance), Quasar
+  utility classes, Material Icons / Roboto, or color props on Quasar components.
 ---
 
 # Work With Styles
@@ -175,6 +175,7 @@ Board UI is custom CSS Grid (not Quasar widgets). Keep selectors local and class
 | `.tile-task` | Brown task tile (`#8d6e63`) |
 | `.tile-center` | Yellow center (`#ffeb3b`); one element with `span 2` / `span 2` |
 | `.tile--selected` / `.tile--target` | Local white / red move chrome (current-turn client only) |
+| `.tile-task.tile--removed` | Removed-task hole = page background; may keep `.tile--selected` while piece stands; **never** combine with `.tile--target` (holes not landable — SC-BOARD-15) |
 | `.piece` | Absolute `left`/`top` from `--pcol`/`--prow` + `--cell`; ~250ms transition |
 | `.presence-marker` | Occupied seat chrome; reserved **96×96** `position: relative` slot for dual rings + 72px avatar (stable layout — SC-PRESENCE-11/13) |
 | `.presence-progress--outer` | Turn ring (96px); `position: absolute; inset: 0; z-index: 0`; `pointer-events: none` |
@@ -193,7 +194,7 @@ Current-turn interactivity, dual turn/reconnect rings, presence **row** layout (
 When editing board visuals:
 
 - Prefer adjusting existing tourist classes over new global CSS.
-- Preserve max tile 60px, gap 2, radius 2; holes show page background.
+- Preserve max tile 60px, gap 2, radius 2; holes show page background; do not style `.tile--removed` as a red landing target.
 - Do not replace the board with Quasar grid components unless explicitly asked.
 - Do **not** retune tile fills for app Dark mode — chrome theme must not
   change the tourist board look.
