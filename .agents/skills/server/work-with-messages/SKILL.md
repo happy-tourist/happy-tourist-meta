@@ -52,7 +52,7 @@ Coordinate with: `work-with-rooms` (lifecycle / registration), `work-with-schema
 
 **`peekAnswer`:** resolve open peek for that seat; spend peek (finite peeks only); Correct adds reward steps (always, including solo) and pushes `"r,c"` to `removedTaskKeys`; Incorrect KEEP tile + hidden reward; `sendBudgets`; then maybe auto-end / solo step-loss.
 
-**`endTurn`:** multi (≥2 eligible) + current + not finished/expired; force-close open peek as incorrect KEEP if any; `advanceTurn` (+1/+1 next). Solo peeks∞ → reject.
+**`endTurn`:** multi (≥2 eligible) + current + not finished/expired; force-close open peek as incorrect KEEP if any; `advanceTurn` (next grant: multi +1/+1; solo become-current +1 step only). Solo peeks∞ → reject.
 
 **`ready`:** accept only in `waiting`, seated + connected, seated count ≥ 2 and `< maxSeats`, seat not already ready. On accept: `seat.ready = true`, broadcast say preset `ready` (bypass live-say cap), maybe start countdown. Silent reject otherwise.
 
@@ -90,7 +90,7 @@ this.onMessage('peekAnswer', (client, message) => {
 
 this.onMessage('endTurn', (client) => {
   // 1. multi + current + eligible; force-close open peek as incorrect KEEP if any
-  // 2. advanceTurn (+1/+1 next)
+  // 2. advanceTurn → applyTurnGrant (multi +1/+1; solo become-current +1 step)
 });
 
 this.onMessage('ready', (client) => {

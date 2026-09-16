@@ -2,15 +2,15 @@
 
 | Scenario ID | Coverage |
 |-------------|----------|
-| SC-BOARD-07 | pending (server mocha) |
-| SC-BOARD-08 | pending-update (server mocha — no one-peek-per-turn gate) |
-| SC-BOARD-09 | pending (server mocha) |
-| SC-BOARD-10 | pending (server mocha) |
-| SC-BOARD-11 | pending-update (client UX + server — hole not landable) |
-| SC-BOARD-12 | pending (client UX — piece may stand on hole) |
-| SC-BOARD-13 | pending (server mocha) |
-| SC-BOARD-14 | pending-update (client UX — eye; no one-peek-per-turn) |
-| SC-BOARD-15 | pending (server mocha — land on hole rejected; mirrors SC-MOVE-49) |
+| SC-BOARD-07 | covered (server mocha) |
+| SC-BOARD-08 | covered (server mocha — no one-peek-per-turn gate) |
+| SC-BOARD-09 | covered (server mocha) |
+| SC-BOARD-10 | covered (server mocha) |
+| SC-BOARD-11 | covered (client UX + server — hole not landable) |
+| SC-BOARD-12 | covered (client UX — piece may stand on hole) |
+| SC-BOARD-13 | covered (server mocha) |
+| SC-BOARD-14 | covered (client UX — eye; no one-peek-per-turn) |
+| SC-BOARD-15 | covered (server mocha — land on hole rejected; mirrors SC-MOVE-49) |
 
 Related: turn budgets / multi peek — `game/move`; presence — `game/presence`.
 

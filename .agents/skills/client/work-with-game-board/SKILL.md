@@ -90,7 +90,7 @@ Sync-driven markers in rows above/below the board (SC-PRESENCE-01…20 / design 
 | Ready | Own marker only, **top-left** when `canSendReady` (does not overlap finish by phase) |
 | Say affordance | Own online marker only, **top-right** (SC-PRESENCE-14 / SC-SAY-07); never on opponents / spectators |
 | Own budgets | Own seated marker only while `playing`: steps (always number) + peeks (∞ when `budgetsInfinite` = solo peeks∞); never on opponents / spectators (SC-PRESENCE-15/16) |
-| +N anim | Local fall animation when finite `steps`/`peeks` increase (grant / peek reward); steps always; peeks skipped while peeks∞; duration ≈ **2 s** (`BUDGET_FALL_MS` + CSS) — page-local, no sync event (SC-PRESENCE-20) |
+| +N anim | Local fall animation when finite `steps`/`peeks` increase (multi grant +1/+1, solo become-current +1 step only, peek Correct reward); steps always; peeks skipped while peeks∞; duration ≈ **2 s** (`BUDGET_FALL_MS` + CSS) — page-local, no sync event (SC-PRESENCE-20 / SC-MOVE-50) |
 | End-turn | «Завершить ход» on own marker when `canSendEndTurn` → `sendEndTurn`; hide in solo peeks∞ (SC-PRESENCE-18) |
 | Solo peeks∞ modal | When `budgetsInfinite` flips false→true → peeks-unlimited / steps-finite modal (SC-PRESENCE-19); close keeps player in room |
 | Solo end modals | Own `timeExpired` false→true → timer-expired **or** steps-exhausted copy (infer: steps=0 ∧ ¬on live `*` → steps; else timer) — SC-PRESENCE-21 / SC-MOVE-45/48 |

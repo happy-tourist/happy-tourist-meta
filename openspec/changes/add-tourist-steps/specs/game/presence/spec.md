@@ -2,13 +2,13 @@
 
 | Scenario ID | Coverage |
 |-------------|----------|
-| SC-PRESENCE-15 | pending (client UX) |
-| SC-PRESENCE-16 | pending-update (client UX — solo ∞ peeks only) |
-| SC-PRESENCE-17 | pending (client UX) |
-| SC-PRESENCE-18 | pending (client UX) |
-| SC-PRESENCE-19 | pending-update (client UX — peeks-unlimited modal) |
-| SC-PRESENCE-20 | pending (client UX — +N anim ~2s) |
-| SC-PRESENCE-21 | pending (client UX — timer vs steps-loss copy) |
+| SC-PRESENCE-15 | covered (client UX) |
+| SC-PRESENCE-16 | covered (client UX — solo ∞ peeks only) |
+| SC-PRESENCE-17 | covered (client UX) |
+| SC-PRESENCE-18 | covered (client UX) |
+| SC-PRESENCE-19 | covered (client UX — peeks-unlimited modal) |
+| SC-PRESENCE-20 | covered (client UX — +N anim ~2s) |
+| SC-PRESENCE-21 | covered (client UX — timer vs steps-loss copy) |
 
 Related: budgets / end-turn / solo — `game/move`; peek modal — `game/board`.
 

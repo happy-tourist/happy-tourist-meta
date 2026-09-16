@@ -4,11 +4,13 @@ description: >-
   Use when implementing, changing, reviewing, or debugging authoritative
   tourist-room seating (new seat only while waiting), reconnect grace, deferred
   pieces until playing, turn order (skip finished / time-expired), private
-  steps/peeks budgets, peek / endTurn, removed task tiles, turn deadlines
-  (60s / solo 5min), center finish / finishPlace, and one-step move rules in the
-  happy-tourist Colyseus server — Room handlers, schema seats/phase/maxSeats/
-  ready/countdown/currentTurnSessionId/turnUntil/turnBudgetSeconds/removedTaskKeys/
-  connectivity/finish/timeExpired fields, or pure rules in src/game/touristMove.ts.
+  steps/peeks budgets (become-current grant: multi +1/+1; solo +1 step;
+  already-current→solo no re-grant), peek / endTurn, removed task tiles, turn
+  deadlines (60s / solo 5min), center finish / finishPlace, and one-step move
+  rules in the happy-tourist Colyseus server — Room handlers, schema
+  seats/phase/maxSeats/ready/countdown/currentTurnSessionId/turnUntil/
+  turnBudgetSeconds/removedTaskKeys/connectivity/finish/timeExpired fields, or
+  pure rules in src/game/touristMove.ts.
 ---
 
 # Work With Game
@@ -67,7 +69,7 @@ LobbyRoom: **no** grace / `allowReconnection` — see `work-with-rooms` (D7).
 - Synced `currentTurnSessionId` = current **eligible** seated `sessionId` (`finishPlace === 0` && `!timeExpired`), or `""` if none.
 - First seated → set turn; later seats append only while joining in `waiting`. Join during `countdown`/`playing` is spectator — turn order unchanged (SC-MOVE-19).
 - **Successful `move` does NOT advance the turn** (SC-MOVE-35). Advance via: `endTurn`, auto-end (no legal move ∧ not (peeks≥1 ∧ live `*`)), turn timeout, or full-seat finish (`finishPlace` assigned).
-- Permanent seat remove: drop from `turnOrder`; if removed was current → next eligible (or `""`).
+- Permanent seat remove: drop from `turnOrder`; if removed was current → next eligible (or `""`) + `applyTurnGrant` (multi +1/+1; solo become-current +1 step). If non-current left → no re-grant; only `syncSoloInfiniteMode` + fresh solo 5:00 when applicable (SC-MOVE-40/50).
 - `onDrop` / offline grace: **do not** change `currentTurnSessionId` for **non-finished** seats (turn waits); turn deadline **keeps ticking** (SC-MOVE-26). Finished / time-expired seats are never eligible.
 - Having a current-turn seat does **not** allow moves before `phase === 'playing'`.
 
@@ -85,8 +87,8 @@ Synced: `removedTaskKeys: string[]` (`"r,c"`) — holes for all clients; **not l
 
 Behavior:
 
-- Enter `playing`: budgets start **0/0**; seed rewards; clear `removedTaskKeys`; grant current seat (multi +1/+1).
-- Multi (≥2 eligible) on becoming current: `steps++`, `peeks++`. Solo (1 eligible): `infinite=true` (peeks∞); **no** +1/+1; steps carry finite; no end-turn.
+- Enter `playing`: budgets start **0/0**; seed rewards; clear `removedTaskKeys`; grant current seat (multi +1/+1; solo become-current +1 step only).
+- Multi (≥2 eligible) on becoming current: `steps++`, `peeks++`. Solo (1 eligible) on becoming current: `infinite=true` (peeks∞) then **+1 step only** (no peek increment); already-current→solo (non-current leave/finish) → peeks∞ + 5:00 **without** re-grant. No end-turn while solo.
 - `move`: always spend 1 step; **keep** turn; then `maybeAutoEndTurn` / solo step-loss check. Landing on removed hole → reject.
 - `peek` `{ side }` → private `peekOpen`; while peeks>0 (or solo ∞) and on live `*` — multi peeks per turn allowed. `peekAnswer` → spend peek (finite); Correct +reward steps + remove tile; Incorrect KEEP.
 - `endTurn` (no payload): multi only; open peek → force incorrect KEEP first; then `advanceTurn` (+1/+1 next).
@@ -149,7 +151,7 @@ onMessage('peek'|'peekAnswer'|'endTurn') → budgets / remove tile only on Corre
 - [x] Product sync: `phase` / `maxSeats` / `countdownRemaining` + `seats` (+ connectivity + `ready`) + `currentTurnSessionId` + `removedTaskKeys`; new seat only while `waiting` under maxSeats (no `maxClients` seat lock; no mid-game seat).
 - [x] Start: auto/all-ready countdown; `onMessage('ready')`; move gated on `phase === 'playing'`; mocha SC-START-* / SC-MOVE-18.
 - [x] Unexpected drop grace 30 s + `allowReconnection`; consented leave immediate; empty seated → dispose; mocha SC-PIECE-*.
-- [x] `turnOrder` + private budgets + `onMessage('move'|'peek'|'peekAnswer'|'endTurn')` + `touristMove.ts` (holes not landable; peeks∞ solo; multi peek); mocha SC-MOVE-33…49 / SC-BOARD-07….
+- [x] `turnOrder` + private budgets + `onMessage('move'|'peek'|'peekAnswer'|'endTurn')` + `touristMove.ts` (holes not landable; peeks∞ solo; multi peek; solo become-current +1 step); mocha SC-MOVE-33…50 / SC-BOARD-07….
 
 ## Do
 

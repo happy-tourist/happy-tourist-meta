@@ -2,25 +2,26 @@
 
 | Scenario ID | Coverage |
 |-------------|----------|
-| SC-MOVE-33 | pending (server mocha) |
-| SC-MOVE-34 | pending (server mocha) |
-| SC-MOVE-35 | pending (server mocha) |
-| SC-MOVE-36 | pending (server mocha) |
-| SC-MOVE-37 | pending (server mocha) |
-| SC-MOVE-38 | pending-update (server mocha — auto-end only without peeks-on-`*`) |
-| SC-MOVE-39 | pending-update (server mocha — multi peek same turn allowed) |
-| SC-MOVE-40 | pending-update (server mocha — solo peeks∞, steps finite) |
-| SC-MOVE-41 | pending-update (server mocha — solo no end-turn) |
-| SC-MOVE-42 | pending (server mocha) |
-| SC-MOVE-43 | pending (server mocha) |
-| SC-MOVE-44 | pending (server mocha) |
-| SC-MOVE-45 | pending-update (server mocha — timer time-expired; distinct from step-loss) |
-| SC-MOVE-46 | pending (client UX — keep-focus after move) |
-| SC-MOVE-47 | pending (server mocha — keep turn when peeks and on live `*`) |
-| SC-MOVE-48 | pending (server mocha — solo step-loss → timeExpired) |
-| SC-MOVE-49 | pending (server mocha — move onto removed hole rejected) |
-| SC-MOVE-04 | pending-update (server mocha — move no longer advances turn) |
-| SC-MOVE-28 | pending-update (server mocha — timeout + open peek = wrong, KEEP tile) |
+| SC-MOVE-33 | covered (server mocha) |
+| SC-MOVE-34 | covered (server mocha) |
+| SC-MOVE-35 | covered (server mocha) |
+| SC-MOVE-36 | covered (server mocha) |
+| SC-MOVE-37 | covered (server mocha) |
+| SC-MOVE-38 | covered (server mocha — auto-end only without peeks-on-`*`) |
+| SC-MOVE-39 | covered (server mocha — multi peek same turn allowed) |
+| SC-MOVE-40 | covered (server mocha — solo peeks∞; already-current carries steps) |
+| SC-MOVE-41 | covered (server mocha — solo no end-turn) |
+| SC-MOVE-42 | covered (server mocha) |
+| SC-MOVE-43 | covered (server mocha) |
+| SC-MOVE-44 | covered (server mocha) |
+| SC-MOVE-45 | covered (server mocha — timer time-expired; distinct from step-loss) |
+| SC-MOVE-46 | covered (client UX — keep-focus after move) |
+| SC-MOVE-47 | covered (server mocha — keep turn when peeks and on live `*`) |
+| SC-MOVE-48 | covered (server mocha — solo step-loss → timeExpired) |
+| SC-MOVE-49 | covered (server mocha — move onto removed hole rejected) |
+| SC-MOVE-50 | covered (server mocha — become-current into solo grants +1 step) |
+| SC-MOVE-04 | covered (server mocha — move no longer advances turn) |
+| SC-MOVE-28 | covered (server mocha — timeout + open peek = wrong, KEEP tile) |
 
 Related: board peek / removed tiles — `game/board`; presence counters / end-turn — `game/presence`; solo finish — `game/finish`.
 
@@ -28,7 +29,12 @@ Related: board peek / removed tiles — `game/board`; presence counters / end-tu
 
 ### Requirement: Private step and peek budgets per seat
 
-While phase is `playing`, the server SHALL maintain for each non-finished seated player a private **steps** budget and a private **peeks** budget that are visible only to that seat’s client (not to other seated players or spectators). At materialize into `playing` both budgets MUST start at **0**. Each time a seat becomes current turn while **two or more** eligible seats remain, the server MUST add exactly **1** step and exactly **1** peek to that seat’s budgets before play continues. Budgets MUST persist across that seat’s turns (remainder carries over). Reconnect within grace MUST restore the same budgets to the reclaiming client. Spectators MUST NOT receive step or peek budgets.
+While phase is `playing`, the server SHALL maintain for each non-finished seated player a private **steps** budget and a private **peeks** budget that are visible only to that seat’s client (not to other seated players or spectators). At materialize into `playing` both budgets MUST start at **0**. Each time a seat **becomes** current turn:
+
+- while **two or more** eligible seats remain, the server MUST add exactly **1** step and exactly **1** peek to that seat’s budgets before play continues;
+- while **exactly one** eligible seat remains (solo), the server MUST add exactly **1** step and MUST **not** add a peek (peeks are already infinite per the solo requirement).
+
+Budgets MUST persist across that seat’s turns (remainder carries over). Becoming solo **without** a change of current turn (another seat permanently left or finished while this seat was already current) MUST **not** add another step solely for that reason. While the same seat remains current under solo rules, successful moves MUST NOT trigger further turn grants. Reconnect within grace MUST restore the same budgets to the reclaiming client. Spectators MUST NOT receive step or peek budgets.
 
 #### Scenario [SC-MOVE-33]: Budgets start at zero until first turn grant
 
@@ -44,6 +50,14 @@ While phase is `playing`, the server SHALL maintain for each non-finished seated
 - **THEN** that seat’s private budgets become 3 steps and 2 peeks
 - **AND** other clients do not observe those budget values
 
+#### Scenario [SC-MOVE-50]: Becoming current as the solo leftover grants one step
+
+- **GIVEN** a tourist room in phase `playing` with two eligible seated players A then B, it is A’s turn, and B still has steps 0 and peeks 0 (B has not yet received a turn grant this game)
+- **WHEN** A permanently leaves **or** A receives a finish place so that B is the only remaining eligible seat and becomes current turn
+- **THEN** B’s peeks are infinite
+- **AND** B’s steps become exactly 1
+- **AND** B’s peeks counter is not increased by a finite +1 (infinite mode applies instead)
+- **AND** B may legally move with that granted step
 ### Requirement: Moves consume steps and do not advance the turn
 
 A legal one-step move in phase `playing` MUST decrement the mover’s steps budget by exactly **1** when the seat’s steps budget is finite (including solo). The server MUST reject a move that would require a step while the seat’s steps budget is **0** without changing piece positions or the current turn. After an accepted move the current turn MUST **remain** on that seat; the turn MUST NOT advance solely because a move succeeded. Orthogonal/diagonal adjacency, occupancy, playable cells (**excluding** removed task cells as landing targets per `game/board`), center finish, and finished/time-expired gates remain as previously specified except where this change modifies turn advancement.
@@ -102,13 +116,13 @@ While it is a seat’s turn in phase `playing`, that seat MAY successfully open 
 
 ### Requirement: Solo infinite peeks and finite steps
 
-When phase is `playing` and exactly one seated player remains eligible to move, the server SHALL set that seat’s **peeks** budget to an **infinite** mode, MUST keep **steps** as a finite carried number (not infinite), MUST NOT apply further per-turn +1/+1 grants while solo, and MUST NOT accept or require end-turn to keep playing. The five-minute solo deadline remains; additionally, when steps reach **0** and no own unfinished piece stands on a still-present task cell, the server MUST mark that seat **time-expired** the same way as solo timer expiry (moves and peeks rejected). Finishing all pieces follows `game/finish`. The solo client MUST be informed via a modal that peeks are unlimited while steps remain finite. Other clients MUST NOT see that seat’s budget values.
+When phase is `playing` and exactly one seated player remains eligible to move, the server SHALL set that seat’s **peeks** budget to an **infinite** mode, MUST keep **steps** as a finite number (not infinite), MUST NOT accept or require end-turn to keep playing, and MUST NOT apply further turn grants while that same seat remains current under solo (successful moves do not re-grant). When another seat’s permanent leave or finish causes this seat to **become** current turn as the sole eligible seat, the private-budget grant for becoming current under solo (+1 step, no peek increment) MUST apply. When the seat was **already** current and merely becomes the sole eligible seat, steps MUST carry unchanged (no extra step solely for entering solo). The five-minute solo deadline remains; additionally, when steps reach **0** and no own unfinished piece stands on a still-present task cell, the server MUST mark that seat **time-expired** the same way as solo timer expiry (moves and peeks rejected). Finishing all pieces follows `game/finish`. The solo client MUST be informed via a modal that peeks are unlimited while steps remain finite. Other clients MUST NOT see that seat’s budget values.
 
-#### Scenario [SC-MOVE-40]: Becoming solo unlocks infinite peeks only
+#### Scenario [SC-MOVE-40]: Becoming solo while already current carries steps
 
-- **GIVEN** a tourist room in phase `playing` where every other seated player has either a finish place or has permanently left, leaving exactly one non-finished seated player with a finite steps budget greater than 0
+- **GIVEN** a tourist room in phase `playing` where it is non-finished seated player A’s turn with a finite steps budget greater than 0, and every other seated player either receives a finish place or permanently leaves, leaving A as the only eligible seat **without** changing current turn away from A
 - **WHEN** that condition becomes true
-- **THEN** that seat’s peeks are infinite and steps remain the prior finite value
+- **THEN** A’s peeks are infinite and steps remain the prior finite value (no extra +1 step solely for entering solo)
 - **AND** that client is shown the solo peeks-unlimited modal
 - **AND** the synchronized five-minute solo deadline applies as previously specified
 
@@ -118,6 +132,7 @@ When phase is `playing` and exactly one seated player remains eligible to move, 
 - **WHEN** that player views Game controls for ending a turn
 - **THEN** the end-turn control is not offered
 - **AND** successful moves do not pass the turn to another seat
+- **AND** successful moves do not grant an additional +1 step solely because the seat remains solo current
 
 #### Scenario [SC-MOVE-48]: Solo steps exhaustion without a live task tile time-locks
 
@@ -223,7 +238,7 @@ As soon as at least one seated player exists in the tourist room, the server SHA
 
 The server SHALL accept a move message only when the room start phase is `playing`, and only from a non-finished seated client who is not time-expired, whose turn it is, that identifies one of that client’s own unfinished pieces and a target cell, and who has steps ≥ 1 in finite steps mode. A legal move MUST place that piece exactly one cell away in row and/or column (orthogonal or diagonal: Chebyshev distance 1), onto a playable tourist layout cell (start, still-present task cell, or center cell), and MUST NOT land on a **removed** task cell, and MUST NOT land on a cell occupied by any unfinished piece in the room (including the mover’s other unfinished pieces). Finished pieces MUST NOT occupy cells and MUST NOT be move targets as pieces. Layout holes that were never playable, removed task cells, and cells outside the playable layout MUST be rejected as landing targets. Moves from a client that is not seated, is finished, is time-expired, not the current turn, not in phase `playing`, that target another player’s piece, that target an already finished own piece, or that lack a step MUST be rejected without changing piece positions or the current turn. On acceptance onto a non-center playable cell the server MUST update the piece’s synchronized row and column, decrement steps by 1, and **MUST NOT** advance the turn. On acceptance onto a center cell the server MUST finish the piece per `game/finish` (piece leaves board occupancy), decrement steps by 1, and **MUST NOT** advance the turn solely because of that move. A piece already standing on a removed task cell MAY leave that cell onto a legal neighbor. Player-initiated end-turn and auto end-turn / timeout rules of this capability advance the turn without requiring a move.
 
-#### Scenario [SC-MOVE-04]: Legal orthogonal step updates position and turn
+#### Scenario [SC-MOVE-04]: Legal orthogonal step updates position without advancing turn
 
 - **GIVEN** the room phase is `playing`, it is a seated non-finished non-time-expired player’s turn with steps ≥ 1, and one of that player’s unfinished pieces has a free orthogonal neighbor playable non-center cell
 - **WHEN** that player submits a move for that piece to that neighbor cell

@@ -77,7 +77,7 @@ OpenSpec: [`openspec/config.yaml`](../openspec/config.yaml); артефакты 
 | [`work-with-localization`](skills/client/work-with-localization/SKILL.md) | vue-i18n boot; `game.say` / ready / leave / finish / timer+steps end / steps/peeks / endTurn / peek / solo-peeks∞ keys |
 | [`work-with-lobby`](skills/client/work-with-lobby/SKILL.md) | Live LobbyRoom subscribe, create-with-maxSeats modal (no Play shortcut), quiet resubscribe |
 | [`work-with-rooms`](skills/client/work-with-rooms/SKILL.md) | Room lifecycle, tourist reconnect token, consented leave (confirm is page-local) |
-| [`work-with-game-board`](skills/client/work-with-game-board/SKILL.md) | Board + presence rows (top/bottom) + dual rings + own steps/peeks + end-turn + peek eye/modals + holes not landable + corner affordances + bubbles toward board + place/timer-vs-steps/solo-peeks∞ modals + strip + move/ready/say |
+| [`work-with-game-board`](skills/client/work-with-game-board/SKILL.md) | Board + presence rows (top/bottom) + dual rings + own steps/peeks (+N for multi +1/+1 / solo become-current +1) + end-turn + peek eye/modals + holes not landable + corner affordances + bubbles toward board + place/timer-vs-steps/solo-peeks∞ modals + strip + move/ready/say |
 | [`work-with-env-deploy`](skills/client/work-with-env-deploy/SKILL.md) | `VITE_*`, hash router, GitHub Pages |
 
 #### Server-wide skills (`.agents/skills/server/`)
@@ -92,11 +92,11 @@ OpenSpec: [`openspec/config.yaml`](../openspec/config.yaml); артефакты 
 | [`server-work-with-auth`](skills/server/server-work-with-auth/SKILL.md) | `@colyseus/auth`, Google OAuth `addProvider`, JWT `onAuth`, userdata |
 | [`server-work-with-errors`](skills/server/server-work-with-errors/SKILL.md) | Auth/game failures, HTTP health, client-facing errors |
 | [`server-work-with-structure`](skills/server/server-work-with-structure/SKILL.md) | rooms / schema / db / config / app.config placement |
-| [`server-work-with-test`](skills/server/server-work-with-test/SKILL.md) | mocha + `@colyseus/testing` (SC-PIECE + SC-START + SC-MOVE peeks∞/step-loss/holes + SC-BOARD + SC-FINISH + SC-SAY + lobby + `GET|POST /api/theme`) |
+| [`server-work-with-test`](skills/server/server-work-with-test/SKILL.md) | mocha + `@colyseus/testing` (SC-PIECE + SC-START + SC-MOVE peeks∞/solo become-current +1 / step-loss/holes + SC-BOARD + SC-FINISH + SC-SAY + lobby + `GET|POST /api/theme`) |
 | [`work-with-rooms`](skills/server/work-with-rooms/SKILL.md) | Room lifecycle (`onDrop`/`onReconnect`/`onDispose` clearTurnDeadline), registration, maxSeats / waiting-only seating / phase / seats |
 | [`work-with-schema`](skills/server/work-with-schema/SKILL.md) | `@colyseus/schema` sync (`phase` / `maxSeats` / countdown + `seats` + connectivity/`ready`/`finishPlace`/`timeExpired` + piece `finished` + turn fields + `removedTaskKeys` not landable) |
-| [`work-with-messages`](skills/server/work-with-messages/SKILL.md) | Room `onMessage('move'|'peek'|'peekAnswer'|'endTurn'|'ready'|'say')` + private `budgets`/`peekOpen` (move no advance; peeks∞; holes reject land) |
-| [`work-with-game`](skills/server/work-with-game/SKILL.md) | Waiting-only seating + deferred pieces + start/ready/countdown + reconnect + private steps/peeks∞ + multi peek + step-loss + holes not landable + turn deadlines + center finish + `touristMove.ts`; room `tourist` |
+| [`work-with-messages`](skills/server/work-with-messages/SKILL.md) | Room `onMessage('move'|'peek'|'peekAnswer'|'endTurn'|'ready'|'say')` + private `budgets`/`peekOpen` (move no advance; grant multi +1/+1 / solo become-current +1; peeks∞; holes reject land) |
+| [`work-with-game`](skills/server/work-with-game/SKILL.md) | Waiting-only seating + deferred pieces + start/ready/countdown + reconnect + private steps/peeks∞ + become-current grant (multi +1/+1; solo +1 step; already-current→solo no re-grant) + multi peek + step-loss + holes not landable + turn deadlines + center finish + `touristMove.ts`; room `tourist` |
 | [`work-with-routes`](skills/server/work-with-routes/SKILL.md) | HTTP `createEndpoint` / thin routes (incl. `GET|POST /api/theme`) |
 | [`work-with-middleware`](skills/server/work-with-middleware/SKILL.md) | CORS, `/health`, monitor/playground |
 | [`work-with-config`](skills/server/work-with-config/SKILL.md) | env, secrets, OAuth `config/auth`, `defineServer` |

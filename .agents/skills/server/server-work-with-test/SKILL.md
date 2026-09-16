@@ -4,12 +4,13 @@ description: >-
   Use when planning or writing mocha + @colyseus/testing tests for
   happy-tourist-server: room connect with JWT, onAuth failures, waiting-only
   seating / deferred pieces until playing / reconnect grace (SC-PIECE), move +
-  steps/peeks / peek / endTurn / removed tiles (SC-MOVE-33… / SC-BOARD) + turn
-  deadlines (setTurnBudgetsForTests), center finish / finishPlace (SC-FINISH),
-  preset say (SC-SAY), schema sync assertions, GET /rooms listing, or preference
-  HTTP (GET/POST /api/theme). Core workflow: test plan (mocks/verify) → write
-  test/*.test.ts → run npm test from server package root and fix failures. Do
-  not invent Jest/babel patterns.
+  steps/peeks / peek / endTurn / removed tiles (SC-MOVE-33…50 / SC-BOARD) +
+  become-current grants (multi +1/+1; solo +1 step; already-current→solo no
+  re-grant) + turn deadlines (setTurnBudgetsForTests), center finish /
+  finishPlace (SC-FINISH), preset say (SC-SAY), schema sync assertions, GET
+  /rooms listing, or preference HTTP (GET/POST /api/theme). Core workflow: test
+  plan (mocks/verify) → write test/*.test.ts → run npm test from server package
+  root and fix failures. Do not invent Jest/babel patterns.
 trigger: slash
 ---
 
@@ -120,7 +121,8 @@ Use these categories only when the SUT has relevant behavior:
   (first seated holds turn; join-order rotation; legal orthogonal/diagonal;
   occupied/non-playable reject; out-of-turn / spectator / pre-playing / finished /
   time-expired / no-steps reject; **successful `move` does not advance turn**;
-  `peek`/`peekAnswer`/`endTurn`; private `budgets`/`peekOpen`; grant +1/+1;
+  `peek`/`peekAnswer`/`endTurn`; private `budgets`/`peekOpen`; grant multi +1/+1 /
+  solo become-current +1 step (already-current→solo no re-grant — SC-MOVE-40/50);
   solo peeks∞ / finite steps; auto-end (keep turn when peeks∧live `*`); timeout force incorrect KEEP open peek; permanent leave
   advances; offline grace keeps turn for non-finished; deadline keeps ticking;
   multi 60s auto-pass; solo 300s → `timeExpired`; solo step-loss → `timeExpired`). Also SC-BOARD-07… (reward bag,
@@ -187,7 +189,7 @@ Verify move / turn / timer / budgets (SC-MOVE + SC-BOARD):
   spectator/pre-playing/finished/time-expired/no-steps: unchanged
 - `peek` → private `peekOpen`; `peekAnswer` Correct → +reward steps + `"r,c"` in
   `removedTaskKeys` (**not landable**); Incorrect KEEP tile + reward; multi peeks while peeks remain;
-  solo peeks∞ / finite steps; step-loss without live `*` → `timeExpired`
+  solo peeks∞ / finite steps; become-current into solo → +1 step; already-current→solo carries steps; step-loss without live `*` → `timeExpired`
 - Permanent leave of current advances turn; offline grace does not (non-finished);
   turnUntil keeps ticking; open peek → force incorrect KEEP on timeout/leave/endTurn
 - ≥2 eligible: `turnBudgetSeconds===60`; timeout → advance without move; solo:
@@ -274,10 +276,10 @@ seat-flat `side`/`row`/`col` model. Grace-timeout / countdown cases may need `th
 
 Canonical coverage: `test/MyRoom.test.ts` (SC-MOVE-*) + pure `test/touristMove.test.ts`.
 
-- First seated → `currentTurnSessionId`; join-order rotation after legal move (skip `finishPlace > 0`); solo non-finished wraps to self.
-- Legal orthogonal/diagonal one-step updates piece `row`/`col` and advances turn — only when `phase === 'playing'` and seat not finished (use `forcePlaying` to skip countdown in isolation tests).
-- Occupied / non-playable / out-of-turn / spectator / pre-playing / finished-seat → no state change.
-- Permanent leave of current advances turn; `onDrop` grace does not change turn (non-finished).
+- First seated → `currentTurnSessionId`; rotation only via `endTurn` / auto-end / timeout / finish-advance / leave-of-current (skip `finishPlace > 0` / `timeExpired`); solo non-finished stays current.
+- Legal orthogonal/diagonal one-step updates piece `row`/`col` and spends 1 step — **does not** advance turn (SC-MOVE-35); only when `phase === 'playing'` + current + steps > 0 + seat eligible (use `forcePlaying` to skip countdown in isolation tests).
+- Occupied / non-playable / out-of-turn / spectator / pre-playing / finished-seat / no-steps → no state change.
+- Permanent leave of current → `applyTurnGrant` on next (multi +1/+1; solo become-current +1 step — SC-MOVE-50); already-current→solo carries steps (no re-grant — SC-MOVE-40); `onDrop` grace does not change turn (non-finished).
 - Pure module tests cover playable set, Chebyshev, occupancy (ignores finished) without room I/O.
 
 Server is authoritative; never assert by trusting a client-only board copy.
