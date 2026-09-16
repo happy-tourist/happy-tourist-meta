@@ -2,9 +2,9 @@
 name: server-work-with-test
 description: >-
   Use when planning or writing mocha + @colyseus/testing tests for
-  happy-tourist-server: room connect with JWT, onAuth failures, seating /
-  deferred pieces until playing / reconnect grace (SC-PIECE), move + turn
-  deadlines (SC-MOVE; setTurnBudgetsForTests), center finish / finishPlace
+  happy-tourist-server: room connect with JWT, onAuth failures, waiting-only
+  seating / deferred pieces until playing / reconnect grace (SC-PIECE), move +
+  turn deadlines (SC-MOVE; setTurnBudgetsForTests), center finish / finishPlace
   (SC-FINISH), preset say (SC-SAY), schema sync assertions, GET /rooms
   listing, or preference HTTP (GET/POST /api/theme). Core workflow: test
   plan (mocks/verify) → write test/*.test.ts → run npm test from server
@@ -18,10 +18,10 @@ Use this skill to plan and write integration-style tests for the Colyseus
 server (`happy-tourist-server`). Start with a test plan, then implement tests
 from that plan.
 
-**Paths:** this skill currently lives in **this server repo** at
-`.agents/skills/server/` (temporary; later move to **happy-tourist-meta**).
-Runtime `src/…` and `test/…` paths are relative to **this repository root**.
-Sibling client: `../happy-tourist.github.io`.
+**Paths:** this skill lives in **happy-tourist-meta** at
+`.agents/skills/server/server-work-with-test/`. Runtime `src/…` and `test/…`
+paths are relative to the **happy-tourist-server** sibling root
+(`../happy-tourist-server` from meta). Sibling client: `../happy-tourist.github.io`.
 
 Stack: **mocha**, **tsx** (`-r tsx`), **`@colyseus/testing`**
 (`ColyseusTestServer`, `boot`), **Node `assert`**, **TypeScript** ESM
@@ -108,10 +108,11 @@ Use these categories only when the SUT has relevant behavior:
   `{ side, row, col, finished }` — **empty until playing** + `connected` /
   `reconnectUntil` / `ready` / `finishPlace` / `timeExpired`),
   `currentTurnSessionId`, `turnUntil`, `turnBudgetSeconds`, and
-  `nextFinishPlace`. Assert deferred pieces then materialize / free start cells /
-  leave-pool reopen as in SC-PIECE-01…08 / SC-PIECE-19 (`test/MyRoom.test.ts`).
-  Also cover reconnect grace SC-PIECE-11…16 and start capacity SC-START-*
-  (maxSeats create, ready → countdown → playing; move gated on playing).
+  `nextFinishPlace`. Assert deferred pieces then materialize / free start cells;
+  leave reopens seating **only in waiting**; join in countdown/playing is
+  spectator (SC-PIECE-01…08 / SC-PIECE-19 in `test/MyRoom.test.ts`). Also cover
+  reconnect grace SC-PIECE-11…16 and start capacity SC-START-* (maxSeats create,
+  ready → countdown → playing; move gated on playing).
 - Messages / turn / timer: cover SC-MOVE-* in `test/MyRoom.test.ts` (first seated
   holds turn; join-order rotation; legal orthogonal/diagonal; occupied/non-playable
   reject; out-of-turn / spectator / pre-playing / finished / time-expired reject;
@@ -123,7 +124,7 @@ Use these categories only when the SUT has relevant behavior:
   finished occupancy / `finished` reject reason).
 - Finish: cover SC-FINISH-* (center land → `piece.finished`; 4th finish →
   `finishPlace = nextFinishPlace++`; turn skips finished / time-expired; all
-  finished clears turn until mid-join restores eligible; finished may still `say`).
+  finished clears turn; join in playing is spectator (no mid-join seat); finished may still `say`).
 - Preset say / ready: cover SC-SAY-* and ready-broadcast cases (known preset
   broadcast; `ready` message → say preset `ready` bypassing live cap; raw say
   `ready` rejected; non-whitelist / spectator / offline grace silent reject;
@@ -154,8 +155,7 @@ Verify seating / pieces (SC-PIECE):
 - First join (waiting): seat has touristId 1…4 and **no pieces** until playing
 - After enter playing / `forcePlaying`: exactly four pieces on N/E/S/W start cells
 - Two seats: unique touristId; no shared (row,col) among any pieces after materialize
-- Fill maxSeats → further joiner is spectator; leave while under maxSeats reopens seat (any phase)
-- Mid-game free seat (SC-PIECE-19): join takes seat while phase playing (pieces assigned immediately)
+- Fill maxSeats → further joiner is spectator; leave while under maxSeats reopens seat **only in waiting**; join in countdown/playing is spectator (SC-PIECE-19)
 
 Verify start / capacity (SC-START):
 - createRoom("tourist", { maxSeats: 2|3|4 }) → state + metadata.maxSeats; invalid → 2
@@ -168,7 +168,7 @@ Verify reconnect grace (SC-PIECE-11…16):
 - Unexpected drop (client.reconnection.enabled=false; leave(false)): seat held;
   connected=false; reconnectUntil ≈ now+RECONNECT_GRACE_SECONDS*1000
 - reconnect(token) within grace: same sessionId/touristId/pieces; connected=true; reconnectUntil=0
-- Grace timeout: seat removed; kind/cells reusable while under maxSeats
+- Grace timeout: seat removed; kind/cells reusable; subsequent seat only while waiting
 - Last seated permanent leave closes room even with spectators
 - Observer sees connectivity fields sync (SC-PIECE-16)
 
@@ -183,7 +183,7 @@ Verify finish (SC-FINISH):
 - Legal move onto center → `piece.finished=true`; finished piece ignored for occupancy
 - Seat’s 4th finished piece → `finishPlace = nextFinishPlace` then increment; seat stays seated
 - Finished seat cannot `move`; may still `say`; turn never assigned to `finishPlace > 0`
-- When every remaining seat is finished, `currentTurnSessionId === ""`; mid-join eligible seat restores turn
+- When every remaining seat is finished, `currentTurnSessionId === ""`; join in playing stays spectator (no mid-join seat)
 
 Verify preset say (SC-SAY) + ready:
 - Known `presetId` hello|luck → all clients get `say` `{ sessionId, presetId, at }`
@@ -247,7 +247,7 @@ Canonical coverage lives in `test/MyRoom.test.ts`:
 
 - First join → exactly four pieces on sides N/E/S/W on that side’s start cells; `connected=true`, `reconnectUntil=0`, `ready=false`.
 - Unique `touristId` among seats; no shared cell among any pieces in the room.
-- Fill `maxSeats` → further joiners are spectators; leave while under maxSeats reopens a seat (any phase); mid-game free seat (SC-PIECE-19).
+- Fill `maxSeats` → further joiners are spectators; leave while under maxSeats reopens a seat **only in waiting**; join in countdown/playing is spectator (SC-PIECE-19); leave/grace in playing does not reopen (SC-PIECE-08/14/21).
 - Start: create `{ maxSeats }`; full table or all-ready underfilled → countdown → playing (SC-START-*).
 - Unexpected drop → hold seat for `RECONNECT_GRACE_SECONDS` (SC-PIECE-11…14); `reconnect(token)` restores online; grace timeout removes; empty seated → dispose with spectators (SC-PIECE-15); connectivity sync (SC-PIECE-16).
 
@@ -274,7 +274,7 @@ Canonical coverage: `test/MyRoom.test.ts` (SC-FINISH-*) + finished cases in `tes
 - Center land → `piece.finished=true`; finished pieces do not occupy cells.
 - 4th finished piece on a seat → `finishPlace = nextFinishPlace++`; seat remains seated.
 - Finished seat rejects `move`; may still `say`; never holds `currentTurnSessionId`.
-- All remaining seats finished → `currentTurnSessionId === ""`; mid-join eligible seat restores turn.
+- All remaining seats finished → `currentTurnSessionId === ""`; join in playing stays spectator (SC-FINISH-07 / SC-MOVE-19).
 
 ### Preset say (SC-SAY) + ready
 

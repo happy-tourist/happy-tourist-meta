@@ -2,35 +2,48 @@
 
 Сейчас «чей ход» на Game — статичная синяя обводка presence, а время хода не ограничено: партия может зависать на AFK. У reconnect уже есть круговой countdown; нужен такой же понятный таймер хода, чтобы оба дедлайна были видны сразу и UI не скакал при появлении колец. До старта фигурки на доске лишние — рассадка без pieces до `playing`.
 
+После внедрения dual rings presence всё ещё вокруг доски (left/right gutters): на мобилке доска сужается по ширине/высоте, layout прыгает, avatar мелкий, affordances и say-bubbles привязаны к старым слотам. Нужна верхняя полоса соперников, full-width доска и согласованный chrome маркеров.
+
+Mid-game / mid-countdown подсадка ломает «закрытый стол» и solo 5:00 — новые seats только пока фаза `waiting`.
+
 ## What Changes
 
 - Авторитетный таймер хода **60 с** в фазе `playing`: по истечении ход переходит следующему без хода фигурой; тикает и во время reconnect grace текущего.
 - Когда остаётся один non-finished seated (остальные финишировали или вышли) — **5 мин** красный бюджет; по истечении — lock ходов + модалка «не успели довести туристов»; комната живёт, пока есть seats.
 - Presence: обводка хода убирается; снаружи синий (или красный solo) ring, внутри warning reconnect; место под кольца всегда зарезервировано.
-- Presence avatar: tourist PNG **всегда** виден на occupied marker (как до dual rings) — не прятать в слоте `q-circular-progress` без `show-value` и не вкладывать progress в progress.
-- Pieces появляются только при переходе в `playing` (в `waiting`/`countdown` — seat без фигур на доске); join уже в `playing` — сразу pieces.
+- Presence avatar: tourist PNG **всегда** виден на occupied marker — не прятать в слоте `q-circular-progress` без `show-value` и не вкладывать progress в progress.
+- Pieces появляются только при переходе в `playing` (в `waiting` — seat без фигур; на materialize — всем сидящим).
+- **Seating lock:** новый seat только в фазе `waiting` при `seats < maxSeats`. С начала `countdown` и во всём `playing` join → spectator (reconnect существующего seat без изменений). Leave после countdown/playing **не** открывает стол для новых seats.
+- **Presence layout:** у seated — свой маркер снизу; все соперники одной полосой сверху (L→R по join order); у зрителя — все occupied markers одной полосой сверху; без left/right колонок вокруг доски.
+- **Marker chrome:** avatar по размеру как strip-турист; turn/reconnect rings вокруг аватара; finish badge top-left у всех; ready affordance top-left только у себя; say affordance top-right только у себя.
+- **Say bubbles:** всегда в сторону доски; зазор между маркерами достаточный, чтобы bubbles не перекрывались.
+- **Board tile chrome:** gap **2px**, corner radius **2px**; full-width board на узком viewport.
 
 ## Scope
 
 - **Пакеты:** client + server (согласованный контракт room `tourist`).
 - **Capability ID:**
-  - `game/move` — дедлайн хода, авто-pass 60 с, solo 5 мин, time-expired lock (reject move), клиентский clear selection;
-  - `game/presence` — turn/reconnect rings, reserved chrome, убрать обводку текущего хода;
-  - `game/pieces` — seat без pieces до `playing`; spawn при входе в `playing`;
-  - `game/leave` — time-expired seat выходит без confirm (как finished);
-  - `game/start` — при переходе в `playing` у уже сидящих появляются pieces (связь с pieces).
-- **Client UX:** Game (presence rings, модалка timeout, board/strip до старта без фигур, leave).
-- **Server:** room `tourist` — synced turn deadline / solo budget / time-expired; clock → advanceTurn или lock; spawn pieces на playing.
+  - `game/move` — дедлайн хода; solo 5 мин; time-expired; turn order без mid-game append seats;
+  - `game/presence` — rings; row layout; avatar/affordance chrome;
+  - `game/pieces` — deferred pieces; **seating только в `waiting`**; leave/grace не reopen после countdown/playing;
+  - `game/leave` — time-expired без confirm;
+  - `game/start` — materialize на `playing`; countdown закрывает рассадку;
+  - `game/finish` — finished seats + seating lock (нет mid-game seat после leave в playing);
+  - `game/say` — bubbles к доске; say affordance top-right;
+  - `game/board` — gap/radius 2px; full-width.
+- **Client UX:** Game layout/chrome/timeout/leave.
+- **Server:** timer/pieces + `onJoin` seating gate по phase.
 
 ## Out of scope
 
-- Авто-kick / dispose комнаты по истечении solo-таймера (только lock; dispose при seats = 0).
-- Присвоение finish place time-expired игроку.
-- Смена длительности reconnect grace (остаётся 30 с).
-- Pass-кнопка для игрока; авто-ход фигуры по timeout.
-- Отдельная фаза room `finished` / lobby status под timeout.
+- Авто-kick / dispose по solo-timeout (только lock; dispose при seats = 0).
+- Finish place для time-expired.
+- Смена reconnect grace (30 с).
+- Pass-кнопка; авто-ход по timeout.
+- Отдельная фаза `finished` / lobby status под timeout.
 - Новые say-пресеты под timeout.
-- Таблица рекордов / история партий вне комнаты.
+- Sticky END-latch сверх phase gate (все finished / solo started) — отложено; сейчас достаточно `phase !== waiting`.
+- Таблица рекордов; смена maxSeats.
 
 ## Capabilities
 
@@ -40,22 +53,26 @@
 
 ### Modified Capabilities
 
-- `game/move`: authoritative turn timer; 60 с → pass; solo 5 мин → lock + модалка; moves rejected when time-expired.
-- `game/presence`: dual circular countdowns (turn + reconnect); reserved marker size; remove static turn outline; tourist avatar always visible on occupied markers.
-- `game/pieces`: no board pieces until `playing`; spawn on phase transition; mid-`playing` join unchanged (seat + pieces).
-- `game/leave`: no leave confirm for time-expired seated player.
-- `game/start`: entering `playing` materializes pieces for seats that waited without them.
+- `game/move`: turn timer; solo budget; time-expired; no mid-playing seat append to turn order.
+- `game/presence`: dual rings; row layout; avatar≈strip; affordance corners.
+- `game/pieces`: deferred pieces until `playing`; **new seats only while `waiting`**; leave/grace after countdown/playing do not reopen seating.
+- `game/leave`: no leave confirm for time-expired.
+- `game/start`: materialize on `playing`; countdown implies seating closed for newcomers.
+- `game/finish`: finished occupancy; no mid-game seat after leave once past waiting.
+- `game/say`: bubbles toward board; say affordance top-right.
+- `game/board`: gap/radius 2px; edge-to-edge board width.
 
 ## Impact
 
-- **Server:** synced turn deadline / solo vs normal budget / time-expired flag; room clock; piece spawn deferred to `playing`; mocha на timeout и deferred pieces.
-- **Client:** Game presence chrome (sibling rings + sibling avatar img), i18n модалки, зеркало synced deadlines в game store; board/strip пустые до pieces; align skill ловит Quasar slot/`show-value` и nested progress.
-- **Контракт:** room `tourist` через synced state (+ clock side-effects); без новых HTTP routes.
-- **Docs/skills:** канон в OpenSpec meta; runtime в siblings per `docs/projects-map.md`.
+- **Server:** turn deadline; deferred pieces; `onJoin` rejects new seats when phase is `countdown` or `playing`; mocha seating + timer.
+- **Client:** presence row/chrome; board gap/radius; timeout modal; skills/docs.
+- **Контракт:** room `tourist` synced state; без новых HTTP/say messages.
+- **Docs/skills:** OpenSpec meta + sibling AGENTS per `docs/projects-map.md`.
 
 ## References
 
-- Explore-решения: D1 pass; D2 tick during grace; D3 server deadline; D4 pieces after start; D5 lock + clear selection; D6 room like finish; D7 fresh 5:00; Q1 only `playing`; Q3–Q5 solo red / modal / normal finish.
-- Main specs: `openspec/specs/game/{move,presence,pieces,leave,start,finish,board}/spec.md`.
-- Sibling AGENTS: `../happy-tourist.github.io/AGENTS.md`, `../happy-tourist-server/AGENTS.md`.
-- Карта путей: `docs/projects-map.md`.
+- Explore (timer): D1–D7 / Q1; solo red / modal.
+- Explore (layout): opponents top; self bottom; spectator all-top; avatar≈strip; corners; bubbles toward board; gap/radius 2.
+- Explore (seating): S1=B — no new seats after start; S2 — no new seats once countdown started; reconnect OK.
+- Main specs: `openspec/specs/game/{move,presence,pieces,leave,start,finish,board,say}/spec.md`.
+- Sibling AGENTS; `docs/projects-map.md`.

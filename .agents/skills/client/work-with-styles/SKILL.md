@@ -4,10 +4,10 @@ description: >-
   Use when adding, changing, reviewing, or debugging Vue 3 / Quasar 2 styles in
   the happy-tourist client: Quasar Dark plugin + theme boot/store, App.vue
   header toggle, guest localStorage vs registered GET/POST /api/theme (restore
-  ≠ JWT-only), muted chrome
-  text, quasar.variables.scss tokens, app.scss, page scoped CSS (especially
-  GamePage board/cell/piece), Quasar utility classes, Material Icons / Roboto,
-  or color props on Quasar components.
+  ≠ JWT-only), muted chrome text, quasar.variables.scss tokens, app.scss, page
+  scoped CSS (especially GamePage board gap/radius 2 + presence row/ring/avatar),
+  Quasar utility classes, Material Icons / Roboto, or color props on Quasar
+  components.
 ---
 
 # Work With Styles
@@ -168,7 +168,7 @@ Board UI is custom CSS Grid (not Quasar widgets). Keep selectors local and class
 
 | Class | Role |
 |-------|------|
-| `.game-header` | Cap header width to board max (`calc(10 * 60px + 9 * 6px)`) |
+| `.game-header` | Cap header width to board max (`calc(10 * 60px + 9 * 2px)`) |
 | `.tourist-board` | 10×10 CSS Grid; `--cell` / `--gap` / `--radius`; `aspect-ratio: 1`; transparent holes |
 | `.tile` | Rounded tile (`border-radius: var(--radius)`); `pointer-events` only when interactive |
 | `.tile-start` | Green start tile (`#4caf50`) |
@@ -176,19 +176,22 @@ Board UI is custom CSS Grid (not Quasar widgets). Keep selectors local and class
 | `.tile-center` | Yellow center (`#ffeb3b`); one element with `span 2` / `span 2` |
 | `.tile--selected` / `.tile--target` | Local white / red move chrome (current-turn client only) |
 | `.piece` | Absolute `left`/`top` from `--pcol`/`--prow` + `--cell`; ~250ms transition |
-| `.presence-marker` | Occupied seat chrome; reserved **52×52** `position: relative` slot for dual rings + avatar (stable layout — SC-PRESENCE-11) |
-| `.presence-progress--outer` | Turn ring (52px); `position: absolute; inset: 0; z-index: 0`; `pointer-events: none` |
-| `.presence-progress--inner` | Reconnect ring (40px); absolute centered; `z-index: 1`; `pointer-events: none` |
-| `.presence-avatar` | **Sibling** tourist PNG (~28px) on top of rings — `z-index: 2`; `pointer-events: none`; no static `--turn` box-shadow; do **not** rely on progress default slot without `show-value` (SC-PRESENCE-12) |
+| `.presence-marker` | Occupied seat chrome; reserved **96×96** `position: relative` slot for dual rings + 72px avatar (stable layout — SC-PRESENCE-11/13) |
+| `.presence-progress--outer` | Turn ring (96px); `position: absolute; inset: 0; z-index: 0`; `pointer-events: none` |
+| `.presence-progress--inner` | Reconnect ring (84px); absolute centered; `z-index: 1`; `pointer-events: none` |
+| `.presence-avatar` | **Sibling** tourist PNG (**72px** = strip) on top of rings — `z-index: 2`; `pointer-events: none`; no static `--turn` box-shadow; do **not** rely on progress default slot without `show-value` (SC-PRESENCE-12) |
+| `.presence-frame` / `.presence-row` | Column flex: top row → board → bottom row; no left/right gutters; row `gap: 48px` + optional `overflow-x: auto` |
+| `.presence-place-badge` / `.ready-affordance` | Top-left corners (SC-PRESENCE-14) |
+| `.say-affordance` | Top-right on own marker (SC-SAY-07) |
 | `.say-bubble` / `.say-picker` | Presence comic bubbles + picker; chrome follows Dark via `body.body--dark` overrides (not tile fills) |
-| `.say-affordance` | Small circular control on own online marker |
+| `.say-bubbles--top` / `--bottom` | Toward board: below top-row avatars / above bottom self; newer closer to avatar |
 
-Current-turn interactivity, dual turn/reconnect rings, say bubbles/picker, and travel animation live in `work-with-game-board` — do not reintroduce draughts `.cell` / selection classes or a static blue turn outline.
+Current-turn interactivity, dual turn/reconnect rings, presence **row** layout (top opponents / bottom self; no side columns), corner affordances, say bubbles toward board, and travel animation live in `work-with-game-board` — do not reintroduce draughts `.cell` / selection classes, left/right presence slots, or a static blue turn outline.
 
 When editing board visuals:
 
 - Prefer adjusting existing tourist classes over new global CSS.
-- Preserve max tile 60px, gap 6, radius 12; holes show page background.
+- Preserve max tile 60px, gap 2, radius 2; holes show page background.
 - Do not replace the board with Quasar grid components unless explicitly asked.
 - Do **not** retune tile fills for app Dark mode — chrome theme must not
   change the tourist board look.

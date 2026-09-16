@@ -2,14 +2,18 @@
 
 | Scenario ID | Coverage |
 |-------------|----------|
+| SC-PRESENCE-02 | covered (client GamePage row layout — self bottom, opponents top) |
+| SC-PRESENCE-03 | covered (client GamePage spectator all-top) |
 | SC-PRESENCE-04 | covered-by-reuse (client Game presence chrome — dual with turn) |
 | SC-PRESENCE-08 | covered (client GamePage turn ring) |
 | SC-PRESENCE-09 | covered (client GamePage solo red ring) |
 | SC-PRESENCE-10 | covered (client GamePage dual sibling rings) |
-| SC-PRESENCE-11 | covered (client reserved 52px outer chrome) |
+| SC-PRESENCE-11 | covered (client reserved outer chrome 96px around 72px avatar) |
 | SC-PRESENCE-12 | covered (client sibling avatar img + rings) |
+| SC-PRESENCE-13 | covered (client avatar size matches strip tourist) |
+| SC-PRESENCE-14 | covered (client finish/ready/say corner affordances) |
 
-Related: turn deadlines — `game/move`; reconnect grace — `game/pieces`.
+Related: turn deadlines — `game/move`; reconnect grace — `game/pieces`; bubbles — `game/say`; board width — `game/board`.
 
 ## ADDED Requirements
 
@@ -57,14 +61,39 @@ When a seat simultaneously has an active turn deadline ring and an offline recon
 
 ### Requirement: Reserved presence marker chrome size
 
-Every occupied presence marker on the Game screen SHALL reserve stable space for the outer turn-ring chrome whether or not a turn or reconnect countdown is currently active, so that showing or hiding active countdown progress does not change the marker’s layout size or shift neighboring UI.
+Every occupied presence marker on the Game screen SHALL reserve stable space for the outer turn-ring chrome whether or not a turn or reconnect countdown is currently active, so that showing or hiding active countdown progress does not change the marker’s layout size or shift the board or neighboring markers.
 
 #### Scenario [SC-PRESENCE-11]: Marker size stable when countdown appears
 
 - **GIVEN** a connected seated player’s presence marker without an active reconnect countdown
 - **WHEN** that seat becomes current turn and the turn countdown becomes active (or later becomes offline with reconnect countdown)
 - **THEN** the marker’s reserved layout size does not jump
-- **AND** surrounding presence layout does not reflow solely because the countdown appeared
+- **AND** the board layout does not reflow solely because the countdown appeared
+- **AND** neighboring presence markers do not shift solely because the countdown appeared
+
+### Requirement: Presence avatar matches strip tourist size
+
+The tourist kind image inside every occupied presence marker SHALL use the same display size as one tourist image in the seated player’s personal strip on Game. Turn and reconnect rings MUST surround that image (outer ring larger than the avatar).
+
+#### Scenario [SC-PRESENCE-13]: Presence avatar matches strip image size
+
+- **GIVEN** the user is seated with a personal tourist strip visible and at least one occupied presence marker on Game
+- **WHEN** any client compares the presence avatar image box to one strip tourist image box
+- **THEN** those image boxes match in width and height
+- **AND** any active countdown rings appear around the presence avatar without shrinking it below that size
+
+### Requirement: Presence affordance and badge corners
+
+When a seat has a synchronized finish place, every client SHALL show the finish place indicator at the **top-left** of that seat’s presence marker. While the local user may send a ready intent from the Game screen, the ready affordance MUST appear at the **top-left** of that user’s own presence marker only. While the local user may send a say intent, the say send affordance MUST appear at the **top-right** of that user’s own presence marker only. Other players’ markers MUST NOT show a say send affordance for the local user. Spectators MUST NOT see a say send affordance.
+
+#### Scenario [SC-PRESENCE-14]: Finish, ready, and say corners
+
+- **GIVEN** a seated connected user viewing Game with their own marker and at least one opponent marker that has finish place `1`
+- **WHEN** the presence chrome is shown
+- **THEN** the opponent’s finish place indicator is at the top-left of that opponent marker
+- **AND** if the ready affordance is available for the local user, it is at the top-left of the local user’s marker
+- **AND** the say send affordance is at the top-right of the local user’s marker only
+- **AND** opponent markers do not show a say send affordance for the local user
 
 ## MODIFIED Requirements
 
@@ -80,3 +109,26 @@ While a seat is offline within reconnect grace, its presence marker MUST show a 
 - **AND** the tourist kind image remains visible in the marker
 - **AND** when the seat becomes connected again, the reconnect countdown progress is not shown as active
 - **AND** if that seat also holds an active turn deadline, the turn countdown remains visible together with the reconnect countdown
+
+### Requirement: Relative layout for seated players
+
+For a seated viewer, that viewer’s own marker MUST appear in a bottom presence row under the board. All other occupied seated players MUST appear in a single top presence row above the board, ordered left-to-right by earlier join time among those opponents. Presence markers MUST NOT be placed in left or right columns beside the board.
+
+#### Scenario [SC-PRESENCE-02]: Seated viewer is always at home position
+
+- **GIVEN** the user is seated and three other seated players exist, ordered by earlier join time among those others
+- **WHEN** the Game presence layout is shown
+- **THEN** the user’s marker is alone in the bottom row under the board
+- **AND** the three opponents appear in one top row above the board left-to-right in join order among those others
+- **AND** no presence marker is laid out in a left or right column beside the board
+
+### Requirement: Spectator presence layout
+
+For a spectator viewer, all occupied seats MUST be laid out in a single top presence row above the board, ordered left-to-right by join order among seated players. Missing seats simply omit markers. Presence markers MUST NOT be placed in left, right, or bottom columns for spectators.
+
+#### Scenario [SC-PRESENCE-03]: Spectator order top, bottom, left, right
+
+- **GIVEN** a tourist room with four seated players in known join order and the user is a spectator
+- **WHEN** the Game presence layout is shown
+- **THEN** all four seated players’ markers appear in one top row above the board left-to-right in that join order
+- **AND** no presence marker is shown in a bottom, left, or right column beside the board

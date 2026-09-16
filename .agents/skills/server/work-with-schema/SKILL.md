@@ -54,7 +54,7 @@ export const Piece = schema(
   "Piece",
 );
 
-/** Seated player: unique kind; pieces empty until playing (or join mid-playing). */
+/** Seated player: unique kind; pieces empty until playing (materialize on enterPlaying). */
 export const Seat = schema(
   {
     touristId: t.uint8(), // 1…4

@@ -12,7 +12,7 @@ Related: deferred pieces — `game/pieces`; turn timers begin in playing — `ga
 
 ### Requirement: Playing transition places deferred pieces
 
-When the five-second start countdown completes and the synchronized phase becomes `playing`, the server MUST materialize pieces for every seated player that still has none, per `game/pieces`, before clients may successfully complete board moves. Seats that joined already during `playing` keep their existing pieces.
+When the five-second start countdown completes and the synchronized phase becomes `playing`, the server MUST materialize pieces for every seated player that still has none, per `game/pieces`, before clients may successfully complete board moves. New seats are not assigned during `countdown` or `playing`, so materialize applies only to seats taken while `waiting`.
 
 #### Scenario [SC-START-13]: Countdown completion spawns pieces then unlocks play
 

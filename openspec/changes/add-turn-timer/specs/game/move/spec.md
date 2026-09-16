@@ -10,6 +10,7 @@
 | SC-MOVE-30 | covered (server mocha) |
 | SC-MOVE-31 | covered (client timeout modal) |
 | SC-MOVE-32 | covered (client isInteractive lock) |
+| SC-MOVE-19 | pending (server mocha — playing join is spectator; turn order unchanged) |
 
 Related: presence rings — `game/presence`; deferred pieces — `game/pieces` / `game/start`; leave without confirm — `game/leave`.
 
@@ -92,6 +93,66 @@ When the five-minute solo budget elapses without that seat finishing all pieces,
 - **AND** further board or strip activations do not submit moves
 
 ## MODIFIED Requirements
+
+### Requirement: Turn order among seated players
+
+As soon as at least one seated player exists in the tourist room, the server SHALL maintain a synchronized current-turn seat among seated players that are eligible to move. A seat with a finish place (`game/finish`) MUST NOT be eligible to hold or receive the current turn while any non-finished seated player remains. Turn order MUST follow join order of seated players (earliest seated first), skipping finished seats. After a successful move by the current player, the turn MUST pass immediately to the next non-finished seated player in that order, wrapping to the earliest non-finished when the end is reached. When only one non-finished seated player remains, that player MUST receive the turn again after their own successful move. New seats are assigned only while phase is `waiting` (`game/pieces`); therefore no seat is appended to the turn order from a join during `countdown` or `playing`. When the seated player whose turn it is permanently leaves (consented leave or reconnect grace timeout), the turn MUST advance immediately to the next remaining non-finished seated player. While a non-finished seated player is offline within reconnect grace, the current turn MUST remain on that seat until they reconnect and move or the seat is removed. While a finished seat is offline within reconnect grace, the current turn MUST NOT remain on that finished seat: the turn MUST advance to the next non-finished seated player if any exist. When every remaining seated player is finished, the server MUST NOT require a move-capable current turn for gameplay. Having a current-turn seat MUST NOT by itself allow moves before start phase `playing` (see authoritative move requirement and `game/start`).
+
+#### Scenario [SC-MOVE-01]: First seated player holds the turn
+
+- **GIVEN** a tourist room with no seated players
+- **WHEN** the first authenticated client joins and receives a seat
+- **THEN** that seat is the current turn
+- **AND** every client in the room observes the synchronized current-turn indicator for that seat
+
+#### Scenario [SC-MOVE-02]: Join order defines the rotation
+
+- **GIVEN** a tourist room with two or more non-finished seated players in known join order and phase `playing`
+- **WHEN** the earliest non-finished seated player completes a successful move
+- **THEN** the current turn becomes the next non-finished seated player in join order
+- **AND** after the last non-finished seated player in that order moves successfully, the turn returns to the earliest non-finished seated player
+
+#### Scenario [SC-MOVE-03]: Solo seated player keeps the turn after moving
+
+- **GIVEN** a tourist room in phase `playing` with exactly one non-finished seated player whose turn it is (other seats may be finished)
+- **WHEN** that player completes a successful move that does not finish their last piece
+- **THEN** the current turn remains that same non-finished seated player
+
+#### Scenario [SC-MOVE-16]: Permanent leave advances the turn
+
+- **GIVEN** a tourist room with at least two seated players and the current turn belongs to one of them
+- **WHEN** that current-turn player permanently leaves (consented leave or grace timeout)
+- **THEN** the current turn advances to the next remaining non-finished seated player in join order
+- **AND** the departed seat is no longer in the turn rotation
+
+#### Scenario [SC-MOVE-17]: Offline grace keeps the turn waiting
+
+- **GIVEN** a non-finished seated player whose turn it is and who disconnects unexpectedly within reconnect grace
+- **WHEN** other clients remain in the room during the grace
+- **THEN** the synchronized current turn stays on that offline non-finished seat
+- **AND** no other seated player becomes current turn solely because of that disconnect
+
+#### Scenario [SC-MOVE-19]: Mid-game seat appends to turn order
+
+- **GIVEN** a tourist room in phase `playing` with two seated players in known turn order
+- **WHEN** a third authenticated client joins
+- **THEN** that client receives no seat
+- **AND** the turn order among the existing two seats remains unchanged
+- **AND** the current turn does not change solely because of that join
+
+#### Scenario [SC-MOVE-21]: Finished seats are skipped in turn rotation
+
+- **GIVEN** a tourist room in phase `playing` with seated players A then B in join order, where A has a finish place and B does not, and it is B’s turn
+- **WHEN** B completes a successful move
+- **THEN** the current turn returns to B (A is skipped)
+- **AND** A never becomes current turn while finished and B remains non-finished
+
+#### Scenario [SC-MOVE-22]: Finished offline seat does not hold the turn
+
+- **GIVEN** a finished seated player would be next in join order and that finished seat is offline within reconnect grace, and at least one non-finished seated player remains
+- **WHEN** the previous non-finished player completes a successful move
+- **THEN** the current turn advances to the next non-finished seated player
+- **AND** the offline finished seat does not hold the current turn
 
 ### Requirement: Authoritative one-step tourist move
 

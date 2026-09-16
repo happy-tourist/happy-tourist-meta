@@ -236,13 +236,13 @@ Runtime facts that often create defects:
 
 Когда diff/ветка трогает `GamePage.vue` board CSS / layout (`tourist-board`, `grid-template-*`, `--tile`, tile chrome) — **отдельно** проверь, что тайлы получают ненулевую высоту на типичном viewport (контейнер с `width: 100%` и **auto** height).
 
-Инвариант (SC-BOARD-02/03 / design D3): сторона тайла ≤ 60px, gap 6, radius 12; на узком экране доска тянется по ширине content area; клетки **квадратные** (высота = ширина трека).
+Инвариант (SC-BOARD-02/03 / design D12): сторона тайла ≤ 60px, gap 2, radius 2; на узком экране доска тянется по ширине content area (без side presence gutters); клетки **квадратные** (высота = ширина трека).
 
 Для `.tourist-board` независимо проверь:
 
 1. **Ось rows** — чем задана высота рядов (`grid-template-rows` / `grid-auto-rows` / явный `height` на `.tile`).
 2. **Резолв `%`** — если размер ряда/тайла зависит от `%` (в т.ч. через `--tile: … calc((100% − …) / 10)`), `%` для **block axis** считается от **высоты** контейнера; при `height: auto` это **0** → все тайлы высотой 0 (невидимое поле).
-3. **Safe patterns** — `aspect-ratio: 1` на доске + `repeat(10, 1fr)` по обеим осям; или ширина от контейнера + `aspect-ratio: 1` на клетке **без** `%`-высоты рядов. Cap max tile 60px через `max-width: calc(10 * 60px + 9 * 6px)` (или эквивалент).
+3. **Safe patterns** — `aspect-ratio: 1` на доске + `repeat(10, 1fr)` по обеим осям; или ширина от контейнера + `aspect-ratio: 1` на клетке **без** `%`-высоты рядов. Cap max tile 60px через `max-width: calc(10 * 60px + 9 * 2px)` (или эквивалент).
 4. **Unsafe patterns** — `grid-template-rows` / `height` тайла из `var(--tile)` / `min(60px, calc((100% − …) / N))`, когда тот же `%` должен работать и для rows при auto-height родителя.
 
 Report hard `[defect]` when Game board CSS deterministically collapses tile/row height to 0 (or equivalent invisible board) on a reachable Game screen. If sizing looks risky but proof is incomplete → **Warning** with the suspected `%` / auto-height edge.
@@ -324,7 +324,7 @@ Report as hard `[defect]` when a reachable enter/subscribe path can miss the fir
 
 Report as hard `[defect]` when a reachable Game/presence state deterministically omits the required avatar (or other mandated chrome) because of missing `show-value`, nested Quasar slots, or overlay stacking. If nesting/slot/`show-value` looks risky but proof is incomplete → **Warning** with the component chain.
 
-**Canonical fix (add-turn-timer / SC-PRESENCE-12):** outer turn `q-circular-progress` (52px, absolute behind) + inner reconnect `q-circular-progress` (40px, absolute centered) + sibling `<img class="presence-avatar">` on top — all three direct children of `.presence-marker`; neither progress wraps the img.
+**Canonical fix (add-turn-timer / SC-PRESENCE-12/13):** outer turn `q-circular-progress` (96px, absolute behind) + inner reconnect `q-circular-progress` (84px, absolute centered) + sibling `<img class="presence-avatar">` (72px, matches strip) on top — all three direct children of `.presence-marker`; neither progress wraps the img.
 
 Report hard `defect` only when a reachable state deterministically causes wrong UI, runtime failure, invalid value, stuck state, unsafe side effect (including request/effect storms **or missed first-sync races** **or nested-slot / overlay hide**), or contract violation.
 

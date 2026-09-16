@@ -92,7 +92,7 @@ Examples:
 
 - `LoginPage` — form UI; calls `useAuthStore()` (`register` / `login` / `loginAnonymously`), then `router.replace`.
 - `LobbyPage` — room list / create / join via `useGameStore()`; navigates to `game` with `roomId`.
-- `GamePage` — unfinished pieces + finish disappear/strip/place modal; dual presence rings (outer turn / inner reconnect) + place badge; timeout modal on `timeExpired`; say on own online marker (`sendSay` / `sayEvents`, incl. finished); ready/countdown UX; header turn text; syncs via `useGameStore()`; `rejoinGame(roomId)` on mount / soft-fail / browser reopen; exit via i18n `game.leave*` — seated ∧ `playing` ∧ `finishPlace === 0` ∧ `!timeExpired` → `q-dialog` confirm, else immediate `leaveGame` → `lobby` (finished / time-expired skip confirm).
+- `GamePage` — unfinished pieces + finish disappear/strip/place modal; presence **rows** (top opponents / bottom self; no side columns) with dual rings (outer turn / inner reconnect) + 72px avatar + place/ready top-left + say top-right; timeout modal on `timeExpired`; say on own online marker (`sendSay` / `sayEvents`, incl. finished); ready/countdown UX; header turn text; syncs via `useGameStore()`; `rejoinGame(roomId)` on mount / soft-fail / browser reopen; exit via i18n `game.leave*` — seated ∧ `playing` ∧ `finishPlace === 0` ∧ `!timeExpired` → `q-dialog` confirm, else immediate `leaveGame` → `lobby` (finished / time-expired skip confirm).
 
 Do not put a second app shell (global layout host) inside a page — `App.vue` already mounts `router-view`.
 

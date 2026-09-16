@@ -5,8 +5,9 @@ description: >-
   the happy-tourist tourist server: MyRoom lifecycle (onAuth / onCreate /
   onJoin / onDrop / onReconnect / onLeave / onDispose), tourist reconnect grace
   vs LobbyRoom fire-and-forget, room registration in app.config (lobby +
-  tourist + enableRealtimeListing), maxSeats / seat connectivity / start phase,
-  JWT room gate, or aligning room name with client TOURIST_ROOM.
+  tourist + enableRealtimeListing), maxSeats / waiting-only seating / deferred
+  pieces / seat connectivity / start phase, JWT room gate, or aligning room
+  name with client TOURIST_ROOM.
 ---
 
 # Work With Rooms
@@ -54,8 +55,8 @@ client create({ maxSeats }) / joinById / joinOrCreate / reconnect('tourist')
         │  (enableRealtimeListing publishes to LobbyRoom subscribers)
         ▼
   onJoin(client, options, auth)
-        │  seat while seats.size < maxSeats (any phase); else spectator
-        │  touristId + kind; pieces deferred until playing (immediate if join mid-playing)
+        │  seat only if phase===waiting && seats.size < maxSeats; else spectator
+        │  touristId + kind; pieces deferred until playing (materialize on enterPlaying)
         │  connected=true; reconnectUntil=0; ready=false; timeExpired=false
         │  maybeStartCountdown (full table → countdown)
         ▼
@@ -68,6 +69,7 @@ client create({ maxSeats }) / joinById / joinOrCreate / reconnect('tourist')
         ▼
   onLeave(client)          ← consented leave, grace timeout, or reconnect denied
         │  delete seat; refreshMetadata; maybeStartCountdown (remaining all-ready)
+        │  seating for subsequent joins only while phase===waiting (D13)
         │  if seats.size===0 → disconnect() (spectators do not hold room)
         ▼
   onDispose()              ← clearTurnDeadline(); room empty / locked shut → lobby `-`
@@ -79,10 +81,10 @@ client create({ maxSeats }) / joinById / joinOrCreate / reconnect('tourist')
 |------|---------|--------|
 | `static onAuth` | `JWT.verify(token)`; return userdata | Trust client-supplied identity without JWT |
 | `onCreate` | `setState`; parse `maxSeats`; `phase=waiting`; `refreshMetadata`; register `move`/`ready`/`say`; do **not** set `maxClients = maxSeats` | Mutate board from HTTP |
-| `onJoin` | Assign seat while under `maxSeats` in any phase; unique `touristId`; pieces only in `playing` (or join mid-playing); online connectivity; `ready=false`; `timeExpired=false`; maybe start countdown when full | Cap the room with `maxClients`; gate seating on legacy `started` alone; invent pieces in waiting |
+| `onJoin` | Assign seat only while `phase === 'waiting'` and under `maxSeats`; unique `touristId`; pieces deferred until `playing`; online connectivity; `ready=false`; `timeExpired=false`; maybe start countdown when full | Cap the room with `maxClients`; seat during `countdown`/`playing`; invent pieces in waiting |
 | `onDrop` | Seated: mark offline + `allowReconnection(client, 30)`; hold seat/pieces; do not cancel countdown; do **not** pause turn deadline | Treat unexpected drop as immediate seat delete; grace for spectators or LobbyRoom |
 | `onReconnect` | Restore seat online (`connected=true`, `reconnectUntil=0`) | Re-assign a new seat / touristId |
-| `onLeave` | Permanent remove seat; seats reopen while under `maxSeats`; refreshMetadata; maybeStartCountdown; if zero seats → `disconnect()` | Leave stale seats; let spectators keep an empty-seated room alive; clear others' `ready` on leave |
+| `onLeave` | Permanent remove seat; subsequent joins get seats only while `phase === 'waiting'`; refreshMetadata; maybeStartCountdown; if zero seats → `disconnect()` | Leave stale seats; let spectators keep an empty-seated room alive; clear others' `ready` on leave; reopen seating in countdown/playing |
 | `onDispose` | `clearTurnDeadline()` + cleanup other timers / logs | Assume clients still connected; leave dangling turn timeouts |
 
 ## Current Room (`MyRoom.ts`)
@@ -108,10 +110,10 @@ export class MyRoom extends Room<{ state: MyRoomState }> {
     this.onMessage("ready", …);
     this.onMessage("say", …);
   }
-  onJoin(client: Client, _options: any, auth: any) { /* seat+kind if under maxSeats; pieces deferred; maybeStartCountdown */ }
+  onJoin(client: Client, _options: any, auth: any) { /* seat+kind only in waiting under maxSeats; pieces deferred; maybeStartCountdown */ }
   onDrop(client: Client, _code?: number) { /* seated: offline + allowReconnection(30); deadline keeps ticking */ }
   onReconnect(client: Client) { /* seat online again */ }
-  onLeave(client: Client, _code?: number) { /* delete seat; empty → disconnect() */ }
+  onLeave(client: Client, _code?: number) { /* delete seat; empty → disconnect(); no seating reopen outside waiting */ }
   onDispose() { this.clearTurnDeadline(); }
 }
 ```
@@ -156,13 +158,13 @@ Align with client Pinia expectations:
 | Concern | Target |
 |---------|--------|
 | Capacity | No `maxClients = maxSeats`; seated ≤ `maxSeats` (2\|3\|4) via seats check; spectators may join |
-| Seats | Unique `touristId` 1…4; pieces deferred until `playing` (four N/E/S/W on free start cells — see `work-with-game`); seat while free slot in **any** phase |
+| Seats | Unique `touristId` 1…4; pieces deferred until `playing` (four N/E/S/W on free start cells — see `work-with-game`); **new seat only while `phase === 'waiting'`** and under maxSeats |
 | Connectivity | `connected` + `reconnectUntil` on Seat (D2); online at assign; `timeExpired` for solo budget lock |
 | Start | `phase` waiting → countdown → playing (+ materialize + turn deadline); full table or all-ready underfilled; legacy `started` mirrors `phase === 'playing'` |
 | Turn timer | Synced `turnUntil` / `turnBudgetSeconds` (60 multi / 300 solo); clear on dispose / no eligible (see `work-with-game`) |
 | Status metadata | `waiting` until `phase === 'playing'`; always publish `maxSeats` + occupied `seats` |
 | Unexpected drop | Hold seat 30 s + `allowReconnection`; sync offline + deadline (SC-PIECE-11…14, 16); does not cancel countdown |
-| Consented leave | Immediate seat remove; free seat reopens while under maxSeats (SC-PIECE-07/08) |
+| Consented leave | Immediate seat remove; free capacity does **not** reopen seating while phase is `countdown`/`playing` (SC-PIECE-07/08) |
 | Empty seated | After permanent remove, `seats.size === 0` → `disconnect()` even with spectators (SC-PIECE-15 / D4) |
 | Authority | Server mutates schema state; client only mirrors seats / presence / phase / renders |
 
@@ -204,7 +206,7 @@ static async onAuth(token: string, _options: any, _context: any) {
 | Keep lifecycle in `MyRoom.ts` | Put match logic in `express(app)` routes |
 | Register `lobby` + `tourist` with `.enableRealtimeListing()` | Reintroduce `my_room` or omit realtime listing |
 | `allowReconnection` only on tourist seated `onDrop` | Add LobbyRoom grace / hold listing subscribers |
-| Assign ≤`maxSeats` via seats check; allow spectator joins | Cap the room with `maxClients = maxSeats`; gate seating only on legacy `started` |
+| Assign ≤`maxSeats` via seats check **only in `waiting`**; allow spectator joins | Cap the room with `maxClients = maxSeats`; seat during `countdown`/`playing`; gate seating only on legacy `started` |
 | Prefer `phase` for start/move gates | Treat fourth-seat auto-`started` as current product |
 | Dispose when last seated leaves (even with spectators) | Let spectators keep an empty-seated match alive |
 | Return userdata from `onAuth` for `onJoin` | Skip JWT verify for "dev convenience" in committed code |

@@ -2,17 +2,18 @@
 name: work-with-game-board
 description: >-
   Use when creating, changing, reviewing, or debugging the tourist board UI in
-  the happy-tourist client — GamePage CSS Grid layout, synced seat pieces
-  overlay, occupied presence circles, preset say bubbles/picker at presence,
-  personal tourist strip, tile kinds (start/task/center), current-turn
-  selection/hints/move submit, or piece travel animation for room tourist.
+  the happy-tourist client — GamePage CSS Grid (gap/radius 2), synced seat pieces
+  overlay, presence rows (top/bottom, no side columns) with dual rings + corner
+  affordances, preset say bubbles toward board, personal tourist strip, tile
+  kinds (start/task/center), current-turn selection/hints/move submit, or piece
+  travel animation for room tourist.
 ---
 
 # Work With Game Board
 
 Use this skill for the **tourist board UI** on Game in the Vue 3 Quasar client (`happy-tourist.github.io`).
 
-Product: настольная игра «Счастливый турист». On the seated client whose turn it is **and** `game.isPlaying` (`phase === 'playing'`), the board and strip accept piece selection, local move hints, and move submit via `game.sendMove`. Before playing: no move chrome / submit. Spectators and non-current seated players remain non-interactive for moves. Authority for legality stays on the server (`work-with-game`). Preset say bubbles are separate from turn — any seated+online player may send via `game.sendSay` (server whitelist). Ready-to-start control uses `game.sendReady` beside own say when `canSendReady`.
+Product: настольная игра «Счастливый турист». On the seated client whose turn it is **and** `game.isPlaying` (`phase === 'playing'`), the board and strip accept piece selection, local move hints, and move submit via `game.sendMove`. Before playing: no move chrome / submit. Spectators and non-current seated players remain non-interactive for moves. Authority for legality stays on the server (`work-with-game`). Preset say bubbles are separate from turn — any seated+online player may send via `game.sendSay` (server whitelist). Ready-to-start uses `game.sendReady` on own marker **top-left** when `canSendReady` (say affordance stays **top-right**).
 
 ## Overview
 
@@ -26,8 +27,8 @@ Product: настольная игра «Счастливый турист». On
 | Layout constant | `LAYOUT` string grid in `GamePage.vue` (`.` hole, `1` start, `*` task, `7` center) |
 | Tile build | `buildBoardTiles()` → `div.tile` with `gridColumn` / `gridRow` |
 | Pieces | `unfinishedBoardPieces` (+ short-lived disappearing finishers) → `img.piece`; PNG from `touristId` |
-| Presence | Occupied seats only → `.presence-frame`; offline → `QCircularProgress`; `finishPlace > 0` → place badge |
-| Say (game/say) | Affordance + picker on **own** online marker (incl. finished seats); comic bubbles from `game.sayEvents` |
+| Presence | Occupied seats → top/bottom `.presence-row` (no left/right); dual rings + 72px avatar; finish/ready top-left; say top-right |
+| Say (game/say) | Affordance top-right on **own** online marker; bubbles toward board from `game.sayEvents` |
 | Strip | Below board when `mySeat`: four slots `N→E→S→W`; finished slots inactive + finish icon (top-right) |
 | Move UX | Local `selectedSide` + `legalTargets` only when `isPlaying && isMyTurn && !isMySeatFinished && !moveAnimating`; never select finished pieces |
 | Finish UX | Center land → slide + fade (`disappearingKeys`); own `finishPlace` 0→N → place modal; stay in room after close |
@@ -38,8 +39,8 @@ Product: настольная игра «Счастливый турист». On
 
 - Grid: **10×10** sparse; empty corners are holes (no tile element; page background shows through).
 - Kinds: `start` (green), `task` (brown), `center` (yellow).
-- `.tourist-board`: `width: 100%`, `max-width: calc(10 * 60px + 9 * 6px)`, `aspect-ratio: 1`, `gap: 6px`, `grid-template-*: repeat(10, 1fr)`; tile `border-radius: 12px`. Do **not** size rows with `%` of auto height (tracks collapse to 0).
-- Container: full width of Game content; mobile edge-to-edge relative to page content; wide screens capped by max tile 60px (via board max-width + square aspect).
+- `.tourist-board`: `width: 100%`, `max-width: calc(10 * 60px + 9 * 2px)`, `aspect-ratio: 1`, `--gap: 2px`, `--radius: 2px`, `grid-template-*: repeat(10, 1fr)`; tile `border-radius: var(--radius)`. Do **not** size rows with `%` of auto height (tracks collapse to 0).
+- Container: full width of Game content (no side presence gutters); mobile edge-to-edge relative to page content; wide screens capped by max tile 60px (via board max-width + square aspect).
 - Tile colors are **fixed fills**, independent of Quasar Dark chrome (see `work-with-styles` / theme specs).
 
 ## Move Interaction (current turn only — D5 / SC-MOVE-11…13, SC-BOARD-05/06)
@@ -65,53 +66,58 @@ Do **not** sync selection or hints — page-local refs only.
 
 ## Presence (occupied seats)
 
-Sync-driven markers around the board (SC-PRESENCE-01…05 / design D5). Page reads mirrored `game.seats` only — no Colyseus I/O here.
+Sync-driven markers in rows above/below the board (SC-PRESENCE-01…14 / design D5/D9–D11). Page reads mirrored `game.seats` only — no Colyseus I/O here.
 
 | Rule | Behavior |
 |------|----------|
 | Who | One marker per **occupied** seat (including offline-in-grace). Empty slots not rendered. |
-| Avatar | Seat `touristId` → same tourist PNG as pieces |
-| Seated viewer | Self → **bottom** (home/north); other seats by join order → **top**, **left**, **right** |
-| Spectator | Join order among seated → **top**, **bottom**, **left**, **right**; omit missing positions |
+| Avatar | Seat `touristId` → same tourist PNG as pieces; **image box = strip tourist (72px)** (SC-PRESENCE-13) |
+| Seated viewer | Self → **bottom row** alone; other seats → **one top row** L→R by join order among others. **No left/right columns** (SC-PRESENCE-02 / D9) |
+| Spectator | All occupied seats → **one top row** L→R by join order; bottom empty (SC-PRESENCE-03) |
 | Join order | Array order from sync map `forEach` as mirrored into `seats[]` |
 | Offline | `!connected && reconnectUntil > 0` → **inner** warning `QCircularProgress` (`min=0`, `max=30`, `value` = remaining from `reconnectUntil − now`) |
-| Reserved chrome | Always outer 52px turn ring slot (stable layout — SC-PRESENCE-11); inactive turn/grace → transparent track/value 0 (no size jump) |
+| Reserved chrome | Always outer ring slot sized to outer progress (96px around 72px avatar — SC-PRESENCE-11); inactive turn/grace → transparent track/value 0 (no size jump) |
 | Turn deadline | Outer determinate ring while `playing` + current turn + synced `turnUntil`/`turnBudgetSeconds`: blue (`primary`) for multi 60s; red (`negative`) when `turnBudgetSeconds === 300` (solo). **No** static blue outline / `--turn` box-shadow |
 | Dual rings | Offline current-turn: outer = turn, inner = reconnect (both visible — SC-PRESENCE-10). **Siblings** only (outer absolute behind) — do **not** nest `q-circular-progress`. **Avatar:** always sibling `<img class="presence-avatar">` on top (pre-timer pattern); do **not** put avatar only in progress default slot without `show-value` (Quasar omits that slot from the DOM — SC-PRESENCE-12) |
 | Header | «Ваш ход» / «Ход соперника» / «Ход игрока» (spectator) from turn, not from outline |
-| Finish place | Seat `finishPlace > 0` → numeric place badge on marker (incl. offline-in-grace); no badge when `finishPlace === 0` |
+| Finish place | Seat `finishPlace > 0` → numeric badge at **top-left** of marker (SC-PRESENCE-14) |
+| Ready | Own marker only, **top-left** when `canSendReady` (does not overlap finish by phase) |
+| Say affordance | Own online marker only, **top-right** (SC-PRESENCE-14 / SC-SAY-07); never on opponents / spectators |
 
 Tick `nowMs` on an interval (~200 ms) while Game is mounted so turn + reconnect rings animate from **server** `turnUntil` / `reconnectUntil`.
 
 Spectators and seated players see the same occupied set; layouts differ as above. Strip finish chrome lives on the personal strip — presence only shows the **place** badge.
 
-### Presence DOM (canonical — SC-PRESENCE-04/10/11/12)
+### Presence DOM (canonical — SC-PRESENCE-04/10/11/12/13)
 
-Inside `.presence-marker` (52×52, `position: relative`), **three siblings** — never nest progress in progress, never put avatar only in progress default slot without `show-value`:
+Inside `.presence-marker` (96×96 = outer ring, `position: relative`), **three siblings** — never nest progress in progress, never put avatar only in progress default slot without `show-value`:
 
 ```html
-<q-circular-progress class="presence-progress presence-progress--outer" size="52px" … />
-<q-circular-progress class="presence-progress presence-progress--inner" size="40px" … />
+<q-circular-progress class="presence-progress presence-progress--outer" size="96px" … />
+<q-circular-progress class="presence-progress presence-progress--inner" size="84px" … />
 <img class="presence-avatar" :src="touristSrc(touristId)" alt="" />
 ```
 
-CSS: outer ring `position: absolute; inset: 0; z-index: 0`; inner ring absolute centered (`top/left: 50%`, `transform: translate(-50%, -50%)`, `z-index: 1`); avatar `position: relative; z-index: 2` (~28px). Rings and avatar use `pointer-events: none` so say affordance / marker clicks pass through. Place badge / say affordance sit above with higher z-index (`z-index: 3+`).
+CSS: outer ring `position: absolute; inset: 0; z-index: 0`; inner ring absolute centered (`top/left: 50%`, `transform: translate(-50%, -50%)`, `z-index: 1`); avatar `position: relative; z-index: 2` (**72×72**, matches `.my-tourist-slot`). Rings and avatar use `pointer-events: none` so affordances / marker clicks pass through. Finish badge / ready (top-left) and say (top-right) sit above with `z-index: 3+`.
 
-## Say Bubbles At Presence (game/say — D3/D4 / SC-SAY-07…12)
+Layout shell: `.presence-frame` is a **column flex** — `.presence-row--top` → `.tourist-board` → `.presence-row--bottom` (omit empty rows). Row `gap: 48px` + `overflow-x: auto`; do **not** shrink avatar below strip size.
+
+## Say Bubbles At Presence (game/say — D3/D4/D11 / SC-SAY-07…12)
 
 Ephemeral preset phrases near presence markers. Protocol + Pinia I/O: `work-with-stores` / `colyseus-client` / server `work-with-messages`. UI stays on `GamePage` beside markers — **not** Quasar Notify / viewport toasts.
 
 | Rule | Behavior |
 |------|----------|
 | Who may send | Seated + `connected` only; anytime (not turn-gated). Spectators / offline grace: no affordance |
-| Affordance | Only on marker with `sessionId === game.sessionId` and connected (`canSendSay`) — e.g. `chat_bubble_outline` |
-| Ready | Beside own say when `canSendReady` → `game.sendReady()` (not `sendSay('ready')`); i18n `game.readyButton` |
+| Affordance | Only on marker with `sessionId === game.sessionId` and connected (`canSendSay`) — **top-right** (`chat_bubble_outline`) |
+| Ready | **Top-left** on own marker when `canSendReady` → `game.sendReady()` (not `sendSay('ready')`); i18n `game.readyButton` |
 | Countdown | Full-screen overlay while `phase === 'countdown'` from synced `countdownRemaining` (all clients) |
 | Picker | Click affordance → two presets «Всем привет» (`hello`) / «Удачи» (`luck`) via i18n `game.say.*`; choose → `game.sendSay(presetId)` and close immediately; click away closes |
 | Bubbles | From `game.sayEvents` filtered by sender `sessionId`; label via `$t('game.say.' + presetId)` (incl. `ready` → «Готов начать!») |
 | TTL | Disappear after **10s** from server `at` (`SAY_TTL_MS`); prefer `at`, not local receive time |
 | Max live | At most **3** per sender; store refuses 4th locally; server enforces the same |
-| Stack by slot | Newer closer to avatar; `left`/`right` → newer lower / older higher (`.say-bubbles--{slot}`) |
+| Stack toward board | Top-row markers → bubbles **below** avatar (`.say-bubbles--top`); bottom self → bubbles **above** (`.say-bubbles--bottom`). Newer closer to avatar. **No left/right side-slot stacks** (SC-SAY-11/12 / D11) |
+| Row gap | Horizontal gap between markers so concurrent neighbor bubbles do not overlap; horizontal scroll OK if needed |
 | I/O | Page never `room.send` / `room.onMessage` — only `sendSay` / `sendReady` + read `sayEvents` |
 
 Picker open state (`sayPickerOpen`) is page-local; close if the local seat is lost or goes offline.
@@ -128,8 +134,8 @@ Picker open state (`sayPickerOpen`) is page-local; close if the local seat is lo
 
 - Render `boardTiles` from `LAYOUT`.
 - Overlay **unfinished** pieces (plus short-lived disappearing finishers) at `row`/`col` (0-based schema → CSS vars / transform).
-- Render **presence** markers for occupied seats (dual turn/reconnect rings + reserved 52px chrome; place badge when `finishPlace > 0`).
-- On own online marker: say affordance + picker (finished / time-expired keep say); ready button when `canSendReady`; for every marker: live say bubbles from `sayEvents` (TTL / stack by slot).
+- Render **presence** markers for occupied seats in top/bottom rows (dual turn/reconnect rings + reserved 96px chrome; place badge top-left when `finishPlace > 0`).
+- On own online marker: say affordance **top-right** + picker (finished / time-expired keep say); ready **top-left** when `canSendReady`; for every marker: live say bubbles from `sayEvents` (TTL / stack toward board).
 - Full-screen countdown overlay while `phase === 'countdown'`.
 - Show strip «Мои туристы» only if `mySeat` **and** own pieces exist (empty before `playing` materialize); finished slots inactive + finish icon; on own turn **in playing** select only unfinished.
 - Board overlay: unfinished pieces only when seats have pieces (none in waiting/countdown).
@@ -141,7 +147,7 @@ Picker open state (`sayPickerOpen`) is page-local; close if the local seat is lo
 ## Do
 
 - Keep layout in one client constant; center as a single 2×2 grid area.
-- Preserve max tile 60px, gap 6, radius 12, hole = page background.
+- Preserve max tile 60px, gap 2, radius 2, hole = page background.
 - Keep Colyseus I/O in `stores/game`; page reads seats/phase/turn/strip/presence/`sayEvents` from store only.
 - Gate move interactivity with `isPlaying && isMyTurn && !isMySeatFinished && !isMySeatTimeExpired` (and `!moveAnimating`); never select finished pieces/slots; gate say with own seated+connected; ready via `sendReady`.
 - Map `touristId` 1…4 to `tourist{N}.png`; strip only after pieces exist; finish icon on finished sides.

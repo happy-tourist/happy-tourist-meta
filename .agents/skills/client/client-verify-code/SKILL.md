@@ -256,10 +256,12 @@ Apply always; sibling skills win when they exist and conflict on a detail.
   must `_attachRoom` immediately after `connect()` — no `await` (e.g.
   `unsubscribeLobby`) before the listener, or the first `ROOM_STATE` is missed.
 - GamePage: tourist board with synced seat pieces / strip (after materialize);
-  dual presence rings from `turnUntil` / `reconnectUntil`; presence avatar as
+  presence **rows** (top/bottom, no left/right columns); dual rings from
+  `turnUntil` / `reconnectUntil` around 72px avatar in 96px chrome; avatar as
   sibling `<img class="presence-avatar">` on top — not only in `q-circular-progress`
-  default slot without `show-value` (SC-PRESENCE-12); local selection / hints when
-  `isMyTurn` and eligible; travel animation; submit only via `game.sendMove`.
+  default slot without `show-value` (SC-PRESENCE-12); board `--gap`/`--radius` 2;
+  local selection / hints when `isMyTurn` and eligible; travel animation; submit
+  only via `game.sendMove`.
 - Mirror `currentTurnSessionId` / `turnUntil` / `turnBudgetSeconds` / seat `timeExpired`;
   do not invent alternate move/turn shapes.
 

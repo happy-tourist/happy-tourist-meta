@@ -2,12 +2,12 @@
 name: work-with-game
 description: >-
   Use when implementing, changing, reviewing, or debugging authoritative
-  tourist-room seating, reconnect grace, deferred pieces until playing,
-  turn order (skip finished / time-expired), turn deadlines (60s / solo 5min),
-  center finish / finishPlace, and one-step move rules in the happy-tourist
-  Colyseus server — Room handlers, schema seats/phase/maxSeats/ready/countdown/
-  currentTurnSessionId/turnUntil/turnBudgetSeconds/connectivity/finish/timeExpired
-  fields, or pure rules in src/game/touristMove.ts.
+  tourist-room seating (new seat only while waiting), reconnect grace, deferred
+  pieces until playing, turn order (skip finished / time-expired), turn deadlines
+  (60s / solo 5min), center finish / finishPlace, and one-step move rules in the
+  happy-tourist Colyseus server — Room handlers, schema seats/phase/maxSeats/
+  ready/countdown/currentTurnSessionId/turnUntil/turnBudgetSeconds/connectivity/
+  finish/timeExpired fields, or pure rules in src/game/touristMove.ts.
 ---
 
 # Work With Game
@@ -32,11 +32,12 @@ Constants: `RECONNECT_GRACE_SECONDS = 30`, `COUNTDOWN_SECONDS = 5`, `TURN_BUDGET
 ## Seating (shipped — game/pieces + game/start)
 
 - Create options: `{ maxSeats: 2|3|4 }` (invalid → default **2**). Synced `state.maxSeats`.
-- While `seats.size < maxSeats` **in any phase** (`waiting` / `countdown` / `playing`): join gets a seat — unique `touristId` 1…4, `connected=true`, `reconnectUntil=0`, `ready=false`, `finishPlace=0`, `timeExpired=false`.
-- **Pieces deferred:** in `waiting`/`countdown` — seat+kind only (no pieces). On enter `playing` — `materializePiecesForAllSeats()` (four pieces N/E/S/W on free start cells). Join already in `playing` — assign pieces immediately.
-- When `seats.size === maxSeats`: further joiners are spectators (no seat/pieces). No `maxClients = maxSeats`.
+- New seat **only** while `phase === 'waiting'` and `seats.size < maxSeats`: unique `touristId` 1…4, `connected=true`, `reconnectUntil=0`, `ready=false`, `finishPlace=0`, `timeExpired=false`.
+- Join during `countdown` or `playing` → spectator (no seat/kind/pieces), even if capacity is free after leave/grace.
+- **Pieces deferred:** in `waiting`/`countdown` — seat+kind only (no pieces). On enter `playing` — `materializePiecesForAllSeats()` (four pieces N/E/S/W on free start cells).
+- When `seats.size === maxSeats` while waiting: further joiners are spectators. No `maxClients = maxSeats`.
 - Metadata for lobby: `{ title, status, maxSeats, seats }` — `seats` = occupied seated count (not `clients`).
-- Assign only in Room lifecycle — client never invents seats.
+- Assign only in Room lifecycle — client never invents seats. Reconnect within grace is not a new seat.
 
 ## Start phases / ready / countdown (shipped — game/start)
 
@@ -51,10 +52,10 @@ Constants: `RECONNECT_GRACE_SECONDS = 30`, `COUNTDOWN_SECONDS = 5`, `TURN_BUDGET
 
 | Path | Behavior |
 |------|----------|
-| **Consented leave** (`client.leave` / intentional exit) | Immediate `onLeave` → delete seat (all four pieces). Kind/cells back to pools. Seats reopen while `seats.size < maxSeats` in any phase. |
+| **Consented leave** (`client.leave` / intentional exit) | Immediate `onLeave` → delete seat (all four pieces). Kind/cells back to pools. Subsequent join gets a seat **only** while `phase === 'waiting'` and under maxSeats. |
 | **Unexpected drop** (`onDrop`) | Seated only: `connected=false`, `reconnectUntil=now+30s`, `allowReconnection(client, 30)`; **hold** seat + pieces. Spectators: no grace. Does not cancel countdown. |
 | **Reconnect within grace** (`onReconnect`) | Same seat/kind/pieces; `connected=true`, `reconnectUntil=0`. |
-| **Grace timeout / denied** | Permanent remove as consented leave. |
+| **Grace timeout / denied** | Permanent remove as consented leave; no seating reopen outside `waiting`. |
 | **Empty seated** | After permanent remove, if `seats.size === 0` → `this.disconnect()` even if spectators remain. |
 
 LobbyRoom: **no** grace / `allowReconnection` — see `work-with-rooms` (D7).
@@ -63,7 +64,7 @@ LobbyRoom: **no** grace / `allowReconnection` — see `work-with-rooms` (D7).
 
 - Room-private `turnOrder: string[]` (join order of seated sessionIds) — **not** in schema.
 - Synced `currentTurnSessionId` = current **eligible** seated `sessionId` (`finishPlace === 0` && `!timeExpired`), or `""` if none.
-- First seated → set turn; later seats (incl. mid-game) append to end. If current is empty/ineligible (e.g. all finished), joining a new seat restores turn to the earliest eligible — do **not** jump off an already-eligible current (SC-MOVE-19).
+- First seated → set turn; later seats append only while joining in `waiting`. Join during `countdown`/`playing` is spectator — turn order unchanged (SC-MOVE-19).
 - Successful move → advance to next eligible in circle (solo eligible wraps to self).
 - Permanent seat remove: drop from `turnOrder`; if removed was current → next eligible (or `""`).
 - `onDrop` / offline grace: **do not** change `currentTurnSessionId` for **non-finished** seats (turn waits); turn deadline **keeps ticking** (SC-MOVE-26). Finished / time-expired seats are never eligible.
@@ -117,7 +118,7 @@ onMessage('move') → parse { side, row, col } → reject if finished seat/piece
 ## Implementation Checklist
 
 - [x] Register room as `tourist` (+ `.enableRealtimeListing()`); tests/loadtest use `tourist`.
-- [x] Product sync: `phase` / `maxSeats` / `countdownRemaining` + `seats` (+ connectivity + `ready`) + `currentTurnSessionId`; seating while under maxSeats in any phase (no `maxClients` seat lock).
+- [x] Product sync: `phase` / `maxSeats` / `countdownRemaining` + `seats` (+ connectivity + `ready`) + `currentTurnSessionId`; new seat only while `waiting` under maxSeats (no `maxClients` seat lock; no mid-game seat).
 - [x] Start: auto/all-ready countdown; `onMessage('ready')`; move gated on `phase === 'playing'`; mocha SC-START-* / SC-MOVE-18.
 - [x] Unexpected drop grace 30 s + `allowReconnection`; consented leave immediate; empty seated → dispose; mocha SC-PIECE-*.
 - [x] `turnOrder` + `onMessage('move')` + `src/game/touristMove.ts`; mocha SC-MOVE-*.
