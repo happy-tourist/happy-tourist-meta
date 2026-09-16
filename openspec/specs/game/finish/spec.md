@@ -13,12 +13,14 @@
 | SC-FINISH-03 | covered (server mocha + client UX modal) |
 | SC-FINISH-04 | covered (server mocha + client UX modal) |
 | SC-FINISH-05 | covered (server: no auto-dispose; client stays in room) |
-| SC-FINISH-06 | covered (server mocha move reject; client strip/say) |
-| SC-FINISH-07 | covered (server mocha) |
-| SC-FINISH-08 | covered (server mocha) |
+| SC-FINISH-06 | covered-by-reuse (server mocha + client) |
+| SC-FINISH-07 | covered (server mocha — no seat after leave in playing) |
+| SC-FINISH-08 | covered-by-reuse (server mocha) |
 | SC-FINISH-09 | covered (client UX strip) |
 | SC-FINISH-10 | covered (client UX strip) |
 | SC-FINISH-11 | covered (server mocha) |
+
+Related: seating gate — `game/pieces` (new seats only in `waiting`).
 
 ## Requirements
 
@@ -69,7 +71,7 @@ When a seated player’s fourth piece becomes finished, the server SHALL assign 
 
 ### Requirement: Finished seat keeps seat capacity and limited agency
 
-A seat that has a finish place SHALL remain a seated player: it MUST keep its tourist kind, personal strip, presence marker, and eligibility to send whitelist say intents per `game/say`. That seat MUST NOT successfully submit board moves. The seat MUST continue to count toward `maxSeats` occupancy until permanently removed by consented leave or reconnect grace timeout. While any finished seat remains, a joining client MUST receive a new seat only if `seats.size < maxSeats` after counting finished seats. Spectators remain connections without seats and MUST NOT keep the room alive: when seated count reaches zero the room is disposed even if spectators remain (unchanged dispose rule).
+A seat that has a finish place SHALL remain a seated player: it MUST keep its tourist kind, personal strip, presence marker, and eligibility to send whitelist say intents per `game/say`. That seat MUST NOT successfully submit board moves. The seat MUST continue to count toward `maxSeats` occupancy until permanently removed by consented leave or reconnect grace timeout. While phase is `countdown` or `playing`, a joining client MUST NOT receive a new seat even when `seats.size < maxSeats` after counting finished seats (`game/pieces`). Spectators remain connections without seats and MUST NOT keep the room alive: when seated count reaches zero the room is disposed even if spectators remain (unchanged dispose rule).
 
 #### Scenario [SC-FINISH-06]: Finished player keeps strip and may say
 
@@ -81,10 +83,10 @@ A seat that has a finish place SHALL remain a seated player: it MUST keep its to
 
 #### Scenario [SC-FINISH-07]: Finished seat blocks mid-game seating until leave
 
-- **GIVEN** a tourist room with `maxSeats` equal to 2 and both seats finished (each has a finish place)
+- **GIVEN** a tourist room in phase `playing` with `maxSeats` equal to 2 and both seats finished (each has a finish place)
 - **WHEN** another authenticated client joins the room
 - **THEN** that client receives no seat and no pieces (spectator)
-- **AND** after one finished seat permanently leaves, a subsequent joiner MAY receive a seat with four pieces from scratch while capacity remains
+- **AND** after one finished seat permanently leaves, a subsequent joiner still receives no seat and no pieces while phase remains `playing`
 
 #### Scenario [SC-FINISH-08]: Dispose only when no seats remain
 

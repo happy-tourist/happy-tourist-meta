@@ -2,14 +2,14 @@
 
 ## Purpose
 
-Фазы старта партии в room `tourist`: ожидание игроков, подтверждение готовности при недоборе, общий countdown 5…1 и переход в playing, после которого разрешены ходы. Связано с `game/pieces` (ёмкость seats), `game/say` (preset готовности), `game/move` (gate ходов), `lobby/rooms` (create maxSeats).
+Фазы старта партии в room `tourist`: ожидание игроков, подтверждение готовности при недоборе, общий countdown 5…1 и переход в playing. При переходе в `playing` сервер materialize’ит отложенные фигурки seated-игроков (`game/pieces`), после чего разрешены ходы. Связано с `game/pieces` (ёмкость seats, deferred pieces), `game/say` (preset готовности), `game/move` (gate ходов и таймеры), `lobby/rooms` (create maxSeats).
 
 ## Traceability
 
 | Scenario ID | Coverage |
 |-------------|----------|
-| SC-START-01 | covered (server mocha) |
-| SC-START-02 | covered (server mocha — with SC-START-03) |
+| SC-START-01 | covered-by-reuse (server mocha) |
+| SC-START-02 | covered (server mocha — playing materializes pieces) |
 | SC-START-03 | covered (server mocha) |
 | SC-START-04 | covered (server mocha) |
 | SC-START-05 | covered (server mocha) |
@@ -20,12 +20,15 @@
 | SC-START-10 | covered (client UX) |
 | SC-START-11 | covered (server mocha) |
 | SC-START-12 | covered (server mocha) |
+| SC-START-13 | covered (server mocha) |
+
+Related: deferred pieces — `game/pieces`; turn timers begin in playing — `game/move`.
 
 ## Requirements
 
 ### Requirement: Synced start phase
 
-The tourist room SHALL expose a synchronized start phase among `waiting`, `countdown`, and `playing`. A newly created room MUST begin in `waiting`. While the phase is `waiting` or `countdown`, seated clients MUST NOT successfully complete a board move (see `game/move`). While the phase is `playing`, move rules of `game/move` apply. The phase transition into `playing` MUST occur only after a completed countdown of this capability.
+The tourist room SHALL expose a synchronized start phase among `waiting`, `countdown`, and `playing`. A newly created room MUST begin in `waiting`. While the phase is `waiting` or `countdown`, seated clients MUST NOT successfully complete a board move (see `game/move`), and seats MUST NOT yet have board pieces (see `game/pieces`). While the phase is `playing`, move rules of `game/move` apply and pieces exist for seated players per `game/pieces`. The phase transition into `playing` MUST occur only after a completed countdown of this capability and MUST include materializing any deferred pieces.
 
 #### Scenario [SC-START-01]: New room is waiting
 
@@ -39,6 +42,18 @@ The tourist room SHALL expose a synchronized start phase among `waiting`, `count
 - **GIVEN** a tourist room whose countdown has just completed
 - **WHEN** the synchronized phase becomes `playing`
 - **THEN** every client in the room observes phase `playing`
+- **AND** seated players who waited without pieces now have four pieces each
+- **AND** a legal move from the current-turn seated player MAY be accepted per `game/move`
+
+### Requirement: Playing transition places deferred pieces
+
+When the five-second start countdown completes and the synchronized phase becomes `playing`, the server MUST materialize pieces for every seated player that still has none, per `game/pieces`, before clients may successfully complete board moves. New seats are not assigned during `countdown` or `playing`, so materialize applies only to seats taken while `waiting`.
+
+#### Scenario [SC-START-13]: Countdown completion spawns pieces then unlocks play
+
+- **GIVEN** a tourist room in phase `countdown` with seated players who have tourist kinds but no pieces
+- **WHEN** the countdown completes and phase becomes `playing`
+- **THEN** each of those seats has four pieces in synced state
 - **AND** a legal move from the current-turn seated player MAY be accepted per `game/move`
 
 ### Requirement: Auto countdown when seats are full

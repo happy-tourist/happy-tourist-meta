@@ -4,7 +4,7 @@
 
 Пресетные реплики у presence на Game: короткие фразы из фиксированного whitelist рассылаются всем в room `tourist` и показываются комикс-облаками у маркера отправителя без свободного текста и без истории чата.
 
-Связанные capability: раскладка presence — `game/presence` (без изменения требований в этом change).
+Связанные capability: раскладка presence и углы affordance — `game/presence`.
 
 ## Traceability
 
@@ -16,14 +16,17 @@
 | SC-SAY-04 | covered (server mocha) |
 | SC-SAY-05 | covered (server mocha) |
 | SC-SAY-06 | covered (server mocha) |
-| SC-SAY-07 | covered (client UX GamePage) |
+| SC-SAY-07 | covered (client say affordance top-right on own marker) |
 | SC-SAY-08 | covered (client UX GamePage) |
 | SC-SAY-09 | covered (client UX GamePage) |
 | SC-SAY-10 | covered (server mocha) |
-| SC-SAY-11 | covered (client UX GamePage) |
-| SC-SAY-12 | covered (client UX GamePage) |
+| SC-SAY-11 | covered (client bubbles toward board — replaces side-slot stack) |
+| SC-SAY-12 | covered (client bubbles toward board; newer closer to avatar) |
 | SC-SAY-13 | covered (server mocha) |
 | SC-SAY-14 | covered (client i18n / bubble) |
+| SC-SAY-15 | covered (client say affordance/picker activatable — no overflow clip) |
+
+Related: presence row layout and affordance corners — `game/presence`.
 
 ## Requirements
 
@@ -94,12 +97,12 @@ On an accepted say, the server SHALL notify every client currently in the touris
 
 ### Requirement: Own-marker affordance and preset picker
 
-While the user is seated and connected on the Game screen, the system SHALL show a speech-bubble affordance only next to that user’s own presence marker. Activating the affordance MUST reveal exactly two preset choices with the display texts «Всем привет» and «Удачи». Choosing a preset MUST close the picker immediately and submit that preset’s identifier. Spectators MUST NOT see a send affordance. Other players’ markers MUST NOT show a send affordance for the local user.
+While the user is seated and connected on the Game screen, the system SHALL show a speech-bubble affordance only at the **top-right** of that user’s own presence marker. Activating the affordance MUST reveal exactly two preset choices with the display texts «Всем привет» and «Удачи». Choosing a preset MUST close the picker immediately and submit that preset’s identifier. Spectators MUST NOT see a send affordance. Other players’ markers MUST NOT show a send affordance for the local user. The affordance and its open picker MUST remain pointer- and touch-activatable: presence row overflow MUST NOT clip them out of hit-testing or hide the open picker, and the affordance hit target MUST be large enough for touch (at least about 32 CSS pixels on each side).
 
 #### Scenario [SC-SAY-07]: Seated player opens picker on own marker
 
 - **GIVEN** the user is seated and connected on the Game screen
-- **WHEN** the user activates the speech-bubble affordance on their own presence marker
+- **WHEN** the user activates the speech-bubble affordance at the top-right of their own presence marker
 - **THEN** two preset choices «Всем привет» and «Удачи» are shown
 - **AND** choosing one closes the picker immediately
 
@@ -108,6 +111,14 @@ While the user is seated and connected on the Game screen, the system SHALL show
 - **GIVEN** the user is a spectator on the Game screen
 - **WHEN** the Game presence layout is shown
 - **THEN** no say send affordance is available to that user
+
+#### Scenario [SC-SAY-15]: Affordance and picker stay activatable
+
+- **GIVEN** the user is seated and connected with their own presence marker visible (top or bottom row)
+- **WHEN** the user taps or clicks the speech-bubble affordance
+- **THEN** the preset picker becomes visible without being clipped away by the presence row
+- **AND** the affordance itself receives the activation (is not blocked by rings, avatar, or row overflow)
+- **AND** the user can choose a preset from the picker
 
 ### Requirement: Speech bubble lifetime and concurrency
 
@@ -128,18 +139,20 @@ Each accepted say MUST appear as a comic-style speech bubble near the sender’s
 
 ### Requirement: Bubble stack orientation by presence slot
 
-Speech bubbles for a seat MUST stack next to that seat’s presence marker according to the marker’s local slot. Newer bubbles MUST appear closer to the avatar than older ones. For markers on the left or right sides, newer bubbles MUST appear lower and older bubbles higher. Bubbles MUST NOT use viewport toast notifications as their primary presentation.
+Speech bubbles for a seat MUST stack against that seat’s presence marker on the side toward the board: for markers in the top presence row, bubbles appear below the avatar; for the seated viewer’s own marker in the bottom row, bubbles appear above the avatar. Newer bubbles MUST appear closer to the avatar than older ones. Horizontal spacing between neighboring presence markers MUST keep concurrent bubbles of adjacent seats from overlapping. Bubbles MUST NOT use viewport toast notifications as their primary presentation. Left/right side-slot stack rules MUST NOT apply (those slots are removed by `game/presence`).
 
 #### Scenario [SC-SAY-11]: Side slots stack newer below
 
-- **GIVEN** a sender whose presence marker is on the left or right for the viewing client and that sender already has one live bubble
+- **GIVEN** a sender whose presence marker is in the top row for the viewing client and that sender already has one live bubble
 - **WHEN** a second say from that sender is accepted
-- **THEN** the newer bubble is shown lower (closer toward the bottom of the stack)
-- **AND** the older bubble is higher
+- **THEN** both bubbles appear below that avatar toward the board
+- **AND** the newer bubble is closer to the avatar than the older bubble
+- **AND** no left/right side-column presence slot is used for bubble orientation
 
 #### Scenario [SC-SAY-12]: Home and opposite slots keep newer closer to avatar
 
-- **GIVEN** a sender whose presence marker is at the bottom or top for the viewing client
-- **WHEN** multiple live bubbles exist for that sender
-- **THEN** the newest bubble is visually closer to the avatar than older bubbles
+- **GIVEN** a seated viewer whose own presence marker is in the bottom row and multiple live bubbles exist for that seat
+- **WHEN** any client views that marker
+- **THEN** the bubbles appear above the avatar toward the board
+- **AND** the newest bubble is visually closer to the avatar than older bubbles
 - **AND** bubbles are attached beside that presence marker rather than as screen-edge toasts

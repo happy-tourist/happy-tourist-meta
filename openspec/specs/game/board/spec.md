@@ -9,11 +9,13 @@
 | Scenario ID | Coverage |
 |-------------|----------|
 | SC-BOARD-01 | covered-by-reuse (client GamePage geometry; pieces at synced cells) |
-| SC-BOARD-02 | covered (CSS --tile/--gap/--radius, task 2.3) |
-| SC-BOARD-03 | covered (width 100% + min(60px,…), task 2.3) |
+| SC-BOARD-02 | covered (client GamePage --gap/--radius 2px) |
+| SC-BOARD-03 | covered (client full-width board without side presence gutters) |
 | SC-BOARD-04 | covered (fixed tile fills, transparent holes, task 2.3) |
 | SC-BOARD-05 | covered (client — non-movers still non-interactive) |
 | SC-BOARD-06 | covered (client — current-turn mover may select/hint/submit) |
+
+Related: presence row layout — `game/presence` (opponents top / self bottom).
 
 ## Requirements
 
@@ -34,15 +36,15 @@ The system SHALL present on the Game screen a board whose playable cells follow 
 
 ### Requirement: Tile chrome sizing
 
-Each board tile SHALL use a maximum side length of 60 CSS pixels, a corner radius of 12 CSS pixels, and a gap of 6 CSS pixels between adjacent tiles. On narrow viewports the board MUST span the content width from the left edge to the right edge of the game content area so that tile size shrinks below 60px as needed while preserving the grid proportions.
+Each board tile SHALL use a maximum side length of 60 CSS pixels, a corner radius of **2** CSS pixels, and a gap of **2** CSS pixels between adjacent tiles. On narrow viewports the board MUST span the content width from the left edge to the right edge of the game content area so that tile size shrinks below 60px as needed while preserving the grid proportions. Side presence columns MUST NOT steal horizontal space from that board width (presence rows sit above and/or below the board per `game/presence`).
 
 #### Scenario [SC-BOARD-02]: Max tile size on wide viewports
 
 - **GIVEN** the Game screen is shown on a viewport wide enough for ten tiles at 60px plus gaps
 - **WHEN** the board is laid out
 - **THEN** individual tile sides do not exceed 60px
-- **AND** gaps between tiles are 6px
-- **AND** tile corners use a 12px radius
+- **AND** gaps between tiles are 2px
+- **AND** tile corners use a 2px radius
 
 #### Scenario [SC-BOARD-03]: Edge-to-edge board on narrow viewports
 
@@ -50,6 +52,7 @@ Each board tile SHALL use a maximum side length of 60 CSS pixels, a corner radiu
 - **WHEN** the board is laid out
 - **THEN** the board occupies the full width of the game content area from left to right
 - **AND** tiles scale down uniformly below 60px to fit
+- **AND** no left/right presence gutter reduces that board width
 
 ### Requirement: Board sits on page chrome background
 
