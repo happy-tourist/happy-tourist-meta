@@ -71,7 +71,7 @@ Use local `ref()` / `reactive()` for:
 Examples:
 - `LoginPage.vue`: `email`, `password`, `displayName`, `isRegister`, `showPassword`.
 - `LobbyPage.vue`: `creating`, `joining` (page spinners); room list and errors come from `game`.
-- `GamePage.vue`: `LAYOUT` tiles + piece assets; presence layout / grace tick / `consentedLeaving`; `unfinishedBoardPieces` + disappearing finishers for board overlay; strip×4 from `mySeat` (+ finish icons); local `selectedSide` / `moveAnimating` / legal hints / place modal; say picker open state (not Pinia).
+- `GamePage.vue`: `LAYOUT` tiles + piece assets; presence layout / grace tick / `consentedLeaving`; `unfinishedBoardPieces` + disappearing finishers for board overlay; strip×4 from `mySeat` (+ finish icons); local `selectedSide` / `moveAnimating` / legal hints / peekedThisTurnLocal / +N fall anim / place / peek / solo-∞ / timeout modals; say picker open state (not Pinia).
 
 ### Pinia state
 
@@ -81,16 +81,16 @@ Use a store for shared domain data, realtime session, or anything the router/oth
 |-------|------|-------------------|
 | **auth** | `user`, `token`, `loading`, `error`, `ready`; `isAuthenticated`, `displayName`; register/login/anonymous/Google/`logout`/`whenReady` | `LoginPage`, router `beforeEach`, `LobbyPage` logout/header, `App.vue` theme sync |
 | **theme** | Quasar Dark `preference`, `error`; async `syncFromAuthUser` (GET restore + generation + `clearStoredTheme` when unset; **no** `auth.user` replace after GET), `toggle` (guest `localStorage` `ht-theme`; registered `get` ≠ JWT-only, `post` on toggle may patch `user.theme`) | `App.vue` header toggle + stable auth identity watch |
-| **game** | lobby `rooms`/`lobbyRoom`/`lobbyWanted`/`listing`; active `room`/`roomId`/`sessionId`; mirrored `seats` (`GameSeat`: `touristId` + `pieces[]` (+ `finished`) + connectivity + `ready` + `finishPlace` + `timeExpired`) / `phase` / `maxSeats` / `countdownRemaining` / legacy `started` / `currentTurnSessionId` / `turnUntil` / `turnBudgetSeconds`; getters `mySeat`/`isSeated`/`isMyTurn`/`isPlaying`/`canSendReady`/`unfinishedBoardPieces`/`isMySeatFinished`/`isMySeatTimeExpired`/`isSoloBudget`/`myFinishedStripSides`; helpers `isFinishedSeat`/`isFinishedPiece`/`isTimeExpiredSeat`/`isSoloBudgetSeconds`/`turnRemainingSeconds`; `sendMove`; `sendReady`; `sendSay` + ephemeral `sayEvents`; `status`, `error`; subscribe/unsubscribe / create/join/`rejoinGame`/leave; tourist token in `localStorage` | `LobbyPage`, `GamePage` |
+| **game** | lobby `rooms`/`lobbyRoom`/`lobbyWanted`/`listing`; active `room`/`roomId`/`sessionId`; mirrored `seats` (`GameSeat`: `touristId` + `pieces[]` (+ `finished`) + connectivity + `ready` + `finishPlace` + `timeExpired`) / `phase` / `maxSeats` / `countdownRemaining` / legacy `started` / `currentTurnSessionId` / `turnUntil` / `turnBudgetSeconds` / `removedTaskKeys`; private `steps`/`peeks`/`budgetsInfinite`/`openPeek` from `budgets`/`peekOpen`; getters `mySeat`/`isSeated`/`isMyTurn`/`isPlaying`/`canSendReady`/`canSendEndTurn`/`unfinishedBoardPieces`/`isMySeatFinished`/`isMySeatTimeExpired`/`isSoloBudget`/`myFinishedStripSides`; helpers `isFinishedSeat`/`isFinishedPiece`/`isTimeExpiredSeat`/`isSoloBudgetSeconds`/`turnRemainingSeconds`; `sendMove` / `sendPeek` / `sendPeekAnswer` / `sendEndTurn`; `sendReady`; `sendSay` + ephemeral `sayEvents`; `status`, `error`; subscribe/unsubscribe / create/join/`rejoinGame`/leave; tourist token in `localStorage` | `LobbyPage`, `GamePage` |
 | **counter** | scaffold only | none in product flow — ignore unless cleaning scaffold |
 
 ### Auth vs theme vs game ownership
 
 - **auth** owns Colyseus Auth only (`client.auth.*`, token sync via `onChange`). It does not create rooms or call Dark/`GET|POST /api/theme`.
 - **theme** owns chrome Dark preference and preference HTTP (`client.http.get('/api/theme')` on restore, `post` on toggle). Wired from `App.vue`; does not own auth session or rooms. See `work-with-styles`.
-- **game** owns room listing, room lifecycle, tourist reconnect token, seat/turn/start/finish/timer sync (`seats` + piece `finished` / seat `finishPlace` / `timeExpired` + `phase` / `maxSeats` / `countdownRemaining` / `currentTurnSessionId` / `turnUntil` / `turnBudgetSeconds` / `sessionId` from `onStateChange`; legacy `started` mirrors `phase === 'playing'`), `sendMove` → `room.send('move', …)` only when playing + `isMyTurn` + not finished + not time-expired (server also rejects), `sendReady` → `room.send('ready')`, and `sendSay` → `room.send('say', { presetId })` plus `onMessage('say')` → `sayEvents` (picker whitelist `hello`|`luck`; readiness preset arrives via ready broadcast; TTL 10s / max 3 live). It does not call `client.auth` or theme APIs. Do not put `side`/`row`/`col` on `GameSeat` itself — those live on each `GamePiece`. Selection/hints/`moveAnimating`/say picker/place modal/timeout modal stay page-local on `GamePage`.
+- **game** owns room listing, room lifecycle, tourist reconnect token, seat/turn/start/finish/timer sync (`seats` + piece `finished` / seat `finishPlace` / `timeExpired` + `phase` / `maxSeats` / `countdownRemaining` / `currentTurnSessionId` / `turnUntil` / `turnBudgetSeconds` / `removedTaskKeys` / `sessionId` from `onStateChange`; legacy `started` mirrors `phase === 'playing'`), private budgets (`onMessage('budgets')` → `steps`/`peeks`/`budgetsInfinite`; `onMessage('peekOpen')` → `openPeek`), `sendMove` → `room.send('move', …)` only when playing + `isMyTurn` + not finished + not time-expired (**does not** advance turn locally — server ends via endTurn/auto/timeout), `sendPeek` / `sendPeekAnswer` / `sendEndTurn` (`canSendEndTurn` hides solo infinite), `sendReady` → `room.send('ready')`, and `sendSay` → `room.send('say', { presetId })` plus `onMessage('say')` → `sayEvents` (picker whitelist `hello`|`luck`; readiness preset arrives via ready broadcast; TTL 10s / max 3 live). It does not call `client.auth` or theme APIs. Do not put `side`/`row`/`col` on `GameSeat` itself — those live on each `GamePiece`. Selection/hints/`moveAnimating`/peekedThisTurnLocal/+N anim/say picker/place/peek/solo/timeout modals stay page-local on `GamePage`.
 - Cross-cutting: router awaits `useAuthStore().whenReady()` then enforces `requiresAuth` / `guest`. `App.vue` uses `watch([() => auth.ready, () => auth.user?.id, () => auth.user?.anonymous], …)` → `theme.syncFromAuthUser` (GET restore; not JWT `user.theme`-only). Do **not** use `watch(() => [ready, id, anonymous])` (new array each run) or replace `auth.user` after GET — that storms `GET /api/theme` (SC-THEME-10). POST toggle may patch `auth.user.theme` because the watch does not depend on it. Game pages assume auth already passed.
-- Room constants: `TOURIST_ROOM = 'tourist'`, `LOBBY_ROOM = 'lobby'`. Board tile geometry + presence + move chrome stay on `GamePage`.
+- Room constants: `TOURIST_ROOM = 'tourist'`, `LOBBY_ROOM = 'lobby'`. Board tile geometry + presence + move/peek chrome stay on `GamePage`.
 
 ### Decision checklist
 
@@ -117,7 +117,10 @@ Pages call store actions; stores call `client` / `room`.
 // Do — in stores/game.ts
 await client.joinOrCreate(LOBBY_ROOM, { filter: { name: TOURIST_ROOM } });
 await client.create(TOURIST_ROOM, options);
-this.room.send('move', { side, row, col }); // only from sendMove when playing + isMyTurn
+this.room.send('move', { side, row, col }); // only from sendMove when playing + isMyTurn (no local turn advance)
+this.room.send('peek', { side }); // sendPeek
+this.room.send('peekAnswer', { correct }); // sendPeekAnswer
+this.room.send('endTurn'); // sendEndTurn when canSendEndTurn
 this.room.send('ready'); // only from sendReady when canSendReady
 this.room.send('say', { presetId }); // only from sendSay (hello|luck — not ready)
 
@@ -183,7 +186,14 @@ export const useGameStore = defineStore('game', {
     countdownRemaining: 0,
     started: false, // legacy mirror of phase === 'playing'
     currentTurnSessionId: '',
+    turnUntil: 0,
+    turnBudgetSeconds: 0,
     seats: [],
+    removedTaskKeys: [],
+    steps: 0,
+    peeks: 0,
+    budgetsInfinite: false,
+    openPeek: null,
     status: 'idle',
     error: null,
     listing: false,
@@ -203,6 +213,7 @@ export const useGameStore = defineStore('game', {
       ),
     isPlaying: (state) => state.phase === 'playing',
     canSendReady: (state) => { /* waiting + ≥2 + under maxSeats + own !ready */ },
+    canSendEndTurn: (state) => { /* playing + isMyTurn + !budgetsInfinite + !finished + !timeExpired */ },
   },
   actions: {
     async subscribeLobby() { /* lobbyWanted + joinOrCreate lobby + quiet resubscribe */ },
@@ -226,6 +237,13 @@ export const useGameStore = defineStore('game', {
       this.room.send('move', { side, row, col });
       return true;
     },
+    sendPeek(side) { /* playing + isMyTurn → room.send('peek', { side }) */ },
+    sendPeekAnswer(correct) { /* room.send('peekAnswer', { correct }); openPeek = null */ },
+    sendEndTurn() {
+      if (!this.room || !this.canSendEndTurn) return false;
+      this.room.send('endTurn');
+      return true;
+    },
     sendReady() {
       if (!this.room || !this.canSendReady) return false;
       this.room.send('ready');
@@ -242,7 +260,7 @@ export const useGameStore = defineStore('game', {
 
 Notes:
 - Live lobby listing uses `subscribeLobby` / LobbyRoom messages — not LobbyPage HTTP poll. `refreshRooms` HTTP remains unused fallback. Set `lobby.reconnection.enabled = false`; filter reservation/reconnect noise (see `work-with-lobby`).
-- Mirror `seats` (incl. connectivity + `ready` + `finishPlace` + `timeExpired`) / `phase` / `maxSeats` / `countdownRemaining` / `currentTurnSessionId` / `turnUntil` / `turnBudgetSeconds` / `sessionId` in the store; keep tile geometry + presence + selection/hints + say/timeout/place modals on `GamePage` (not Pinia). Ephemeral `sayEvents` stay in the store (room I/O).
+- Mirror `seats` (incl. connectivity + `ready` + `finishPlace` + `timeExpired`) / `phase` / `maxSeats` / `countdownRemaining` / `currentTurnSessionId` / `turnUntil` / `turnBudgetSeconds` / `removedTaskKeys` / `sessionId` in the store; listen `budgets` / `peekOpen` privately. Keep tile geometry + presence + selection/hints + peek/end-turn chrome + say/timeout/place/solo modals on `GamePage` (not Pinia). Ephemeral `sayEvents` stay in the store (room I/O).
 - Persist tourist `reconnectionToken` in `localStorage` (`ht-tourist-reconnect`); clear on consented `leaveGame` / `_leaveTouristRoom` and after failed `reconnect`; keep on unexpected `onLeave`; cross-tab steal OK (see `work-with-rooms`).
 - `leaveGame` unsubscribes lobby and swallows leave errors (room may already be closed). `GamePage` calls `rejoinGame(roomId)` on mount / soft-fail (reconnect → `joinById`).
 
@@ -301,13 +319,14 @@ Dependency direction: `pages` → `stores` / `boot` / `components`. Keep Colyseu
 - Keep Colyseus Auth and room I/O inside `auth` / `game`.
 - Use local `ref` for form drafts, layout constants, and page-only spinners.
 - Sync auth from `client.auth.onChange`; gate routes with `whenReady()`.
-- Map only needed room fields from `onStateChange` (incl. `currentTurnSessionId`); keep `sendMove` / `sendSay` lockstep with server `onMessage('move'|'say')`.
+- Map only needed room fields from `onStateChange` (incl. `currentTurnSessionId` / `removedTaskKeys`); keep `sendMove` / `sendPeek` / `sendEndTurn` / `sendSay` lockstep with server `onMessage`.
 - Add `acceptHMRUpdate` to every new store file.
 - Coordinate room name / state schema / messages with `../happy-tourist-server`.
 
 **Don't**
-- Call `client.auth.*`, `client.create` / `joinById`, or `room.send` from random components / GamePage (use `sendMove` / `sendSay`).
+- Call `client.auth.*`, `client.create` / `joinById`, or `room.send` from random components / GamePage (use `sendMove` / `sendPeek` / `sendPeekAnswer` / `sendEndTurn` / `sendSay`).
 - Put tourist board tile geometry or selection/hints into Pinia without a cross-page need.
+- Assume `sendMove` advances the turn — end-turn / auto / timeout do.
 - Put domain state in `stores/index.ts` or grow the unused `counter` scaffold.
 - Reintroduce legacy draughts `board` / `{ from, to }` as current product canon.
 - Mix auth session concerns into `game` or room lifecycle into `auth`.

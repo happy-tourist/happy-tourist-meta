@@ -4,33 +4,35 @@ description: >-
   Use when creating, changing, reviewing, or debugging the tourist board UI in
   the happy-tourist client — GamePage CSS Grid (gap/radius 2), synced seat pieces
   overlay, presence rows (top/bottom, no side columns) with dual rings + corner
-  affordances, preset say bubbles toward board, personal tourist strip, tile
-  kinds (start/task/center), current-turn selection/hints/move submit, or piece
-  travel animation for room tourist.
+  affordances + own steps/peeks counters + end-turn, removed-task holes, peek eye
+  + Correct/Wrong modal, preset say bubbles toward board, personal tourist strip,
+  tile kinds (start/task/center), current-turn selection/hints/move submit, or
+  piece travel animation for room tourist.
 ---
 
 # Work With Game Board
 
 Use this skill for the **tourist board UI** on Game in the Vue 3 Quasar client (`happy-tourist.github.io`).
 
-Product: настольная игра «Счастливый турист». On the seated client whose turn it is **and** `game.isPlaying` (`phase === 'playing'`), the board and strip accept piece selection, local move hints, and move submit via `game.sendMove`. Before playing: no move chrome / submit. Spectators and non-current seated players remain non-interactive for moves. Authority for legality stays on the server (`work-with-game`). Preset say bubbles are separate from turn — any seated+online player may send via `game.sendSay` (server whitelist). Ready-to-start uses `game.sendReady` on own marker **top-left** when `canSendReady` (say affordance stays **top-right**).
+Product: настольная игра «Счастливый турист». On the seated client whose turn it is **and** `game.isPlaying` (`phase === 'playing'`), the board and strip accept piece selection, local move hints, move submit via `game.sendMove`, and peek via eye → `game.sendPeek` / `sendPeekAnswer`. Before playing: no move chrome / submit. Spectators and non-current seated players remain non-interactive for moves. Authority for legality stays on the server (`work-with-game`). Preset say bubbles are separate from turn — any seated+online player may send via `game.sendSay` (server whitelist). Ready-to-start uses `game.sendReady` on own marker **top-left** when `canSendReady` (say affordance stays **top-right**). Own private budgets + «Завершить ход» sit beside the own presence marker (`canSendEndTurn`).
 
 ## Overview
 
 | Surface | Path | Role |
 | --- | --- | --- |
-| Game page | `src/pages/GamePage.vue` | CSS Grid field; unfinished pieces overlay (+ short center disappear); presence + place badge + say; strip×4 with finish icons; local selection/hints; place `q-dialog`; icon-only leave; confirm when seated ∧ `playing` ∧ `finishPlace === 0` ∧ `!timeExpired` → lobby |
-| Game store | `src/stores/game.ts` | Room I/O; mirror `seats` (+ piece `finished` / seat `finishPlace`) / `phase` / `maxSeats` / `countdownRemaining` / `currentTurnSessionId` / `sessionId`; `unfinishedBoardPieces` / `isMySeatFinished` / `myFinishedStripSides`; `isMyTurn` / `isPlaying` / `canSendReady`; `sendMove` / `sendReady` / `sendSay` + `sayEvents` |
+| Game page | `src/pages/GamePage.vue` | CSS Grid field; unfinished pieces overlay (+ short center disappear); holes for `removedTaskKeys`; presence + place badge + say + own budgets/end-turn; strip×4 with finish icons; local selection/hints/peek eye; place / timeout / peek / solo-∞ `q-dialog`; icon-only leave; confirm when seated ∧ `playing` ∧ `finishPlace === 0` ∧ `!timeExpired` → lobby |
+| Game store | `src/stores/game.ts` | Room I/O; mirror `seats` (+ piece `finished` / seat `finishPlace`) / `phase` / `maxSeats` / `countdownRemaining` / `currentTurnSessionId` / `removedTaskKeys` / `sessionId`; private `steps`/`peeks`/`budgetsInfinite`/`openPeek` from `budgets`/`peekOpen`; `unfinishedBoardPieces` / `isMySeatFinished` / `myFinishedStripSides`; `isMyTurn` / `isPlaying` / `canSendReady` / `canSendEndTurn`; `sendMove` / `sendPeek` / `sendPeekAnswer` / `sendEndTurn` / `sendReady` / `sendSay` + `sayEvents` |
 
 | Concern | Location |
 | --- | --- |
 | Layout constant | `LAYOUT` string grid in `GamePage.vue` (`.` hole, `1` start, `*` task, `7` center) |
-| Tile build | `buildBoardTiles()` → `div.tile` with `gridColumn` / `gridRow` |
+| Tile build | `buildBoardTiles()` → `div.tile` with `gridColumn` / `gridRow`; removed `*` → visual hole (page background) |
 | Pieces | `unfinishedBoardPieces` (+ short-lived disappearing finishers) → `img.piece`; PNG from `touristId` |
-| Presence | Occupied seats → top/bottom `.presence-row-scroll` → `.presence-row` (no left/right); dual rings + 72px avatar; finish/ready top-left; say top-right |
+| Presence | Occupied seats → top/bottom `.presence-row-scroll` → `.presence-row` (no left/right); dual rings + 72px avatar; finish/ready top-left; say top-right; **own** steps/peeks + end-turn beside avatar |
 | Say (game/say) | Affordance top-right on **own** online marker (hit-area ≥ ~32px); bubbles toward board from `game.sayEvents`; row overflow must not clip (SC-SAY-15) |
 | Strip | Below board when `mySeat`: four slots `N→E→S→W`; finished slots inactive + finish icon (top-right) |
-| Move UX | Local `selectedSide` + `legalTargets` only when `isPlaying && isMyTurn && !isMySeatFinished && !moveAnimating`; never select finished pieces |
+| Move UX | Local `selectedSide` + `legalTargets` only when `isPlaying && isMyTurn && !isMySeatFinished && !moveAnimating`; never select finished pieces; move does **not** end the turn |
+| Peek UX | Eye on selected own piece standing on present `*` (peeks remain / infinite; multi one-peek/turn local gate); modal from `game.openPeek` → Correct/Wrong → `sendPeekAnswer` |
 | Finish UX | Center land → slide + fade (`disappearingKeys`); own `finishPlace` 0→N → place modal; stay in room after close |
 | Center | One element with `span 2` / `span 2` (solid 2×2), not four cells |
 | Room enter | Out of scope — see `work-with-lobby` / `work-with-rooms` (`rejoinGame`) |
@@ -39,6 +41,7 @@ Product: настольная игра «Счастливый турист». On
 
 - Grid: **10×10** sparse; empty corners are holes (no tile element; page background shows through).
 - Kinds: `start` (green), `task` (brown), `center` (yellow).
+- After peek resolve: synced `game.removedTaskKeys` (`"r,c"`) → task tile omitted (same hole chrome as empty corners); cell stays walkable for move hints.
 - `.tourist-board`: `width: 100%`, `max-width: calc(10 * 60px + 9 * 2px)`, `aspect-ratio: 1`, `--gap: 2px`, `--radius: 2px`, `grid-template-*: repeat(10, 1fr)`; tile `border-radius: var(--radius)`. Do **not** size rows with `%` of auto height (tracks collapse to 0).
 - Container: full width of Game content (no side presence gutters); mobile edge-to-edge relative to page content; wide screens capped by max tile 60px (via board max-width + square aspect).
 - Tile colors are **fixed fills**, independent of Quasar Dark chrome (see `work-with-styles` / theme specs).
@@ -49,13 +52,14 @@ Product: настольная игра «Счастливый турист». On
 |------|----------|
 | Who interacts | Only seated **non-finished** client with `isPlaying && sessionId === currentTurnSessionId` and not mid-own-animation |
 | Select | Click own **unfinished** piece on board or matching strip slot → `selectedSide`; white outline on that cell |
-| Hints | Legal one-step neighbors (Chebyshev 1, playable LAYOUT cell, unoccupied by unfinished) → red outline; **local only** |
+| Hints | Legal one-step neighbors (Chebyshev 1, playable LAYOUT cell **or** removed-task hole, unoccupied by unfinished) → red outline; **local only** |
 | Reselect | May change `selectedSide` among own unfinished pieces until submit |
-| Submit | Activate red destination → `game.sendMove(side, row, col)`; clear selection |
+| Submit | Activate red destination → `game.sendMove(side, row, col)`; clear selection; **turn stays** (end via button / auto / timeout) |
+| Peek | Eye affordance when selected piece stands on present `*` and peeks allow (∞ in solo; multi one peek/turn via page-local `peekedThisTurnLocal`) → `sendPeek(side)`; modal from `openPeek` |
 | Finished | Finished pieces stay off the board after disappear; finished strip slots show finish icon and never select/submit; finished seat has no move chrome |
-| Others | Spectators / not-your-turn / not playing / finished seat: no selection, no red/white move chrome, no `sendMove` |
+| Others | Spectators / not-your-turn / not playing / finished seat: no selection, no red/white move chrome, no `sendMove` / peek |
 
-Do **not** sync selection or hints — page-local refs only.
+Do **not** sync selection or hints — page-local refs only. Do **not** assume `sendMove` advances the turn.
 
 ## Piece Travel Animation (D6 / SC-MOVE-14…15)
 
@@ -66,7 +70,7 @@ Do **not** sync selection or hints — page-local refs only.
 
 ## Presence (occupied seats)
 
-Sync-driven markers in rows above/below the board (SC-PRESENCE-01…14 / design D5/D9–D11). Page reads mirrored `game.seats` only — no Colyseus I/O here.
+Sync-driven markers in rows above/below the board (SC-PRESENCE-01…19 / design D5/D9–D11). Page reads mirrored `game.seats` + own `steps`/`peeks`/`budgetsInfinite` only — no Colyseus I/O here.
 
 | Rule | Behavior |
 |------|----------|
@@ -83,6 +87,10 @@ Sync-driven markers in rows above/below the board (SC-PRESENCE-01…14 / design 
 | Finish place | Seat `finishPlace > 0` → numeric badge at **top-left** of marker (SC-PRESENCE-14) |
 | Ready | Own marker only, **top-left** when `canSendReady` (does not overlap finish by phase) |
 | Say affordance | Own online marker only, **top-right** (SC-PRESENCE-14 / SC-SAY-07); never on opponents / spectators |
+| Own budgets | Own seated marker only while `playing`: steps + peeks (∞ when `budgetsInfinite`); never on opponents / spectators (SC-PRESENCE-15/16) |
+| +N anim | Local fall animation when finite `steps`/`peeks` increase (grant / peek reward) — page-local, no sync event (SC-PRESENCE-17) |
+| End-turn | «Завершить ход» on own marker when `canSendEndTurn` → `sendEndTurn`; hide in solo infinite (SC-PRESENCE-18) |
+| Solo ∞ modal | When `budgetsInfinite` flips false→true → unlimited modal (SC-PRESENCE-19); close keeps player in room |
 
 Tick `nowMs` on an interval (~200 ms) while Game is mounted so turn + reconnect rings animate from **server** `turnUntil` / `reconnectUntil`.
 
@@ -124,32 +132,33 @@ Picker open state (`sayPickerOpen`) is page-local; close if the local seat is lo
 
 ## Authority
 
-- Board **geometry** (`LAYOUT`) is a client constant; server does not sync tile kinds (server mirrors playable set in `touristMove.ts`).
-- **Seats**, `phase` / `maxSeats` / `countdownRemaining`, connectivity, **`currentTurnSessionId`**, **`turnUntil` / `turnBudgetSeconds`**, and seat **`timeExpired` / `finishPlace`** are server-authoritative; client mirrors and renders.
-- Local legal-target computation is a **hint** only — server rejects illegal moves.
+- Board **geometry** (`LAYOUT`) is a client constant; server does not sync tile kinds (server mirrors playable set in `touristMove.ts`). Removed task holes come from synced `removedTaskKeys`.
+- **Seats**, `phase` / `maxSeats` / `countdownRemaining`, connectivity, **`currentTurnSessionId`**, **`turnUntil` / `turnBudgetSeconds`**, **`removedTaskKeys`**, and seat **`timeExpired` / `finishPlace`** are server-authoritative; client mirrors and renders.
+- Own **steps/peeks** are private room messages (`budgets` / `peekOpen`) — not schema; never show others’ counters.
+- Local legal-target / eye affordance computation is a **hint** only — server rejects illegal moves/peeks.
 - Say bubbles are **ephemeral room messages**, not schema state; server whitelist + live limit are authoritative.
 - Do not reintroduce legacy draughts CellValue `0…4` / `{ from, to }` encoding.
 
 ## GamePage Responsibilities
 
-- Render `boardTiles` from `LAYOUT`.
+- Render `boardTiles` from `LAYOUT`, omitting removed task keys as holes.
 - Overlay **unfinished** pieces (plus short-lived disappearing finishers) at `row`/`col` (0-based schema → CSS vars / transform).
 - Render **presence** markers for occupied seats in top/bottom rows (dual turn/reconnect rings + reserved 96px chrome; place badge top-left when `finishPlace > 0`).
-- On own online marker: say affordance **top-right** + picker (finished / time-expired keep say); ready **top-left** when `canSendReady`; for every marker: live say bubbles from `sayEvents` (TTL / stack toward board).
+- On own online marker: say affordance **top-right** + picker (finished / time-expired keep say); ready **top-left** when `canSendReady`; own budgets + «Завершить ход» when applicable; for every marker: live say bubbles from `sayEvents` (TTL / stack toward board).
 - Full-screen countdown overlay while `phase === 'countdown'`.
 - Show strip «Мои туристы» only if `mySeat` **and** own pieces exist (empty before `playing` materialize); finished slots inactive + finish icon; on own turn **in playing** select only unfinished.
 - Board overlay: unfinished pieces only when seats have pieces (none in waiting/countdown).
-- On own turn in playing (not finished / not time-expired): white selection + red targets; submit via store `sendMove`.
+- On own turn in playing (not finished / not time-expired): white selection + red targets; submit via store `sendMove`; peek eye + Correct/Wrong modal via `sendPeek` / `sendPeekAnswer`.
 - Animate piece travel; on center finish keep DOM key for slide then fade (`FINISH_FADE_MS`); ignore input while `moveAnimating`.
-- Own `finishPlace` 0→N → place `q-dialog` (`game.finishPlaceModal*`); own `timeExpired` false→true → timeout `q-dialog` (`game.timeExpiredModal*`); close keeps player in room; clear selection on expiry.
+- Own `finishPlace` 0→N → place `q-dialog` (`game.finishPlaceModal*`); own `timeExpired` false→true → timeout `q-dialog` (`game.timeExpiredModal*`); solo ∞ modal when budgets become infinite; close keeps player in room; clear selection on expiry.
 - Header status: turn labels only in playing; exit **icon-only** Material `logout` with accessible name via `aria-label` / i18n `game.leave` (no visible text label); confirm copy via `leaveConfirm` / `leaveCancel` / `leaveExit`; confirm only when seated ∧ `playing` ∧ `!finishPlace` ∧ `!timeExpired` (else immediate leave); remount without room → `rejoinGame(roomId)` via store.
 
 ## Do
 
 - Keep layout in one client constant; center as a single 2×2 grid area.
-- Preserve max tile 60px, gap 2, radius 2, hole = page background.
-- Keep Colyseus I/O in `stores/game`; page reads seats/phase/turn/strip/presence/`sayEvents` from store only.
-- Gate move interactivity with `isPlaying && isMyTurn && !isMySeatFinished && !isMySeatTimeExpired` (and `!moveAnimating`); never select finished pieces/slots; gate say with own seated+connected; ready via `sendReady`.
+- Preserve max tile 60px, gap 2, radius 2, hole = page background (incl. removed `*`).
+- Keep Colyseus I/O in `stores/game`; page reads seats/phase/turn/strip/presence/`sayEvents`/`steps`/`peeks`/`openPeek`/`removedTaskKeys` from store only.
+- Gate move interactivity with `isPlaying && isMyTurn && !isMySeatFinished && !isMySeatTimeExpired` (and `!moveAnimating`); never select finished pieces/slots; gate say with own seated+connected; ready via `sendReady`; end-turn via `canSendEndTurn`.
 - Map `touristId` 1…4 to `tourist{N}.png`; strip only after pieces exist; finish icon on finished sides.
 - Drive turn/reconnect countdowns from synced `turnUntil` / `reconnectUntil`; countdown overlay from `countdownRemaining`.
 - Expire bubbles from server `at` + `SAY_TTL_MS`; keep max 3 live per sender in UI.
@@ -157,23 +166,24 @@ Picker open state (`sayPickerOpen`) is page-local; close if the local seat is lo
 
 ## Don't
 
-- Call `room.send` from the page — only `game.sendMove` / `game.sendSay` / `game.sendReady`.
+- Call `room.send` from the page — only `game.sendMove` / `sendPeek` / `sendPeekAnswer` / `sendEndTurn` / `sendSay` / `sendReady`.
 - Show white/red move chrome before `playing`, to spectators, non-current players, finished seats, or finished pieces.
-- Show say send affordance on other players’ markers or to spectators.
+- Show say send affordance or budget counters on other players’ markers or to spectators.
+- Assume a successful move ends the turn — use end-turn / auto / timeout.
 - Use Quasar Notify / screen-edge toasts as the say carrier.
 - Depend tile fills on Quasar Dark / theme preference.
 - Invent client-local seat assignment (server assigns on join).
 - Treat client hints as authority.
-- Sync selection / hints / say bubbles to schema.
+- Sync selection / hints / say bubbles / steps-peeks to schema.
 - Put lobby subscribe/create/join logic into the board skill — use `work-with-lobby`.
 - Put reconnect token / `rejoinGame` details here — use `work-with-rooms`.
 
 ## Related
 
-- Server seating / turn / move: `.agents/skills/server/work-with-game/SKILL.md`
-- Room messages (`move` / `say`): `.agents/skills/server/work-with-messages/SKILL.md`
-- Schema seats + turn: `.agents/skills/server/work-with-schema/SKILL.md`
+- Server seating / turn / move / budgets: `.agents/skills/server/work-with-game/SKILL.md`
+- Room messages (`move` / `peek` / `endTurn` / `say`): `.agents/skills/server/work-with-messages/SKILL.md`
+- Schema seats + turn + removed tiles: `.agents/skills/server/work-with-schema/SKILL.md`
 - Lobby / room name: `.agents/skills/client/work-with-lobby/SKILL.md`
 - Tourist reconnect: `.agents/skills/client/work-with-rooms/SKILL.md`
-- Pinia `sendSay` / `sayEvents`: `.agents/skills/client/work-with-stores/SKILL.md`
+- Pinia `sendPeek` / budgets: `.agents/skills/client/work-with-stores/SKILL.md`
 - Styles / theme chrome: `.agents/skills/client/work-with-styles/SKILL.md`

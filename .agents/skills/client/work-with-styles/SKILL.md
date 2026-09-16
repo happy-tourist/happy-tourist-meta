@@ -5,9 +5,9 @@ description: >-
   the happy-tourist client: Quasar Dark plugin + theme boot/store, App.vue
   header toggle, guest localStorage vs registered GET/POST /api/theme (restore
   ≠ JWT-only), muted chrome text, quasar.variables.scss tokens, app.scss, page
-  scoped CSS (especially GamePage board gap/radius 2 + presence row/ring/avatar),
-  Quasar utility classes, Material Icons / Roboto, or color props on Quasar
-  components.
+  scoped CSS (especially GamePage board gap/radius 2 + presence row/ring/avatar
+  + own budgets/end-turn + peek affordance), Quasar utility classes, Material
+  Icons / Roboto, or color props on Quasar components.
 ---
 
 # Work With Styles
@@ -182,11 +182,13 @@ Board UI is custom CSS Grid (not Quasar widgets). Keep selectors local and class
 | `.presence-avatar` | **Sibling** tourist PNG (**72px** = strip) on top of rings — `z-index: 2`; `pointer-events: none`; no static `--turn` box-shadow; do **not** rely on progress default slot without `show-value` (SC-PRESENCE-12) |
 | `.presence-frame` / `.presence-row-scroll` / `.presence-row` | Column flex: top scroll→board→bottom scroll; no left/right gutters; row `gap: 48px` + `overflow: visible` + `pointer-events: auto`; scroll wrapper `overflow-x: auto` + `pointer-events: none` + Y padding/margin absorb so forced `overflow-y` does not clip say chrome (SC-SAY-15) |
 | `.presence-place-badge` / `.ready-affordance` | Top-left corners (SC-PRESENCE-14) |
+| `.presence-budgets` / `.budget-counter` / `.budget-fall` / `.end-turn-btn` | Own steps/peeks + end-turn beside own marker (SC-PRESENCE-15…18); not on opponents |
+| `.peek-affordance` | Eye on selected piece standing on present `*` (SC-BOARD-08) |
 | `.say-affordance` | Top-right on own marker; hit-area ≥ ~32 CSS px (glyph may be smaller); z-index above rings/avatar (SC-SAY-07 / SC-SAY-15) |
 | `.say-bubble` / `.say-picker` | Presence comic bubbles + picker; chrome follows Dark via `body.body--dark` overrides (not tile fills) |
 | `.say-bubbles--top` / `--bottom` | Toward board: below top-row avatars / above bottom self; newer closer to avatar |
 
-Current-turn interactivity, dual turn/reconnect rings, presence **row** layout (top opponents / bottom self; no side columns), corner affordances, say bubbles toward board, and travel animation live in `work-with-game-board` — do not reintroduce draughts `.cell` / selection classes, left/right presence slots, or a static blue turn outline.
+Current-turn interactivity, dual turn/reconnect rings, presence **row** layout (top opponents / bottom self; no side columns), own budget counters / end-turn / peek eye, removed-task holes, corner affordances, say bubbles toward board, and travel animation live in `work-with-game-board` — do not reintroduce draughts `.cell` / selection classes, left/right presence slots, or a static blue turn outline.
 
 When editing board visuals:
 

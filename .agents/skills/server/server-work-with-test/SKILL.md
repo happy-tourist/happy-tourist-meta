@@ -4,11 +4,12 @@ description: >-
   Use when planning or writing mocha + @colyseus/testing tests for
   happy-tourist-server: room connect with JWT, onAuth failures, waiting-only
   seating / deferred pieces until playing / reconnect grace (SC-PIECE), move +
-  turn deadlines (SC-MOVE; setTurnBudgetsForTests), center finish / finishPlace
-  (SC-FINISH), preset say (SC-SAY), schema sync assertions, GET /rooms
-  listing, or preference HTTP (GET/POST /api/theme). Core workflow: test
-  plan (mocks/verify) → write test/*.test.ts → run npm test from server
-  package root and fix failures. Do not invent Jest/babel patterns.
+  steps/peeks / peek / endTurn / removed tiles (SC-MOVE-33… / SC-BOARD) + turn
+  deadlines (setTurnBudgetsForTests), center finish / finishPlace (SC-FINISH),
+  preset say (SC-SAY), schema sync assertions, GET /rooms listing, or preference
+  HTTP (GET/POST /api/theme). Core workflow: test plan (mocks/verify) → write
+  test/*.test.ts → run npm test from server package root and fix failures. Do
+  not invent Jest/babel patterns.
 trigger: slash
 ---
 
@@ -28,9 +29,10 @@ Stack: **mocha**, **tsx** (`-r tsx`), **`@colyseus/testing`**
 (`"type": "module"`). Tests are `test/**.test.ts`.
 
 Core principle: exercise the public contract of rooms / HTTP / auth as the
-client will see them (JWT join, synced schema fields, `move` accept/reject,
-room listing), not private helpers. Prefer extending `test/MyRoom.test.ts`
-patterns over inventing Jest, Vitest, or babel setups.
+client will see them (JWT join, synced schema fields, `move`/`peek`/`endTurn`
+accept/reject, private `budgets`/`peekOpen`, room listing), not private helpers.
+Prefer extending `test/MyRoom.test.ts` patterns over inventing Jest, Vitest, or
+babel setups.
 
 ## Mocha / Colyseus Testing Setup
 
@@ -107,21 +109,26 @@ Use these categories only when the SUT has relevant behavior:
   (`touristId` + `pieces` keyed by side `N|E|S|W` →
   `{ side, row, col, finished }` — **empty until playing** + `connected` /
   `reconnectUntil` / `ready` / `finishPlace` / `timeExpired`),
-  `currentTurnSessionId`, `turnUntil`, `turnBudgetSeconds`, and
-  `nextFinishPlace`. Assert deferred pieces then materialize / free start cells;
-  leave reopens seating **only in waiting**; join in countdown/playing is
-  spectator (SC-PIECE-01…08 / SC-PIECE-19 in `test/MyRoom.test.ts`). Also cover
-  reconnect grace SC-PIECE-11…16 and start capacity SC-START-* (maxSeats create,
-  ready → countdown → playing; move gated on playing).
-- Messages / turn / timer: cover SC-MOVE-* in `test/MyRoom.test.ts` (first seated
-  holds turn; join-order rotation; legal orthogonal/diagonal; occupied/non-playable
-  reject; out-of-turn / spectator / pre-playing / finished / time-expired reject;
-  permanent leave advances; offline grace keeps turn for non-finished; deadline
-  keeps ticking; multi 60s auto-pass; solo 300s → `timeExpired`). Use
-  `forcePlaying` (clears deadline) / `forcePlayingWithTimer` / `waitForPhase`
-  helpers; accelerate clocks with `setTurnBudgetsForTests` + `resetTurnBudgets`
-  in `beforeEach`/`afterEach`. Pure rules: `test/touristMove.test.ts` (incl.
-  finished occupancy / `finished` reject reason).
+  `currentTurnSessionId`, `turnUntil`, `turnBudgetSeconds`,
+  `nextFinishPlace`, and `removedTaskKeys`. Assert deferred pieces then
+  materialize / free start cells; leave reopens seating **only in waiting**;
+  join in countdown/playing is spectator (SC-PIECE-01…08 / SC-PIECE-19 in
+  `test/MyRoom.test.ts`). Also cover reconnect grace SC-PIECE-11…16 and start
+  capacity SC-START-* (maxSeats create, ready → countdown → playing; move gated
+  on playing).
+- Messages / turn / timer / budgets: cover SC-MOVE-* in `test/MyRoom.test.ts`
+  (first seated holds turn; join-order rotation; legal orthogonal/diagonal;
+  occupied/non-playable reject; out-of-turn / spectator / pre-playing / finished /
+  time-expired / no-steps reject; **successful `move` does not advance turn**;
+  `peek`/`peekAnswer`/`endTurn`; private `budgets`/`peekOpen`; grant +1/+1;
+  solo infinite; auto-end; timeout force-wrong open peek; permanent leave
+  advances; offline grace keeps turn for non-finished; deadline keeps ticking;
+  multi 60s auto-pass; solo 300s → `timeExpired`). Also SC-BOARD-07… (reward bag,
+  remove tile, walkable holes). Use `forcePlaying` (clears deadline) /
+  `forcePlayingWithTimer` / `waitForPhase` helpers; accelerate clocks with
+  `setTurnBudgetsForTests` + `resetTurnBudgets` in `beforeEach`/`afterEach`.
+  Pure rules: `test/touristMove.test.ts` (incl. finished occupancy /
+  `finished` reject / `hasLegalMove` / `hasLegalPeek` / removed `*` walkable).
 - Finish: cover SC-FINISH-* (center land → `piece.finished`; 4th finish →
   `finishPlace = nextFinishPlace++`; turn skips finished / time-expired; all
   finished clears turn; join in playing is spectator (no mid-join seat); finished may still `say`).
@@ -172,11 +179,18 @@ Verify reconnect grace (SC-PIECE-11…16):
 - Last seated permanent leave closes room even with spectators
 - Observer sees connectivity fields sync (SC-PIECE-16)
 
-Verify move / turn / timer (SC-MOVE):
-- First seated holds `currentTurnSessionId`; successful move advances join-order queue (skip finished / time-expired)
-- Legal orthogonal/diagonal one-step: piece row/col update; illegal/out-of-turn/spectator/pre-playing/finished/time-expired: unchanged
-- Permanent leave of current advances turn; offline grace does not (non-finished); turnUntil keeps ticking
-- ≥2 eligible: `turnBudgetSeconds===60`; timeout → advance without move; solo: `===300`; timeout → `timeExpired`
+Verify move / turn / timer / budgets (SC-MOVE + SC-BOARD):
+- First seated holds `currentTurnSessionId`; successful `move` spends a step and
+  **does not** advance the queue — advance via `endTurn` / auto-end / timeout /
+  full-seat finish (skip finished / time-expired)
+- Legal orthogonal/diagonal one-step: piece row/col update; illegal/out-of-turn/
+  spectator/pre-playing/finished/time-expired/no-steps: unchanged
+- `peek` → private `peekOpen`; `peekAnswer` removes `"r,c"` into `removedTaskKeys`
+  (still walkable); Correct grants reward steps; multi one-peek/turn; solo infinite
+- Permanent leave of current advances turn; offline grace does not (non-finished);
+  turnUntil keeps ticking; open peek → force incorrect on timeout/leave
+- ≥2 eligible: `turnBudgetSeconds===60`; timeout → advance without move; solo:
+  `===300`; timeout → `timeExpired`
 - `setTurnBudgetsForTests(multi, solo)` + `resetTurnBudgets()`; `forcePlaying` clears deadline; `forcePlayingWithTimer` uses `enterPlaying`
 
 Verify finish (SC-FINISH):

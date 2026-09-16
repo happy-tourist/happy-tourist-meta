@@ -5,7 +5,7 @@ description: >-
   state in the happy-tourist Colyseus server — MyRoomState phase/maxSeats/
   countdownRemaining/started/seats (touristId + pieces + finished + connected/
   reconnectUntil/ready/finishPlace/timeExpired) + currentTurnSessionId +
-  turnUntil + turnBudgetSeconds + nextFinishPlace,
+  turnUntil + turnBudgetSeconds + nextFinishPlace + removedTaskKeys,
   MapSchema / ArraySchema, schema() + t.* (v5), or aligning the sync surface
   with the sibling client tourist contract.
 ---
@@ -20,12 +20,13 @@ relative to the server repo root.
 
 Sibling client: `../happy-tourist.github.io` (room `tourist`; board geometry local;
 seats/`phase`/`maxSeats`/`countdownRemaining`/`currentTurnSessionId`/`turnUntil`/
-`turnBudgetSeconds`/connectivity/ready/`finishPlace`/`timeExpired` mirrored in
-`stores/game`; presence dual rings + move hints + countdown overlay on GamePage).
+`turnBudgetSeconds`/`removedTaskKeys`/connectivity/ready/`finishPlace`/`timeExpired`
+mirrored in `stores/game`; presence dual rings + own budgets + move/peek UX on GamePage).
 
 Schema is the **sync surface only**. Seating assignment, reconnect grace, start
-countdown timers, turn order (`turnOrder` room-private), turn deadlines, and move
-rules live in the Room / `work-with-game` — not in schema definitions.
+countdown timers, turn order (`turnOrder` room-private), private step/peek budgets,
+task reward bag, turn deadlines, and move/peek rules live in the Room /
+`work-with-game` — not in schema definitions.
 
 ## Overview
 
@@ -85,6 +86,10 @@ export const MyRoomState = schema(
     turnUntil: t.number().default(0),
     /** Active turn budget seconds (60 multi / 300 solo); `0` when none. */
     turnBudgetSeconds: t.uint16().default(0),
+    /**
+     * Task cells removed after peek (`"r,c"`). Still walkable; hole chrome on client.
+     */
+    removedTaskKeys: t.array("string"),
   },
   "MyRoomState",
 );
@@ -116,7 +121,7 @@ Room mutates these in `onDrop` / `onReconnect` / seat assign — see `work-with-
 | `currentTurnSessionId` | Synced whose turn; empty when no eligible seat |
 | `turnUntil` | Unix ms deadline; `0` = no active turn timer |
 | `turnBudgetSeconds` | `60` multi / `300` solo while timer active; else `0` |
-| `Seat.timeExpired` | Solo budget elapsed; moves rejected; seat remains |
+| `Seat.timeExpired` | Solo budget elapsed; moves/peeks rejected; seat remains |
 
 **Not synced:** room-private `turnOrder: string[]` in `MyRoom` (join-order queue). Client only needs «чей ход» + deadline chrome.
 
@@ -130,9 +135,17 @@ Room mutates these in `onDrop` / `onReconnect` / seat assign — see `work-with-
 
 Finished seats remain in `seats` (count toward `maxSeats`) until consented leave / grace timeout. No room phase `finished`.
 
+### Removed task tiles (game/board)
+
+| Field | Meaning |
+|-------|---------|
+| `removedTaskKeys` | `ArraySchema<string>` of `"r,c"` after peek resolve; all clients see holes; cells stay walkable |
+
+**Not synced (room-private + messages):** step/peek budgets (`budgets` Map + `client.send('budgets')`); task reward bag (`taskRewards`); open peek (`openPeek` + `client.send('peekOpen')`). Do **not** put steps/peeks on `Seat`.
+
 **Not synced (ephemeral messages):** preset `say` bubbles — room-private `liveSays` + `broadcast('say', …)`; client keeps `sayEvents` in Pinia. Do **not** add bubble fields to schema.
 
-- Client mirrors `phase` / `maxSeats` / `countdownRemaining` + seats (+ `ready` / `finishPlace` / `timeExpired` / piece `finished`) + `currentTurnSessionId` / `turnUntil` / `turnBudgetSeconds` into Pinia; GamePage draws unfinished pieces (+ short disappear), strip only once pieces exist, place/timeout modals, leave confirm only when seated ∧ playing ∧ `finishPlace === 0` ∧ `!timeExpired`, and say bubbles from `sayEvents`.
+- Client mirrors `phase` / `maxSeats` / `countdownRemaining` + seats (+ `ready` / `finishPlace` / `timeExpired` / piece `finished`) + `currentTurnSessionId` / `turnUntil` / `turnBudgetSeconds` / `removedTaskKeys` into Pinia; GamePage draws unfinished pieces (+ short disappear), holes for removed `*`, strip only once pieces exist, place/timeout/peek/solo modals, leave confirm only when seated ∧ playing ∧ `finishPlace === 0` ∧ `!timeExpired`, and say bubbles from `sayEvents`. Own steps/peeks come from private `budgets`, not schema.
 - Board **tile geometry** stays a client CSS Grid constant — not in schema.
 - Do **not** revive draughts `board` / cell `0`–`4` / `{ from, to }` encoding.
 
@@ -175,7 +188,7 @@ lockstep. Initialize collections in Room `onCreate` (not inside schema “logic�
 
 ## Do
 
-- Keep schema fields to **what must sync** (today: `phase` / `maxSeats` / `countdownRemaining` + `seats` incl. connectivity/`ready`/`finishPlace` + piece `finished` + `currentTurnSessionId` + `nextFinishPlace`; legacy `started` OK).
+- Keep schema fields to **what must sync** (today: `phase` / `maxSeats` / `countdownRemaining` + `seats` incl. connectivity/`ready`/`finishPlace` + piece `finished` + `currentTurnSessionId` + `nextFinishPlace` + `removedTaskKeys`; legacy `started` OK).
 - Mutate state from the **Room** after validating actions; treat client payloads as intents only.
 - Align field names with `../happy-tourist.github.io` (`stores/game`) in the same change.
 - Use `schema()` + `t.*` + `export type X = SchemaType<typeof X>`.
@@ -183,21 +196,21 @@ lockstep. Initialize collections in Room `onCreate` (not inside schema “logic�
 
 ## Don't
 
-- Put rules, seating pools, `turnOrder`, countdown timers, reconnect timers, say/`liveSays`, win detection, or rating DB writes inside schema files.
+- Put rules, seating pools, `turnOrder`, countdown timers, reconnect timers, say/`liveSays`, private step/peek budgets, task reward bag, win detection, or rating DB writes inside schema files.
 - Trust or echo a client-supplied full board/layout as truth.
 - Invent parallel field names without changing the client in the same effort.
 - Mix decorator `@type` Schema classes with the v5 `schema()` style in this package.
 - Pass `t.*()` builders as collection element types (`t.array(t.uint8())`).
 - Expand sync state with secrets, passwords, or JWT material.
 - Reintroduce draughts cell encoding / `{ from, to }` wire as “intended” without a product decision.
-- Sync selection / move hints (client-local only).
+- Sync selection / move hints / steps / peeks (client-local or private messages only).
 
 ## Alignment Checklist
 
 When changing schema:
 
-1. Field names match client Pinia / GamePage (`phase`, `maxSeats`, `countdownRemaining`, `seats` → `touristId` + `pieces` (+ `finished`) + connectivity + `ready` + `finishPlace`, `currentTurnSessionId`; client need not mirror `nextFinishPlace`).
-2. Room owns seating, reconnect, start countdown, turn order, and messages — schema does not define messages or `turnOrder`.
+1. Field names match client Pinia / GamePage (`phase`, `maxSeats`, `countdownRemaining`, `seats` → `touristId` + `pieces` (+ `finished`) + connectivity + `ready` + `finishPlace`, `currentTurnSessionId`, `removedTaskKeys`; client need not mirror `nextFinishPlace`).
+2. Room owns seating, reconnect, start countdown, turn order, budgets/peek, and messages — schema does not define messages or `turnOrder` / steps/peeks.
 3. Sibling client `onStateChange` / presence / `isPlaying` / `isMyTurn` is updated together when fields appear.
 4. Prefer server → client alignment over unilateral client rewrites.
 
