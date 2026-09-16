@@ -77,7 +77,7 @@ Sync-driven markers around the board (SC-PRESENCE-01…05 / design D5). Page rea
 | Offline | `!connected && reconnectUntil > 0` → **inner** warning `QCircularProgress` (`min=0`, `max=30`, `value` = remaining from `reconnectUntil − now`) |
 | Reserved chrome | Always outer 52px turn ring slot (stable layout — SC-PRESENCE-11); inactive turn/grace → transparent track/value 0 (no size jump) |
 | Turn deadline | Outer determinate ring while `playing` + current turn + synced `turnUntil`/`turnBudgetSeconds`: blue (`primary`) for multi 60s; red (`negative`) when `turnBudgetSeconds === 300` (solo). **No** static blue outline / `--turn` box-shadow |
-| Dual rings | Offline current-turn: outer = turn, inner = reconnect (both visible — SC-PRESENCE-10) |
+| Dual rings | Offline current-turn: outer = turn, inner = reconnect (both visible — SC-PRESENCE-10). Implement as **siblings** (outer absolute behind, inner with avatar slot) — do **not** nest `q-circular-progress` (Quasar nesting hides the img) |
 | Header | «Ваш ход» / «Ход соперника» / «Ход игрока» (spectator) from turn, not from outline |
 | Finish place | Seat `finishPlace > 0` → numeric place badge on marker (incl. offline-in-grace); no badge when `finishPlace === 0` |
 
