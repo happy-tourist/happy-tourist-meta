@@ -47,13 +47,13 @@ For a spectator viewer, all occupied seats MUST be laid out in a single row **ab
 
 ### Requirement: Own step and peek counters beside the avatar
 
-While the user is a seated player on the Game screen in phase `playing`, the system SHALL show that user’s private **steps** and **peeks** counters in a **horizontal row to the right of** that user’s own presence avatar in the bottom HUD. When peeks are infinite (solo mode), the peeks counter MUST display an infinity indication; the steps counter MUST show the finite numeric value. Other seated players’ and spectators’ clients MUST NOT show another seat’s step or peek counters. Spectators MUST NOT see step/peek counters for any seat. When the user’s finite budgets increase, the client SHOULD play a local “+N falls into the counter” animation for steps and peeks grants (turn grant and successful peek rewards) lasting approximately **two seconds**. The end-turn control MUST NOT sit in this budgets row (`game/presence` end-turn requirement).
+While the user is a seated player on the Game screen in phase `playing`, the system SHALL show that user’s private **steps** and **peeks** counters in a **vertical stack to the right of** that user’s own presence avatar in the bottom HUD. When peeks are infinite (solo mode), the peeks counter MUST display an infinity indication; the steps counter MUST show the finite numeric value. Other seated players’ and spectators’ clients MUST NOT show another seat’s step or peek counters. Spectators MUST NOT see step/peek counters for any seat. When the user’s finite budgets increase, the client SHOULD play a local “+N falls into the counter” animation for steps and peeks grants (turn grant and successful peek rewards) lasting approximately **two seconds**. The end-turn control MUST NOT sit in this budgets stack (`game/presence` end-turn requirement).
 
 #### Scenario [SC-PRESENCE-15]: Seated user sees only own counters
 
 - **GIVEN** two seated players in phase `playing` with different private budgets
 - **WHEN** each views Game presence
-- **THEN** each sees steps and peeks only on their own marker, in a row to the right of their own avatar
+- **THEN** each sees steps and peeks only on their own marker, stacked vertically to the right of their own avatar
 - **AND** neither sees the other’s budget numbers on the opponent marker
 
 #### Scenario [SC-PRESENCE-16]: Solo shows infinity only on peeks
@@ -73,7 +73,7 @@ While the user is a seated player on the Game screen in phase `playing`, the sys
 
 ### Requirement: End-turn control next to own avatar
 
-While it is the seated user’s multiplayer turn in phase `playing` (two or more eligible seats) and the user is not time-expired, the Game presence chrome MUST show a control whose visible label is exactly **«Завершить ход»** **above** the sticky bottom HUD panel, aligned toward the **right** edge of the board/HUD content width (lower-right of the board region). Activating it MUST submit end-turn per `game/move`. The control MUST NOT appear in the budgets row beside the avatar. The control MUST NOT appear for spectators, for seats that are not current turn, during solo play, or for finished / time-expired seats.
+While it is the seated user’s multiplayer turn in phase `playing` (two or more eligible seats) and the user is not time-expired, the Game presence chrome MUST show a control whose visible label is exactly **«Завершить ход»** **above** the sticky bottom HUD panel, aligned toward the **right** edge of the board/HUD content width (lower-right of the board region). Activating it MUST submit end-turn per `game/move`. The control MUST NOT appear in the budgets stack beside the avatar. The control MUST NOT appear for spectators, for seats that are not current turn, during solo play, or for finished / time-expired seats.
 
 #### Scenario [SC-PRESENCE-17]: Current multiplayer seat sees «Завершить ход»
 
@@ -91,8 +91,8 @@ While it is the seated user’s multiplayer turn in phase `playing` (two or more
 #### Scenario [SC-PRESENCE-25]: End-turn not inline with budgets
 
 - **GIVEN** it is the local seated user’s turn in multi-seat play and end-turn is available
-- **WHEN** the bottom HUD budgets row beside the own avatar is shown
-- **THEN** steps and peeks appear in that row without the end-turn control inline
+- **WHEN** the bottom HUD budgets stack beside the own avatar is shown
+- **THEN** steps and peeks appear in that stack without the end-turn control inline
 - **AND** the end-turn control remains above the bottom panel toward the right
 
 ## ADDED Requirements

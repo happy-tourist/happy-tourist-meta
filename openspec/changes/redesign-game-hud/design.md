@@ -33,9 +33,9 @@
 
 ### D3 — Budgets справа от аватара; end-turn над панелью справа
 
-**Выбор:** `.presence-budgets` горизонтальный ряд **справа** от own avatar. End-turn — отдельный control в board region / над HUD, `right` alignment. Не в budgets row.
+**Выбор:** `.presence-budgets` — steps и peeks **друг под другом** справа от own avatar. End-turn — отдельный control в board region / над HUD, `right` alignment. Не в budgets stack.
 
-**Альтернатива:** budgets над аватаром (фаза 2) — отвергнуто explore после apply (места в HUD хватает).
+**Альтернатива:** budgets над аватаром (фаза 2) — отвергнуто; горизонтальный ряд справа — отвергнуто (фаза 3: вертикальный стек).
 
 ### D4 — Strip без chip/menu; responsive ряд ↔ 2×2
 
