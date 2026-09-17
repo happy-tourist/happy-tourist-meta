@@ -1,6 +1,6 @@
 ## Context
 
-См. `proposal.md` — Why / Scope. **Уже в коде (фаза 1 + 2):** leave + match status в `App.vue`; sticky `.game-hud`; grille `GRILLE_ANIM_MS = 1000`; room id убран; opponents/spectator top; seated bottom = own + strip (row / `@container` ≤~420 → 2×2; **нет** chip/`q-menu`); budgets над аватаром; end-turn dock; return confirm modal + красные targets; nearest-center finish click + return anim. **Отменено фазой 2:** chip 2×2 + `q-menu`; все markers внизу; budgets рядом с аватаром; return undo на слоте; оранжевые return-targets; `resolveCenterClick` по квадрантам.
+См. `proposal.md` — Why / Scope. **Уже в коде (фаза 1 + 2 + 3):** leave + match status в `App.vue`; sticky `.game-hud`; grille `GRILLE_ANIM_MS = 1000`; room id убран; opponents/spectator top **вплотную к доске** (без reserved gap под bubbles); seated bottom = own + strip (row / `@container` ≤~420 → 2×2; **нет** chip/`q-menu`); budgets **справа** от аватара; end-turn dock; return confirm modal + красные targets; nearest-center finish click + return anim. **Отменено:** chip 2×2 + `q-menu`; все markers внизу; budgets над аватаром; return undo на слоте; оранжевые return-targets; `resolveCenterClick` по квадрантам; большой `padding-bottom` у `.presence-row--top`.
 
 Пакет: **client** (`../happy-tourist.github.io`). Server / `returnFromFinish` без изменений.
 
@@ -8,7 +8,7 @@
 
 **Goals:**
 
-- Presence: opponents (и spectator all) над доской; bottom = own + budgets-над-аватаром + strip; end-turn над панелью справа.
+- Presence: opponents (и spectator all) над доской вплотную; bottom = own + budgets-справа + strip; end-turn над панелью справа.
 - Strip без menu: ряд на широком / 2×2 меньше avatar; CQ break при own+row ≈420 (покрывает ≤320/300 без primary scroll).
 - Return: modal → красные targets → step только на accept; dim finished только если return недоступен; anim с ближайшего center.
 - Finish click: любой клик по 2×2 → nearest legal center (Chebyshev).
@@ -27,13 +27,15 @@
 
 ### D2 — Presence: top opponents / bottom own
 
-**Выбор:** row над board для чужих (seated) или всех occupied (spectator). Sticky `.game-hud` только для seated own cluster + strip. Say: top markers → bubbles вниз; own bottom → вверх.
+**Выбор:** row над board для чужих (seated) или всех occupied (spectator), **вплотную к доске** (say bubbles absolute, могут наезжать на верх доски — без большого reserved `padding-bottom`). Sticky `.game-hud` только для seated own cluster + strip. Say: top markers → bubbles вниз; own bottom → вверх.
 
-**Альтернатива:** все снизу (фаза 1) — отвергнуто explore.
+**Альтернатива:** все снизу (фаза 1) — отвергнуто explore. Reserved 88px под bubbles — отвергнуто (фаза 3).
 
-### D3 — Budgets над аватаром; end-turn над панелью справа
+### D3 — Budgets справа от аватара; end-turn над панелью справа
 
-**Выбор:** `.presence-budgets` горизонтальный ряд над own avatar. End-turn — отдельный control в board region / над HUD, `right` alignment. Не в budgets row.
+**Выбор:** `.presence-budgets` горизонтальный ряд **справа** от own avatar. End-turn — отдельный control в board region / над HUD, `right` alignment. Не в budgets row.
+
+**Альтернатива:** budgets над аватаром (фаза 2) — отвергнуто explore после apply (места в HUD хватает).
 
 ### D4 — Strip без chip/menu; responsive ряд ↔ 2×2
 

@@ -56,3 +56,9 @@
 
 - [x] 10.1 Обновить `.agents/skills/client/work-with-game-board` (+ pages/styles/say/finish notes) под top opponents, strip row/2×2, modal return, nearest center, return anim — verify: skills без chip/`q-menu` / «все markers внизу»
 - [x] 10.2 В sibling client: `npm run lint` и `npm run typecheck` — verify: оба проходят
+
+## 11. Client — tight top presence + budgets beside avatar (фаза 3)
+
+- [x] 11.1 Убрать reserved gap у `.presence-row--top` (markers вплотную к доске; say absolute) — verify: нет большого пустого капа над доской
+- [x] 11.2 Budgets (steps/peeks) справа от own avatar; end-turn dock без изменений — verify: SC-PRESENCE-15/25
+- [x] 11.3 Обновить skills / design / presence delta; `npm run lint` + `npm run typecheck` — verify: оба проходят

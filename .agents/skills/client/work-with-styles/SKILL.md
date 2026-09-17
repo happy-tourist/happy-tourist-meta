@@ -202,7 +202,7 @@ Board UI is custom CSS Grid (not Quasar widgets). Keep selectors local and class
 | `.say-bubbles--top` | Top-row markers: bubbles grow **down** toward the board |
 | `.say-bubbles--bottom` | Own bottom marker: bubbles grow **up** toward the board |
 
-Current-turn interactivity, dual turn/reconnect rings, top presence + seated sticky `.game-hud` (own + strip), own budgets above avatar / end-turn dock, peek eye, removed-task holes, grille overlays + strip chrome grille + rescue/return-modal, corner affordances, say top↓/own↑, nearest-center finish click, and travel/return animation live in `work-with-game-board` — do not reintroduce draughts `.cell` / selection classes, all-markers-bottom HUD, compact chip / `q-menu`, page-local `.game-header`, orange-only return targets, return undo on the strip, `GRILLE_ANIM_MS = 1500`, or a static blue turn outline.
+Current-turn interactivity, dual turn/reconnect rings, top presence + seated sticky `.game-hud` (own + strip), own budgets beside avatar / end-turn dock, peek eye, removed-task holes, grille overlays + strip chrome grille + rescue/return-modal, corner affordances, say top↓/own↑, nearest-center finish click, and travel/return animation live in `work-with-game-board` — do not reintroduce draughts `.cell` / selection classes, all-markers-bottom HUD, compact chip / `q-menu`, page-local `.game-header`, orange-only return targets, return undo on the strip, `GRILLE_ANIM_MS = 1500`, or a static blue turn outline.
 
 When editing board visuals:
 
