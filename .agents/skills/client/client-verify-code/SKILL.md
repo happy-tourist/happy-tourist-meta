@@ -255,16 +255,17 @@ Apply always; sibling skills win when they exist and conflict on a detail.
   `leave`, `sendMove` → `room.send('move', { side, row, col })`. `_enterRoom`
   must `_attachRoom` immediately after `connect()` — no `await` (e.g.
   `unsubscribeLobby`) before the listener, or the first `ROOM_STATE` is missed.
-- GamePage: tourist board with synced seat pieces / compact 2×2 chip + upward
-  `q-menu` picker inside sticky bottom `.game-hud` (no top-row / no left/right
-  columns; no four 72px slots in a HUD row); dual rings from
+- GamePage: tourist board with synced seat pieces; top presence (opponents /
+  spectator all) + sticky seated `.game-hud` (own + strip row N,E,W,S / narrow
+  HUD ≤~420 → 2×2 — **no** chip/`q-menu`); dual rings from
   `turnUntil` / `reconnectUntil` around 72px avatar in 96px chrome; avatar as
   sibling `<img class="presence-avatar">` on top — not only in `q-circular-progress`
   default slot without `show-value` (SC-PRESENCE-12); board `--gap`/`--radius` 2;
-  local selection / hints when `isMyTurn` and eligible; travel animation; submit
-  only via `game.sendMove`. Leave + match status in App header on Game (not page-local).
-  Return affordance only in picker menu; `GRILLE_ANIM_MS = 1000` on board + chrome.
-  Chip: `.my-tourist-chip-wrap` anchors `q-menu` (not inside chip CSS grid); `touristChipAria`.
+  local selection / hints when `isMyTurn` and eligible; travel + return-from-nearest-center
+  animation; finish 2×2 → nearest legal center; submit only via `game.sendMove`.
+  Leave + match status in App header on Game (not page-local).
+  Return: confirm modal → same red `.tile--target` as move; `GRILLE_ANIM_MS = 1000`
+  on board + strip chrome.
 - Mirror `currentTurnSessionId` / `turnUntil` / `turnBudgetSeconds` / seat `timeExpired`;
   do not invent alternate move/turn shapes.
 

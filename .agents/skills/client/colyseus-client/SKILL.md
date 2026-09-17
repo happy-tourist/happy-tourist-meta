@@ -222,7 +222,7 @@ Mirror seating + turn from schema.
 | `currentTurnSessionId` | Synced whose turn; `""` if no seated / all finished → getter `isMyTurn` |
 | `removedTaskKeys` | Synced `"r,c"` holes after **correct** peek only; **not landable** (stand-on-hole OK). Incorrect KEEP → no hole |
 | `holdingGrilleKeys` | Synced revealed holding grille cells (`"r,c"`); overlay on GamePage |
-| `sessionId` | From `room.sessionId` — for `mySeat` / chip picker / turn check |
+| `sessionId` | From `room.sessionId` — for `mySeat` / strip / turn check |
 
 Private (not schema) — wire in `_attachRoom`:
 

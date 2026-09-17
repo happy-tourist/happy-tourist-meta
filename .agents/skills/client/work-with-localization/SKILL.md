@@ -4,7 +4,8 @@ description: >-
   Patterns for vue-i18n strings in the happy-tourist Quasar client (boot/i18n,
   src/i18n, useI18n / $t). Use when adding or changing translations or
   user-facing copy in pages/components — incl. lobby grilleDensity labels and
-  game rescue/return/all-jail modals.
+  game rescue / returnAffordance / returnConfirm* / all-jail modals (no
+  touristChipAria).
 ---
 
 # Work With Localization
@@ -17,7 +18,7 @@ There is **no** country config, phone masks, locale switcher, or brand localizat
 
 ## Reality check
 
-Boot and message catalog exist; Login / Lobby still mostly **hardcode Russian**. Scaffold keys (`failed` / `success`) are barely used. **Exceptions already on i18n:** `game.say.*` (preset labels / affordance — never put display copy in the wire `presetId`); `game.readyButton` / `game.countdownSoon`; leave UX `game.leave` (accessible name for icon-only Game exit — no visible `:label`) / `game.leaveConfirm` / `game.leaveCancel` / `game.leaveExit`; finish UX `game.finishPlaceModal` / `game.finishPlaceModalOk` / `game.finishStripAria` / `game.finishPlaceBadgeAria`; compact tourist chip a11y `game.touristChipAria` (opens picker — not a visible «Мои туристы» caption); solo end UX `game.timeExpiredModal` / `game.timeExpiredModalOk` (timer) + `game.stepsExhaustedModal` / `game.stepsExhaustedModalOk` (steps loss — SC-PRESENCE-21); budgets/peek UX `game.stepsCounterAria` / `game.peeksCounterAria` / `game.budgetInfinity` / `game.endTurn` / `game.peekModal` / `game.peekCorrect` / `game.peekWrong` / `game.peekAffordance` / `game.soloUnlimitedModal` / `game.soloUnlimitedModalOk` (peeks∞ / steps finite); lobby grille density `lobby.grilleDensity` / `lobby.grilleDensityFew` / `lobby.grilleDensityMedium` / `lobby.grilleDensityMany` (мало/средне/много); grille UX `game.rescueAffordance` / `game.returnAffordance` / `game.allJailWarningModal` / `game.allJailWarningModalOk`. Product copy lives under locale key **`en-US`** (Russian strings) — there is no separate `ru-RU` catalog.
+Boot and message catalog exist; Login / Lobby still mostly **hardcode Russian**. Scaffold keys (`failed` / `success`) are barely used. **Exceptions already on i18n:** `game.say.*` (preset labels / affordance — never put display copy in the wire `presetId`); `game.readyButton` / `game.countdownSoon`; leave UX `game.leave` (accessible name for icon-only Game exit — no visible `:label`) / `game.leaveConfirm` / `game.leaveCancel` / `game.leaveExit`; finish UX `game.finishPlaceModal` / `game.finishPlaceModalOk` / `game.finishStripAria` / `game.finishPlaceBadgeAria`; solo end UX `game.timeExpiredModal` / `game.timeExpiredModalOk` (timer) + `game.stepsExhaustedModal` / `game.stepsExhaustedModalOk` (steps loss — SC-PRESENCE-21); budgets/peek UX `game.stepsCounterAria` / `game.peeksCounterAria` / `game.budgetInfinity` / `game.endTurn` / `game.peekModal` / `game.peekCorrect` / `game.peekWrong` / `game.peekAffordance` / `game.soloUnlimitedModal` / `game.soloUnlimitedModalOk` (peeks∞ / steps finite); lobby grille density `lobby.grilleDensity` / `lobby.grilleDensityFew` / `lobby.grilleDensityMedium` / `lobby.grilleDensityMany` (мало/средне/много); grille UX `game.rescueAffordance` / `game.returnAffordance` / `game.returnConfirmModal` / `game.returnConfirmYes` / `game.returnConfirmCancel` / `game.allJailWarningModal` / `game.allJailWarningModalOk`. Product copy lives under locale key **`en-US`** (Russian strings) — there is no separate `ru-RU` catalog. Do **not** reintroduce `game.touristChipAria` (chip/`q-menu` removed).
 
 When adding **new** user-facing strings, prefer i18n keys via `$t` / `useI18n`. Do not mass-migrate hardcoded Russian unless the user asks.
 
@@ -96,7 +97,6 @@ export default {
       'Шаги закончились, и под туристами нет плиток для просмотра. Игра для вас окончена.',
     stepsExhaustedModalOk: 'ОК',
     finishStripAria: 'Финиш',
-    touristChipAria: 'Мои туристы',
     finishPlaceBadgeAria: 'Место {n}',
     stepsCounterAria: 'Шаги',
     peeksCounterAria: 'Просмотры',
@@ -110,7 +110,10 @@ export default {
       'Вы один в игре. Просмотры безлимитны, шаги по-прежнему ограничены.',
     soloUnlimitedModalOk: 'ОК',
     rescueAffordance: 'Освободить туриста',
-    returnAffordance: 'Вернуть с финиша',
+    returnAffordance: 'Вернуть на поле',
+    returnConfirmModal: 'Вернуть на поле?',
+    returnConfirmYes: 'Да',
+    returnConfirmCancel: 'Нет',
     allJailWarningModal: 'Все туристы попали в решётки. Они отправлены на стартовые клетки.',
     allJailWarningModalOk: 'ОК',
   },

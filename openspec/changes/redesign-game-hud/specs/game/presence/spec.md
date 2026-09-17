@@ -1,55 +1,113 @@
 # game/presence Delta
 
-Related: bubbles — `game/say`; strip — `game/pieces`; exit — `game/leave`; board — `game/board`.
+Related: bubbles — `game/say`; strip — `game/pieces`; exit — `game/leave`; budgets/end-turn — `game/move`.
 
 ## Traceability
 
 | Scenario ID | Coverage |
 |-------------|----------|
-| SC-PRESENCE-02 | pending (client Game bottom HUD seated layout) |
-| SC-PRESENCE-03 | pending (client Game bottom HUD spectator center) |
-| SC-PRESENCE-22 | pending (client sticky bottom HUD panel) |
-| SC-PRESENCE-23 | pending (client match status in shared header) |
-| SC-PRESENCE-24 | pending (client no room id on Game chrome) |
+| SC-PRESENCE-02 | pending (client seated: opponents above board, own in bottom HUD) |
+| SC-PRESENCE-03 | pending (client spectator: all markers above board) |
+| SC-PRESENCE-15 | pending (client budgets row above own avatar) |
+| SC-PRESENCE-16 | covered-by-reuse (solo infinity peeks — layout only moves) |
+| SC-PRESENCE-17 | pending (client end-turn above panel right) |
+| SC-PRESENCE-18 | covered-by-reuse (solo hides end-turn) |
+| SC-PRESENCE-20 | covered-by-reuse (+N animation unchanged) |
+| SC-PRESENCE-22 | pending (client sticky bottom HUD — own+strip when seated) |
+| SC-PRESENCE-23 | covered-by-reuse (match status in shared header — phase 1) |
+| SC-PRESENCE-24 | covered-by-reuse (no room id — phase 1) |
+| SC-PRESENCE-25 | pending (client end-turn not in budgets row) |
 
 ## MODIFIED Requirements
 
 ### Requirement: Relative layout for seated players
 
-For a seated viewer, the Game screen MUST show a single bottom HUD panel under the board that contains that viewer’s own presence marker, that viewer’s private step/peek counters and end-turn control when applicable (`game/move`), the personal tourist strip when it exists (`game/pieces`), and the presence markers of all other occupied seats. Within that panel the layout MUST be left-to-right: own marker (with own budgets/end-turn beside it as today) → personal tourist strip (when shown) → opponents grouped toward the right edge of the panel, ordered left-to-right by earlier join time among those opponents. Presence markers MUST NOT appear above the board or in left/right columns beside the board.
+For a seated viewer, presence markers of **other** occupied seats MUST appear in a row **above** the board, ordered left-to-right by earlier join time among those opponents. The viewer’s **own** presence marker MUST appear in the sticky bottom HUD panel under the board, together with that viewer’s private step/peek counters and the personal tourist strip when it exists (`game/pieces`). Opponent markers MUST NOT appear in the bottom HUD. Own marker MUST NOT appear above the board. Left/right columns beside the board MUST NOT be used for presence.
 
 #### Scenario [SC-PRESENCE-02]: Seated viewer is always at home position
 
 - **GIVEN** the user is seated and three other seated players exist, ordered by earlier join time among those others
 - **WHEN** the Game presence layout is shown
-- **THEN** the user’s marker is in the bottom HUD panel on the left side of that panel
-- **AND** the three opponents appear in the same bottom HUD panel toward the right edge left-to-right in join order among those others
-- **AND** no presence marker is laid out above the board or in a left or right column beside the board
+- **THEN** the user’s marker is in the bottom HUD panel
+- **AND** the three opponents appear above the board left-to-right in join order among those others
+- **AND** no opponent marker is laid out in the bottom HUD
+- **AND** no presence marker is laid out in a left or right column beside the board
 
 ### Requirement: Spectator presence layout
 
-For a spectator viewer, all occupied seats MUST be laid out in the single bottom HUD panel under the board, centered as a group within that panel, ordered left-to-right by join order among seated players. Missing seats simply omit markers. Spectators MUST NOT see an own-marker cluster or personal strip. Presence markers MUST NOT appear above the board or in left/right columns beside the board.
+For a spectator viewer, all occupied seats MUST be laid out in a single row **above** the board, ordered left-to-right by join order among seated players. Missing seats simply omit markers. Spectators MUST NOT see an own-marker cluster, personal strip, or bottom presence row. Left/right columns beside the board MUST NOT be used for presence.
 
 #### Scenario [SC-PRESENCE-03]: Spectator order top, bottom, left, right
 
 - **GIVEN** a tourist room with four seated players in known join order and the user is a spectator
 - **WHEN** the Game presence layout is shown
-- **THEN** all four seated players’ markers appear centered in the bottom HUD panel left-to-right in that join order
-- **AND** no presence marker is shown above the board or in a left or right column beside the board
+- **THEN** all four seated players’ markers appear above the board left-to-right in that join order
+- **AND** no presence markers appear in a bottom HUD row for that spectator
 - **AND** no own-marker cluster or personal tourist strip is shown for the spectator
+
+### Requirement: Own step and peek counters beside the avatar
+
+While the user is a seated player on the Game screen in phase `playing`, the system SHALL show that user’s private **steps** and **peeks** counters in a **horizontal row directly above** that user’s own presence avatar in the bottom HUD. When peeks are infinite (solo mode), the peeks counter MUST display an infinity indication; the steps counter MUST show the finite numeric value. Other seated players’ and spectators’ clients MUST NOT show another seat’s step or peek counters. Spectators MUST NOT see step/peek counters for any seat. When the user’s finite budgets increase, the client SHOULD play a local “+N falls into the counter” animation for steps and peeks grants (turn grant and successful peek rewards) lasting approximately **two seconds**. The end-turn control MUST NOT sit in this budgets row (`game/presence` end-turn requirement).
+
+#### Scenario [SC-PRESENCE-15]: Seated user sees only own counters
+
+- **GIVEN** two seated players in phase `playing` with different private budgets
+- **WHEN** each views Game presence
+- **THEN** each sees steps and peeks only on their own marker, in a row above their own avatar
+- **AND** neither sees the other’s budget numbers on the opponent marker
+
+#### Scenario [SC-PRESENCE-16]: Solo shows infinity only on peeks
+
+- **GIVEN** the user is the sole non-finished seated player under infinite peeks and finite steps
+- **WHEN** the user views their presence marker
+- **THEN** the peeks counter shows infinity
+- **AND** the steps counter shows the numeric steps value
+- **AND** other clients still do not see those budget values
+
+#### Scenario [SC-PRESENCE-20]: Budget grant animation lasts about two seconds
+
+- **GIVEN** the user’s finite steps or peeks budget increases while they view their own presence marker
+- **WHEN** the local +N fall animation plays
+- **THEN** the animation is visibly slower than a sub-second flash and completes in about two seconds
+- **AND** other clients do not see that animation
+
+### Requirement: End-turn control next to own avatar
+
+While it is the seated user’s multiplayer turn in phase `playing` (two or more eligible seats) and the user is not time-expired, the Game presence chrome MUST show a control whose visible label is exactly **«Завершить ход»** **above** the sticky bottom HUD panel, aligned toward the **right** edge of the board/HUD content width (lower-right of the board region). Activating it MUST submit end-turn per `game/move`. The control MUST NOT appear in the budgets row above the avatar. The control MUST NOT appear for spectators, for seats that are not current turn, during solo play, or for finished / time-expired seats.
+
+#### Scenario [SC-PRESENCE-17]: Current multiplayer seat sees «Завершить ход»
+
+- **GIVEN** it is the user’s turn in a multiplayer `playing` room
+- **WHEN** the user views Game chrome
+- **THEN** a control labeled «Завершить ход» is shown above the bottom HUD toward the right
+- **AND** activating it submits end-turn
+
+#### Scenario [SC-PRESENCE-18]: Solo hides end-turn
+
+- **GIVEN** the user is the sole eligible seated player in solo play
+- **WHEN** the user views Game chrome
+- **THEN** the «Завершить ход» control is not shown
+
+#### Scenario [SC-PRESENCE-25]: End-turn not inline with budgets
+
+- **GIVEN** it is the local seated user’s turn in multi-seat play and end-turn is available
+- **WHEN** the bottom HUD budgets row above the own avatar is shown
+- **THEN** steps and peeks appear in that row without the end-turn control inline
+- **AND** the end-turn control remains above the bottom panel toward the right
 
 ## ADDED Requirements
 
 ### Requirement: Sticky bottom game HUD panel
 
-While the user is on the Game screen, the bottom HUD panel that holds presence (and for seated users the personal strip when present) MUST remain pinned to the bottom of the viewport so it stays visible while the board area above may scroll or resize. Markers and strip MUST NOT use a separate floating row above the board.
+While the user is on the Game screen as a **seated** viewer, the bottom HUD panel that holds the own presence marker, budgets row, and personal strip (when present) MUST remain pinned to the bottom of the viewport so it stays visible while the board area above may scroll or resize. Opponent markers MUST use the row above the board, not this sticky panel. For a **spectator**, there MUST NOT be a bottom presence HUD row; markers stay above the board.
 
 #### Scenario [SC-PRESENCE-22]: Bottom HUD stays pinned while board scrolls
 
-- **GIVEN** the user is on the Game screen with the bottom HUD panel visible
+- **GIVEN** the seated user is on the Game screen with the bottom HUD panel visible
 - **WHEN** the board content area above the panel is scrolled or the board height changes
 - **THEN** the bottom HUD panel remains pinned to the bottom of the viewport
-- **AND** presence markers remain inside that panel (not above the board)
+- **AND** the user’s own marker and strip remain inside that panel
+- **AND** opponent markers remain above the board
 
 ### Requirement: Match status in shared application header
 

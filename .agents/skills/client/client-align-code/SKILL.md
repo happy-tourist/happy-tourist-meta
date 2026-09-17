@@ -305,17 +305,17 @@ Report as hard `[defect]` when a reachable enter/subscribe path can miss the fir
 
 ### Quasar nested slots / visual overlays (обязательно при касании presence / progress / stacked chrome)
 
-Когда diff/ветка трогает `GamePage` presence, `q-circular-progress`, stacked rings/badges, absolute overlays поверх аватара/иконки, вложенные Quasar-компоненты со **default slot**, или compact tourist chip + `q-menu` — **отдельно** проверь, не прячет ли композиция обязательный видимый контент (tourist PNG, badge, affordance) и не ломает ли layout.
+Когда diff/ветка трогает `GamePage` presence, `q-circular-progress`, stacked rings/badges, absolute overlays поверх аватара/иконки, вложенные Quasar-компоненты со **default slot**, или tourist strip / return modal chrome — **отдельно** проверь, не прячет ли композиция обязательный видимый контент (tourist PNG, badge, affordance) и не ломает ли layout.
 
 Контекст Quasar `QCircularProgress`:
 
 - Default slot (центр) рендерится **только если `show-value` / `showValue` true**. Без этого prop содержимое слота (`<img>`, текст) **не попадает в DOM** — в DevTools только SVG колец, аватара нет (типичный регресс dual rings).
 - **Вложенный** `q-circular-progress` внутри default slot другого часто тоже не показывает внутренний слот/`<img>`.
 
-Контекст tourist chip + `q-menu` (SC-PIECE-29):
+Контекст tourist strip (фаза 2 — **нет** chip/`q-menu`):
 
-- `q-menu` must be a **sibling** of `.my-tourist-chip` under `.my-tourist-chip-wrap` — **not** a CSS-grid child of the 2×2 chip (Quasar teleports/anchors break the grid / wrap layout).
-- Wrap owns a11y (`role="button"`, `game.touristChipAria`, `aria-expanded`).
+- Four `.my-tourist-slot` live directly in seated HUD (wide row / narrow 2×2 via `@container game-hud`).
+- Do **not** reintroduce `.my-tourist-chip` / `q-menu` / `touristChipAria`.
 
 Для каждой такой композиции независимо проверь:
 
@@ -323,13 +323,13 @@ Report as hard `[defect]` when a reachable enter/subscribe path can miss the fir
 2. **`show-value`** — если контент кладут в default slot `q-circular-progress`, есть ли `show-value` (или `showValue`)? Нет → слот мёртв → hard defect при требуемом avatar/label.
 3. **Структура слотов** — есть ли `q-circular-progress` **внутри** default slot другого; контент ещё глубже.
 4. **Safe pattern (канон presence)** — **siblings**: outer turn ring absolute behind; optional inner reconnect ring; **отдельный** `<img class="presence-avatar">` sibling поверх (как pre-timer solo img). Не зависеть от slot progress для avatar. Не вкладывать progress в progress.
-5. **Unsafe patterns** — img только в slot без `show-value`; nested `<q-circular-progress>…<q-circular-progress>…<img/>…`; overlay без дырки/`z-index`, перекрывающий avatar; `q-menu` as child of `.my-tourist-chip` CSS grid.
+5. **Unsafe patterns** — img только в slot без `show-value`; nested `<q-circular-progress>…<q-circular-progress>…<img/>…`; overlay без дырки/`z-index`, перекрывающий avatar; regressing to chip/`q-menu` HUD.
 6. **Оба кольца сразу** — dual turn+reconnect оба видимы (SC-PRESENCE-10), reserved outer size (SC-PRESENCE-11), avatar всегда в DOM.
 7. **Аналоги / регресс** — раньше connected marker был plain `<img>` вне progress; diff убрал sibling img → high-risk regression, пока sibling img или `show-value` не доказаны.
 
-Report as hard `[defect]` when a reachable Game/presence state deterministically omits the required avatar (or other mandated chrome) because of missing `show-value`, nested Quasar slots, or overlay stacking — or when chip/`q-menu` nesting breaks the compact 2×2 HUD chip. If nesting/slot/`show-value` looks risky but proof is incomplete → **Warning** with the component chain.
+Report as hard `[defect]` when a reachable Game/presence state deterministically omits the required avatar (or other mandated chrome) because of missing `show-value`, nested Quasar slots, or overlay stacking — or when chip/`q-menu` is reintroduced against phase-2 strip UX. If nesting/slot/`show-value` looks risky but proof is incomplete → **Warning** with the component chain.
 
-**Canonical fix (add-turn-timer / SC-PRESENCE-12/13):** outer turn `q-circular-progress` (96px, absolute behind) + inner reconnect `q-circular-progress` (84px, absolute centered) + sibling `<img class="presence-avatar">` (72px, matches full-size menu slot) on top — all three direct children of `.presence-marker`; neither progress wraps the img.
+**Canonical fix (add-turn-timer / SC-PRESENCE-12/13):** outer turn `q-circular-progress` (96px, absolute behind) + inner reconnect `q-circular-progress` (84px, absolute centered) + sibling `<img class="presence-avatar">` (72px) on top — all three direct children of `.presence-marker`; neither progress wraps the img.
 
 Report hard `defect` only when a reachable state deterministically causes wrong UI, runtime failure, invalid value, stuck state, unsafe side effect (including request/effect storms **or missed first-sync races** **or nested-slot / overlay hide**), or contract violation.
 

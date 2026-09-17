@@ -188,7 +188,7 @@ Registered in `quasar.config.ts` boot array: `theme`, `i18n`, `colyseus` (+ `fra
 
 **Lobby** — `LobbyPage` uses `useGameStore().subscribeLobby` / `createGame({ maxSeats, grilleDensity })` / `joinGame` and `useAuthStore` for display/logout.
 
-**Game** — `GamePage` shows tourist board (scroll region) + sticky bottom `.game-hud` presence (seated: own+budgets → compact chip → opponents right; spectator: occupied centered; dual rings) + grille overlays from `holdingGrilleKeys` (`GRILLE_ANIM_MS=1000`) + compact 2×2 chip + upward `q-menu` picker if seated (return **only** in menu beside flag; no «Мои туристы» caption); on `isMyTurn` local select/hints and `game.sendMove` / `sendRescue` / `sendReturnFromFinish`; seated+online own marker may `game.sendSay` (preset bubbles from `sayEvents`); `rejoinGame(roomId)` on mount / soft-fail gated by store `consentedLeaving` (reconnect token → `joinById`).
+**Game** — `GamePage` shows tourist board (scroll region) + top presence (opponents / spectator all) + sticky seated `.game-hud` (own + strip row/2×2; dual rings; **no** chip/`q-menu`) + grille overlays from `holdingGrilleKeys` (`GRILLE_ANIM_MS=1000`) + return confirm modal when seated; on `isMyTurn` local select/hints and `game.sendMove` / `sendRescue` / `sendReturnFromFinish`; seated+online own marker may `game.sendSay` (preset bubbles from `sayEvents`); `rejoinGame(roomId)` on mount / soft-fail gated by store `consentedLeaving` (reconnect token → `joinById`).
 
 **App shell** — `App.vue` hosts `q-layout` → shared `q-header` (theme toggle; on Game leave + match status) → leave confirm dialog → `router-view`; stable `watch([() => auth.ready, () => auth.user?.id, () => auth.user?.anonymous], …)` → `theme.syncFromAuthUser` (GET restore for registered; do not replace `auth.user` after GET); shows `theme.error` banner; Game leave → `leaveGame` → lobby.
 
@@ -228,7 +228,7 @@ Registered in `quasar.config.ts` boot array: `theme`, `i18n`, `colyseus` (+ `fra
 | Auth | `LoginPage` | `stores/auth` + `boot/colyseus` |
 | Theme (chrome Dark) | `App.vue` header | `stores/theme` + `boot/theme` |
 | Lobby / rooms | `LobbyPage` | `stores/game.subscribeLobby` / create `{ maxSeats, grilleDensity }` / join |
-| Game session | `GamePage` | `stores/game` room attach + seats / grilles / sticky `.game-hud` presence / say / compact chip+`q-menu` + rescue/return-in-menu; soft-drop gated by `consentedLeaving` |
+| Game session | `GamePage` | `stores/game` room attach + seats / grilles / top + seated-HUD presence / say / strip + rescue/return-modal; soft-drop gated by `consentedLeaving` |
 | Game leave + match status | `App.vue` header (Game route) | `stores/game` `leaveGame` + status / phase getters |
 | Shell | `App.vue` | layout + theme header/banner + Game leave/status + `router-view` |
 

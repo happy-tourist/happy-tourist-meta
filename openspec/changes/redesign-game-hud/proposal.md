@@ -1,40 +1,37 @@
 ## Why
 
-На экране Game chrome размазан: выход и статус в локальной шапке страницы, усечённый room id мешает, presence сверху/снизу вокруг доски плюс отдельная полоса туристов. Нужен спокойный HUD: общая шапка приложения и нижняя панель всегда на виду. После сборки нижней панели четыре полноразмерных слота strip (~4×72px) всё ещё ломают раскладку на desktop и mobile; статусы (финиш / решётка) и выбор туриста нужно уместить в один квадрат размера аватара с picker’ом.
+Фаза общей шапки и sticky HUD уже в коде, но нижняя панель с chip/`q-menu` и всеми маркерами снизу не даёт удобный narrow UX и ломает привычную топологию «чужие над доской». Нужен второй проход: оппоненты сверху, свои четыре туриста снова в панели без меню, узкая ширина ≤320 (лучше 300), плюс понятный return с финиша и клик по всему финиш-блоку.
 
 ## What Changes
 
-- Убрать отображение идентификатора комнаты с экрана Game (param/reconnect без изменений).
-- Перенести icon-only выход и текстовый статус партии в общую шапку приложения (выход слева, статус по центру, переключатель темы справа); на Login/Lobby выход не показывать.
-- Собрать presence, собственные ресурсы/end-turn и личную полосу туристов в одну нижнюю панель, прибитую к низу viewport; доска — в пространстве над панелью.
-- Для сидящего: свой маркер слева → ресурсы → слоты туристов → соперники у правого края; для зрителя: все occupied-маркеры по центру панели.
-- Облака say у всех маркеров — сверху (к доске); подпись «Мои туристы» убрать.
-- Affordance ready / say / budgets / end-turn — как сейчас по смыслу, меняется только место в layout.
-- Сжать личный strip в HUD до одного compact chip (~размер аватара) с сеткой 2×2 (N/E / W/S): статусы финиша и решётки видны на мини-слотах; клик по chip **только** открывает picker (не select).
-- Picker: `q-menu` вверх к доске (desktop и mobile), без заголовка; внутри — один ряд из четырёх полноразмерных слотов (как прежний strip); клик по доступному туристу = select и закрытие меню; клик вне / Esc = закрыть без select.
-- Return-from-finish control — **только** в меню рядом с finished-слотом; на compact chip — только индикатор финиша (без return).
-- На chip и в меню показывать решётку, когда piece `trapped` (зеркало поля); анимация drop/rise решётки **~1000 ms** везде (поле + chrome strip).
-- Клик по туристу на доске по-прежнему select без меню. На чужом ходе / без move-interact — меню только просмотр статусов (без select).
+- **Уже сделано (фаза 1, сохранить):** leave + match status в общей шапке на Game; без room id; sticky bottom shell; grille anim ~1000 ms на поле/chrome.
+- **Перестроить presence:** seated — оппоненты **над** доской, свой маркер в нижней панели; spectator — **все** occupied markers над доской; внизу у seated — свой кластер + личные туристы (без чужих markers).
+- **Budgets / end-turn:** steps и peeks в **ряд над** своим аватаром; кнопка завершить ход — **над** нижней панелью справа (у нижнего правого края области доски).
+- **Личные туристы:** убрать compact chip и `q-menu`; снова слоты выбора в HUD — на широкой ширине **ряд×4**, на узкой **сетка 2×2** со слотами **меньше** аватара; без подписи «Мои туристы»; влезать в **≤320** (желательно **300**) без горизонтального scroll как основного UX.
+- **Finished / return:** не затемнять finished, если return сейчас доступен; затемнять, если return недоступен (некуда/нельзя). Клик по доступному finished → модалка «Вернуть на поле?»; Да → подсветка кольца **тем же цветом, что legal move targets**; Нет/Esc → ничего. Отдельной undo-кнопки на слоте нет. Клик по unfinished — select как сейчас. Переключение на другого туриста сбрасывает return-mode. Шаг списывается только при успешном return на сервер.
+- **Return animation:** при успешном return все клиенты анимируют выезд с финиша на клетку кольца с **ближайшей** из четырёх center-клеток (Chebyshev; tie-break row, затем col).
+- **Клик по финишу:** любой клик по визуальному 2×2-блоку финиша (не квадрант) отправляет ход на **ближайшую легальную** из четырёх center-клеток относительно текущей клетки туриста.
+- Обновить client skills под новый layout / return / center-click.
 
 ## Scope
 
-- Пакет: **client** only (server / room protocol / schema без изменений).
+- Пакет: **client** only (server / room protocol / schema без изменений; `returnFromFinish` и finish rules уже есть).
 - Capability ID:
-  - `game/presence` — нижняя HUD-панель, раскладка seated/spectator, статус в общей шапке
-  - `game/say` — направление облаков при единой нижней панели
-  - `game/leave` — размещение exit control в общей шапке на Game
-  - `game/pieces` — compact chip + menu picker вместо ряда из четырёх 72px в HUD; статусы trapped/finished на chrome
-  - `game/finish` — return affordance только в picker-меню; finish indicator остаётся на chip и в меню
-  - `game/board` — длительность анимации revealed grille drop/rise ~1000 ms (вместо ~1500 ms)
-- Экраны: Game (основной UX); общая шапка на Login/Lobby/Game (theme без регрессии; leave только на Game).
+  - `game/presence` — top opponents / spectator top; bottom own + strip; budgets над аватаром; end-turn над панелью справа
+  - `game/say` — bubbles к доске: сверху markers вниз, снизу вверх
+  - `game/leave` — без изменений относительно фазы 1 (уже в шапке)
+  - `game/pieces` — strip ряд/2×2 без chip/menu; grille на слотах; narrow fit
+  - `game/finish` — modal return; conditional dim; finish indicator на слотах
+  - `game/board` — grille ~1000 ms (сохранить)
+  - `game/move` — center click → nearest legal center cell; return travel anim from nearest center; return target chrome = move target color
+- Экраны: Game; шапка Login/Lobby/Game без регрессии leave/status.
 
 ## Out of scope
 
-- Отдельная адаптация узкой мобильной ширины для всего HUD (горизонтальный scroll панели допустим) — кроме сжатия strip в chip.
-- Смена размеров/набора карт доски, серверный контракт, новые say-пресеты.
-- Переименование room / публичное имя комнаты (продукт по-прежнему без display-name).
-- Изменение правил leave-confirm, budgets, turn rings, reconnect grace, trap/rescue/return **логики** на server.
-- Idle-loop анимации решётки (только one-shot drop/rise ~1000 ms).
+- Server rules / messages / schema changes.
+- Idle-loop grille; смена trap/rescue логики.
+- Отдельный display-name комнаты.
+- Изменение правил leave-confirm, budgets grants, reconnect grace.
 
 ## Capabilities
 
@@ -44,22 +41,22 @@
 
 ### Modified Capabilities
 
-- `game/presence`: единая нижняя sticky-панель вместо top/bottom рядов вокруг доски; seated/spectator раскладка; статус партии в общей шапке; без room id в UI
-- `game/say`: облака всегда сверху у маркера (к доске); убрать ветвление top-row → ниже
-- `game/leave`: primary exit control в общей шапке приложения слева на экране Game
-- `game/pieces`: личная полоса в нижней панели как compact 2×2 chip + `q-menu` ряд×4; без подписи «Мои туристы»; grille/finish статусы на chrome; select из меню или с доски
-- `game/finish`: return control только в picker-меню; finish indicator на chip и в меню
-- `game/board`: grille drop/rise animation duration ~1000 ms on board (and same timing for strip chrome overlays)
+- `game/presence`: opponents (и spectator all) над доской; bottom = own + strip; budgets над аватаром; end-turn над панелью справа; sticky низ и header status/leave без отката
+- `game/say`: ориентация bubbles к доске по вертикали маркера
+- `game/leave`: (фаза 1) exit в общей шапке — без новой дельты, если уже соответствует
+- `game/pieces`: полный strip без chip/menu; responsive ряд↔2×2; narrow ≤320/300
+- `game/finish`: modal return; dim только когда return недоступен
+- `game/board`: timing grille ~1000 ms (сохранить)
+- `game/move`: nearest-center finish click; return anim; return target color = move target color
 
 ## Impact
 
-- Client UI: общая шапка + Game screen layout / presence / compact strip + menu / grille anim timing.
-- Skills client (`work-with-game-board`, `work-with-pages`, при необходимости `work-with-styles` / finish notes) — обновить после apply.
-- Server, Colyseus messages, synced state — без изменений (`piece.trapped` / `holdingGrilleKeys` уже есть).
-- Маршрут с `roomId` и reconnect token — без изменений (только UI не показывает id).
+- Client UI: `GamePage.vue` / presence layout / strip / finish modal / center click / return anim / i18n.
+- Skills client (`work-with-game-board`, `work-with-pages`, styles/finish notes) — обновить после apply.
+- Server — без изменений.
 
 ## References
 
-- Explore: переработка Game HUD + compact tourist strip / grille на статусах.
-- Sibling: `../happy-tourist.github.io/AGENTS.md`; meta skills `.agents/skills/client/work-with-game-board`, `work-with-pages`.
-- Main specs: `openspec/specs/game/presence`, `game/say`, `game/leave`, `game/pieces`, `game/finish`, `game/board`, `ui/theme`.
+- Explore (сессия): opponents top, strip без menu, narrow, return modal, nearest center, return anim.
+- Предыдущая фаза того же change: header + sticky HUD + chip (chip отменяется этим обновлением плана).
+- Sibling: `../happy-tourist.github.io/AGENTS.md`; main specs `openspec/specs/game/*`.

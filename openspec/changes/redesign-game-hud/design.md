@@ -1,79 +1,77 @@
 ## Context
 
-См. `proposal.md` — Why / Scope. **Реализовано:** leave + match status в `App.vue` на Game; sticky `.game-hud`; compact 2×2 chip + upward `q-menu` picker; grille/`trapped` и finish на chrome; return только в меню; grille anim **1000 ms** на поле и chrome; say bubbles вверх; room id убран.
+См. `proposal.md` — Why / Scope. **Уже в коде (фаза 1 + 2):** leave + match status в `App.vue`; sticky `.game-hud`; grille `GRILLE_ANIM_MS = 1000`; room id убран; opponents/spectator top; seated bottom = own + strip (row / `@container` ≤~420 → 2×2; **нет** chip/`q-menu`); budgets над аватаром; end-turn dock; return confirm modal + красные targets; nearest-center finish click + return anim. **Отменено фазой 2:** chip 2×2 + `q-menu`; все markers внизу; budgets рядом с аватаром; return undo на слоте; оранжевые return-targets; `resolveCenterClick` по квадрантам.
 
-Пакет: **client** (`../happy-tourist.github.io`). Контракт room `tourist` без изменений. Данные: `mySeat.pieces[].trapped` / `finished`, `holdingGrilleKeys`, asset `grille.png`.
+Пакет: **client** (`../happy-tourist.github.io`). Server / `returnFromFinish` без изменений.
+
 ## Goals / Non-Goals
 
 **Goals:**
 
-- Общая шапка + sticky bottom HUD (уже сделано) + compact tourist chrome в HUD.
-- Chip 2×2 (~avatar): статусы; tap → menu вверх к доске; ряд×4 select/return; board select без menu.
-- Grille overlay на chip/menu при `trapped`; anim drop/rise **1000 ms** везде.
-- Обновить client skills под chip/menu/anim после кода.
+- Presence: opponents (и spectator all) над доской; bottom = own + budgets-над-аватаром + strip; end-turn над панелью справа.
+- Strip без menu: ряд на широком / 2×2 меньше avatar; CQ break при own+row ≈420 (покрывает ≤320/300 без primary scroll).
+- Return: modal → красные targets → step только на accept; dim finished только если return недоступен; anim с ближайшего center.
+- Finish click: любой клик по 2×2 → nearest legal center (Chebyshev).
 
 **Non-Goals:**
 
 - Server / schema / messages.
-- Вынос GamePage на компоненты ради рефакторинга (допустимо минимальный shared slot template).
-- Idle-loop grille; смена правил trap/rescue.
+- Вынос GamePage на компоненты ради рефакторинга.
+- Idle-loop grille.
 
 ## Decisions
 
-### D1 — Chrome leave + status в `App.vue` (route-aware)
+### D1 — Chrome leave + status в `App.vue` (фаза 1)
 
-**Выбор:** расширить `src/App.vue` `q-toolbar`: при `route.name === 'game'` показывать icon-only leave слева и centered status; theme справа. Confirm + `leaveGame` в App; store `consentedLeaving` с clear после leave / уходе с Game.
+**Статус:** реализовано — не трогать.
 
-**Статус:** реализовано.
+### D2 — Presence: top opponents / bottom own
 
-### D2 — Нижняя панель: layout shell на GamePage
+**Выбор:** row над board для чужих (seated) или всех occupied (spectator). Sticky `.game-hud` только для seated own cluster + strip. Say: top markers → bubbles вниз; own bottom → вверх.
 
-**Выбор:** board scroll region + sticky `.game-hud` (own | budgets | strip/chip | opponents). Say только `--bottom`.
+**Альтернатива:** все снизу (фаза 1) — отвергнуто explore.
 
-**Статус:** реализовано (strip заменён compact chip — D6).
-### D3 — Sticky к viewport
+### D3 — Budgets над аватаром; end-turn над панелью справа
 
-**Выбор:** `position: sticky; bottom: 0` внутри page column.
+**Выбор:** `.presence-budgets` горизонтальный ряд над own avatar. End-turn — отдельный control в board region / над HUD, `right` alignment. Не в budgets row.
 
-**Статус:** реализовано.
+### D4 — Strip без chip/menu; responsive ряд ↔ 2×2
 
-### D4 — Удаление room id chrome
+**Выбор:** удалить chip/`q-menu`. Слоты в HUD: `@container game-hud (max-width: 420px)` (own 96 + gap 12 + 4×72 + gaps ≈ 420) → CSS grid 2×2 с slot меньше avatar; иначе flex row N,E,W,S. Покрывает product ≤320/300 без primary horizontal scroll.
 
-**Статус:** реализовано.
+**Альтернатива:** всегда chip — отвергнуто. Breakpoint «ровно 320» — отвергнуто: при avatar 72 / outer 96 ряд не влезает уже ~420.
 
-### D5 — Skills (после кода)
+### D5 — Return modal + conditional dim + same-color targets
 
-Обновить skills под header + HUD; затем ещё раз под chip/menu/grille chrome (tasks).
+**Выбор:** клик finished при `canReturn(side)` → `q-dialog` «Вернуть на поле?» → `returningSide`. Targets: тот же class/outline, что `.tile--target` (убрать отдельный orange). Dim (`opacity`) только когда `!canReturn`. Переключение `selectOwnSide` сбрасывает return-mode. Step — только server accept.
 
-### D6 — Compact chip + `q-menu` picker
+### D6 — Return anim from nearest center
 
-**Выбор:** в `.game-hud` вместо четырёх `.my-tourist-slot` 72px — один chip ~`PRESENCE` image box (72px) с CSS grid 2×2: стороны `N E` / `W S`. Клик по chip **только** `v-model`/`q-menu` (не `selectedSide`). Меню: `anchor` к доске (вверх), без title; контент — горизонтальный ряд четырёх полноразмерных слотов (текущие размеры/иконки). Select доступного unfinished non-trapped → `onStripClick` / эквивалент → закрыть menu. Esc / click-outside → закрыть. Outside interactive turn — menu открывается, слоты без select (просмотр). Board piece click — select без menu.
+**Выбор:** на всех клиентах при появлении piece после return: стартовая позиция = nearest of `CENTER_CELLS` к целевой клетке (Chebyshev; tie row, col); slide `MOVE_ANIM_MS` на ring (зеркало finish disappear).
 
-**Альтернативы:** (B) `q-dialog` — отвергнуто (explore: везде menu); (C) long-press chip — отвергнуто.
+### D7 — Finish-block click → nearest legal center
 
-**Rationale:** экономия HUD; полноразмерный выбор как раньше; Quasar menu portal меньше клипает sticky footer.
+**Выбор:** заменить `resolveCenterClick` quadrant: при клике по `tile.kind === 'center'` выбрать argmin Chebyshev среди `CENTER_CELLS ∩ legalTargets` относительно `selectedCell`; иначе no-op.
 
-### D7 — Статусы и return
+### D8 — Grille 1000 ms
 
-**Выбор:** на chip и в menu — finish flag на finished; grille overlay когда `trapped`. Return (`undo`) **только** в menu рядом с flag при прежних условиях (`finishPlace===0`, steps, legal ring). Chip не несёт return.
+**Статус:** оставить `GRILLE_ANIM_MS = 1000` на board + strip slots.
 
-### D8 — Grille animation 1000 ms
+### D9 — Skills
 
-**Выбор:** константа client `GRILLE_ANIM_MS = 1000` для board overlays и для strip chrome drop/rise (one-shot при появлении/снятии `trapped` / holding clear как на поле). Заменяет прежние ~1500 ms.
-
-**Альтернатива:** разные длительности board vs strip — отвергнуто (explore: везде 1 s).
+**Статус:** сделано — `work-with-game-board` / pages / styles / localization / AGENTS индексы отражают фазу 2 (420 CQ, return modal, top presence, nearest center).
 
 ## Risks / Trade-offs
 
-- [Menu у нижнего края / safe-area] → Mitigation: anchor вверх к доске; Quasar portal.
-- [Мелкий 2×2 плохо читает grille] → Mitigation: те же asset + короткая anim; в menu полноразмер.
-- [App знает game status] → Mitigation: только зеркало store (уже так).
-- [Purpose main specs] → при `/opsx-sync` обновить Purpose / SC timing у pieces/finish/board.
+- [Узкая ширина + rings 96px] → Mitigation: уменьшить PRESENCE outer/avatar вместе со strip на narrow.
+- [End-turn над панелью перекрывает доску] → Mitigation: только когда available; правый край; pointer-events локально.
+- [Return anim без server «from» cell] → Mitigation: чисто client presentation от nearest center.
+- [Purpose main specs] → при `/opsx-sync` обновить presence/pieces/finish/move/say.
 
 ## Migration Plan
 
-Только client deploy (GitHub Pages). Rollback = revert UI commit. Server не затрагивается.
+Только client deploy. Rollback = revert UI commit. Server не затрагивается.
 
 ## Open Questions
 
-Нет (D1–D8 и explore Q1–Q6 закрыты).
+Нет (explore D1–D4, D3b, F1/F2, A1 закрыты).
