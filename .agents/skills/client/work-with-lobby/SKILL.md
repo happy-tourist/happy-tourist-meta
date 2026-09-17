@@ -3,11 +3,12 @@ name: work-with-lobby
 description: >-
   Guides live lobby room list via LobbyRoom subscribe/unsubscribe, quiet
   resubscribe after drop (no reconnect hold / no reservation noise), leave
-  policy before enter tourist, create-with-maxSeats + grilleDensity modal /
-  join-by-id (no Play shortcut), and navigation to /game/:roomId in the
-  happy-tourist tourist client. Use when changing LobbyPage, game.subscribeLobby
-  / unsubscribeLobby / createGame / joinGame, LOBBY_ROOM / TOURIST_ROOM listing,
-  lobby loading flags, game.error banners, or logout from the lobby.
+  policy before enter tourist, create-with-maxSeats + grilleDensity modal
+  (few/medium/many → server 12/22/35% seed) / join-by-id (no Play shortcut),
+  and navigation to /game/:roomId in the happy-tourist tourist client. Use when
+  changing LobbyPage, game.subscribeLobby / unsubscribeLobby / createGame /
+  joinGame, LOBBY_ROOM / TOURIST_ROOM listing, lobby loading flags, game.error
+  banners, or logout from the lobby.
 ---
 
 # Work With Lobby
@@ -31,7 +32,7 @@ Sibling server: `../happy-tourist-server`. Coordinate room name (`tourist`), `lo
 | SDK auto-reconnect | After join: `lobby.reconnection.enabled = false` (avoid reservation churn) |
 | Drop while on Lobby | Clear `lobbyRoom`; if `lobbyWanted` → `_quietResubscribeLobby` (no user-facing reservation text) |
 | Leave lobby | `unsubscribeLobby` after successful tourist connect (`_enterRoom`); also on LobbyPage unmount and `leaveGame` / logout |
-| Create | Modal: seats 2/3/4 (default 2) + density few/medium/many (labels мало/средне/много, default medium) → `createGame({ maxSeats, grilleDensity })` → `client.create(TOURIST_ROOM, { maxSeats, grilleDensity })` |
+| Create | Modal: seats 2/3/4 (default 2) + density few/medium/many (labels мало/средне/много, default medium; server seeds **12/22/35%** of task cells → 6/11/17 of 48) → `createGame({ maxSeats, grilleDensity })` → `client.create(TOURIST_ROOM, { maxSeats, grilleDensity })` |
 | Join by id | List row / «Войти» → `joinGame(roomId)` → `client.joinById(roomId)` |
 | Capacity caption | `metadata.seats` / `metadata.maxSeats` as `occupied/maxSeats` (not `clients`/`maxClients`) |
 | Play shortcut | **Removed** — do not restore «Играть» / bare `joinOrCreate` without product request |

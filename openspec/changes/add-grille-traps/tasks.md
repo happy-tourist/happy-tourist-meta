@@ -1,7 +1,7 @@
 ## 1. Server — schema, seed, trap on land
 
 - [x] 1.1 Прочитать `design.md` (D1–D12), delta `specs/{lobby/rooms,game/board,game/move,game/pieces}`, skills `server/work-with-schema`, `server/work-with-game`, `server/work-with-rooms`, `server/server-work-with-test` и текущие `MyRoom` / `MyRoomState` / `touristMove` — зафиксировать поля и точки врезки
-- [x] 1.2 Schema: `Piece.trapped`; sync collection revealed/holding grille keys; `onCreate` parse `grilleDensity` (few/medium/many → 25/45/65, default medium) — проверить типами schema / parse helper
+- [x] 1.2 Schema: `Piece.trapped`; sync collection revealed/holding grille keys; `onCreate` parse `grilleDensity` (few/medium/many → originally 25/45/65; superseded by block 6 → **12/22/35**, default medium) — проверить типами schema / parse helper
 - [x] 1.3 На `enterPlaying`: seed hidden grilles на random task cells по %; unit/mocha count для medium = 22 на 48 task — SC-BOARD-16
 - [x] 1.4 `handleMove`: после accept −1 step; unspent grille → reveal + `trapped`; occupancy учитывает trapped — mocha: SC-MOVE-51, SC-PIECE-24/26
 - [x] 1.5 Reject move/peek для trapped piece; free siblings OK — mocha: SC-MOVE-52/53
@@ -39,3 +39,14 @@
 - [x] 5.1 Обновить server skills (`work-with-game`, `work-with-messages`, `work-with-schema`, `work-with-rooms`) под grille density / trap / rescue / return / all-jail
 - [x] 5.2 Обновить client skills (`work-with-lobby`, `work-with-game-board`, `colyseus-client` / stores) под density create, grille overlay, rescue/return
 - [x] 5.3 При необходимости — краткие строки в sibling AGENTS Business Entities (без дублирования specs)
+
+## 6. Follow-up — density, anim 1500, leave clear
+
+> Supersedes earlier density 25/45/65 and anim ~320 ms from blocks 1–4; keep prior `[x]` as historical apply. Implement the deltas below.
+
+- [x] 6.1 Server: `GRILLE_DENSITY` / parse → **0.12 / 0.22 / 0.35**; обновить mocha SC-BOARD-16 (medium = **11**), SC-LOBBY-14 (many → **17** на 48)
+- [x] 6.2 Server: в `onLeave` перед/при remove seat — clear holding ключей клеток trapped pieces уходящего; unexpected `onDrop` не clear — mocha SC-PIECE-28
+- [x] 6.3 Из sibling server: `npm test` — SC-BOARD-16 / SC-LOBBY-14 / SC-PIECE-28 зелёные
+- [x] 6.4 Client: `GRILLE_ANIM_MS = 1500` для drop и rise (включая clear по leave) — SC-BOARD-18/19/21
+- [x] 6.5 При необходимости — краткие правки skills (`work-with-game`, `work-with-game-board`, density notes) под 12/22/35 и leave-clear
+- [x] 6.6 Client: `npm run lint` + `npm run typecheck` по затронутым файлам

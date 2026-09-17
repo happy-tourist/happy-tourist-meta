@@ -155,7 +155,7 @@ Finished seats remain in `seats` (count toward `maxSeats`) until consented leave
 | Field | Meaning |
 |-------|---------|
 | `Piece.trapped` | `true` after landing on unspent grille; blocks move/peek for that piece; still occupies cell |
-| `holdingGrilleKeys` | `ArraySchema<string>` of revealed holding `"r,c"`; drop/rise overlay on client; cleared on rescue / all-jail |
+| `holdingGrilleKeys` | `ArraySchema<string>` of revealed holding `"r,c"`; drop/rise overlay on client; cleared on rescue / all-jail / permanent leave of that seat’s trapped cells (SC-PIECE-28; onDrop grace does not) |
 
 **Not synced (room-private + messages):** step/peek budgets (`budgets` Map + `client.send('budgets')`); task reward bag (`taskRewards`); open peek (`openPeek` + `client.send('peekOpen')`); create-time `grilleDensity` + hidden grille keys; private `allJailWarning`. Do **not** put steps/peeks or hidden grille locations on schema.
 

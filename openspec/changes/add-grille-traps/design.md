@@ -8,9 +8,10 @@
 
 **Goals:**
 
-- Create: пресеты плотности 25/45/65% (мало/средне/много), default средне.
-- Seed скрытых решёток только на `*` при `playing`; reveal+trap on land; public drop/rise anim.
+- Create: пресеты плотности **12/22/35%** (мало/средне/много), default средне.
+- Seed скрытых решёток только на `*` при `playing`; reveal+trap on land; public drop/rise anim **≥1500 ms**.
 - Rescue своих (Chebyshev-1 вкл. диагональ, −1 step); return finished на кольцо центра (−1 step); all-jail → сразу старты стороны + warning modal only self.
+- Permanent leave: clear holding grilles of that seat’s trapped cells (same public rise as rescue).
 - Solo = multi по правилам решёток.
 - Ассет `grille.png` в client.
 
@@ -22,8 +23,9 @@
 
 ### D1 — Плотность как процент от task на seed
 
-- **Выбор:** create option `grilleDensity: 'few' | 'medium' | 'many'` → 0.25 / 0.45 / 0.65; count = `clamp(0, taskCount, Math.round(taskCount * p))`. На стандартном layout: 12 / 22 / 31.
+- **Выбор:** create option `grilleDensity: 'few' | 'medium' | 'many'` → **0.12 / 0.22 / 0.35**; count = `clamp(0, taskCount, Math.round(taskCount * p))`. На стандартном layout: **6 / 11 / 17**.
 - **Почему %:** будущие карты с другим числом `*`.
+- **Почему эти числа:** follow-up после playtest — прежние 25/45/65 были слишком жёсткими; выбран умеренный ряд.
 - Default create: `medium`.
 - Persist на room: поле schema или private + metadata по желанию; достаточно private на instance + seed once.
 
@@ -72,19 +74,20 @@ Reject codes: bad turn/budgets/ownership/geometry/occupancy/hole — без см
 
 Extend “has available action” with: legal rescue OR legal return (finishPlace===0). Same spirit as peek-on-`*` gate.
 
-### D8 — Ассет
+### D8 — Ассет и длительность анимации решётки
 
 - Path: `happy-tourist.github.io/src/assets/grilles/grille.png`
 - Import in GamePage like tourists; overlay on cell when revealed/holding.
+- Client: `GRILLE_ANIM_MS = 1500` (drop и rise одинаково) для всех клиентов; clear по leave использует тот же rise, что rescue/all-jail.
 
 ### D9 — Точки врезки (server)
 
 | Место | Что |
 |-------|-----|
-| `src/rooms/MyRoom.ts` | parse density onCreate; seed on enterPlaying; move trap side-effect; onMessage rescue/returnFromFinish; all-jail; auto-end |
+| `src/rooms/MyRoom.ts` | parse density onCreate; seed on enterPlaying; move trap side-effect; onMessage rescue/returnFromFinish; all-jail; auto-end; **onLeave clear holding of leaving seat’s trapped cells** |
 | `src/rooms/schema/MyRoomState.ts` | `Piece.trapped`; revealed grille keys collection |
-| `src/game/touristMove.ts` (or sibling pure module) | ring-cell helpers; adjacency; density count; optional validate rescue/return |
-| `test/MyRoom.test.ts` (+ unit if pure) | SC-MOVE-51…64, SC-BOARD-16/20, SC-PIECE-24…26, SC-FINISH-12/14, SC-LOBBY-14 |
+| `src/game/touristMove.ts` (or sibling pure module) | ring-cell helpers; adjacency; density count **0.12/0.22/0.35**; optional validate rescue/return |
+| `test/MyRoom.test.ts` (+ unit if pure) | SC-MOVE-51…64, SC-BOARD-16/20/21, SC-PIECE-24…28, SC-FINISH-12/14, SC-LOBBY-14 |
 
 ### D10 — Точки врезки (client)
 
@@ -92,7 +95,7 @@ Extend “has available action” with: legal rescue OR legal return (finishPlac
 |-------|-----|
 | `src/pages/LobbyPage.vue` | density option-group + i18n |
 | `src/stores/game.ts` | CreateGameOptions density; mirror trapped/revealed grilles; sendRescue / sendReturnFromFinish |
-| `src/pages/GamePage.vue` | grille overlay+anim; rescue icon; return+ring hints; all-jail modal; lock select/peek when trapped |
+| `src/pages/GamePage.vue` | grille overlay+anim **1500 ms**; rescue icon; return+ring hints; all-jail modal; lock select/peek when trapped |
 | `src/i18n/*` | lobby density; all-jail warning; a11y return/rescue |
 | `src/assets/grilles/grille.png` | art (user-provided) |
 
@@ -113,17 +116,27 @@ Cross-package: **server contract first**, then client.
 | D5 | return = unfinished in play |
 | D6 | ring w/ corners |
 | D7 | grille clear ≠ tile remove; peek after OK |
-| density | 25/45/65, default medium |
+| density | **12/22/35**, default medium (supersedes 25/45/65) |
+| anim | grille drop/rise **1500 ms** public |
+| leave | permanent leave clears that seat’s holding grilles |
 | Q8 | same turn after reset |
 | Q9 | N/A (land reveals before peek) |
 | Q12 | auto reset + warning modal self-only |
 
+### D13 — Permanent leave clears orphan holding grilles
+
+- **Выбор:** в `onLeave` (consented / grace timeout), **до или вместе** с `seats.delete`: для каждой unfinished piece этого seat с `trapped===true` — clear holding key клетки (spent, sync remove); затем удалить seat как сейчас.
+- Unexpected `onDrop` (grace) — **не** clear: pieces ещё на поле.
+- Client: тот же public rise+vanish (~1500 ms), что при rescue/all-jail.
+- Чужие holding / hidden не трогать.
+
 ## Risks / Trade-offs
 
-- **Высокая плотность 65%** может казаться жёсткой — продукт согласился начать с 25/45/65 и поднять позже при необходимости.
+- **Плотность 12/22/35** мягче прежней 25/45/65 — осознанный follow-up после playtest; при необходимости можно снова поднять.
 - **Return всегда при steps** ослабляет «финиш как обязательство» — осознанно; full `finishPlace` всё равно без хода/steps на практике.
 - **Коллизии стартов при all-jail:** при 4 игроках теоретически тесны стартовые ряды; брать только free cells стороны (продукт: «все не заняты» в типичном кейсе). Если free pool пуст — design fallback: выбрать любую free playable start of that side after scanning; mocha на happy-path достаточно.
 - Sync только revealed grilles → меньше churn, чем sync всех hidden.
+- Leave clear spent без re-arm — поле не «забивается» пустыми клетками после выхода игрока.
 
 ## Open Questions
 

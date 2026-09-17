@@ -10,6 +10,7 @@ Delta этого change: sync `trapped`, all-jail placement на старты с
 | SC-PIECE-25 | done (server mocha — all-jail one per side) |
 | SC-PIECE-26 | done (server mocha — occupancy while trapped) |
 | SC-PIECE-27 | done (client UX — trapped piece still on board) |
+| SC-PIECE-28 | done (server mocha — leave clears holding) |
 
 Related: trap/rescue/all-jail — `game/move`; grille clear — `game/board`.
 
@@ -53,3 +54,15 @@ On all-jail reset for a seat, each of that seat’s four pieces MUST be placed o
 - **THEN** the `N` piece is on a free North start cell, `E` on East, `S` on South, and `W` on West
 - **AND** none of the four share a cell with another unfinished piece
 - **AND** none of the four remain trapped
+
+### Requirement: Permanent leave clears that seat’s holding grilles
+
+When a seated player is permanently removed (consented leave or reconnect grace timeout), the server SHALL clear every holding grille cell that was holding one of that seat’s trapped unfinished pieces before the seat is deleted. Those grilles MUST become spent (removed from synced holding state, no re-arm this match). Other seats’ holding and all still-hidden grilles MUST NOT be cleared by this leave. Unexpected disconnect during reconnect grace MUST NOT clear holding while the seat and pieces remain.
+
+#### Scenario [SC-PIECE-28]: Leave removes orphan holding grilles
+
+- **GIVEN** phase is `playing` and a seated player has at least one trapped unfinished piece under a revealed holding grille
+- **WHEN** that player permanently leaves the room
+- **THEN** that player’s seat and pieces are removed per existing leave rules
+- **AND** each former holding grille of those trapped cells is cleared from synced holding state
+- **AND** other seats’ holding grilles remain if still trapping their pieces

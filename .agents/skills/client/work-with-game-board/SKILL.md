@@ -29,7 +29,7 @@ Product: настольная игра «Счастливый турист». On
 | Layout constant | `LAYOUT` string grid in `GamePage.vue` (`.` hole, `1` start, `*` task, `7` center) |
 | Tile build | `buildBoardTiles()` → `div.tile` with `gridColumn` / `gridRow`; removed `*` → visual hole (page background) |
 | Pieces | `unfinishedBoardPieces` (+ short-lived disappearing finishers) → `img.piece`; PNG from `touristId`; `piece--trapped` when trapped |
-| Grilles | Asset `src/assets/grilles/grille.png`; overlay on `holdingGrilleKeys` with drop/rise anim for all clients |
+| Grilles | Asset `src/assets/grilles/grille.png`; overlay on `holdingGrilleKeys`; drop/rise via **`GRILLE_ANIM_MS = 1500`** → CSS `--grille-anim-ms` for all clients (incl. leave-clear rise, SC-BOARD-18/19/21) |
 | Presence | Occupied seats → top/bottom `.presence-row-scroll` → `.presence-row` (no left/right); dual rings + 72px avatar; finish/ready top-left; say top-right; **own** steps/peeks + end-turn beside avatar |
 | Say (game/say) | Affordance top-right on **own** online marker (hit-area ≥ ~32px); bubbles toward board from `game.sayEvents`; row overflow must not clip (SC-SAY-15) |
 | Strip | Below board when `mySeat`: four slots `N→E→S→W`; finished slots inactive + finish icon (top-right) + return control beside flag when `finishPlace===0` |

@@ -57,7 +57,7 @@ While a piece is trapped, the server MUST reject move and peek intents that targ
 
 ### Requirement: Rescue own adjacent trapped piece for one step
 
-While it is a seated client’s own turn with steps ≥ 1, that client MAY rescue exactly one of their own trapped pieces when at least one of their own free unfinished pieces stands at Chebyshev distance 1 from the trapped piece’s cell (orthogonal or diagonal). A successful rescue MUST decrease steps by 1, clear trapped on the rescued piece, and clear the holding grille (rise and vanish per `game/board`). Rescue of another seat’s piece MUST be rejected. Rescue MUST NOT permanently relocate the rescuer (approach animation is client presentation only).
+While it is a seated client’s own turn with steps ≥ 1, that client MAY rescue exactly one of their own trapped pieces when at least one of their own free unfinished pieces stands at Chebyshev distance 1 from the trapped piece’s cell (orthogonal or diagonal). A successful rescue MUST decrease steps by 1, clear trapped on the rescued piece, and clear the holding grille (rise and vanish ~1500 ms per `game/board`). Rescue of another seat’s piece MUST be rejected. Rescue MUST NOT permanently relocate the rescuer (approach animation is client presentation only).
 
 #### Scenario [SC-MOVE-54]: Rescue spends one step and frees the piece
 

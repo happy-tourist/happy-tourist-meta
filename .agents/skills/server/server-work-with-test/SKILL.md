@@ -5,8 +5,8 @@ description: >-
   happy-tourist-server: room connect with JWT, onAuth failures, waiting-only
   seating / deferred pieces until playing / reconnect grace (SC-PIECE), move +
   steps/peeks / peek / endTurn / removed tiles (SC-MOVE-33…50 / SC-BOARD) +
-  grille density / trap / rescue / returnFromFinish / all-jail
-  (SC-LOBBY-14 / SC-BOARD-16/20 / SC-MOVE-51…64 / SC-PIECE-24…26 /
+  grille density / trap / rescue / returnFromFinish / all-jail / leave-clear
+  (SC-LOBBY-14 / SC-BOARD-16/20 / SC-MOVE-51…64 / SC-PIECE-24…28 /
   SC-FINISH-12/14) + become-current grants (multi +1/+1; solo +1 step;
   already-current→solo no re-grant) + turn deadlines (setTurnBudgetsForTests),
   center finish / finishPlace (SC-FINISH), preset say (SC-SAY), schema sync
@@ -282,7 +282,7 @@ Canonical coverage: `test/MyRoom.test.ts` (SC-MOVE-*) + pure `test/touristMove.t
 - Legal orthogonal/diagonal one-step updates piece `row`/`col` and spends 1 step — **does not** advance turn (SC-MOVE-35); only when `phase === 'playing'` + current + steps > 0 + seat eligible (use `forcePlaying` to skip countdown in isolation tests).
 - Occupied / non-playable / out-of-turn / spectator / pre-playing / finished-seat / no-steps → no state change.
 - Permanent leave of current → `applyTurnGrant` on next (multi +1/+1; solo become-current +1 step — SC-MOVE-50); already-current→solo carries steps (no re-grant — SC-MOVE-40); `onDrop` grace does not change turn (non-finished).
-- Grilles (add-grille-traps): create `grilleDensity` few/medium/many → seed count (SC-LOBBY-14 / SC-BOARD-16); land → trap + `holdingGrilleKeys` (SC-MOVE-51 / SC-PIECE-24/26); trapped rejects move/peek (SC-MOVE-52/53); `rescue` / `returnFromFinish` (SC-MOVE-54…59 / SC-FINISH-12/14); all-jail reset (SC-MOVE-60/61 / SC-PIECE-25); auto-end waits for rescue/return (SC-MOVE-62); solo same rules (SC-MOVE-64); spent grille leaves task peekable (SC-BOARD-20). Pure helpers cover density counts, ring cells, `hasLegalRescue` / `validateReturnFromFinish`.
+- Grilles (add-grille-traps): create `grilleDensity` few/medium/many → seed count 12/22/35% (SC-LOBBY-14 / SC-BOARD-16); land → trap + `holdingGrilleKeys` (SC-MOVE-51 / SC-PIECE-24/26); trapped rejects move/peek (SC-MOVE-52/53); `rescue` / `returnFromFinish` (SC-MOVE-54…59 / SC-FINISH-12/14); all-jail reset (SC-MOVE-60/61 / SC-PIECE-25); auto-end waits for rescue/return (SC-MOVE-62); solo same rules (SC-MOVE-64); spent grille leaves task peekable (SC-BOARD-20); permanent leave clears that seat’s holding (SC-PIECE-28; onDrop does not). Pure helpers cover density counts, ring cells, `hasLegalRescue` / `validateReturnFromFinish`.
 - Pure module tests cover playable set, Chebyshev, occupancy (ignores finished; trapped still occupy) without room I/O.
 
 Server is authoritative; never assert by trusting a client-only board copy.

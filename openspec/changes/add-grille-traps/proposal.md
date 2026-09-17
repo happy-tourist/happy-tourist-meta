@@ -4,11 +4,12 @@
 
 ## What Changes
 
-- При создании комнаты — выбор плотности решёток: мало / средне / много (процент от task-клеток на seed; default средне).
+- При создании комнаты — выбор плотности решёток: мало / средне / много (процент от task-клеток на seed; default средне; умеренные **12% / 22% / 35%**).
 - На `enterPlaying` сервер сеет скрытые решётки только на task-клетки; до захода их никто не видит.
-- Заход на клетку с решёткой: анимация опускания (видят все) → турист `trapped` (нельзя ходить и peek).
-- Спасение: свой свободный турист на Chebyshev-1 (включая диагональ), при steps ≥ 1 — иконка над trapped; клик = −1 step, анимация подхода/назад, решётка поднимается и исчезает (spent).
+- Заход на клетку с решёткой: анимация опускания **~1500 ms** (видят все) → турист `trapped` (нельзя ходить и peek).
+- Спасение: свой свободный турист на Chebyshev-1 (включая диагональ), при steps ≥ 1 — иконка над trapped; клик = −1 step, анимация подхода/назад, решётка поднимается и исчезает (spent; rise **~1500 ms** у всех).
 - Все 4 своих trapped → сразу расстановка на свободные старты своей стороны (по одному на сторону), державшие решётки пропадают; модалка-предупреждение только себе; ход продолжается при остатке steps/времени.
+- Permanent leave: pieces снимаются; holding-решётки клеток, где этот seat был trapped, тоже clear (rise у всех) — без orphan-клеток.
 - Finished-туриста можно вернуть на кольцо вокруг центра (Chebyshev-1 от блока 2×2, с углами): иконка у flag при steps ≥ 1 и свободной клетке без дыры; −1 step; снова в игре.
 - Solo = те же правила, что multi.
 
@@ -17,9 +18,9 @@
 - **Пакеты:** client + server (room `tourist`).
 - **Capability ID:**
   - `lobby/rooms` — create option плотности решёток (мало/средне/много, default средне);
-  - `game/board` — overlay/анимация решётки; spent-клетка обычная task (peek после спасения возможен);
+  - `game/board` — overlay/анимация решётки (~1500 ms drop/rise); spent-клетка обычная task (peek после спасения/leave-clear возможен);
   - `game/move` — land→trap; rescue/return (−1 step); all-jail reset; auto-end учитывает rescue/return; lock move+peek у trapped;
-  - `game/pieces` — sync `trapped`; расстановка на старты при all-jail; unfinish при return;
+  - `game/pieces` — sync `trapped`; расстановка на старты при all-jail; unfinish при return; permanent leave clears holding grilles of that seat’s trapped cells;
   - `game/finish` — return снимает `finished` у piece (пока seat без полного place / на практике при наличии хода и steps).
 - **Экраны:** Lobby (create modal); Game (board, strip, модалка all-jail только себе).
 - **Контракт:** room `tourist`; create options + sync состояния ловушек/trapped; messages rescue / returnFromFinish (имена в design).
@@ -42,10 +43,10 @@
 
 ### Modified Capabilities
 
-- `lobby/rooms`: create выбирает плотность решёток.
-- `game/board`: видимость/анимация решёток; task после spent доступен для peek.
+- `lobby/rooms`: create выбирает плотность решёток (12/22/35%).
+- `game/board`: видимость/анимация решёток (~1500 ms); task после spent доступен для peek; clear также при leave.
 - `game/move`: trap / rescue / return / all-jail; стоимость в steps; auto-end.
-- `game/pieces`: `trapped`; reset на старты; return → again on board.
+- `game/pieces`: `trapped`; reset на старты; return → again on board; leave → clear orphan holding.
 - `game/finish`: piece может снова стать unfinished через return.
 
 ## Impact
@@ -57,6 +58,6 @@
 
 ## References
 
-- Explore (этот чат): D1 task-only; D2 own rescue 1 step; D3 all-4 own → start per side; D4 holding grilles spent; D5 return = in play; D6 ring w/ corners; D7 grille goes, tile peekable; density 25/45/65 default medium; Q8 same turn; Q9 moot; Q12 auto-reset + warning modal self-only; return always when steps+legal cell; trapped locks peek; rescue Chebyshev-1 diagonal OK.
+- Explore (этот чат): D1 task-only; D2 own rescue 1 step; D3 all-4 own → start per side; D4 holding grilles spent; D5 return = in play; D6 ring w/ corners; D7 grille goes, tile peekable; density **12/22/35** default medium (было 25/45/65); grille anim **1500 ms**; permanent leave clears that seat’s holding grilles (public rise); Q8 same turn; Q9 moot; Q12 auto-reset + warning modal self-only; return always when steps+legal cell; trapped locks peek; rescue Chebyshev-1 diagonal OK.
 - Main specs: `openspec/specs/{lobby/rooms,game/board,game/move,game/pieces,game/finish}/spec.md`.
 - Sibling AGENTS; `docs/projects-map.md`.

@@ -56,8 +56,8 @@ Constants: `RECONNECT_GRACE_SECONDS = 30`, `COUNTDOWN_SECONDS = 5`, `TURN_BUDGET
 
 | Path | Behavior |
 |------|----------|
-| **Consented leave** (`client.leave` / intentional exit) | Immediate `onLeave` → delete seat (all four pieces). Kind/cells back to pools. Subsequent join gets a seat **only** while `phase === 'waiting'` and under maxSeats. |
-| **Unexpected drop** (`onDrop`) | Seated only: `connected=false`, `reconnectUntil=now+30s`, `allowReconnection(client, 30)`; **hold** seat + pieces. Spectators: no grace. Does not cancel countdown. |
+| **Consented leave** (`client.leave` / intentional exit) | Immediate `onLeave` → clear holding grilles of that seat’s trapped cells (SC-PIECE-28), then delete seat (all four pieces). Kind/cells back to pools. Subsequent join gets a seat **only** while `phase === 'waiting'` and under maxSeats. |
+| **Unexpected drop** (`onDrop`) | Seated only: `connected=false`, `reconnectUntil=now+30s`, `allowReconnection(client, 30)`; **hold** seat + pieces; **do not** clear holding grilles. Spectators: no grace. Does not cancel countdown. |
 | **Reconnect within grace** (`onReconnect`) | Same seat/kind/pieces; `connected=true`, `reconnectUntil=0`. |
 | **Grace timeout / denied** | Permanent remove as consented leave; no seating reopen outside `waiting`. |
 | **Empty seated** | After permanent remove, if `seats.size === 0` → `this.disconnect()` even if spectators remain. |
@@ -83,9 +83,9 @@ Room-private (not schema):
 | `budgets: Map<sessionId, { steps, peeks, infinite, peekedThisTurn }>` | Owner-only; `infinite` = **peeks∞ only** (steps always finite). Resend `client.send('budgets', { steps, peeks, infinite, peekedThisTurn })`. `peekedThisTurn` kept for client mirror — **no** one-peek/turn gate |
 | `taskRewards: Map<"r,c", 1\|2\|3>` | Pregen on `enterPlaying` — bag **28×1 / 14×2 / 6×3**; revealed only in private `peekOpen` |
 | `openPeek` | At most one unresolved peek for current seat |
-| `grilleDensity` + hidden grille keys | Create-time `few`/`medium`/`many` → 25/45/65% of task cells; hidden keys never synced until reveal |
+| `grilleDensity` + hidden grille keys | Create-time `few`/`medium`/`many` → **12/22/35%** of task cells (6/11/17 on 48); hidden keys never synced until reveal |
 
-Synced: `removedTaskKeys: string[]` (`"r,c"`) — holes for all clients; **not landable** (stand OK; leave OK). Synced: `holdingGrilleKeys: string[]` — revealed grilles currently holding a trapped piece; removed when spent (rescue / all-jail).
+Synced: `removedTaskKeys: string[]` (`"r,c"`) — holes for all clients; **not landable** (stand OK; leave OK). Synced: `holdingGrilleKeys: string[]` — revealed grilles currently holding a trapped piece; removed when spent (rescue / all-jail / permanent leave of that seat’s trapped cells).
 
 Behavior:
 

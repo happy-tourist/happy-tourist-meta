@@ -6,8 +6,9 @@ description: >-
   onJoin / onDrop / onReconnect / onLeave / onDispose), tourist reconnect grace
   vs LobbyRoom fire-and-forget, room registration in app.config (lobby +
   tourist + enableRealtimeListing), maxSeats / grilleDensity create options /
-  waiting-only seating / deferred pieces / seat connectivity / start phase, JWT
-  room gate, or aligning room name with client TOURIST_ROOM.
+  waiting-only seating / deferred pieces / seat connectivity / start phase,
+  consented leave clears that seat’s holding grilles (SC-PIECE-28; onDrop does
+  not), JWT room gate, or aligning room name with client TOURIST_ROOM.
 ---
 
 # Work With Rooms
@@ -84,7 +85,7 @@ client create({ maxSeats, grilleDensity? }) / joinById / joinOrCreate / reconnec
 | `onJoin` | Assign seat only while `phase === 'waiting'` and under `maxSeats`; unique `touristId`; pieces deferred until `playing`; online connectivity; `ready=false`; `timeExpired=false`; maybe start countdown when full | Cap the room with `maxClients`; seat during `countdown`/`playing`; invent pieces in waiting |
 | `onDrop` | Seated: mark offline + `allowReconnection(client, 30)`; hold seat/pieces; do not cancel countdown; do **not** pause turn deadline | Treat unexpected drop as immediate seat delete; grace for spectators or LobbyRoom |
 | `onReconnect` | Restore seat online (`connected=true`, `reconnectUntil=0`) | Re-assign a new seat / touristId |
-| `onLeave` | Permanent remove seat; subsequent joins get seats only while `phase === 'waiting'`; refreshMetadata; maybeStartCountdown; if zero seats → `disconnect()` | Leave stale seats; let spectators keep an empty-seated room alive; clear others' `ready` on leave; reopen seating in countdown/playing |
+| `onLeave` | Clear holding grilles of this seat’s trapped cells (SC-PIECE-28), then permanent remove seat; subsequent joins get seats only while `phase === 'waiting'`; refreshMetadata; maybeStartCountdown; if zero seats → `disconnect()` | Leave stale seats; leave orphan holding grilles; clear holding on `onDrop` grace; let spectators keep an empty-seated room alive; clear others' `ready` on leave; reopen seating in countdown/playing |
 | `onDispose` | `clearTurnDeadline()` + cleanup other timers / logs | Assume clients still connected; leave dangling turn timeouts |
 
 ## Current Room (`MyRoom.ts`)
@@ -113,7 +114,7 @@ export class MyRoom extends Room<{ state: MyRoomState }> {
   onJoin(client: Client, _options: any, auth: any) { /* seat+kind only in waiting under maxSeats; pieces deferred; maybeStartCountdown */ }
   onDrop(client: Client, _code?: number) { /* seated: offline + allowReconnection(30); deadline keeps ticking */ }
   onReconnect(client: Client) { /* seat online again */ }
-  onLeave(client: Client, _code?: number) { /* delete seat; empty → disconnect(); no seating reopen outside waiting */ }
+  onLeave(client: Client, _code?: number) { /* clear holding of seat’s trapped cells (SC-PIECE-28); delete seat; empty → disconnect(); no seating reopen outside waiting */ }
   onDispose() { this.clearTurnDeadline(); }
 }
 ```
@@ -121,8 +122,8 @@ export class MyRoom extends Room<{ state: MyRoomState }> {
 - `onAuth` is **static**; invalid JWT throws → client cannot connect.
 - `auth` in `onJoin` is the userdata returned from `onAuth`.
 - `refreshMetadata` feeds LobbyPage: `{ title, status, maxSeats, seats }` — `seats` = occupied seated count; `status` is `playing` only when `phase === 'playing'` (else `waiting`, including countdown).
-- Consented client `leave()` goes straight to `onLeave` (no grace). Unexpected drop uses Colyseus `onDrop` → `allowReconnection`.
-- Seating / start / reconnect details: `work-with-game` / `work-with-schema`.
+- Consented client `leave()` goes straight to `onLeave` (no grace) → clear that seat’s holding grilles before seat delete (SC-PIECE-28). Unexpected drop uses Colyseus `onDrop` → `allowReconnection` (holding stays while grace holds the seat).
+- Seating / start / reconnect / grille leave-clear details: `work-with-game` / `work-with-schema`.
 
 ## Registration And Live Lobby
 
