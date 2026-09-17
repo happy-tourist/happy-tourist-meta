@@ -5,12 +5,14 @@ description: >-
   happy-tourist-server: room connect with JWT, onAuth failures, waiting-only
   seating / deferred pieces until playing / reconnect grace (SC-PIECE), move +
   steps/peeks / peek / endTurn / removed tiles (SC-MOVE-33…50 / SC-BOARD) +
-  become-current grants (multi +1/+1; solo +1 step; already-current→solo no
-  re-grant) + turn deadlines (setTurnBudgetsForTests), center finish /
-  finishPlace (SC-FINISH), preset say (SC-SAY), schema sync assertions, GET
-  /rooms listing, or preference HTTP (GET/POST /api/theme). Core workflow: test
-  plan (mocks/verify) → write test/*.test.ts → run npm test from server package
-  root and fix failures. Do not invent Jest/babel patterns.
+  grille density / trap / rescue / returnFromFinish / all-jail
+  (SC-LOBBY-14 / SC-BOARD-16/20 / SC-MOVE-51…64 / SC-PIECE-24…26 /
+  SC-FINISH-12/14) + become-current grants (multi +1/+1; solo +1 step;
+  already-current→solo no re-grant) + turn deadlines (setTurnBudgetsForTests),
+  center finish / finishPlace (SC-FINISH), preset say (SC-SAY), schema sync
+  assertions, GET /rooms listing, or preference HTTP (GET/POST /api/theme).
+  Core workflow: test plan (mocks/verify) → write test/*.test.ts → run npm test
+  from server package root and fix failures. Do not invent Jest/babel patterns.
 trigger: slash
 ---
 
@@ -280,7 +282,8 @@ Canonical coverage: `test/MyRoom.test.ts` (SC-MOVE-*) + pure `test/touristMove.t
 - Legal orthogonal/diagonal one-step updates piece `row`/`col` and spends 1 step — **does not** advance turn (SC-MOVE-35); only when `phase === 'playing'` + current + steps > 0 + seat eligible (use `forcePlaying` to skip countdown in isolation tests).
 - Occupied / non-playable / out-of-turn / spectator / pre-playing / finished-seat / no-steps → no state change.
 - Permanent leave of current → `applyTurnGrant` on next (multi +1/+1; solo become-current +1 step — SC-MOVE-50); already-current→solo carries steps (no re-grant — SC-MOVE-40); `onDrop` grace does not change turn (non-finished).
-- Pure module tests cover playable set, Chebyshev, occupancy (ignores finished) without room I/O.
+- Grilles (add-grille-traps): create `grilleDensity` few/medium/many → seed count (SC-LOBBY-14 / SC-BOARD-16); land → trap + `holdingGrilleKeys` (SC-MOVE-51 / SC-PIECE-24/26); trapped rejects move/peek (SC-MOVE-52/53); `rescue` / `returnFromFinish` (SC-MOVE-54…59 / SC-FINISH-12/14); all-jail reset (SC-MOVE-60/61 / SC-PIECE-25); auto-end waits for rescue/return (SC-MOVE-62); solo same rules (SC-MOVE-64); spent grille leaves task peekable (SC-BOARD-20). Pure helpers cover density counts, ring cells, `hasLegalRescue` / `validateReturnFromFinish`.
+- Pure module tests cover playable set, Chebyshev, occupancy (ignores finished; trapped still occupy) without room I/O.
 
 Server is authoritative; never assert by trusting a client-only board copy.
 
@@ -309,11 +312,12 @@ Canonical coverage: `test/MyRoom.test.ts` (SC-SAY-* / ready cases).
 - After `connectTo`, read synced state from the client SDK view or room state
   the harness exposes; assert fields the client SPA expects:
   `phase` / `maxSeats` / `countdownRemaining` (+ legacy `started`), `seats` →
-  `touristId` + four `pieces` `{ side, row, col, finished }` + `connected` /
-  `reconnectUntil` / `ready` / `finishPlace`, `currentTurnSessionId`, and
-  `nextFinishPlace`.
+  `touristId` + four `pieces` `{ side, row, col, finished, trapped }` + `connected` /
+  `reconnectUntil` / `ready` / `finishPlace`, `currentTurnSessionId`,
+  `removedTaskKeys`, `holdingGrilleKeys`, and `nextFinishPlace`.
 - Do not assert legacy draughts fields (`board`, `currentTurn`,
   `players[].color`) — they are not in product schema.
+- Do not assert hidden grille locations on schema — only revealed `holdingGrilleKeys`.
 
 ### Live lobby listing (SC-LOBBY-02 / SC-LOBBY-03)
 

@@ -5,9 +5,9 @@ description: >-
   the happy-tourist tourist server: MyRoom lifecycle (onAuth / onCreate /
   onJoin / onDrop / onReconnect / onLeave / onDispose), tourist reconnect grace
   vs LobbyRoom fire-and-forget, room registration in app.config (lobby +
-  tourist + enableRealtimeListing), maxSeats / waiting-only seating / deferred
-  pieces / seat connectivity / start phase, JWT room gate, or aligning room
-  name with client TOURIST_ROOM.
+  tourist + enableRealtimeListing), maxSeats / grilleDensity create options /
+  waiting-only seating / deferred pieces / seat connectivity / start phase, JWT
+  room gate, or aligning room name with client TOURIST_ROOM.
 ---
 
 # Work With Rooms
@@ -30,9 +30,9 @@ Coordinate with sibling skills when they exist: `work-with-schema`, `work-with-m
 | Layer | Path | Role |
 |-------|------|------|
 | Registration | `src/app.config.ts` | `lobby: defineRoom(LobbyRoom)`; `tourist: defineRoom(MyRoom).enableRealtimeListing()` |
-| Game handler | `src/rooms/MyRoom.ts` | `Room` subclass: `onAuth`, `onCreate`, `onJoin`, `onDrop`, `onReconnect`, `onLeave`, `onDispose`; `onMessage('move'|'ready'|'say')` |
-| Schema | `src/rooms/schema/MyRoomState.ts` | Synced: `phase` / `maxSeats` / `countdownRemaining` + legacy `started` + `seats` Map (`connected` / `reconnectUntil` / `ready` / `finishPlace` / `timeExpired` + piece `finished`; pieces empty until playing) + `currentTurnSessionId` + `turnUntil` + `turnBudgetSeconds` + `nextFinishPlace` |
-| Tests | `test/MyRoom.test.ts` | JWT, tourist connect; capacity/start (SC-START-*); seating/deferred pieces (SC-PIECE-*); turn/move/timer (SC-MOVE-*); finish (SC-FINISH-*); say (SC-SAY-*); lobby listing (SC-LOBBY-02/03) |
+| Game handler | `src/rooms/MyRoom.ts` | `Room` subclass: `onAuth`, `onCreate`, `onJoin`, `onDrop`, `onReconnect`, `onLeave`, `onDispose`; `onMessage('move'|'rescue'|'returnFromFinish'|'ready'|'say'|…)` |
+| Schema | `src/rooms/schema/MyRoomState.ts` | Synced: `phase` / `maxSeats` / `countdownRemaining` + legacy `started` + `seats` Map (`connected` / `reconnectUntil` / `ready` / `finishPlace` / `timeExpired` + piece `finished`/`trapped`; pieces empty until playing) + `currentTurnSessionId` + `turnUntil` + `turnBudgetSeconds` + `nextFinishPlace` + `removedTaskKeys` + `holdingGrilleKeys` |
+| Tests | `test/MyRoom.test.ts` | JWT, tourist connect; capacity/start (SC-START-*); seating/deferred pieces (SC-PIECE-*); turn/move/grille (SC-MOVE-*); finish (SC-FINISH-*); say (SC-SAY-*); lobby/density (SC-LOBBY-*) |
 | Loadtest | `loadtest/example.ts` | `joinOrCreate`; `--room tourist` |
 
 Registered room keys today: **`lobby`** (built-in listing) and **`tourist`** (playable `MyRoom` with realtime listing). Client `TOURIST_ROOM` / `LOBBY_ROOM` match these names — do not reintroduce `my_room`.
@@ -42,16 +42,16 @@ Constants: `RECONNECT_GRACE_SECONDS = 30`, `COUNTDOWN_SECONDS = 5`, `TURN_BUDGET
 ## Lifecycle Flow
 
 ```text
-client create({ maxSeats }) / joinById / joinOrCreate / reconnect('tourist')
+client create({ maxSeats, grilleDensity? }) / joinById / joinOrCreate / reconnect('tourist')
         │
         ▼
   static onAuth(token)     ← JWT.verify; fail → reject join
         │  returns userdata → onJoin(…, auth)
         ▼
   onCreate(options)        ← once per room instance
-        │  setState; parse maxSeats (2|3|4, default 2); phase=waiting
+        │  setState; parse maxSeats (2|3|4, default 2) + grilleDensity (few/medium/many, default medium)
         │  refreshMetadata({ title, status, maxSeats, seats })
-        │  onMessage('move'|'ready'|'say')
+        │  onMessage('move'|'rescue'|'returnFromFinish'|'peek'|…|'ready'|'say')
         │  (enableRealtimeListing publishes to LobbyRoom subscribers)
         ▼
   onJoin(client, options, auth)
@@ -80,7 +80,7 @@ client create({ maxSeats }) / joinById / joinOrCreate / reconnect('tourist')
 | Hook | Do here | Don't |
 |------|---------|--------|
 | `static onAuth` | `JWT.verify(token)`; return userdata | Trust client-supplied identity without JWT |
-| `onCreate` | `setState`; parse `maxSeats`; `phase=waiting`; `refreshMetadata`; register `move`/`ready`/`say`; do **not** set `maxClients = maxSeats` | Mutate board from HTTP |
+| `onCreate` | `setState`; parse `maxSeats` + `grilleDensity` (room-private); `phase=waiting`; `refreshMetadata`; register `move`/`rescue`/`returnFromFinish`/`peek`/…/`ready`/`say`; do **not** set `maxClients = maxSeats` | Mutate board from HTTP |
 | `onJoin` | Assign seat only while `phase === 'waiting'` and under `maxSeats`; unique `touristId`; pieces deferred until `playing`; online connectivity; `ready=false`; `timeExpired=false`; maybe start countdown when full | Cap the room with `maxClients`; seat during `countdown`/`playing`; invent pieces in waiting |
 | `onDrop` | Seated: mark offline + `allowReconnection(client, 30)`; hold seat/pieces; do not cancel countdown; do **not** pause turn deadline | Treat unexpected drop as immediate seat delete; grace for spectators or LobbyRoom |
 | `onReconnect` | Restore seat online (`connected=true`, `reconnectUntil=0`) | Re-assign a new seat / touristId |

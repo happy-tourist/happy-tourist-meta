@@ -46,7 +46,7 @@ may also host copies later).
 | Router | `src/router/` | `routes.ts` + guards in `index.ts` (`filenameBasedRouting: false`) |
 | i18n | `src/i18n/` | Locale message trees (`en-US`) |
 | CSS | `src/css/` | `app.scss`, `quasar.variables.scss` |
-| Assets | `src/assets/` | Static assets |
+| Assets | `src/assets/` | Static assets (`tourists/…`, `grilles/grille.png`, …) |
 
 Outside `src`: `public/`, `quasar.config.ts`, `.env.development` / `.env.production`, `.github/workflows/`.
 
@@ -185,9 +185,9 @@ Registered in `quasar.config.ts` boot array: `theme`, `i18n`, `colyseus` (+ `fra
 
 **Auth page** — `LoginPage` uses `useAuthStore()` for register / login / anonymous / Google; shows `error` banner; no Colyseus calls outside the store.
 
-**Lobby** — `LobbyPage` uses `useGameStore().subscribeLobby` / `createGame` / `joinGame` and `useAuthStore` for display/logout.
+**Lobby** — `LobbyPage` uses `useGameStore().subscribeLobby` / `createGame({ maxSeats, grilleDensity })` / `joinGame` and `useAuthStore` for display/logout.
 
-**Game** — `GamePage` shows tourist board with all seats’ pieces (4 per seated) + occupied presence (offline grace ring) + strip×4 if seated; on `isMyTurn` local select/hints and `game.sendMove`; seated+online own marker may `game.sendSay` (preset bubbles from `sayEvents`); `rejoinGame(roomId)` on mount / soft-fail (reconnect token → `joinById`).
+**Game** — `GamePage` shows tourist board with all seats’ pieces (4 per seated; `trapped` visible under grille) + grille overlays from `holdingGrilleKeys` + occupied presence (offline grace ring) + strip×4 if seated (return beside flag); on `isMyTurn` local select/hints and `game.sendMove` / `sendRescue` / `sendReturnFromFinish`; seated+online own marker may `game.sendSay` (preset bubbles from `sayEvents`); `rejoinGame(roomId)` on mount / soft-fail (reconnect token → `joinById`).
 
 **App shell** — `App.vue` hosts `q-layout` → theme `q-header` → `router-view`; stable `watch([() => auth.ready, () => auth.user?.id, () => auth.user?.anonymous], …)` → `theme.syncFromAuthUser` (GET restore for registered; do not replace `auth.user` after GET); shows `theme.error` banner.
 
@@ -226,8 +226,8 @@ Registered in `quasar.config.ts` boot array: `theme`, `i18n`, `colyseus` (+ `fra
 |--------|------|----------------|
 | Auth | `LoginPage` | `stores/auth` + `boot/colyseus` |
 | Theme (chrome Dark) | `App.vue` header | `stores/theme` + `boot/theme` |
-| Lobby / rooms | `LobbyPage` | `stores/game.subscribeLobby` / create / join |
-| Game session | `GamePage` | `stores/game` room attach + seats (`touristId` + `pieces[]` + connectivity) / presence / say bubbles / strip×4 |
+| Lobby / rooms | `LobbyPage` | `stores/game.subscribeLobby` / create `{ maxSeats, grilleDensity }` / join |
+| Game session | `GamePage` | `stores/game` room attach + seats (`touristId` + `pieces[]` + `trapped` + connectivity) / grilles / presence / say bubbles / strip×4 + rescue/return |
 | Shell | `App.vue` | layout + theme header/banner + `router-view` |
 
 Routes (from `src/router/routes.ts`):

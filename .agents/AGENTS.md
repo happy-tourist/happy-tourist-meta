@@ -66,18 +66,18 @@ OpenSpec: [`openspec/config.yaml`](../openspec/config.yaml); артефакты 
 | [`client-align-code`](skills/client/client-align-code/SKILL.md) | Audit ветки / диффа против требований, skills и аналогов; реактивные/async-петли; async-гонки (await до `onStateChange` / первый `ROOM_STATE`); Quasar nested slots/overlays (presence rings ↔ avatar) |
 | [`client-locate-change-points`](skills/client/client-locate-change-points/SKILL.md) | Где править / куда класть новые файлы (вкл. Google auth) |
 | [`client-verify-code`](skills/client/client-verify-code/SKILL.md) | Проверка кода / compliance skills + DRY/KISS/YAGNI (incl. presence rows + sibling avatar / SC-PRESENCE-12) |
-| [`colyseus-client`](skills/client/colyseus-client/SKILL.md) | `client.http` + room messages (`move`/`peek`/`endTurn`/`say` + private `budgets`/`peekOpen`; `infinite`=peeks∞ only; holes not landable; not axios/BFF) |
+| [`colyseus-client`](skills/client/colyseus-client/SKILL.md) | `client.http` + room messages (`move`/`rescue`/`returnFromFinish`/`peek`/`endTurn`/`say` + private `budgets`/`peekOpen`/`allJailWarning`; `infinite`=peeks∞ only; holes + holding grilles; not axios/BFF) |
 | [`client-work-with-auth`](skills/client/client-work-with-auth/SKILL.md) | Colyseus Auth (email/anonymous/Google), `onChange`, route guards |
 | [`client-work-with-errors`](skills/client/client-work-with-errors/SKILL.md) | Store `error` + `q-banner` (pages + App theme), room `onError` |
 | [`client-work-with-structure`](skills/client/client-work-with-structure/SKILL.md) | pages / components / boot / stores placement (incl. theme shell) |
 | [`work-with-forms`](skills/client/work-with-forms/SKILL.md) | LoginPage `q-form` / guest + Google buttons |
-| [`work-with-pages`](skills/client/work-with-pages/SKILL.md) | Routes + guards login/lobby/game; App theme header; GamePage presence/budgets/peek / holes / dual end modals overview |
-| [`work-with-stores`](skills/client/work-with-stores/SKILL.md) | Pinia `auth` / `theme` / `game` (incl. peeks∞ / finite steps / peek / end-turn / holes) |
-| [`work-with-styles`](skills/client/work-with-styles/SKILL.md) | Quasar Dark + GET/POST `/api/theme`, header, muted chrome, tourist board (`.tile--removed` holes) + presence/budgets/peek CSS |
-| [`work-with-localization`](skills/client/work-with-localization/SKILL.md) | vue-i18n boot; `game.say` / ready / leave / finish / timer+steps end / steps/peeks / endTurn / peek / solo-peeks∞ keys |
-| [`work-with-lobby`](skills/client/work-with-lobby/SKILL.md) | Live LobbyRoom subscribe, create-with-maxSeats modal (no Play shortcut), quiet resubscribe |
+| [`work-with-pages`](skills/client/work-with-pages/SKILL.md) | Routes + guards login/lobby/game; App theme header; Lobby create grilleDensity; GamePage presence/budgets/peek / holes / grilles trap-rescue-return / dual end + all-jail modals overview |
+| [`work-with-stores`](skills/client/work-with-stores/SKILL.md) | Pinia `auth` / `theme` / `game` (incl. peeks∞ / finite steps / peek / rescue/return / grilleDensity create / end-turn / holes) |
+| [`work-with-styles`](skills/client/work-with-styles/SKILL.md) | Quasar Dark + GET/POST `/api/theme`, header, muted chrome, tourist board (holes + grille overlays) + presence/budgets/peek CSS |
+| [`work-with-localization`](skills/client/work-with-localization/SKILL.md) | vue-i18n boot; `game.say` / ready / leave / finish / timer+steps end / steps/peeks / endTurn / peek / solo-peeks∞ / grille density + rescue/return/all-jail keys |
+| [`work-with-lobby`](skills/client/work-with-lobby/SKILL.md) | Live LobbyRoom subscribe, create-with-maxSeats + grilleDensity modal (no Play shortcut), quiet resubscribe |
 | [`work-with-rooms`](skills/client/work-with-rooms/SKILL.md) | Room lifecycle, tourist reconnect token, consented leave (confirm is page-local) |
-| [`work-with-game-board`](skills/client/work-with-game-board/SKILL.md) | Board + presence rows (top/bottom) + dual rings + own steps/peeks (+N for multi +1/+1 / solo become-current +1) + end-turn + peek eye/modals + holes not landable + corner affordances + bubbles toward board + place/timer-vs-steps/solo-peeks∞ modals + strip + move/ready/say |
+| [`work-with-game-board`](skills/client/work-with-game-board/SKILL.md) | Board + presence + grille overlay + trap/rescue/return + dual rings + own steps/peeks + end-turn + peek eye/modals + holes not landable + corner affordances + bubbles + place/timer/solo/all-jail modals + strip + move/ready/say |
 | [`work-with-env-deploy`](skills/client/work-with-env-deploy/SKILL.md) | `VITE_*`, hash router, GitHub Pages |
 
 #### Server-wide skills (`.agents/skills/server/`)
@@ -92,11 +92,11 @@ OpenSpec: [`openspec/config.yaml`](../openspec/config.yaml); артефакты 
 | [`server-work-with-auth`](skills/server/server-work-with-auth/SKILL.md) | `@colyseus/auth`, Google OAuth `addProvider`, JWT `onAuth`, userdata |
 | [`server-work-with-errors`](skills/server/server-work-with-errors/SKILL.md) | Auth/game failures, HTTP health, client-facing errors |
 | [`server-work-with-structure`](skills/server/server-work-with-structure/SKILL.md) | rooms / schema / db / config / app.config placement |
-| [`server-work-with-test`](skills/server/server-work-with-test/SKILL.md) | mocha + `@colyseus/testing` (SC-PIECE + SC-START + SC-MOVE peeks∞/solo become-current +1 / step-loss/holes + SC-BOARD + SC-FINISH + SC-SAY + lobby + `GET|POST /api/theme`) |
-| [`work-with-rooms`](skills/server/work-with-rooms/SKILL.md) | Room lifecycle (`onDrop`/`onReconnect`/`onDispose` clearTurnDeadline), registration, maxSeats / waiting-only seating / phase / seats |
-| [`work-with-schema`](skills/server/work-with-schema/SKILL.md) | `@colyseus/schema` sync (`phase` / `maxSeats` / countdown + `seats` + connectivity/`ready`/`finishPlace`/`timeExpired` + piece `finished` + turn fields + `removedTaskKeys` not landable) |
-| [`work-with-messages`](skills/server/work-with-messages/SKILL.md) | Room `onMessage('move'|'peek'|'peekAnswer'|'endTurn'|'ready'|'say')` + private `budgets`/`peekOpen` (move no advance; grant multi +1/+1 / solo become-current +1; peeks∞; holes reject land) |
-| [`work-with-game`](skills/server/work-with-game/SKILL.md) | Waiting-only seating + deferred pieces + start/ready/countdown + reconnect + private steps/peeks∞ + become-current grant (multi +1/+1; solo +1 step; already-current→solo no re-grant) + multi peek + step-loss + holes not landable + turn deadlines + center finish + `touristMove.ts`; room `tourist` |
+| [`server-work-with-test`](skills/server/server-work-with-test/SKILL.md) | mocha + `@colyseus/testing` (SC-PIECE + SC-START + SC-MOVE peeks∞/solo become-current +1 / step-loss/holes/grilles trap-rescue-return + SC-BOARD + SC-FINISH + SC-SAY + lobby density + `GET|POST /api/theme`) |
+| [`work-with-rooms`](skills/server/work-with-rooms/SKILL.md) | Room lifecycle (`onDrop`/`onReconnect`/`onDispose` clearTurnDeadline), registration, maxSeats / grilleDensity / waiting-only seating / phase / seats |
+| [`work-with-schema`](skills/server/work-with-schema/SKILL.md) | `@colyseus/schema` sync (`phase` / `maxSeats` / countdown + `seats` + connectivity/`ready`/`finishPlace`/`timeExpired` + piece `finished`/`trapped` + turn fields + `removedTaskKeys` + `holdingGrilleKeys`) |
+| [`work-with-messages`](skills/server/work-with-messages/SKILL.md) | Room `onMessage('move'|'rescue'|'returnFromFinish'|'peek'|'peekAnswer'|'endTurn'|'ready'|'say')` + private `budgets`/`peekOpen`/`allJailWarning` (trap/rescue/return; peeks∞; holes reject land) |
+| [`work-with-game`](skills/server/work-with-game/SKILL.md) | Waiting-only seating + deferred pieces + start/ready/countdown + reconnect + private steps/peeks∞ + grille density/trap/rescue/return/all-jail + become-current grant + multi peek + step-loss + holes not landable + turn deadlines + center finish + `touristMove.ts`; room `tourist` |
 | [`work-with-routes`](skills/server/work-with-routes/SKILL.md) | HTTP `createEndpoint` / thin routes (incl. `GET|POST /api/theme`) |
 | [`work-with-middleware`](skills/server/work-with-middleware/SKILL.md) | CORS, `/health`, monitor/playground |
 | [`work-with-config`](skills/server/work-with-config/SKILL.md) | env, secrets, OAuth `config/auth`, `defineServer` |

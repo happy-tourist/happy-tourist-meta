@@ -4,7 +4,8 @@ description: >-
   Use when creating or changing Vue page views under src/pages/*Page.vue, routes in
   src/router/routes.ts, router guards in src/router/index.ts, App.vue shell wiring,
   hash-mode deep links, meta.guest / meta.requiresAuth, or navigation between login,
-  lobby, and game in this Quasar Vue 3 client.
+  lobby (create maxSeats + grilleDensity), and game (grille trap/rescue/return UX)
+  in this Quasar Vue 3 client.
 ---
 
 # Work With Pages
@@ -91,8 +92,8 @@ Allowed dependency direction:
 Examples:
 
 - `LoginPage` — form UI; calls `useAuthStore()` (`register` / `login` / `loginAnonymously`), then `router.replace`.
-- `LobbyPage` — room list / create / join via `useGameStore()`; navigates to `game` with `roomId`.
-- `GamePage` — unfinished pieces + finish disappear/strip/place modal; holes for `removedTaskKeys` (not landable; piece may stand); presence **rows** (top opponents / bottom self; no side columns) with dual rings (outer turn / inner reconnect) + 72px avatar + place/ready top-left + say top-right; **own** steps (number) / peeks (∞ in solo) + «Завершить ход» (`sendEndTurn` / `canSendEndTurn`); peek eye while peeks remain / solo peeks∞ (no one-peek/turn gate) + Correct/Wrong modal (`sendPeek` / `sendPeekAnswer`); keep-focus after non-finishing move (clear `selectedSide` only on center); +N budget fall ≈ 2 s; solo peeks∞ modal + dual timer-vs-steps end modals; say on own online marker (`sendSay` / `sayEvents`, incl. finished); ready/countdown UX; header turn text; syncs via `useGameStore()`; `rejoinGame(roomId)` on mount / soft-fail / browser reopen; exit control **icon-only** `logout` with `aria-label` / i18n `game.leave` (no visible `:label`) — seated ∧ `playing` ∧ `finishPlace === 0` ∧ `!timeExpired` → `q-dialog` confirm, else immediate `leaveGame` → `lobby` (finished / time-expired skip confirm).
+- `LobbyPage` — room list / create (maxSeats + `grilleDensity` few/medium/many, default medium) / join via `useGameStore()`; navigates to `game` with `roomId`.
+- `GamePage` — unfinished pieces + finish disappear/strip/place modal; holes for `removedTaskKeys` (not landable; piece may stand); grille overlays from `holdingGrilleKeys` (`grille.png` drop/rise); trapped pieces visible (no move/peek); rescue affordance + `sendRescue`; strip return + ring highlights + `sendReturnFromFinish`; all-jail warning modal (`allJailWarning`); presence **rows** (top opponents / bottom self; no side columns) with dual rings (outer turn / inner reconnect) + 72px avatar + place/ready top-left + say top-right; **own** steps (number) / peeks (∞ in solo) + «Завершить ход» (`sendEndTurn` / `canSendEndTurn`); peek eye on non-trapped while peeks remain / solo peeks∞ (no one-peek/turn gate) + Correct/Wrong modal (`sendPeek` / `sendPeekAnswer`); keep-focus after non-finishing move (clear `selectedSide` only on center); +N budget fall ≈ 2 s; solo peeks∞ modal + dual timer-vs-steps end modals; say on own online marker (`sendSay` / `sayEvents`, incl. finished); ready/countdown UX; header turn text; syncs via `useGameStore()`; `rejoinGame(roomId)` on mount / soft-fail / browser reopen; exit control **icon-only** `logout` with `aria-label` / i18n `game.leave` (no visible `:label`) — seated ∧ `playing` ∧ `finishPlace === 0` ∧ `!timeExpired` → `q-dialog` confirm, else immediate `leaveGame` → `lobby` (finished / time-expired skip confirm).
 
 Do not put a second app shell (global layout host) inside a page — `App.vue` already mounts `router-view`.
 
@@ -197,10 +198,10 @@ If an old path changes, keep a redirect in `routes.ts`:
 |--------|------|------------------------|
 | Auth | `LoginPage` | `stores/auth`; `meta.guest` |
 | Theme (chrome Dark) | `App.vue` header | `stores/theme` + `boot/theme` |
-| Lobby / rooms | `LobbyPage` | `stores/game.subscribeLobby`, create/join; `meta.requiresAuth` |
-| Game session | `GamePage` | `stores/game` leave/`rejoinGame`/`sendMove`/`sendPeek`/`sendPeekAnswer`/`sendEndTurn`/`sendSay`; unfinished pieces + holes + budgets/end-turn + peek + finish/timeout UX + dual presence rings + say + strip; route param `roomId`; `meta.requiresAuth` |
+| Lobby / rooms | `LobbyPage` | `stores/game.subscribeLobby`, create `{ maxSeats, grilleDensity }` / join; `meta.requiresAuth` |
+| Game session | `GamePage` | `stores/game` leave/`rejoinGame`/`sendMove`/`sendRescue`/`sendReturnFromFinish`/`sendPeek`/`sendPeekAnswer`/`sendEndTurn`/`sendSay`; unfinished pieces + holes + grille overlays + trap/rescue/return + all-jail modal + budgets/end-turn + peek + finish/timeout UX + dual presence rings + say + strip; route param `roomId`; `meta.requiresAuth` |
 
-Room name `tourist` + live lobby align with `../happy-tourist-server`; Game mirrors seats/`finishPlace`/`timeExpired`/piece `finished`/`currentTurnSessionId`/`turnUntil`/`turnBudgetSeconds`/`removedTaskKeys`, listens private `budgets`/`peekOpen`, and renders unfinished pieces (after materialize) + holes + own counters/end-turn + peek chrome + finish/timeout + dual presence rings + local move chrome (eligible seats; move does not end turn) + ephemeral say bubbles.
+Room name `tourist` + live lobby align with `../happy-tourist-server`; Game mirrors seats/`finishPlace`/`timeExpired`/piece `finished`/`trapped`/`currentTurnSessionId`/`turnUntil`/`turnBudgetSeconds`/`removedTaskKeys`/`holdingGrilleKeys`, listens private `budgets`/`peekOpen`/`allJailWarning`, and renders unfinished pieces (after materialize) + holes + grille overlays + rescue/return chrome + own counters/end-turn + peek chrome + finish/timeout + dual presence rings + local move chrome (eligible seats; move does not end turn; trapped locked) + ephemeral say bubbles.
 
 ## Verification and Final Response
 

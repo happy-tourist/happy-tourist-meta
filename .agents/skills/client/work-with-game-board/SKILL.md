@@ -4,36 +4,41 @@ description: >-
   Use when creating, changing, reviewing, or debugging the tourist board UI in
   the happy-tourist client — GamePage CSS Grid (gap/radius 2), synced seat pieces
   overlay, presence rows (top/bottom, no side columns) with dual rings + corner
-  affordances + own steps/peeks counters + end-turn, removed-task holes, peek eye
-  + Correct/Wrong modal, preset say bubbles toward board, personal tourist strip,
-  tile kinds (start/task/center), current-turn selection/hints/move submit, or
-  piece travel animation for room tourist.
+  affordances + own steps/peeks counters + end-turn, removed-task holes, grille
+  overlays + trap/rescue/return UX, peek eye + Correct/Wrong modal, preset say
+  bubbles toward board, personal tourist strip, tile kinds (start/task/center),
+  current-turn selection/hints/move submit, or piece travel animation for room
+  tourist.
 ---
 
 # Work With Game Board
 
 Use this skill for the **tourist board UI** on Game in the Vue 3 Quasar client (`happy-tourist.github.io`).
 
-Product: настольная игра «Счастливый турист». On the seated client whose turn it is **and** `game.isPlaying` (`phase === 'playing'`), the board and strip accept piece selection, local move hints, move submit via `game.sendMove`, and peek via eye → `game.sendPeek` / `sendPeekAnswer`. Before playing: no move chrome / submit. Spectators and non-current seated players remain non-interactive for moves. Authority for legality stays on the server (`work-with-game`). Preset say bubbles are separate from turn — any seated+online player may send via `game.sendSay` (server whitelist). Ready-to-start uses `game.sendReady` on own marker **top-left** when `canSendReady` (say affordance stays **top-right**). Own private budgets + «Завершить ход» sit beside the own presence marker (`canSendEndTurn`).
+Product: настольная игра «Счастливый турист». On the seated client whose turn it is **and** `game.isPlaying` (`phase === 'playing'`), the board and strip accept piece selection, local move hints, move submit via `game.sendMove`, rescue via `game.sendRescue`, return via `game.sendReturnFromFinish`, and peek via eye → `game.sendPeek` / `sendPeekAnswer`. Before playing: no move chrome / submit. Spectators and non-current seated players remain non-interactive for moves. Authority for legality stays on the server (`work-with-game`). Preset say bubbles are separate from turn — any seated+online player may send via `game.sendSay` (server whitelist). Ready-to-start uses `game.sendReady` on own marker **top-left** when `canSendReady` (say affordance stays **top-right**). Own private budgets + «Завершить ход» sit beside the own presence marker (`canSendEndTurn`).
 
 ## Overview
 
 | Surface | Path | Role |
 | --- | --- | --- |
-| Game page | `src/pages/GamePage.vue` | CSS Grid field; unfinished pieces overlay (+ short center disappear); holes for `removedTaskKeys` (not landable; piece may stand on hole); presence + place badge + say + own budgets/end-turn; strip×4 with finish icons; local selection/hints/peek eye; place / timer-vs-steps end / peek / solo-peeks∞ `q-dialog`; icon-only leave; confirm when seated ∧ `playing` ∧ `finishPlace === 0` ∧ `!timeExpired` → lobby |
-| Game store | `src/stores/game.ts` | Room I/O; mirror `seats` (+ piece `finished` / seat `finishPlace`) / `phase` / `maxSeats` / `countdownRemaining` / `currentTurnSessionId` / `removedTaskKeys` / `sessionId`; private `steps`/`peeks`/`budgetsInfinite` (peeks∞ only)/`peekedThisTurn` (legacy)/`openPeek` from `budgets`/`peekOpen`; `unfinishedBoardPieces` / `isMySeatFinished` / `myFinishedStripSides`; `isMyTurn` / `isPlaying` / `canSendReady` / `canSendEndTurn`; `sendMove` / `sendPeek` / `sendPeekAnswer` / `sendEndTurn` / `sendReady` / `sendSay` + `sayEvents` |
+| Game page | `src/pages/GamePage.vue` | CSS Grid field; unfinished pieces overlay (+ short center disappear); holes for `removedTaskKeys`; grille overlays from `holdingGrilleKeys` (drop/rise); rescue affordance; return from strip; presence + place badge + say + own budgets/end-turn; strip×4 with finish icons + return control; local selection/hints/peek eye; place / timer-vs-steps end / peek / solo-peeks∞ / all-jail `q-dialog`; icon-only leave; confirm when seated ∧ `playing` ∧ `finishPlace === 0` ∧ `!timeExpired` → lobby |
+| Game store | `src/stores/game.ts` | Room I/O; mirror `seats` (+ piece `finished`/`trapped` / seat `finishPlace`) / `phase` / `maxSeats` / `countdownRemaining` / `currentTurnSessionId` / `removedTaskKeys` / `holdingGrilleKeys` / `sessionId`; private `steps`/`peeks`/`budgetsInfinite` (peeks∞ only)/`peekedThisTurn` (legacy)/`openPeek`/`allJailWarning` from `budgets`/`peekOpen`/`allJailWarning`; `unfinishedBoardPieces` / `isMySeatFinished` / `myFinishedStripSides`; `isMyTurn` / `isPlaying` / `canSendReady` / `canSendEndTurn`; `sendMove` / `sendRescue` / `sendReturnFromFinish` / `sendPeek` / `sendPeekAnswer` / `sendEndTurn` / `sendReady` / `sendSay` + `sayEvents` |
 
 | Concern | Location |
 | --- | --- |
 | Layout constant | `LAYOUT` string grid in `GamePage.vue` (`.` hole, `1` start, `*` task, `7` center) |
 | Tile build | `buildBoardTiles()` → `div.tile` with `gridColumn` / `gridRow`; removed `*` → visual hole (page background) |
-| Pieces | `unfinishedBoardPieces` (+ short-lived disappearing finishers) → `img.piece`; PNG from `touristId` |
+| Pieces | `unfinishedBoardPieces` (+ short-lived disappearing finishers) → `img.piece`; PNG from `touristId`; `piece--trapped` when trapped |
+| Grilles | Asset `src/assets/grilles/grille.png`; overlay on `holdingGrilleKeys` with drop/rise anim for all clients |
 | Presence | Occupied seats → top/bottom `.presence-row-scroll` → `.presence-row` (no left/right); dual rings + 72px avatar; finish/ready top-left; say top-right; **own** steps/peeks + end-turn beside avatar |
 | Say (game/say) | Affordance top-right on **own** online marker (hit-area ≥ ~32px); bubbles toward board from `game.sayEvents`; row overflow must not clip (SC-SAY-15) |
-| Strip | Below board when `mySeat`: four slots `N→E→S→W`; finished slots inactive + finish icon (top-right) |
-| Move UX | Local `selectedSide` + `legalTargets` only when `isPlaying && isMyTurn && !isMySeatFinished && !moveAnimating`; **keep-focus** after non-finishing move (SC-MOVE-46); never select finished pieces; move does **not** end the turn |
-| Peek UX | Eye only on **selected** own piece on present `*` (peeks remain / solo peeks∞; multi peek while peeks remain — no one-peek/turn gate); keep-focus → eye without re-click (SC-BOARD-14); **no** ambient peekable tile chrome; modal from `game.openPeek` → Correct/Wrong → `sendPeekAnswer` |
+| Strip | Below board when `mySeat`: four slots `N→E→S→W`; finished slots inactive + finish icon (top-right) + return control beside flag when `finishPlace===0` |
+| Move UX | Local `selectedSide` + `legalTargets` only when `isPlaying && isMyTurn && !isMySeatFinished && !moveAnimating`; **keep-focus** after non-finishing move (SC-MOVE-46); never select finished **or trapped** pieces; move does **not** end the turn |
+| Rescue UX | Affordance over own trapped when adj free own piece + steps≥1 → brief approach anim + `sendRescue(side)` (server rescuer coords unchanged) |
+| Return UX | Strip return → highlight center-ring cells → click → `sendReturnFromFinish(side, row, col)` |
+| Peek UX | Eye only on **selected** own **non-trapped** piece on present `*` (peeks remain / solo peeks∞; multi peek while peeks remain — no one-peek/turn gate); spent grille cell still peekable; keep-focus → eye without re-click (SC-BOARD-14); **no** ambient peekable tile chrome; modal from `game.openPeek` → Correct/Wrong → `sendPeekAnswer` |
 | Finish UX | Center land → slide + fade (`disappearingKeys`); own `finishPlace` 0→N → place modal; stay in room after close |
+| All-jail | Own seat only: informational modal from `game.allJailWarning` |
 | Center | One element with `span 2` / `span 2` (solid 2×2), not four cells |
 | Room enter | Out of scope — see `work-with-lobby` / `work-with-rooms` (`rejoinGame`) |
 
@@ -51,13 +56,15 @@ Product: настольная игра «Счастливый турист». On
 | Rule | Behavior |
 |------|----------|
 | Who interacts | Only seated **non-finished** client with `isPlaying && sessionId === currentTurnSessionId` and not mid-own-animation |
-| Select | Click own **unfinished** piece on board or matching strip slot → `selectedSide`; white outline on that cell |
-| Hints | Legal one-step neighbors (Chebyshev 1, playable LAYOUT cell **excluding** removed-task holes, unoccupied by unfinished) → red outline; **local only**; hidden while `steps === 0` (steps always finite, incl. solo) |
-| Reselect | May change `selectedSide` among own unfinished pieces until submit |
+| Select | Click own **unfinished non-trapped** piece on board or matching strip slot → `selectedSide`; white outline on that cell |
+| Hints | Legal one-step neighbors (Chebyshev 1, playable LAYOUT cell **excluding** removed-task holes, unoccupied by unfinished incl. trapped) → red outline; **local only**; hidden while `steps === 0` (steps always finite, incl. solo) |
+| Reselect | May change `selectedSide` among own unfinished non-trapped pieces until submit |
 | Submit | Activate red destination → `game.sendMove(side, row, col)`; **turn stays** (end via button / auto / timeout) |
 | Keep-focus | After successful **non-finishing** move: **do not** clear `selectedSide`. After move-anim ends, white frame + red targets (if steps>0) return from the new cell without re-select (SC-MOVE-46). Center finish → clear selection |
-| Peek | Eye only when **selected** piece stands on still-present `*` and peeks allow (solo peeks∞; multi while peeks>0 — no `peekedThisTurn` gate) → `sendPeek(side)`; after keep-focus, eye appears without re-click (SC-BOARD-14). Hole / non-`*` → no eye. **No** ambient highlight of other peekable cells |
-| Clear selection | Piece finishes; lose turn / not playing; time-expired / finished seat (same watchers as before) |
+| Peek | Eye only when **selected** non-trapped piece stands on still-present `*` and peeks allow (solo peeks∞; multi while peeks>0 — no `peekedThisTurn` gate) → `sendPeek(side)`; after keep-focus, eye appears without re-click (SC-BOARD-14). Hole / non-`*` / trapped → no eye. **No** ambient highlight of other peekable cells |
+| Rescue | Affordance over trapped when adj free + steps → `sendRescue`; lock move/peek for trapped |
+| Return | Strip control beside flag → ring highlights → `sendReturnFromFinish` |
+| Clear selection | Piece finishes / traps; lose turn / not playing; time-expired / finished seat (same watchers as before) |
 | Finished | Finished pieces stay off the board after disappear; finished strip slots show finish icon and never select/submit; finished seat has no move chrome |
 | Others | Spectators / not-your-turn / not playing / finished seat: no selection, no red/white move chrome, no `sendMove` / peek |
 

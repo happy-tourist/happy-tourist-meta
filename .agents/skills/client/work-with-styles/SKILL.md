@@ -6,8 +6,9 @@ description: >-
   header toggle, guest localStorage vs registered GET/POST /api/theme (restore
   ≠ JWT-only), muted chrome text, quasar.variables.scss tokens, app.scss, page
   scoped CSS (especially GamePage board gap/radius 2 + `.tile--removed` holes
-  + presence row/ring/avatar + own budgets/end-turn + peek affordance), Quasar
-  utility classes, Material Icons / Roboto, or color props on Quasar components.
+  + grille overlay drop/rise + trapped piece chrome + presence row/ring/avatar
+  + own budgets/end-turn + peek affordance), Quasar utility classes, Material
+  Icons / Roboto, or color props on Quasar components.
 ---
 
 # Work With Styles
@@ -170,6 +171,8 @@ Board UI is custom CSS Grid (not Quasar widgets). Keep selectors local and class
 |-------|------|
 | `.game-header` | Cap header width to board max (`calc(10 * 60px + 9 * 2px)`) |
 | `.tourist-board` | 10×10 CSS Grid; `--cell` / `--gap` / `--radius`; `aspect-ratio: 1`; transparent holes |
+| `.grille-overlay` / `--drop` / `--rise` | Revealed holding grille from `src/assets/grilles/grille.png`; drop/rise anim for all clients (SC-BOARD-18/19) |
+| `.piece--trapped` | Trapped tourist still visible under grille (SC-PIECE-27); no own-select chrome |
 | `.tile` | Rounded tile (`border-radius: var(--radius)`); `pointer-events` only when interactive |
 | `.tile-start` | Green start tile (`#4caf50`) |
 | `.tile-task` | Brown task tile (`#8d6e63`) |
@@ -189,7 +192,7 @@ Board UI is custom CSS Grid (not Quasar widgets). Keep selectors local and class
 | `.say-bubble` / `.say-picker` | Presence comic bubbles + picker; chrome follows Dark via `body.body--dark` overrides (not tile fills) |
 | `.say-bubbles--top` / `--bottom` | Toward board: below top-row avatars / above bottom self; newer closer to avatar |
 
-Current-turn interactivity, dual turn/reconnect rings, presence **row** layout (top opponents / bottom self; no side columns), own budget counters / end-turn / peek eye, removed-task holes, corner affordances, say bubbles toward board, and travel animation live in `work-with-game-board` — do not reintroduce draughts `.cell` / selection classes, left/right presence slots, or a static blue turn outline.
+Current-turn interactivity, dual turn/reconnect rings, presence **row** layout (top opponents / bottom self; no side columns), own budget counters / end-turn / peek eye, removed-task holes, grille overlays + rescue/return chrome, corner affordances, say bubbles toward board, and travel animation live in `work-with-game-board` — do not reintroduce draughts `.cell` / selection classes, left/right presence slots, or a static blue turn outline.
 
 When editing board visuals:
 

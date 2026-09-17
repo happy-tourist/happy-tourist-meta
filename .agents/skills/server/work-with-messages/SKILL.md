@@ -2,9 +2,10 @@
 name: work-with-messages
 description: >-
   Use when adding, changing, reviewing, or debugging Colyseus room messages in
-  the happy-tourist tourist server — onMessage handlers (move, peek, peekAnswer,
-  endTurn, ready, say), private budgets/peekOpen sends, validating client intents
-  before mutating schema state or broadcasting ephemeral events, optional error
+  the happy-tourist tourist server — onMessage handlers (move, rescue,
+  returnFromFinish, peek, peekAnswer, endTurn, ready, say), private
+  budgets/peekOpen/allJailWarning sends, validating client intents before
+  mutating schema state or broadcasting ephemeral events, optional error
   feedback, or aligning message contracts with the client. Not for lobby listing
   (LobbyRoom / HTTP fallback).
 ---
@@ -21,10 +22,10 @@ Coordinate with: `work-with-rooms` (lifecycle / registration), `work-with-schema
 
 | In scope | Out of scope |
 |----------|--------------|
-| `this.onMessage(...)` for game actions (`move`, `peek`, `peekAnswer`, `endTurn`, `ready`, `say`) | Lobby listing — client uses **LobbyRoom** (`rooms` / `+` / `-`) |
-| Private `client.send('budgets'|'peekOpen', …)` to owner | Auth join gate — `onAuth` + JWT (`server-work-with-auth`) |
+| `this.onMessage(...)` for game actions (`move`, `rescue`, `returnFromFinish`, `peek`, `peekAnswer`, `endTurn`, `ready`, `say`) | Lobby listing — client uses **LobbyRoom** (`rooms` / `+` / `-`) |
+| Private `client.send('budgets'|'peekOpen'|'allJailWarning', …)` to owner | Auth join gate — `onAuth` + JWT (`server-work-with-auth`) |
 | Payload shape / type guards for client intents | Express routes / `createEndpoint` |
-| Validate → mutate `@colyseus/schema` state (`move` / `peekAnswer` / `ready`) or ephemeral broadcast (`say`) | Pure board-game rules (`work-with-game` / `touristMove.ts`); free-form chat |
+| Validate → mutate `@colyseus/schema` state (`move` / `rescue` / `returnFromFinish` / `peekAnswer` / `ready`) or ephemeral broadcast (`say`) | Pure board-game rules (`work-with-game` / `touristMove.ts`); free-form chat |
 | Optional per-client error feedback for bad actions | |
 
 **Prefer changing the server to match the client** rather than inventing a parallel protocol. Do not treat legacy draughts `move` `{ from, to }` as product canon.
@@ -33,22 +34,29 @@ Coordinate with: `work-with-rooms` (lifecycle / registration), `work-with-schema
 
 | Direction | Name | Payload / behavior |
 |-----------|------|--------------------|
-| Client → server | `move` | `{ side: 'N'\|'E'\|'S'\|'W', row: number, col: number }` — via `sendMove` when `phase === 'playing'`, `isMyTurn`, `!isMySeatFinished`, `!isMySeatTimeExpired`. Spends a step; **does not** advance turn |
-| Client → server | `peek` | `{ side }` — via `sendPeek`; own unfinished piece on present `*`; server replies with private `peekOpen` |
+| Client → server | `move` | `{ side: 'N'\|'E'\|'S'\|'W', row: number, col: number }` — via `sendMove` when `phase === 'playing'`, `isMyTurn`, `!isMySeatFinished`, `!isMySeatTimeExpired`. Spends a step; **does not** advance turn; may trap on grille |
+| Client → server | `rescue` | `{ side }` — via `sendRescue`; own trapped + adj free own piece + steps≥1 |
+| Client → server | `returnFromFinish` | `{ side, row, col }` — via `sendReturnFromFinish`; finished side onto legal center-ring cell |
+| Client → server | `peek` | `{ side }` — via `sendPeek`; own unfinished **non-trapped** piece on present `*`; server replies with private `peekOpen` |
 | Client → server | `peekAnswer` | `{ correct: boolean }` — via `sendPeekAnswer`; Correct removes tile; Incorrect KEEP |
 | Client → server | `endTurn` | empty — via `sendEndTurn` when `canSendEndTurn` (multi finite only) |
 | Client → server | `ready` | empty — via `sendReady` (waiting, ≥2 seated, under maxSeats, not yet ready) |
 | Client → server | `say` | `{ presetId: 'hello' \| 'luck' }` — via `sendSay`; whitelist only (no free text; **not** `ready`); finished seats may still say |
 | Server → owner | `budgets` | `{ steps, peeks, infinite, peekedThisTurn }` — private; `infinite` = **peeks∞ only** (steps always finite); `peekedThisTurn` legacy (no gate) |
 | Server → owner | `peekOpen` | `{ side, row, col, reward: 1\|2\|3 }` — private modal payload |
-| Server → clients | Schema sync | `phase` / `maxSeats` / `countdownRemaining` / `seats` (+ `ready` / `finishPlace` / piece `finished`) / `currentTurnSessionId` / `removedTaskKeys` (+ `nextFinishPlace`) → `onStateChange` |
+| Server → owner | `allJailWarning` | `{}` — private; seat just freed from all-jail (informational modal) |
+| Server → clients | Schema sync | `phase` / `maxSeats` / `countdownRemaining` / `seats` (+ `ready` / `finishPlace` / piece `finished`/`trapped`) / `currentTurnSessionId` / `removedTaskKeys` / `holdingGrilleKeys` (+ `nextFinishPlace`) → `onStateChange` |
 | Server → all clients | `say` | `broadcast('say', { sessionId, presetId, at })` — ephemeral; includes readiness preset from successful `ready` |
 | Server → client | room error channel | Client sets `game.error` from `room.onError` |
 | Lobby | HTTP fallback | `client.http.get('/rooms/tourist')` — **not** a room message |
 
-**`move`:** accept only when `phase === 'playing'` + seated + `finishPlace === 0` + `!timeExpired` + current turn + `steps > 0`; legal one-step per `touristMove.ts` (occupancy ignores finished; **landing on removed holes rejected**; stand/leave OK). Reject (no mutate) otherwise. On accept: update piece `row`/`col`; always spend 1 step + `sendBudgets`; if target is center → `piece.finished = true` and maybe assign `finishPlace`; **do not** `advanceTurn` solely for move — then `maybeAutoEndTurn` / solo step-loss / finish-advance.
+**`move`:** accept only when `phase === 'playing'` + seated + `finishPlace === 0` + `!timeExpired` + current turn + `steps > 0`; legal one-step per `touristMove.ts` (occupancy ignores finished; trapped still occupy; **landing on removed holes rejected**; stand/leave OK; **reject if piece trapped**). Reject (no mutate) otherwise. On accept: update piece `row`/`col`; always spend 1 step + `sendBudgets`; if target is center → `piece.finished = true` and maybe assign `finishPlace`; else if unspent grille → reveal + `trapped` (+ all-jail if 4); **do not** `advanceTurn` solely for move — then `maybeAutoEndTurn` / solo step-loss / finish-advance.
 
-**`peek`:** current turn + peek budget (or solo peeks∞); **no** one-peek/turn gate; piece on present task cell; set room `openPeek` + `client.send('peekOpen', …)`. Silent reject otherwise.
+**`rescue`:** current turn + steps≥1 + own trapped unfinished + Chebyshev-1 free own piece → −1 step; clear `trapped` + holding grille; rescuer coords unchanged. Silent reject otherwise.
+
+**`returnFromFinish`:** current turn + steps≥1 + `finishPlace===0` + own finished side + legal ring cell (Chebyshev-1 from center block, excl. center/holes/occupancy) → −1 step; unfinish onto cell. Silent reject otherwise.
+
+**`peek`:** current turn + peek budget (or solo peeks∞); **no** one-peek/turn gate; piece on present task cell and **not trapped**; set room `openPeek` + `client.send('peekOpen', …)`. Silent reject otherwise.
 
 **`peekAnswer`:** resolve open peek for that seat; spend peek (finite peeks only); Correct adds reward steps (always, including solo) and pushes `"r,c"` to `removedTaskKeys`; Incorrect KEEP tile + hidden reward; `sendBudgets`; then maybe auto-end / solo step-loss.
 
@@ -60,8 +68,8 @@ Coordinate with: `work-with-rooms` (lifecycle / registration), `work-with-schema
 
 ## Server Today
 
-- `src/rooms/MyRoom.ts` — seating + start + budgets/peek + `onMessage('move'|'peek'|'peekAnswer'|'endTurn'|'ready'|'say')`.
-- Pure move/peek helpers: `src/game/touristMove.ts`.
+- `src/rooms/MyRoom.ts` — seating + start + budgets/peek/grilles + `onMessage('move'|'rescue'|'returnFromFinish'|'peek'|'peekAnswer'|'endTurn'|'ready'|'say')`.
+- Pure move/peek/grille helpers: `src/game/touristMove.ts`.
 - Room registered as `tourist` (+ `lobby` for live list); do not reintroduce `my_room`.
 
 ## Handler Pattern
@@ -72,14 +80,25 @@ Register handlers in the room (typically `onCreate`), not in Express:
 this.onMessage('move', (client, message) => {
   // 1. Require phase === 'playing'
   // 2. Shape-check { side, row, col }
-  // 3. Resolve seat; reject if finishPlace > 0 / timeExpired / no steps; require current turn
+  // 3. Resolve seat; reject if finishPlace > 0 / timeExpired / no steps / trapped; require current turn
   // 4. Reject unknown/finished piece; validate via touristMove (occupancy ignores finished)
   // 5. On success: mutate row/col; spend step; if center → finished + maybe finishPlace
+  //    else maybe reveal grille + trap / all-jail
   // 6. Do NOT advance solely on move; maybeAutoEndTurn / finish-advance
 });
 
+this.onMessage('rescue', (client, message) => {
+  // 1. playing + current + steps≥1; shape { side }
+  // 2. own trapped + Chebyshev-1 free own piece → −1 step; clear trapped + holding grille
+});
+
+this.onMessage('returnFromFinish', (client, message) => {
+  // 1. playing + current + steps≥1 + finishPlace===0; shape { side, row, col }
+  // 2. legal ring cell → −1 step; unfinish onto cell
+});
+
 this.onMessage('peek', (client, message) => {
-  // 1. playing + current + peek budget (or solo peeks∞); no one-peek gate
+  // 1. playing + current + peek budget (or solo peeks∞); no one-peek gate; not trapped
   // 2. piece on present *; openPeek + client.send('peekOpen', { side, row, col, reward })
 });
 
@@ -110,8 +129,8 @@ this.onMessage('say', (client, message) => {
 ### Hard rules
 
 1. **Do not trust the client.** Treat payloads as intent only.
-2. **Validate, then mutate** schema state for gameplay (`move` / peek resolve); for `say`, validate then broadcast only — do **not** put bubbles in schema. Budgets stay room-private + `client.send`.
-3. **Authoritative move/peek rules** live in `work-with-game` / `touristMove.ts`, not in the message payload.
+2. **Validate, then mutate** schema state for gameplay (`move` / `rescue` / `returnFromFinish` / peek resolve); for `say`, validate then broadcast only — do **not** put bubbles in schema. Budgets / hidden grilles stay room-private + `client.send` (`budgets` / `peekOpen` / `allJailWarning`).
+3. **Authoritative move/peek/grille rules** live in `work-with-game` / `touristMove.ts`, not in the message payload.
 4. **Do not** add HTTP endpoints for gameplay actions.
 5. **No free-form say text** — whitelist `presetId` only.
 
@@ -134,18 +153,19 @@ this.onMessage('say', (client, message) => {
 | Do | Don't |
 |----|--------|
 | Keep `move` `{ side, row, col }` lockstep with client `sendMove` | Reintroduce draughts `move`/`{from,to}` without a product change |
-| Keep `peek` / `peekAnswer` / `endTurn` + private `budgets` / `peekOpen` lockstep with store | Advance turn solely because `move` succeeded |
+| Keep `rescue` / `returnFromFinish` + private `allJailWarning` lockstep with store | Advance turn solely because `move` succeeded |
+| Keep `peek` / `peekAnswer` / `endTurn` + private `budgets` / `peekOpen` lockstep with store | Sync hidden grille locations into schema |
 | Keep `say` `{ presetId }` + broadcast `{ sessionId, presetId, at }` lockstep with `sendSay` / `onMessage('say')` | Accept free-form text or unknown preset ids |
-| Validate then mutate schema (`move` / remove tile on Correct only); broadcast-only for `say` | Trust client board hints; sync say bubbles or steps/peeks into schema |
+| Validate then mutate schema (`move` / rescue / return / remove tile on Correct only); broadcast-only for `say` | Trust client board hints; sync say bubbles or steps/peeks into schema |
 | Treat lobby as LobbyRoom live list | Add a gameplay room message for room listing |
 | Follow `server-work-with-errors` | Invent BFF-style error envelopes for room actions |
 
 ## Change Checklist
 
 1. Handler registered on the tourist room via `this.onMessage`.
-2. Payload matches the client store (`sendMove` / `sendPeek` / `sendPeekAnswer` / `sendEndTurn` / `sendReady` / `sendSay`).
+2. Payload matches the client store (`sendMove` / `sendRescue` / `sendReturnFromFinish` / `sendPeek` / `sendPeekAnswer` / `sendEndTurn` / `sendReady` / `sendSay`).
 3. Illegal actions do not mutate schema (and `say` rejects do not broadcast).
-4. Move/peek rules delegated to `work-with-game` / `touristMove.ts`; start/ready/countdown in room; say stays I/O + whitelist + live-limit in the room handler.
+4. Move/peek/grille rules delegated to `work-with-game` / `touristMove.ts`; start/ready/countdown in room; say stays I/O + whitelist + live-limit in the room handler.
 5. Update `test/` / `loadtest/` when the message contract becomes testable.
 6. Run `npm test` from the server package root; fix failures before claiming done.
 
