@@ -31,7 +31,7 @@ When the task is only about creating or wiring a page:
 1. Add the page as a single file `src/pages/<Name>Page.vue` (optional scoped `<style>` in the same file).
 2. Register a route in `src/router/routes.ts` with `path`, `name`, lazy `component`, and `meta` when needed.
 3. Do **not** enable filename-based routing — `quasar.config.ts` keeps `filenameBasedRouting: false`; routes stay manual.
-4. Keep the global shell in `App.vue` — `q-layout` → shared theme `q-header` → `q-page-container` → theme `q-banner` + `<router-view />`. Route chrome (logout, leave-room, page banners) lives inside the page; do not duplicate the theme toggle.
+4. Keep the global shell in `App.vue` — `q-layout` → shared `q-header` → `q-page-container` → theme `q-banner` + `<router-view />`. Theme toggle is always in the header. On **Game** route only, the same header also owns icon-only leave (left) + centered match status; leave confirm + `leaveGame` orchestration live in `App.vue` — not a page-local game header. Login/Lobby keep theme-only chrome. Do not duplicate the theme toggle per page.
 5. Prefer: `pages` → `stores` / `boot` / `components`. Keep Colyseus I/O in Pinia (`auth`, `theme`, `game`), not scattered across new pages.
 6. Wrap page content in Quasar `q-page` (match nearby pages).
 
@@ -93,7 +93,7 @@ Examples:
 
 - `LoginPage` — form UI; calls `useAuthStore()` (`register` / `login` / `loginAnonymously`), then `router.replace`.
 - `LobbyPage` — room list / create (maxSeats + `grilleDensity` few/medium/many, default medium) / join via `useGameStore()`; navigates to `game` with `roomId`.
-- `GamePage` — unfinished pieces + finish disappear/strip/place modal; holes for `removedTaskKeys` (not landable; piece may stand); grille overlays from `holdingGrilleKeys` (`grille.png` drop/rise); trapped pieces visible (no move/peek); rescue affordance + `sendRescue`; strip return + ring highlights + `sendReturnFromFinish`; all-jail warning modal (`allJailWarning`); presence **rows** (top opponents / bottom self; no side columns) with dual rings (outer turn / inner reconnect) + 72px avatar + place/ready top-left + say top-right; **own** steps (number) / peeks (∞ in solo) + «Завершить ход» (`sendEndTurn` / `canSendEndTurn`); peek eye on non-trapped while peeks remain / solo peeks∞ (no one-peek/turn gate) + Correct/Wrong modal (`sendPeek` / `sendPeekAnswer`); keep-focus after non-finishing move (clear `selectedSide` only on center); +N budget fall ≈ 2 s; solo peeks∞ modal + dual timer-vs-steps end modals; say on own online marker (`sendSay` / `sayEvents`, incl. finished); ready/countdown UX; header turn text; syncs via `useGameStore()`; `rejoinGame(roomId)` on mount / soft-fail / browser reopen; exit control **icon-only** `logout` with `aria-label` / i18n `game.leave` (no visible `:label`) — seated ∧ `playing` ∧ `finishPlace === 0` ∧ `!timeExpired` → `q-dialog` confirm, else immediate `leaveGame` → `lobby` (finished / time-expired skip confirm).
+- `GamePage` — board in scroll region above sticky bottom `.game-hud`; unfinished pieces + finish disappear; holes for `removedTaskKeys` (not landable; piece may stand); grille overlays from `holdingGrilleKeys` (`grille.png` drop/rise); trapped pieces visible (no move/peek); rescue affordance + `sendRescue`; strip **inside HUD** (no «Мои туристы» caption) + return + ring highlights + `sendReturnFromFinish`; all-jail warning modal (`allJailWarning`); presence in HUD only (**no top-row**): seated own+budgets → strip → opponents right; spectator occupied centered; dual rings (outer turn / inner reconnect) + 72px avatar + place/ready top-left + say top-right; say bubbles **always above** avatars; **own** steps (number) / peeks (∞ in solo) + «Завершить ход» (`sendEndTurn` / `canSendEndTurn`); peek eye + Correct/Wrong modal; keep-focus after non-finishing move; +N budget fall ≈ 2 s; solo peeks∞ + dual timer-vs-steps end modals; ready/countdown UX; syncs via `useGameStore()`; `rejoinGame(roomId)` on mount / soft-fail / browser reopen. **No** page-local leave/status/roomId chrome — that lives in `App.vue` on Game route.
 
 Do not put a second app shell (global layout host) inside a page — `App.vue` already mounts `router-view`.
 
@@ -105,11 +105,15 @@ Every route renders inside:
 <q-layout view="hHh lpR fFf">
   <q-header bordered>
     <q-toolbar>
+      <!-- Game route only: icon-only leave (left) + centered match status -->
+      <q-btn v-if="isGameRoute" flat round dense icon="logout" :aria-label="t('game.leave')" … />
+      <q-space />
+      <div v-if="isGameRoute" class="text-subtitle1 text-center">{{ statusLabel }}</div>
       <q-space />
       <q-btn flat round dense :icon="…" aria-label="Toggle theme" @click="onToggleTheme" />
     </q-toolbar>
   </q-header>
-
+  <!-- Game leave confirm dialog lives here (not on GamePage) -->
   <q-page-container>
     <q-banner v-if="theme.error" …>{{ theme.error }}</q-banner>
     <router-view />
@@ -117,7 +121,7 @@ Every route renders inside:
 </q-layout>
 ```
 
-Shared theme toggle + `theme.error` banner live here (`useThemeStore`). Wire restore with a stable multi-source watch — `watch([() => auth.ready, () => auth.user?.id, () => auth.user?.anonymous], …)` → `syncFromAuthUser` (registered → `GET /api/theme`, guest → `localStorage`) — not JWT `user.theme` alone, and not `watch(() => […])` (new array each run). Do **not** replace `auth.user` after GET (theme lives in the theme store; SC-THEME-10). Do not duplicate a layout wrapper or per-page theme control when adding pages. Route-specific headers/actions stay in the page.
+Shared theme toggle + `theme.error` banner live here (`useThemeStore`). On **Game** (`route.name === 'game'`): icon-only leave left + centered status from `useGameStore` (same branches as former page `statusLabel` — SC-PRESENCE-23); Login/Lobby omit leave/status (SC-LEAVE-08). Leave confirm when seated ∧ `playing` ∧ `finishPlace === 0` ∧ `!timeExpired`, else immediate `leaveGame` → lobby (`work-with-rooms`). Wire theme restore with a stable multi-source watch — `watch([() => auth.ready, () => auth.user?.id, () => auth.user?.anonymous], …)` → `syncFromAuthUser` (registered → `GET /api/theme`, guest → `localStorage`) — not JWT `user.theme` alone, and not `watch(() => […])` (new array each run). Do **not** replace `auth.user` after GET (theme lives in the theme store; SC-THEME-10). Do not duplicate a layout wrapper, per-page theme control, or page-local leave/status header when adding pages.
 
 ## Router Patterns
 
@@ -198,10 +202,11 @@ If an old path changes, keep a redirect in `routes.ts`:
 |--------|------|------------------------|
 | Auth | `LoginPage` | `stores/auth`; `meta.guest` |
 | Theme (chrome Dark) | `App.vue` header | `stores/theme` + `boot/theme` |
+| Game leave + match status | `App.vue` header (Game route only) | `stores/game` status / `leaveGame`; confirm dialog in App |
 | Lobby / rooms | `LobbyPage` | `stores/game.subscribeLobby`, create `{ maxSeats, grilleDensity }` / join; `meta.requiresAuth` |
-| Game session | `GamePage` | `stores/game` leave/`rejoinGame`/`sendMove`/`sendRescue`/`sendReturnFromFinish`/`sendPeek`/`sendPeekAnswer`/`sendEndTurn`/`sendSay`; unfinished pieces + holes + grille overlays + trap/rescue/return + all-jail modal + budgets/end-turn + peek + finish/timeout UX + dual presence rings + say + strip; route param `roomId`; `meta.requiresAuth` |
+| Game session | `GamePage` | `stores/game` `rejoinGame`/`sendMove`/`sendRescue`/`sendReturnFromFinish`/`sendPeek`/`sendPeekAnswer`/`sendEndTurn`/`sendSay`; board scroll + sticky bottom `.game-hud` (presence + strip, no top-row); unfinished pieces + holes + grille overlays + trap/rescue/return + all-jail modal + budgets/end-turn + peek + finish/timeout UX + dual rings + say bubbles above; route param `roomId` (reconnect only — **not** shown in chrome); `meta.requiresAuth` |
 
-Room name `tourist` + live lobby align with `../happy-tourist-server`; Game mirrors seats/`finishPlace`/`timeExpired`/piece `finished`/`trapped`/`currentTurnSessionId`/`turnUntil`/`turnBudgetSeconds`/`removedTaskKeys`/`holdingGrilleKeys`, listens private `budgets`/`peekOpen`/`allJailWarning`, and renders unfinished pieces (after materialize) + holes + grille overlays + rescue/return chrome + own counters/end-turn + peek chrome + finish/timeout + dual presence rings + local move chrome (eligible seats; move does not end turn; trapped locked) + ephemeral say bubbles.
+Room name `tourist` + live lobby align with `../happy-tourist-server`; Game mirrors seats/`finishPlace`/`timeExpired`/piece `finished`/`trapped`/`currentTurnSessionId`/`turnUntil`/`turnBudgetSeconds`/`removedTaskKeys`/`holdingGrilleKeys`, listens private `budgets`/`peekOpen`/`allJailWarning`, and renders unfinished pieces (after materialize) + holes + grille overlays + rescue/return chrome + own counters/end-turn + peek chrome + finish/timeout + bottom-HUD presence rings + local move chrome (eligible seats; move does not end turn; trapped locked) + ephemeral say bubbles always above avatars.
 
 ## Verification and Final Response
 

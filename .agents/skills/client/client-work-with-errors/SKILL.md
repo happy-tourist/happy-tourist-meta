@@ -254,9 +254,9 @@ Use `subscribeLobby` as-is: catch → `error` + `rooms = []` → `listing = fals
 ### 4. GamePage rejoin failure → lobby
 
 ```ts
-// consentedLeaving guards soft-fail watch from auto-rejoining after leaveGame
+// store consentedLeaving gates soft-fail watch from auto-rejoining after App header leaveGame
 async function ensureTouristRoom() {
-  if (consentedLeaving.value || rejoinInFlight || game.room) return;
+  if (game.consentedLeaving || rejoinInFlight || game.room) return;
   const roomId = /* from route.params.roomId */;
   if (!roomId) {
     await router.replace({ name: 'lobby' });
@@ -266,7 +266,7 @@ async function ensureTouristRoom() {
   try {
     await game.rejoinGame(roomId); // reconnect(token) → joinById
   } catch {
-    if (!consentedLeaving.value) {
+    if (!game.consentedLeaving) {
       await router.replace({ name: 'lobby' });
     }
   } finally {

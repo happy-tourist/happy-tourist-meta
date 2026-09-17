@@ -255,13 +255,13 @@ Apply always; sibling skills win when they exist and conflict on a detail.
   `leave`, `sendMove` → `room.send('move', { side, row, col })`. `_enterRoom`
   must `_attachRoom` immediately after `connect()` — no `await` (e.g.
   `unsubscribeLobby`) before the listener, or the first `ROOM_STATE` is missed.
-- GamePage: tourist board with synced seat pieces / strip (after materialize);
-  presence **rows** (top/bottom, no left/right columns); dual rings from
+- GamePage: tourist board with synced seat pieces / strip inside sticky bottom
+  `.game-hud` (no top-row / no left/right columns); dual rings from
   `turnUntil` / `reconnectUntil` around 72px avatar in 96px chrome; avatar as
   sibling `<img class="presence-avatar">` on top — not only in `q-circular-progress`
   default slot without `show-value` (SC-PRESENCE-12); board `--gap`/`--radius` 2;
   local selection / hints when `isMyTurn` and eligible; travel animation; submit
-  only via `game.sendMove`.
+  only via `game.sendMove`. Leave + match status in App header on Game (not page-local).
 - Mirror `currentTurnSessionId` / `turnUntil` / `turnBudgetSeconds` / seat `timeExpired`;
   do not invent alternate move/turn shapes.
 

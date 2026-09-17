@@ -7,8 +7,8 @@ description: >-
   ≠ JWT-only), muted chrome text, quasar.variables.scss tokens, app.scss, page
   scoped CSS (especially GamePage board gap/radius 2 + `.tile--removed` holes
   + grille overlay drop/rise via `--grille-anim-ms` / `GRILLE_ANIM_MS=1500`
-  + trapped piece chrome + presence row/ring/avatar
-  + own budgets/end-turn + peek affordance), Quasar utility classes, Material
+  + trapped piece chrome + sticky bottom `.game-hud` presence/ring/avatar
+  + own budgets/end-turn + peek affordance + say bubbles above), Quasar utility classes, Material
   Icons / Roboto, or color props on Quasar components.
 ---
 
@@ -170,7 +170,8 @@ Board UI is custom CSS Grid (not Quasar widgets). Keep selectors local and class
 
 | Class | Role |
 |-------|------|
-| `.game-header` | Cap header width to board max (`calc(10 * 60px + 9 * 2px)`) |
+| `.game-page` | Column page: board scroll region + sticky bottom HUD |
+| `.game-hud` / `__scroll` / `__bar` | Sticky bottom presence panel; scroll wrapper owns `overflow-x` so say chrome is not clipped (SC-SAY-15); seated vs spectator bar modifiers |
 | `.tourist-board` | 10×10 CSS Grid; `--cell` / `--gap` / `--radius`; `aspect-ratio: 1`; transparent holes |
 | `.grille-overlay` / `--drop` / `--rise` | Revealed holding grille from `src/assets/grilles/grille.png`; duration via `--grille-anim-ms` (`GRILLE_ANIM_MS = 1500`) for drop/rise incl. leave-clear (SC-BOARD-18/19/21) |
 | `.piece--trapped` | Trapped tourist still visible under grille (SC-PIECE-27); no own-select chrome |
@@ -185,15 +186,15 @@ Board UI is custom CSS Grid (not Quasar widgets). Keep selectors local and class
 | `.presence-progress--outer` | Turn ring (96px); `position: absolute; inset: 0; z-index: 0`; `pointer-events: none` |
 | `.presence-progress--inner` | Reconnect ring (84px); absolute centered; `z-index: 1`; `pointer-events: none` |
 | `.presence-avatar` | **Sibling** tourist PNG (**72px** = strip) on top of rings — `z-index: 2`; `pointer-events: none`; no static `--turn` box-shadow; do **not** rely on progress default slot without `show-value` (SC-PRESENCE-12) |
-| `.presence-frame` / `.presence-row-scroll` / `.presence-row` | Column flex: top scroll→board→bottom scroll; no left/right gutters; row `gap: 48px` + `overflow: visible` + `pointer-events: auto`; scroll wrapper `overflow-x: auto` + `pointer-events: none` + Y padding/margin absorb so forced `overflow-y` does not clip say chrome (SC-SAY-15) |
+| `.presence-slot` / `--own-budgets` / `--push-right` | HUD marker wrapper; own budgets beside marker; opponents group pushed right when seated |
 | `.presence-place-badge` / `.ready-affordance` | Top-left corners (SC-PRESENCE-14) |
 | `.presence-budgets` / `.budget-counter` / `.budget-fall` / `.end-turn-btn` | Own steps/peeks + end-turn beside own marker (SC-PRESENCE-15…18); `.budget-fall` ≈ **2 s** (keep CSS in sync with `BUDGET_FALL_MS` / SC-PRESENCE-20); not on opponents |
 | `.peek-affordance` | Eye on selected piece standing on present `*` (SC-BOARD-08) |
 | `.say-affordance` | Top-right on own marker; hit-area ≥ ~32 CSS px (glyph may be smaller); z-index above rings/avatar (SC-SAY-07 / SC-SAY-15) |
 | `.say-bubble` / `.say-picker` | Presence comic bubbles + picker; chrome follows Dark via `body.body--dark` overrides (not tile fills) |
-| `.say-bubbles--top` / `--bottom` | Toward board: below top-row avatars / above bottom self; newer closer to avatar |
+| `.say-bubbles--bottom` | Bubbles **always above** avatar for every marker; newer closer to avatar — do **not** reintroduce `.say-bubbles--top` |
 
-Current-turn interactivity, dual turn/reconnect rings, presence **row** layout (top opponents / bottom self; no side columns), own budget counters / end-turn / peek eye, removed-task holes, grille overlays + rescue/return chrome, corner affordances, say bubbles toward board, and travel animation live in `work-with-game-board` — do not reintroduce draughts `.cell` / selection classes, left/right presence slots, or a static blue turn outline.
+Current-turn interactivity, dual turn/reconnect rings, sticky bottom `.game-hud` presence (no top-row / no side columns), own budget counters / end-turn / peek eye, removed-task holes, grille overlays + rescue/return chrome, corner affordances, say bubbles always above, and travel animation live in `work-with-game-board` — do not reintroduce draughts `.cell` / selection classes, top-row / left/right presence, page-local `.game-header`, or a static blue turn outline.
 
 When editing board visuals:
 

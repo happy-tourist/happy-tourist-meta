@@ -24,7 +24,8 @@ Coordinate schema / protocol (room name, state shape, seat connectivity, `move` 
 |-------|------|------|
 | Store | `src/stores/game.ts` | `TOURIST_ROOM`, create/join/rejoin/leave, token persist, `_attachRoom` listeners |
 | Lobby | `src/pages/LobbyPage.vue` | `createGame` / `joinGame` → navigate to `game` with `roomId` |
-| Game | `src/pages/GamePage.vue` | Board + presence; `rejoinGame(roomId)` on mount / soft-fail; `leaveGame` |
+| Game | `src/pages/GamePage.vue` | Board + bottom HUD presence; `rejoinGame(roomId)` on mount / soft-fail |
+| Leave UX | `src/App.vue` (Game route) | Icon-only leave + confirm dialog → `leaveGame` → lobby |
 | Boot | `src/boot/colyseus.ts` | Shared `Client` (`VITE_COLYSEUS_URL`) |
 | Route | `/game/:roomId` | Hash mode; `meta.requiresAuth` |
 
@@ -147,8 +148,8 @@ async leaveGame() {
 }
 ```
 
-- Used for logout / explicit leave (Lobby «Выйти», GamePage icon-only `logout` with accessible name `game.leave` / «Выход из игры») — **consented** leave on server (immediate seat remove, no grace).
-- Leave-confirm UX (`q-dialog` when seated ∧ `phase === 'playing'` ∧ `finishPlace === 0` ∧ `!timeExpired`) is **page-local** on `GamePage` (`work-with-game-board` / `work-with-pages`); finished / time-expired seats and spectators leave immediately; store `leaveGame` stays confirm-agnostic.
+- Used for logout / explicit leave (Lobby «Выйти», App header icon-only `logout` on Game with accessible name `game.leave` / «Выход из игры») — **consented** leave on server (immediate seat remove, no grace).
+- Leave-confirm UX (`q-dialog` when seated ∧ `phase === 'playing'` ∧ `finishPlace === 0` ∧ `!timeExpired`) lives in **`App.vue`** on Game route (`work-with-pages`); finished / time-expired seats and spectators leave immediately; store `leaveGame` stays confirm-agnostic. Do **not** reintroduce page-local leave header on `GamePage`.
 - Clear tourist token, reset Pinia, then call `leave`.
 - **Swallow** closed-room errors — do not surface them as `game.error`.
 - `_enterRoom` uses `_leaveTouristRoom` (not `leaveGame`) so a failed enter keeps the lobby list live; `_leaveTouristRoom` also clears the prior tourist token when leaving a live prior room.
@@ -205,13 +206,13 @@ In `GamePage`:
    - On failure (grace expired / invalid) → **clear stale token**, then fallback `joinById` (spectator / new seat before start).
 3. If rejoin throws → `router.replace({ name: 'lobby' })`.
 4. If **`!game.room`** and no `roomId` → lobby.
-5. Also **`watch(game.room)`**: when a live room becomes null while still on Game (SDK soft-fail), call the same rejoin helper — **unless** consented `leaveGame` is in progress (guard with a local flag so Game exit / `leaveGame` does not immediately `joinById` again).
+5. Also **`watch(game.room)`**: when a live room becomes null while still on Game (SDK soft-fail), call the same rejoin helper — **unless** consented `leaveGame` is in progress (store `consentedLeaving`: set true at start of `leaveGame`, cleared in `finally` / on leave Game route / `_attachRoom`, so soft-drop does not immediately `joinById` again, and remount/browser-back can still rejoin).
 
 ```ts
 // onMounted + watch(game.room lost) → ensureTouristRoom()
-// consentedLeaving=true around leaveGame so the watch does not rejoin
+// game.consentedLeaving gates soft-drop during leaveGame (App header leave)
 async function ensureTouristRoom() {
-  if (consentedLeaving || game.room) return;
+  if (game.consentedLeaving || game.room) return;
   const roomId = /* string from route.params.roomId */;
   if (!roomId) {
     await router.replace({ name: 'lobby' });
@@ -220,7 +221,9 @@ async function ensureTouristRoom() {
   try {
     await game.rejoinGame(roomId);
   } catch {
-    await router.replace({ name: 'lobby' });
+    if (!game.consentedLeaving) {
+      await router.replace({ name: 'lobby' });
+    }
   }
 }
 ```

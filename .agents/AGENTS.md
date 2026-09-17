@@ -65,19 +65,19 @@ OpenSpec: [`openspec/config.yaml`](../openspec/config.yaml); артефакты 
 |-------|--------|
 | [`client-align-code`](skills/client/client-align-code/SKILL.md) | Audit ветки / диффа против требований, skills и аналогов; реактивные/async-петли; async-гонки (await до `onStateChange` / первый `ROOM_STATE`); Quasar nested slots/overlays (presence rings ↔ avatar) |
 | [`client-locate-change-points`](skills/client/client-locate-change-points/SKILL.md) | Где править / куда класть новые файлы (вкл. Google auth) |
-| [`client-verify-code`](skills/client/client-verify-code/SKILL.md) | Проверка кода / compliance skills + DRY/KISS/YAGNI (incl. presence rows + sibling avatar / SC-PRESENCE-12) |
+| [`client-verify-code`](skills/client/client-verify-code/SKILL.md) | Проверка кода / compliance skills + DRY/KISS/YAGNI (incl. sticky `.game-hud` presence + sibling avatar / SC-PRESENCE-12) |
 | [`colyseus-client`](skills/client/colyseus-client/SKILL.md) | `client.http` + room messages (`move`/`rescue`/`returnFromFinish`/`peek`/`endTurn`/`say` + private `budgets`/`peekOpen`/`allJailWarning`; `infinite`=peeks∞ only; holes + holding grilles; not axios/BFF) |
 | [`client-work-with-auth`](skills/client/client-work-with-auth/SKILL.md) | Colyseus Auth (email/anonymous/Google), `onChange`, route guards |
-| [`client-work-with-errors`](skills/client/client-work-with-errors/SKILL.md) | Store `error` + `q-banner` (pages + App theme), room `onError` |
-| [`client-work-with-structure`](skills/client/client-work-with-structure/SKILL.md) | pages / components / boot / stores placement (incl. theme shell) |
+| [`client-work-with-errors`](skills/client/client-work-with-errors/SKILL.md) | Store `error` + `q-banner` (pages + App theme), room `onError`; soft-drop rejoin gated by store `consentedLeaving` |
+| [`client-work-with-structure`](skills/client/client-work-with-structure/SKILL.md) | pages / components / boot / stores placement (theme shell + Game leave/status in App) |
 | [`work-with-forms`](skills/client/work-with-forms/SKILL.md) | LoginPage `q-form` / guest + Google buttons |
-| [`work-with-pages`](skills/client/work-with-pages/SKILL.md) | Routes + guards login/lobby/game; App theme header; Lobby create grilleDensity; GamePage presence/budgets/peek / holes / grilles trap-rescue-return / dual end + all-jail modals overview |
+| [`work-with-pages`](skills/client/work-with-pages/SKILL.md) | Routes + guards login/lobby/game; App header (theme + Game leave/status); Lobby create grilleDensity; GamePage bottom HUD / budgets/peek / holes / grilles trap-rescue-return / dual end + all-jail modals overview |
 | [`work-with-stores`](skills/client/work-with-stores/SKILL.md) | Pinia `auth` / `theme` / `game` (incl. peeks∞ / finite steps / peek / rescue/return / grilleDensity create / end-turn / holes) |
-| [`work-with-styles`](skills/client/work-with-styles/SKILL.md) | Quasar Dark + GET/POST `/api/theme`, header, muted chrome, tourist board (holes + grille overlays / `--grille-anim-ms` 1500) + presence/budgets/peek CSS |
+| [`work-with-styles`](skills/client/work-with-styles/SKILL.md) | Quasar Dark + GET/POST `/api/theme`, header, muted chrome, tourist board (holes + grille overlays / `--grille-anim-ms` 1500) + bottom HUD / budgets/peek CSS |
 | [`work-with-localization`](skills/client/work-with-localization/SKILL.md) | vue-i18n boot; `game.say` / ready / leave / finish / timer+steps end / steps/peeks / endTurn / peek / solo-peeks∞ / grille density + rescue/return/all-jail keys |
 | [`work-with-lobby`](skills/client/work-with-lobby/SKILL.md) | Live LobbyRoom subscribe, create-with-maxSeats + grilleDensity modal (12/22/35% seed; no Play shortcut), quiet resubscribe |
-| [`work-with-rooms`](skills/client/work-with-rooms/SKILL.md) | Room lifecycle, tourist reconnect token, consented leave (confirm is page-local) |
-| [`work-with-game-board`](skills/client/work-with-game-board/SKILL.md) | Board + presence + grille overlay (`GRILLE_ANIM_MS=1500`) + trap/rescue/return + dual rings + own steps/peeks + end-turn + peek eye/modals + holes not landable + corner affordances + bubbles + place/timer/solo/all-jail modals + strip + move/ready/say |
+| [`work-with-rooms`](skills/client/work-with-rooms/SKILL.md) | Room lifecycle, tourist reconnect token, consented leave (confirm in App on Game) |
+| [`work-with-game-board`](skills/client/work-with-game-board/SKILL.md) | Board + bottom `.game-hud` (no top-row) + grille overlay (`GRILLE_ANIM_MS=1500`) + trap/rescue/return + dual rings + own steps/peeks + end-turn + peek eye/modals + holes not landable + corner affordances + bubbles always up + place/timer/solo/all-jail modals + strip in HUD + move/ready/say; leave/status in App |
 | [`work-with-env-deploy`](skills/client/work-with-env-deploy/SKILL.md) | `VITE_*`, hash router, GitHub Pages |
 
 #### Server-wide skills (`.agents/skills/server/`)
