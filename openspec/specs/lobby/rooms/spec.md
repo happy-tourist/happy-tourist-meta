@@ -20,6 +20,11 @@ Live-список доступных игровых комнат на экран
 | SC-LOBBY-10 | covered (client UX) |
 | SC-LOBBY-11 | covered (client UX) |
 | SC-LOBBY-12 | covered (client UX) |
+| SC-LOBBY-13 | covered (client UX + server parse) |
+| SC-LOBBY-14 | covered (server mocha — many → 35%) |
+| SC-LOBBY-15 | covered (client UX default medium) |
+
+Related: grille seed — `game/board` / `game/move`.
 
 ## Requirements
 
@@ -137,3 +142,28 @@ The lobby screen MUST NOT offer a primary «Играть» / joinOrCreate shortc
 - **WHEN** the lobby actions are shown
 - **THEN** there is no «Играть» action that performs joinOrCreate into an arbitrary room
 - **AND** create-game and join-by-listed-room actions remain available
+
+### Requirement: Create game chooses grille density
+
+When an authenticated user opens create-game from the lobby, the system SHALL present a choice of grille density with three presets: few, medium, and many. The presets MUST map to **12%**, **22%**, and **35%** of task cells on the tourist layout at playing seed time (rounded to nearest integer, clamped to the task-cell count). Confirming create MUST pass the selected density into the new `tourist` room create options. Cancelling MUST NOT create a room. Product labels remain мало / средне / много without showing the percent numbers.
+
+#### Scenario [SC-LOBBY-13]: Density presets are few medium many
+
+- **GIVEN** the user is on the lobby screen and opens create-game
+- **WHEN** the create modal appears
+- **THEN** the selectable grille density options are few, medium, and many
+- **AND** the product sense of the labels is мало / средне / много
+
+#### Scenario [SC-LOBBY-14]: Confirm create uses selected density
+
+- **GIVEN** the create modal is open with grille density many selected
+- **WHEN** the user confirms create
+- **THEN** a new `tourist` room is created with grille density many (35% of task cells at seed)
+- **AND** the user enters that game session
+
+#### Scenario [SC-LOBBY-15]: Default grille density is medium
+
+- **GIVEN** the user is on the lobby screen and opens create-game
+- **WHEN** the create modal appears
+- **THEN** medium (22%) is selected by default for grille density
+- **AND** max seats default remains 2 per existing create rules

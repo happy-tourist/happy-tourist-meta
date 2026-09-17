@@ -31,8 +31,13 @@
 | SC-PIECE-21 | covered (server mocha — finished occupancy; no reopen after leave in playing) |
 | SC-PIECE-22 | covered (client — localStorage token restores seat after browsing session end) |
 | SC-PIECE-23 | covered (client — missing/invalid token = fresh joinById; seat only if waiting + capacity) |
+| SC-PIECE-24 | covered (server mocha — trapped sync) |
+| SC-PIECE-25 | covered (server mocha — all-jail one per side) |
+| SC-PIECE-26 | covered (server mocha — occupancy while trapped) |
+| SC-PIECE-27 | covered (client UX — trapped piece still on board) |
+| SC-PIECE-28 | covered (server mocha — leave clears holding) |
 
-Related: phase transition — `game/start`; turn timers — `game/move`; finish occupancy — `game/finish`.
+Related: phase transition — `game/start`; turn timers — `game/move`; finish occupancy — `game/finish`; trap/rescue/all-jail — `game/move`; grille clear — `game/board`.
 
 ## Requirements
 
@@ -245,3 +250,54 @@ A seat that has finished all four pieces (`game/finish`) MUST continue to occupy
 - **WHEN** another authenticated client joins
 - **THEN** that client receives no seat (spectator)
 - **AND** after one finished seat permanently leaves, a subsequent joiner still receives no seat while phase remains `playing`
+
+### Requirement: Trapped flag is synchronized on pieces
+
+When a piece becomes trapped or freed, the server SHALL synchronize that trapped state to all clients in the room. Finished pieces MUST NOT be trapped. A trapped piece MUST remain unfinished and MUST keep its row and column until freed, returned-from elsewhere, or all-jail reset.
+
+#### Scenario [SC-PIECE-24]: Clients observe trapped state
+
+- **GIVEN** phase is `playing` and a piece just became trapped after landing on a grille
+- **WHEN** synced state updates
+- **THEN** every client observes that piece as trapped at its landing cell
+
+#### Scenario [SC-PIECE-27]: Trapped tourist remains visible on the board
+
+- **GIVEN** a piece is trapped
+- **WHEN** clients render the board
+- **THEN** that piece remains visible on its cell under/with the revealed grille presentation
+- **AND** the piece is not treated as finished or off-board
+
+### Requirement: Trapped pieces still occupy their cell
+
+For move validation occupancy, a trapped unfinished piece MUST block its cell the same way as a free unfinished piece. Other pieces MUST NOT legally land on that cell while it remains occupied.
+
+#### Scenario [SC-PIECE-26]: Occupancy blocks landing on trapped cell
+
+- **GIVEN** a trapped unfinished piece occupies a cell and another unfinished piece is adjacent with steps available on its seat’s turn
+- **WHEN** that other piece attempts to move onto the trapped piece’s cell
+- **THEN** the server rejects the move
+
+### Requirement: All-jail places one piece per side on free starts
+
+On all-jail reset for a seat, each of that seat’s four pieces MUST be placed on a start cell of its own side identity (`N`/`E`/`S`/`W`), chosen uniformly at random among start cells of that side that are not occupied by any unfinished piece after clearing that seat’s previous cells. Pieces MUST be free (not trapped) after placement.
+
+#### Scenario [SC-PIECE-25]: Reset uses each side’s free start cells
+
+- **GIVEN** a seated player triggers all-jail reset
+- **WHEN** the server places the four pieces
+- **THEN** the `N` piece is on a free North start cell, `E` on East, `S` on South, and `W` on West
+- **AND** none of the four share a cell with another unfinished piece
+- **AND** none of the four remain trapped
+
+### Requirement: Permanent leave clears that seat’s holding grilles
+
+When a seated player is permanently removed (consented leave or reconnect grace timeout), the server SHALL clear every holding grille cell that was holding one of that seat’s trapped unfinished pieces before the seat is deleted. Those grilles MUST become spent (removed from synced holding state, no re-arm this match). Other seats’ holding and all still-hidden grilles MUST NOT be cleared by this leave. Unexpected disconnect during reconnect grace MUST NOT clear holding while the seat and pieces remain.
+
+#### Scenario [SC-PIECE-28]: Leave removes orphan holding grilles
+
+- **GIVEN** phase is `playing` and a seated player has at least one trapped unfinished piece under a revealed holding grille
+- **WHEN** that player permanently leaves the room
+- **THEN** that player’s seat and pieces are removed per existing leave rules
+- **AND** each former holding grille of those trapped cells is cleared from synced holding state
+- **AND** other seats’ holding grilles remain if still trapping their pieces

@@ -23,8 +23,14 @@
 | SC-BOARD-13 | covered (server mocha) |
 | SC-BOARD-14 | covered (client UX — eye; no one-peek-per-turn) |
 | SC-BOARD-15 | covered (server mocha — land on hole rejected; mirrors SC-MOVE-49) |
+| SC-BOARD-16 | covered (server mocha — medium density seed count) |
+| SC-BOARD-17 | covered (client UX — hidden until land) |
+| SC-BOARD-18 | covered (client UX — drop anim ≥1500 ms all clients) |
+| SC-BOARD-19 | covered (client UX — rise+vanish on clear) |
+| SC-BOARD-20 | covered (server mocha — spent tile still peekable) |
+| SC-BOARD-21 | covered (client UX — rise on leave clear all clients) |
 
-Related: presence row layout — `game/presence` (opponents top / self bottom); turn budgets / multi peek — `game/move`.
+Related: presence row layout — `game/presence` (opponents top / self bottom); turn budgets / multi peek — `game/move`; trap/rescue — `game/move`; trapped / leave clear — `game/pieces`.
 
 ## Requirements
 
@@ -172,3 +178,59 @@ While it is the user’s multiplayer or solo turn and a peek is currently allowe
 - **WHEN** the move animation finishes and interaction returns
 - **THEN** the eye affordance is available on that piece without requiring another selection click
 - **AND** if the cell under the piece is a removed-task hole or not a task cell, the eye is not shown for that piece
+
+### Requirement: Grilles seed on task cells by density
+
+When the room start phase becomes `playing`, the server SHALL place a hidden grille on a random subset of still-present brown task cells (`*`). The subset size MUST equal the create-time density percent of the layout’s task-cell count (few **12%**, medium **22%**, many **35%**), rounded to the nearest integer and clamped to `[0, taskCount]`. Start cells and center cells MUST NOT receive grilles. Grille placement MUST NOT be predictable from coordinates alone.
+
+#### Scenario [SC-BOARD-16]: Medium density seeds about twenty-two percent of tasks
+
+- **GIVEN** a tourist room created with medium grille density transitioning into phase `playing` with the standard tourist layout (48 task cells)
+- **WHEN** grilles are seeded
+- **THEN** exactly `round(48 * 0.22)` = **11** hidden grilles exist on distinct task cells
+- **AND** no grille is on a start or center cell
+
+### Requirement: Hidden grilles are invisible until triggered
+
+Until a piece lands on a cell that still holds an unspent grille, clients MUST NOT render that grille. Spectators and other seats MUST NOT learn grille locations from synced state before reveal.
+
+#### Scenario [SC-BOARD-17]: Board shows no grille before land
+
+- **GIVEN** phase is `playing` and hidden grilles exist on some task cells
+- **WHEN** clients render the board before any of those cells is landed on
+- **THEN** no grille artwork is shown on those cells
+
+### Requirement: Revealed grille drop and clear animations are public
+
+When a piece lands on an unspent grille, every client that displays the board MUST show the grille lowering onto that cell (product sense: drops from above downward) for about **1500 ms**. When that grille is later cleared (rescue, all-jail holding clear, or permanent leave of the seat whose piece held that grille), every such client MUST show the grille rising and disappearing for about **1500 ms**. Cleared grilles MUST NOT remain visible afterward.
+
+#### Scenario [SC-BOARD-18]: Everyone sees the drop
+
+- **GIVEN** seated players and a spectator view the board
+- **WHEN** a piece lands on a cell with an unspent grille
+- **THEN** every client shows the grille drop animation on that cell lasting about 1500 ms
+
+#### Scenario [SC-BOARD-19]: Everyone sees rise and vanish on clear
+
+- **GIVEN** a revealed grille is holding a trapped piece and is then cleared by a successful rescue
+- **WHEN** clients update
+- **THEN** every client shows the grille rise and vanish lasting about 1500 ms
+- **AND** the cell no longer shows grille artwork
+
+#### Scenario [SC-BOARD-21]: Everyone sees rise when leave clears holding
+
+- **GIVEN** a revealed grille is holding a trapped piece of a seated player who then permanently leaves
+- **WHEN** the server removes that seat and clears those holding grilles
+- **THEN** every client shows the grille rise and vanish lasting about 1500 ms
+- **AND** the cell no longer shows grille artwork
+
+### Requirement: Spent grille leaves the task tile peekable
+
+Clearing a grille MUST remove that trap from the cell and MUST NOT remove the brown task tile or its hidden peek reward (if still present). After clear, a free unfinished piece standing on that cell MAY open a peek per existing peek rules.
+
+#### Scenario [SC-BOARD-20]: After rescue the task may still be peeked
+
+- **GIVEN** a piece was trapped on a still-present task cell whose grille was then cleared by rescue, and it is that seat’s turn with peeks remaining
+- **WHEN** that free unfinished piece remains on that task cell
+- **THEN** that seat MAY open a peek on that cell
+- **AND** the cell is not treated as a removed-task hole solely because the grille was cleared
