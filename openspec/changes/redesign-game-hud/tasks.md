@@ -10,7 +10,20 @@
 - [x] 2.2 Собрать sticky bottom `.game-hud`: seated — own+budgets/end-turn → strip → opponents right; spectator — occupied centered; board в scroll region над панелью — verify: SC-PRESENCE-02/03/22, SC-PIECE-09/10
 - [x] 2.3 Убрать caption «Мои туристы»; say bubbles только выше аватара для всех маркеров; убрать top-row presence — verify: SC-PIECE-09 (no caption), SC-SAY-11/12
 
-## 3. Client — skills + quality
+## 3. Client — skills + quality (HUD phase)
 
 - [x] 3.1 Обновить `.agents/skills/client/work-with-game-board` и `work-with-pages` (+ при необходимости say/styles notes) под header chrome и bottom HUD — verify: skills описывают новый layout без top-row / page-local leave header
 - [x] 3.2 В sibling client: `npm run lint` и `npm run typecheck` — verify: оба проходят
+
+## 4. Client — compact tourist chip + picker menu
+
+- [x] 4.1 Прочитать `design.md` (D6–D8), delta `specs/game/pieces`, `game/finish`, `game/board`; сверить текущий strip / return / `GRILLE_ANIM_MS` в `GamePage.vue`
+- [x] 4.2 Заменить ряд×4 в HUD на compact 2×2 chip (~avatar); клик chip только открывает `q-menu` вверх к доске без select — verify: SC-PIECE-09, SC-PIECE-29
+- [x] 4.3 В меню: ряд из 4 полноразмерных слотов без title; select unfinished non-trapped → закрыть; Esc/outside без select; на чужом ходе только просмотр; board select без меню — verify: SC-PIECE-30
+- [x] 4.4 Finish flag на chip и в меню; return control только в меню (не на chip) — verify: SC-FINISH-09/10/13
+- [x] 4.5 Grille overlay на chip/menu при `trapped`; `GRILLE_ANIM_MS = 1000` для board и chrome drop/rise — verify: SC-PIECE-31, SC-BOARD-18/19
+
+## 5. Client — skills + quality (chip phase)
+
+- [x] 5.1 Обновить `.agents/skills/client/work-with-game-board` (+ pages/styles/finish notes) под compact chip, `q-menu`, grille на chrome, anim 1000 ms, return только в меню — verify: skills без «четыре 72px в ряд в HUD» / return на strip-chrome
+- [x] 5.2 В sibling client: `npm run lint` и `npm run typecheck` — verify: оба проходят

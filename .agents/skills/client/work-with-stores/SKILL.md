@@ -72,7 +72,7 @@ Use local `ref()` / `reactive()` for:
 Examples:
 - `LoginPage.vue`: `email`, `password`, `displayName`, `isRegister`, `showPassword`.
 - `LobbyPage.vue`: `creating`, `joining` (page spinners); room list and errors come from `game`.
-- `GamePage.vue`: `LAYOUT` tiles + piece assets; bottom HUD presence layout / grace tick; store `consentedLeaving` gates soft-drop rejoin during App header leave; `unfinishedBoardPieces` + disappearing finishers for board overlay; strip×4 from `mySeat` (+ finish icons) inside HUD; local `selectedSide` / `moveAnimating` / legal hints (exclude removed holes) / +N fall anim / place / peek / solo-peeks∞ / dual timer-vs-steps end modals; say picker open state (not Pinia).
+- `GamePage.vue`: `LAYOUT` tiles + piece assets; bottom HUD presence layout / grace tick; store `consentedLeaving` gates soft-drop rejoin during App header leave; `unfinishedBoardPieces` + disappearing finishers for board overlay; compact 2×2 chip + `q-menu` full-size picker from `mySeat` (+ finish icons; return only in menu) inside HUD; local `selectedSide` / `moveAnimating` / legal hints (exclude removed holes) / +N fall anim / place / peek / solo-peeks∞ / dual timer-vs-steps end modals; say picker open state (not Pinia).
 
 ### Pinia state
 

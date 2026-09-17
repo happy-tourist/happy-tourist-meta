@@ -164,7 +164,7 @@ async leaveGame() {
 | `maxSeats` / `countdownRemaining` | mirrored as-is |
 | `started` | legacy mirror of `phase === 'playing'` (prefer phase) |
 | `seats` Map (key = `sessionId`) | `seats[]` with `sessionId`, `touristId`, `pieces[]` (`side`/`row`/`col`/`finished`; may be empty pre-playing), **`connected`**, **`reconnectUntil`**, **`ready`**, **`finishPlace`**, **`timeExpired`** |
-| (room) `sessionId` | `sessionId` — for `mySeat` / strip×4 / presence self |
+| (room) `sessionId` | `sessionId` — for `mySeat` / chip picker / presence self |
 | `currentTurnSessionId` | `currentTurnSessionId` → getter `isMyTurn` |
 | `turnUntil` / `turnBudgetSeconds` | mirrored; `0` when no active turn timer → presence outer ring + `turnRemainingSeconds` |
 

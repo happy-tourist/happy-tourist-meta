@@ -1,74 +1,74 @@
 ## Context
 
-См. `proposal.md` — Why / Scope. Сейчас на client: локальный chrome на `GamePage` (leave + `statusLabel` + `roomId.slice(0, 8)`), presence через `presenceLayout` (top opponents / bottom self вокруг `.tourist-board`), личный strip отдельным блоком под frame с caption «Мои туристы», общая шапка только с theme в `App.vue`. Server и Pinia I/O leave/say/budgets не меняются.
+См. `proposal.md` — Why / Scope. **Реализовано:** leave + match status в `App.vue` на Game; sticky `.game-hud`; compact 2×2 chip + upward `q-menu` picker; grille/`trapped` и finish на chrome; return только в меню; grille anim **1000 ms** на поле и chrome; say bubbles вверх; room id убран.
 
-Пакет: **client** (`../happy-tourist.github.io`). Контракт room `tourist` без изменений.
-
+Пакет: **client** (`../happy-tourist.github.io`). Контракт room `tourist` без изменений. Данные: `mySeat.pieces[].trapped` / `finished`, `holdingGrilleKeys`, asset `grille.png`.
 ## Goals / Non-Goals
 
 **Goals:**
 
-- Общая шапка: leave слева + статус по центру только на Game; theme справа как сейчас.
-- Единая нижняя sticky HUD-панель: seated L→R own+budgets → strip → opponents right; spectator — occupied по центру.
-- Say bubbles только вверх; убрать room id из UI и подпись strip.
-- Обновить client skills под новый layout после кода.
+- Общая шапка + sticky bottom HUD (уже сделано) + compact tourist chrome в HUD.
+- Chip 2×2 (~avatar): статусы; tap → menu вверх к доске; ряд×4 select/return; board select без menu.
+- Grille overlay на chip/menu при `trapped`; anim drop/rise **1000 ms** везде.
+- Обновить client skills под chip/menu/anim после кода.
 
 **Non-Goals:**
 
-- Мобильный overflow-policy (отложено).
-- Вынос GamePage на компоненты ради рефакторинга (допустимо минимально, если разгрузка шапки потребует shared helper для status/leave).
 - Server / schema / messages.
+- Вынос GamePage на компоненты ради рефакторинга (допустимо минимальный shared slot template).
+- Idle-loop grille; смена правил trap/rescue.
 
 ## Decisions
 
 ### D1 — Chrome leave + status в `App.vue` (route-aware)
 
-**Выбор:** расширить `src/App.vue` `q-toolbar`: при `route.name === 'game'` показывать icon-only leave слева и centered status; theme справа (`q-space` / flex). Leave confirm dialog и `consentedLeaving` / `leaveGame` остаются логикой Game — либо тонкий event/callback из page, либо вынести computed status + leave handlers в shared composable / читать `useGameStore` из App и держать confirm dialog в App или Teleport из GamePage.
+**Выбор:** расширить `src/App.vue` `q-toolbar`: при `route.name === 'game'` показывать icon-only leave слева и centered status; theme справа. Confirm + `leaveGame` в App; store `consentedLeaving` с clear после leave / уходе с Game.
 
-**Альтернативы:** (B) `Teleport` из GamePage в named slot header — чище границы page, больше wiring; (C) визуально «в шапке» внутри page — ломает sticky header Quasar.
-
-**Rationale:** один source of truth для toolbar; skills `work-with-pages` обновить: game leave/status MAY жить в App на game-route.
-
-**Предпочтительная врезка:** App читает `useRoute` + `useGameStore` для status strings (те же ветки, что нынешний `statusLabel`); leave click эмитит/вызывает page-local confirm — проще держать `q-dialog` leave в GamePage и пробрасывать open через store flag **или** перенести confirm dialog в App рядом с кнопкой, вызывая существующие `leaveGame` / router из store. Минимальный путь: confirm + leave orchestration переехать в App вместе с кнопкой (store уже умеет leave), GamePage только `ensureTouristRoom` / board.
+**Статус:** реализовано.
 
 ### D2 — Нижняя панель: layout shell на GamePage
 
-**Выбор:** заменить `.presence-frame` column (top row → board → bottom row) на:
+**Выбор:** board scroll region + sticky `.game-hud` (own | budgets | strip/chip | opponents). Say только `--bottom`.
 
-```
-q-page (column, min-height fill)
-  board scroll region (flex 1, overflow auto)
-  .game-hud (sticky/fixed bottom: own | budgets | strip | opponents)
-```
-
-Убрать `presenceLayout` top/bottom slots; markers получают один «bottom» контекст для say. Seated: flex row `justify-between` / `margin-left: auto` на opponents group. Spectator: `justify-center` только markers group, без own/strip.
-
-Strip перенести внутрь `.game-hud` (после own budgets), удалить caption «Мои туристы».
-
-Say CSS: только `say-bubbles--bottom` (выше аватара); удалить/не использовать top-below ветку.
-
+**Статус:** реализовано (strip заменён compact chip — D6).
 ### D3 — Sticky к viewport
 
-**Выбор:** панель как `position: sticky; bottom: 0` внутри page **или** Quasar `q-footer` на game-route. Sticky внутри column fill проще не ломая `q-layout`. Зарезервировать padding-bottom у board region = высота HUD, чтобы последний ряд доски не прятался под панелью.
+**Выбор:** `position: sticky; bottom: 0` внутри page column.
 
-**Альтернатива:** `position: fixed` — нужна ручная компенсация высоты; хуже с safe-area.
+**Статус:** реализовано.
 
 ### D4 — Удаление room id chrome
 
-Убрать отображение `game.roomId?.slice(0, 8)` из GamePage; route param / reconnect без изменений.
+**Статус:** реализовано.
 
 ### D5 — Skills (после кода)
 
-Обновить `.agents/skills/client/work-with-game-board`, `work-with-pages` (и при необходимости say/styles notes): bottom HUD, header leave/status, no room id, bubbles always up.
+Обновить skills под header + HUD; затем ещё раз под chip/menu/grille chrome (tasks).
 
-Чеклист шагов — `tasks.md`.
+### D6 — Compact chip + `q-menu` picker
+
+**Выбор:** в `.game-hud` вместо четырёх `.my-tourist-slot` 72px — один chip ~`PRESENCE` image box (72px) с CSS grid 2×2: стороны `N E` / `W S`. Клик по chip **только** `v-model`/`q-menu` (не `selectedSide`). Меню: `anchor` к доске (вверх), без title; контент — горизонтальный ряд четырёх полноразмерных слотов (текущие размеры/иконки). Select доступного unfinished non-trapped → `onStripClick` / эквивалент → закрыть menu. Esc / click-outside → закрыть. Outside interactive turn — menu открывается, слоты без select (просмотр). Board piece click — select без menu.
+
+**Альтернативы:** (B) `q-dialog` — отвергнуто (explore: везде menu); (C) long-press chip — отвергнуто.
+
+**Rationale:** экономия HUD; полноразмерный выбор как раньше; Quasar menu portal меньше клипает sticky footer.
+
+### D7 — Статусы и return
+
+**Выбор:** на chip и в menu — finish flag на finished; grille overlay когда `trapped`. Return (`undo`) **только** в menu рядом с flag при прежних условиях (`finishPlace===0`, steps, legal ring). Chip не несёт return.
+
+### D8 — Grille animation 1000 ms
+
+**Выбор:** константа client `GRILLE_ANIM_MS = 1000` для board overlays и для strip chrome drop/rise (one-shot при появлении/снятии `trapped` / holding clear как на поле). Заменяет прежние ~1500 ms.
+
+**Альтернатива:** разные длительности board vs strip — отвергнуто (explore: везде 1 s).
 
 ## Risks / Trade-offs
 
-- [Узкая ширина / 4 strip + 3 opp] → Mitigation: out of scope; допускается horizontal scroll панели без сжатия 72px avatar (как сейчас row-scroll).
-- [App знает game status] → Mitigation: только зеркало store; Colyseus I/O остаётся в Pinia `game`.
-- [Say picker / bubbles clip у sticky footer] → Mitigation: `overflow: visible` на HUD; z-index над board; не клипать picker (SC-SAY-15 сохранён).
-- [Purpose main specs] → при `/opsx-sync` обновить Purpose у `game/presence` / `game/say` под bottom HUD.
+- [Menu у нижнего края / safe-area] → Mitigation: anchor вверх к доске; Quasar portal.
+- [Мелкий 2×2 плохо читает grille] → Mitigation: те же asset + короткая anim; в menu полноразмер.
+- [App знает game status] → Mitigation: только зеркало store (уже так).
+- [Purpose main specs] → при `/opsx-sync` обновить Purpose / SC timing у pieces/finish/board.
 
 ## Migration Plan
 
@@ -76,4 +76,4 @@ Say CSS: только `say-bubbles--bottom` (выше аватара); удал�
 
 ## Open Questions
 
-Нет (мобильный overflow отложен сознательно).
+Нет (D1–D8 и explore Q1–Q6 закрыты).
