@@ -1,23 +1,25 @@
 ## Purpose
 
-Soft-подтверждение email по явному действию в личном кабинете: кнопка рядом с почтой, смена адреса, напоминание-модалка без автоотправки при регистрации и без блокировки игры.
+Soft-подтверждение email по явному действию в личном кабинете: кнопка рядом с почтой, смена адреса, напоминание-модалка без автоотправки при регистрации и без блокировки игры. Human-facing тексты писем и HTML confirm — на русском; после отправки письма клиент напоминает проверить также папку «Спам».
 
 ## Traceability
 
 | Scenario ID | Coverage |
 |-------------|----------|
-| SC-EMAIL-01 | pending (server: register does **not** send confirm mail) |
-| SC-EMAIL-02 | pending (server: confirm-email → verified flag) |
+| SC-EMAIL-01 | covered (server: register does **not** send confirm mail) |
+| SC-EMAIL-02 | covered (server: confirm-email → verified flag; RU success page) |
 | SC-EMAIL-03 | covered-by-reuse (existing JWT lobby/game gate unchanged) |
-| SC-EMAIL-04 | pending (server: Google path sets verified) |
-| SC-EMAIL-05 | pending (server: existing rows default/migration verified) |
-| SC-EMAIL-06 | pending (client+server: cabinet button sends confirm mail + success dialog) |
-| SC-EMAIL-07 | pending (server: send-confirm cooldown 60s) |
-| SC-EMAIL-08 | pending (client: session modal → cabinet) |
+| SC-EMAIL-04 | covered (server: Google path sets verified) |
+| SC-EMAIL-05 | covered (server: existing rows default/migration verified) |
+| SC-EMAIL-06 | covered (client+server: cabinet button sends confirm mail + success dialog incl. spam) |
+| SC-EMAIL-07 | covered (server: send-confirm cooldown 60s) |
+| SC-EMAIL-08 | covered (client: session modal → cabinet) |
 | SC-EMAIL-09 | covered-by-reuse (anonymous has no email verify UX) |
-| SC-EMAIL-10 | pending (client+server: change email resets verified) |
-| SC-EMAIL-11 | pending (server: redirect after confirm to client lobby) |
-| SC-EMAIL-12 | pending (server: confirm link JWT expires in 30m) |
+| SC-EMAIL-10 | covered (client+server: change email resets verified) |
+| SC-EMAIL-11 | covered (server: redirect after confirm to client lobby) |
+| SC-EMAIL-12 | covered (server: confirm link JWT expires in 30m; RU expired outcome) |
+| SC-EMAIL-13 | covered (server: confirm email subject+body in Russian) |
+| SC-EMAIL-14 | covered (client: post-send UI mentions spam folder) |
 
 ## ADDED Requirements
 
@@ -34,7 +36,7 @@ Email/password registration MUST create the account and issue a normal authentic
 
 ### Requirement: Confirming the email marks the account verified
 
-Following the confirmation link from the email MUST mark the corresponding account as email-verified. Confirmation UX MAY be the built-in auth API HTML pages. After successful confirmation the user MUST be redirected to the client lobby entry URL (not the Login screen).
+Following the confirmation link from the email MUST mark the corresponding account as email-verified. Confirmation UX MAY be the built-in auth API HTML pages. After successful confirmation the user MUST be redirected to the client lobby entry URL (not the Login screen). Success and failure copy on the confirmation page MUST be in Russian (including expired or invalid token).
 
 #### Scenario [SC-EMAIL-02]: Link confirms email
 
@@ -42,13 +44,13 @@ Following the confirmation link from the email MUST mark the corresponding accou
 - **AND** the user previously requested a confirmation email from the account area
 - **WHEN** the user opens a valid confirmation link from that email
 - **THEN** the account is marked email-verified
-- **AND** the user is shown a successful confirmation outcome on the auth API
+- **AND** the user is shown a successful confirmation outcome on the auth API in Russian
 
 #### Scenario [SC-EMAIL-11]: Success redirects to client lobby
 
 - **GIVEN** the user has just successfully confirmed their email via the auth API link
 - **WHEN** the confirmation success flow completes
-- **THEN** the browser is directed to the client application lobby entry (hash lobby route on the Pages origin)
+- **THEN** the browser is directed to the client application lobby entry (hash lobby route on the configured client origin)
 - **AND** is not directed to the Login screen as the primary success destination
 
 ### Requirement: Soft verification does not block play
@@ -82,7 +84,7 @@ Accounts authenticated or created via Google MUST be treated as email-verified. 
 
 ### Requirement: Account area sends confirmation on button next to email
 
-A registered (non-anonymous) user MUST see their current email in a personal account area. If the email is not verified, the UI MUST show a confirmation control next to the email. Activating that control MUST send a confirmation email through an authenticated HTTP endpoint, subject to a cooldown of 60 seconds between successful sends for the same user. After a successful send the client MUST show a dialog (or equivalent modal) stating that the email was sent and that the user should check their mailbox. The confirmation link in the email MUST expire after 30 minutes.
+A registered (non-anonymous) user MUST see their current email in a personal account area. If the email is not verified, the UI MUST show a confirmation control next to the email. Activating that control MUST send a confirmation email through an authenticated HTTP endpoint, subject to a cooldown of 60 seconds between successful sends for the same user. After a successful send the client MUST show a dialog (or equivalent modal) in Russian stating that the email was sent and that the user should check their mailbox **and the spam folder**. The confirmation link in the email MUST expire after 30 minutes.
 
 #### Scenario [SC-EMAIL-06]: Cabinet button sends confirmation email and shows dialog
 
@@ -92,7 +94,7 @@ A registered (non-anonymous) user MUST see their current email in a personal acc
 - **AND** a confirmation control is shown next to the email
 - **WHEN** the user activates that control and the send succeeds
 - **THEN** a confirmation email is sent to the current address with a working confirmation link
-- **AND** the client shows a dialog telling the user the email was sent and to check their mail
+- **AND** the client shows a dialog telling the user the email was sent and to check their mail and spam folder
 
 #### Scenario [SC-EMAIL-07]: Send confirmation cooldown
 
@@ -106,7 +108,25 @@ A registered (non-anonymous) user MUST see their current email in a personal acc
 - **GIVEN** the user received a confirmation email whose link token is older than 30 minutes
 - **WHEN** the user opens that confirmation link
 - **THEN** the account is not marked email-verified via that link
-- **AND** the auth API shows a failed/expired confirmation outcome
+- **AND** the auth API shows a failed/expired confirmation outcome in Russian
+
+#### Scenario [SC-EMAIL-14]: Post-send UI mentions spam folder
+
+- **GIVEN** a registered non-anonymous user successfully requested a confirmation email from the account area
+- **WHEN** the client shows the send-success dialog
+- **THEN** the dialog text is in Russian
+- **AND** the text tells the user to check the spam folder as well as the inbox
+
+### Requirement: Confirmation email content is in Russian
+
+The confirmation email subject and body MUST be in Russian. The body MUST carry the same intent as the previous English template (welcome / ask to confirm / button to confirm), translated — not a new product flow.
+
+#### Scenario [SC-EMAIL-13]: Confirm mail is Russian
+
+- **GIVEN** the system sends a confirmation email from the account-area send endpoint
+- **WHEN** the message is composed
+- **THEN** the subject and HTML body are in Russian
+- **AND** the body includes a working confirmation link
 
 ### Requirement: Change email from account area
 

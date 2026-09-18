@@ -58,8 +58,8 @@ guards. Do not put game rules in `/auth/*` handlers.
 |-------|------|------|
 | Server def | `src/app.config.ts` | `database: db` enables `@colyseus/auth` HTTP routes + user store; import `src/config/auth.ts`; call `configureAuthEmailFlows()` after DB auth defaults; thin `POST /api/auth/*` endpoints |
 | OAuth + email hooks | `src/config/auth.ts` | `getRuntimeAuth` / `getRuntimeJWT`; Google `addProvider`; **no** `onSendEmailConfirmation`; `onEmailConfirmed` / `onForgotPassword`; wrap built-in `onOAuthProviderCallback` for Google `emailVerified`; `auth.backend_url`; confirm HTML writer |
-| Mailer | `src/lib/mailer.ts` | `sendEmail(to, subject, html)` via smtp.bz only (`SMTP_BZ_*`, `MAIL_FROM`); no Resend / `MAIL_PROVIDER`; `setSendEmailImpl` for tests |
-| Auth HTML | `html/` | Confirm/reset templates under cwd (`address-confirmation.html` written at boot; email HTML assets) |
+| Mailer | `src/lib/mailer.ts` | `sendEmail(to, subject, html)` via smtp.bz only (`SMTP_BZ_*`, `MAIL_FROM`); host **`connect.smtp.bz`**; `secure` when port is **465 or 9465**; no Resend / `MAIL_PROVIDER`; `setSendEmailImpl` for tests |
+| Auth HTML | `html/` | Confirm/reset templates under cwd — **human-facing RU** (`address-confirmation.html` written at boot with EN→RU `localizeConfirmMessage` / reset `localizeResetMessage`; email HTML assets RU; reset password input needs RU `placeholder` + `aria-label`) |
 | DB init | `src/db/index.ts` | `GameDatabase` + `schemas: { users }` |
 | Users schema | `src/db/schema.ts` | Extends `colyseus_users`: `displayName`, `rating`, `gamesPlayed`, `gamesWon`, nullable `theme`, `emailVerified` (default `false`) |
 | Room gate | `src/rooms/MyRoom.ts` | `static onAuth(token)` → `JWT.verify(token)` → userdata to `onJoin` (**soft** verify — no `emailVerified` gate) |
@@ -121,7 +121,7 @@ Required for `@colyseus/auth` (see `.env.example`):
 | `DATABASE_URL` | SQLite path (`./game.db` local; prod often under `/var/www/…`) |
 | `GOOGLE_CLIENT_ID` | Google OAuth Web client ID (`auth.oauth.addProvider`) |
 | `GOOGLE_CLIENT_SECRET` | Google OAuth Web client secret |
-| `SMTP_BZ_HOST` / `PORT` / `USER` / `PASS` | smtp.bz transport for `src/lib/mailer.ts` |
+| `SMTP_BZ_HOST` / `PORT` / `USER` / `PASS` | smtp.bz transport for `src/lib/mailer.ts` — host **`connect.smtp.bz`** (ports 2525/587 STARTTLS or 465/9465 SSL) |
 | `MAIL_FROM` | From header (e.g. `Happy Tourist <noreply@happy-tourist.ru>`) |
 | `AUTH_BACKEND_URL` | Public API origin → `auth.backend_url` (confirm/reset links) |
 | `CLIENT_APP_URL` | Client origin; after successful confirm → `{CLIENT_APP_URL}/#/lobby` |
@@ -182,15 +182,21 @@ cabinet button via our HTTP endpoint.
 |--------------|----------|
 | `onSendEmailConfirmation` | **Unset** — register must not send mail |
 | `onEmailConfirmed` | Set `emailVerified = true` for that email |
-| `onForgotPassword` | `sendEmail` with reset HTML from AuthService |
-| Confirm / reset UI | Built-in **server HTML** (`/auth/confirm-email`, `/auth/reset-password`) — no SPA pages |
-| After confirm | Redirect to `CLIENT_APP_URL/#/lobby` (confirm success HTML written under `html/`) |
+| `onForgotPassword` | `sendEmail` with **RU** subject + reset HTML from AuthService (`html/reset-password-email.html`) |
+| Confirm / reset UI | Built-in **server HTML** (`/auth/confirm-email`, `/auth/reset-password`) — **human-facing Russian**; no SPA pages |
+| After confirm | Redirect to `CLIENT_APP_URL/#/lobby` (confirm success HTML written under `html/`; EN Colyseus query → RU via page JS map) |
 | `auth.backend_url` | From `AUTH_BACKEND_URL` (link host for tokens) |
 | Mailer | `sendEmail` → smtp.bz only; mockable in tests via `setSendEmailImpl` |
 | Legacy backfill | One-shot: existing non-anonymous users → `emailVerified = true` (config flag) |
 
-Confirm-link helper (`buildConfirmEmailContent`: JWT `expiresIn: '30m'`, HTML
+Confirm-link helper (`buildConfirmEmailContent`: JWT `expiresIn: '30m'`, **RU** subject/HTML
 with link) is used by `POST /api/auth/send-email-confirmation`, not by register.
+
+**Language canon:** all new human-facing copy in the auth-email contour (confirm/reset
+subjects, email bodies, confirm/reset HTML success/error, including expired/invalid
+token) MUST be **Russian** (same meaning as prior EN). Do not require English copy.
+Colyseus still emits EN query strings — map them to RU on the HTML page; do not patch
+`node_modules/@colyseus/auth`.
 
 ## Users Schema Defaults
 
@@ -340,4 +346,6 @@ When touching auth:
 | Support anonymous + email/password + Google via `addProvider` + wrap for verified | Replace OAuth callback entirely or captcha / SMS unless product asks |
 | Send confirm mail only from button HTTP endpoint | Set `onSendEmailConfirmation` or auto-send on change-email |
 | Use smtp.bz `sendEmail` for forgot + confirm | Add Resend / second mail provider |
+| Keep auth-email human-facing copy in **Russian** | Ship EN subjects/bodies/HTML for new auth-email surfaces |
+| Map Colyseus EN query strings → RU on confirm/reset HTML | Patch `node_modules/@colyseus/auth` or leave raw EN errors |
 | Cover JWT connect + email flows in mocha | Leave room auth / mail paths untested after changes |

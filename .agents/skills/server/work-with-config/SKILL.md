@@ -79,7 +79,7 @@ From `.env.example`:
 | `SESSION_SECRET` | Required secret for `@colyseus/auth` sessions |
 | `GOOGLE_CLIENT_ID` | Google OAuth Web client ID (`auth.oauth.addProvider` in `src/config/auth.ts`) |
 | `GOOGLE_CLIENT_SECRET` | Google OAuth Web client secret |
-| `SMTP_BZ_HOST` / `SMTP_BZ_PORT` / `SMTP_BZ_USER` / `SMTP_BZ_PASS` | smtp.bz transport (`src/lib/mailer.ts`) |
+| `SMTP_BZ_HOST` / `SMTP_BZ_PORT` / `SMTP_BZ_USER` / `SMTP_BZ_PASS` | smtp.bz transport (`src/lib/mailer.ts`); host **`connect.smtp.bz`** (ports 2525/587 STARTTLS or 465/9465 SSL; mailer `secure` when port is 465 or 9465) |
 | `MAIL_FROM` | From header for outbound mail |
 | `AUTH_BACKEND_URL` | Public API origin → `auth.backend_url` (confirm/reset links) |
 | `CLIENT_APP_URL` | Client origin; confirm success → `{CLIENT_APP_URL}/#/lobby` |

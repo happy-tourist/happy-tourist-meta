@@ -25,8 +25,8 @@ Auth is **token-based Colyseus Auth** via `client.auth` from `@colyseus/sdk`. Th
 | Store | `src/stores/auth.ts` | Pinia setup store: register / login / loginAnonymously / loginWithGoogle / logout / forgotPassword / sendEmailConfirmation / changeEmail / whenReady |
 | Login | `src/pages/LoginPage.vue` | Email/password register↔login + anonymous guest + Google; link to forgot; **no** post-register «письмо уже ушло» |
 | Forgot | `src/pages/ForgotPasswordPage.vue` | Request reset email; `guest` route; banner feedback; back to Login |
-| Cabinet | `src/pages/AccountPage.vue` | Current email; confirm button next to email if `!emailVerified`; change-email UI; success dialog after send |
-| App shell | `src/App.vue` | Session reminder modal → cabinet (once per `sessionStorage`); skip anonymous |
+| Cabinet | `src/pages/AccountPage.vue` | Current email; confirm button next to email if `!emailVerified`; change-email UI; success dialog after send (**RU**, mentions spam folder) |
+| App shell | `src/App.vue` | Session reminder modal → cabinet (once per `sessionStorage`; mark seen **when shown**); skip anonymous |
 | Router | `src/router/index.ts` | `beforeEach` awaits `whenReady()`; `requiresAuth` / `guest` |
 | Routes | `src/router/routes.ts` | `/login`, `/forgot-password` `guest`; `/lobby`, `/account`, `/game/:roomId` `requiresAuth` |
 | Token | SDK storage key `colyseus-auth-token` | Persisted by `@colyseus/sdk` Auth; synced via `onChange` |
@@ -154,7 +154,7 @@ Catch blocks intentionally empty — store already holds `error`.
 File: `src/pages/ForgotPasswordPage.vue`.
 
 - `guest` route `/forgot-password`.
-- Form: email → `auth.forgotPassword` → success banner; link back to Login.
+- Form: email → `auth.forgotPassword` → success banner (`auth.forgotSuccess` — RU; check inbox **and spam**); link back to Login.
 - Reset link itself is **server HTML** on the API — no client reset page.
 
 ## Account (Cabinet) Page
@@ -163,15 +163,18 @@ File: `src/pages/AccountPage.vue` (`requiresAuth`, `/account`).
 
 - Cabinet is for **registered non-anonymous** users only: on mount, if `auth.user?.anonymous` → `router.replace({ name: 'lobby' })` (design D7). Nav links in App/Lobby already hide for anonymous.
 - Show current email; if `emailVerified` — caption confirmed.
-- If registered and `!emailVerified` — confirm button **next to** the email → `sendEmailConfirmation` → dialog «письмо отправлено, проверьте почту».
+- If registered and `!emailVerified` — confirm button **next to** the email → `sendEmailConfirmation` → dialog `auth.confirmSentDialog` («письмо отправлено, проверьте почту **и папку Спам**»).
 - Change-email form → `changeEmail` (server resets verified; **no** auto-send).
 - Navigation from App / lobby into cabinet.
+
+**Language canon:** human-facing auth-email strings (`auth.confirmSentDialog`, `auth.forgotSuccess`, cabinet/forgot copy) are **Russian** in `src/i18n/en-US/` (technical locale name). New copy in this contour stays RU; do not require EN.
 
 ## Session Verify Reminder
 
 File: `src/App.vue`.
 
 - Once per browser session (`sessionStorage` key); skip anonymous and guest routes.
+- Mark the session key **when the modal is shown** (not only on dismiss/OK), so another tab in the same browser session does not reopen it (SC-EMAIL-08).
 - Copy: confirm from the **personal cabinet** (+ CTA to `/account`).
 - Do **not** claim that mail was already sent.
 

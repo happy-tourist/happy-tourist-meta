@@ -37,8 +37,8 @@ Deploy target: VPS under `/var/www/happy-tourist-server`, Node 22, PM2. Trigger:
 | `SESSION_SECRET` | Auth session | same | same |
 | `GOOGLE_CLIENT_ID` | Google OAuth Web client ID | same | same |
 | `GOOGLE_CLIENT_SECRET` | Google OAuth Web client secret | same | same |
-| `SMTP_BZ_HOST` | smtp.bz SMTP host (`src/lib/mailer.ts`) | same | same |
-| `SMTP_BZ_PORT` | SMTP port (default `587`) | same | same |
+| `SMTP_BZ_HOST` | smtp.bz SMTP host — **`connect.smtp.bz`** (not `smtp.smtp.bz`) | same | same |
+| `SMTP_BZ_PORT` | SMTP port: `2525` / `587` (STARTTLS) or `465` / `9465` (SSL; mailer `secure` when port is 465 or 9465) | same | same |
 | `SMTP_BZ_USER` / `SMTP_BZ_PASS` | smtp.bz credentials | same | same |
 | `MAIL_FROM` | From header (e.g. `Happy Tourist <noreply@happy-tourist.ru>`) | same | same |
 | `AUTH_BACKEND_URL` | Public API origin for confirm/reset links (`auth.backend_url`) | e.g. `http://localhost:2567` | `https://api.happy-tourist.ru` |
@@ -52,6 +52,7 @@ Generate secrets: `openssl rand -base64 32`. Template: `.env.example`.
 Google OAuth also needs Authorized redirect URI in Google Cloud Console (`http://localhost:2567/auth/provider/google/callback` locally; `https://<api-host>/auth/provider/google/callback` in prod) — documented in `.env.example`, not injected by CI.
 
 Mail delivery (smtp.bz) also needs DNS/SPF(+DKIM) for `happy-tourist.ru` on the ops side — outside CI.
+Use `SMTP_BZ_HOST=connect.smtp.bz` in `.env.example` / VPS (cabinet canon). Ports: 2525/587 STARTTLS or 465/9465 SSL (`secure` when port is 465 or 9465).
 
 When adding a new env key:
 

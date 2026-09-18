@@ -1,21 +1,25 @@
 ## Why
 
-После регистрации по email сервер не умеет подтверждать адрес и не умеет «забыли пароль»: в проекте нет почтового транспорта и колбэков `@colyseus/auth`. Игрок не может подтвердить адрес из кабинета и восстановить доступ при утере пароля.
+После регистрации по email сервер не умел подтверждать адрес и не умел «забыли пароль»: не было почтового транспорта и колбэков `@colyseus/auth`. Wave 1 закрыла flows; сейчас human-facing тексты писем и серверных HTML всё ещё на английском, а игроку нужен русский продукт (включая подсказку про папку «Спам»).
 
 ## What Changes
 
-- Soft-подтверждение email **только по кнопке** в личном кабинете (письмо не уходит автоматически при регистрации); клик по ссылке подтверждает адрес на стороне API (smtp.bz); ссылка действует **30 минут**; после успешной отправки — диалог «письмо отправлено, проверьте почту».
+- Soft-подтверждение email **только по кнопке** в личном кабинете (письмо не уходит автоматически при регистрации); клик по ссылке подтверждает адрес на стороне API (smtp.bz); ссылка действует **30 минут**; после успешной отправки — диалог «письмо отправлено, проверьте почту **и папку Спам**».
 - В кабинете: текущая почта, кнопка подтверждения рядом с почтой если ещё не подтверждена, возможность **сменить email** (после смены снова неподтверждён).
 - Soft-verify: незавершённое подтверждение не блокирует лобби и игру; модалка раз за сессию напоминает подтвердить **из личного кабинета**.
 - Google-аккаунты и уже существующие email-пользователи считаются подтверждёнными.
-- Добавляется сценарий «забыли пароль» (письмо + сброс через штатные HTML-эндпоинты Colyseus); на Login — ссылка на запрос сброса.
+- Сценарий «забыли пароль» (письмо + сброс через штатные HTML-эндпоинты Colyseus); на Login — ссылка на запрос сброса; feedback forgot тоже упоминает проверку спама.
+- **Русский human-facing copy** для всего нового в этом контуре: confirm/reset письма (subject + body), HTML confirm (успех / истекший или невалидный токен), HTML reset-форма и reset-письмо; клиентские строки отправки писем — на русском (каталог i18n может оставаться `en-US` технически).
+- После успешного confirm — редирект на клиентское лобби (`CLIENT_APP_URL/#/lobby`).
+- Канон в skills/AGENTS: новое, что читает человек в auth-email контуре — по-русски.
+- Ops docs: `.env.example` — хост smtp.bz `connect.smtp.bz` (не несуществующий `smtp.smtp.bz`).
 
 ## Capabilities
 
 ### New Capabilities
 
-- `auth/email-verification`: soft-подтверждение по кнопке в кабинете, смена email, модалка → кабинет, verified для Google и существующих аккаунтов.
-- `auth/password-reset`: запрос сброса пароля по email и установка нового пароля по ссылке из письма.
+- `auth/email-verification`: soft-подтверждение по кнопке в кабинете, смена email, модалка → кабинет, verified для Google и существующих аккаунтов; RU copy писем/HTML confirm.
+- `auth/password-reset`: запрос сброса пароля по email и установка нового пароля по ссылке; RU copy письма и HTML формы.
 
 ### Modified Capabilities
 
@@ -24,12 +28,11 @@
 ## Scope
 
 - **Capability ID:** `auth/email-verification`, `auth/password-reset`
-- **Пакеты:** client (`happy-tourist.github.io`) и server (`happy-tourist-server`)
-- **UX:** Login (ссылка forgot; **без** авто-письма и без «проверьте почту» как обязательного post-register mail hint); личный кабинет (email + кнопка подтверждения если не verified + смена email); модалка soft-verify раз за сессию («подтвердите из личного кабинета»); anonymous без модалки
-- **Auth / HTTP:** `onEmailConfirmed` + `onForgotPassword`; штатные `/auth/confirm-email` и `/auth/reset-password` (серверные HTML); **не** включать auto-send на register (`onSendEmailConfirmation` не использовать для автоотправки); authenticated HTTP: отправка confirm-письма по кнопке (токен ссылки TTL 30 мин, cooldown 60 с) + смена email; client: success-диалог после отправки
-- **Пользователи:** поле статуса подтверждения email; миграция/default для уже существующих рядов = confirmed; Google path = confirmed; смена email сбрасывает verified
-- **Почта:** один транспорт smtp.bz; From на `happy-tourist.ru`
-- После успешного confirm — редирект на клиентскую «главную» (лобби), не на Login
+- **Пакеты:** client (`happy-tourist.github.io`) и server (`happy-tourist-server`) + meta skills/AGENTS / `.env.example`
+- **UX:** Login forgot; кабинет; session-модалка; диалоги/баннеры после **любой** отправки письма — проверить почту и **Спам**; anonymous без verify-модалки
+- **Auth / HTTP:** как Wave 1 (button-only confirm, forgot, change-email, TTL 30m, cooldown 60s) + русский copy на серверных шаблонах/хелперах
+- **Почта:** smtp.bz; From на `happy-tourist.ru`; host в примере env — `connect.smtp.bz`
+- **Язык:** только русский для human-facing в этом контуре; полный аудит старого UI вне auth-email — out of scope
 
 ## Out of scope
 
@@ -41,18 +44,18 @@
 - Брендированные SPA-страницы confirm/reset вместо серверных HTML Colyseus (D4-B позже)
 - Другие OAuth-провайдеры, удаление anonymous/Google/email login
 - Правила игры, lobby listing, board sync
+- Массовый перевод всего legacy UI вне поверхностей auth-email этого change
 
 ## Impact
 
-- Client: Login forgot; кабинет (email, confirm button, change email); session-модалка → кабинет; forgot/send-confirm/change-email через auth/HTTP.
-- Server: mailer smtp.bz; confirm/forgot callbacks без auto-send на register; user field verified; HTTP send-confirm + change-email; env SMTP на VPS; `CLIENT_APP_URL` для редиректа после confirm.
-- Ops: DNS/доставляемость для `happy-tourist.ru` через smtp.bz (вне кода).
-- Deploy: новые ключи только в `.env` на сервере (не в GitHub Actions app secrets).
+- Client: i18n строки confirm/forgot success (+ спам); skills localization/auth.
+- Server: RU HTML/письма confirm+reset; маппинг EN query от Colyseus → RU на странице; `.env.example` host.
+- Meta: skills + AGENTS — канон human-facing RU для нового в auth-email.
+- Ops: VPS `SMTP_BZ_HOST=connect.smtp.bz`; `CLIENT_APP_URL` для редиректа после confirm.
 
 ## References
 
-- Explore + update: Wave 1; soft; smtp.bz only; confirm **только по кнопке**; смена email в кабинете; модалка → кабинет; D4-A серверные HTML; From `noreply@happy-tourist.ru`
+- Explore: RU copy; spam hint; update current change; D1 reset HTML RU; D2 только новое auth-email + канон skills
 - Sibling: `happy-tourist.github.io/AGENTS.md`, `happy-tourist-server/AGENTS.md`
-- Skills: `client-work-with-auth`, `server-work-with-auth`, `work-with-env-deploy` (client/server), `work-with-routes`, `work-with-database`
-- Docs Colyseus Auth: confirm/forgot callbacks (auto register send **не** используем)
+- Skills: `client-work-with-auth`, `work-with-localization`, `server-work-with-auth`, `work-with-env-deploy`
 - Main spec (смежный): `openspec/specs/auth/login/spec.md`
