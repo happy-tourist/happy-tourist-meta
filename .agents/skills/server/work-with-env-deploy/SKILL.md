@@ -42,7 +42,7 @@ Deploy target: VPS under `/var/www/happy-tourist-server`, Node 22, PM2. Trigger:
 | `SMTP_BZ_USER` / `SMTP_BZ_PASS` | smtp.bz credentials | same | same |
 | `MAIL_FROM` | From header (e.g. `Happy Tourist <noreply@happy-tourist.ru>`) | same | same |
 | `AUTH_BACKEND_URL` | Public API origin for confirm/reset links (`auth.backend_url`) | e.g. `http://localhost:2567` | `https://api.happy-tourist.ru` |
-| `CLIENT_APP_URL` | Client origin; confirm success → `{CLIENT_APP_URL}/#/lobby` | e.g. `http://localhost:9000` | `https://happy-tourist.github.io` |
+| `CLIENT_APP_URL` | Client origin; mail SPA links `/#/confirm-email` + `/#/reset-password`; SPA confirm → `#/lobby` | e.g. `http://localhost:9000` | `https://happy-tourist.ru` |
 | `DATABASE_URL` | SQLite path for GameDatabase | `./game.db` | often `/var/www/happy-tourist-server/game.db` |
 | `NODE_ENV` | `development` / `production` (CORS, monitor/playground) | `development` | `production` (also set in PM2 `env`) |
 | `PORT` | Listen port | `2567` | `2567` (PM2 `env` + file) |

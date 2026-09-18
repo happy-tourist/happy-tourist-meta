@@ -46,13 +46,15 @@ From `src/router/routes.ts` (hash mode via `createWebHashHistory` when `vueRoute
 |------|------|------|-------|
 | `/` | — | — | redirect → `/lobby` |
 | `/login` | `login` | `LoginPage` | `meta.guest` |
-| `/forgot-password` | `forgot-password` | `ForgotPasswordPage` | `meta.guest`; reset request only (no SPA reset form) |
+| `/forgot-password` | `forgot-password` | `ForgotPasswordPage` | `meta.guest`; request reset mail |
+| `/confirm-email` | `confirm-email` | `ConfirmEmailPage` | **public** (no `guest` — logged-in confirm must run); auto JSON on mount → lobby |
+| `/reset-password` | `reset-password` | `ResetPasswordPage` | **public**; SPA form → JSON → login |
 | `/lobby` | `lobby` | `LobbyPage` | `meta.requiresAuth` |
 | `/account` | `account` | `AccountPage` | `meta.requiresAuth`; cabinet (registered only — anonymous → lobby) |
 | `/game/:roomId` | `game` | `GamePage` | `meta.requiresAuth`; param `roomId` |
 | `/:catchAll(.*)*` | — | — | redirect → `/lobby`; keep last |
 
-Deep links on GitHub Pages use the hash form: `/#/lobby`, `/#/account`, `/#/forgot-password`, `/#/game/<roomId>`, `/#/login`.
+Deep links on GitHub Pages use the hash form: `/#/lobby`, `/#/account`, `/#/forgot-password`, `/#/confirm-email`, `/#/reset-password`, `/#/game/<roomId>`, `/#/login`.
 
 ## Page Component
 
@@ -62,6 +64,8 @@ Flat file with the `*Page` suffix (no per-page folder required):
 src/pages/
 |-- LoginPage.vue
 |-- ForgotPasswordPage.vue
+|-- ConfirmEmailPage.vue
+|-- ResetPasswordPage.vue
 |-- AccountPage.vue
 |-- LobbyPage.vue
 `-- GamePage.vue
@@ -97,7 +101,9 @@ Allowed dependency direction:
 Examples:
 
 - `LoginPage` — form UI; calls `useAuthStore()` (`register` / `login` / `loginAnonymously` / Google); link to forgot-password; then `router.replace`.
-- `ForgotPasswordPage` — email → `auth.forgotPassword`; success banner; back to login.
+- `ForgotPasswordPage` — email → `auth.forgotPassword`; success / `email_not_found` banners; back to login.
+- `ConfirmEmailPage` — public; auto `auth.confirmEmail` on mount → RU success → lobby (no Confirm button).
+- `ResetPasswordPage` — public; form → `auth.resetPassword` → RU success → login.
 - `AccountPage` — cabinet: confirm send + change email via store; anonymous redirect to lobby on mount.
 - `LobbyPage` — room list / create (maxSeats + `grilleDensity` few/medium/many, default medium) / join via `useGameStore()`; navigates to `game` with `roomId`; account link for non-anonymous.
 - `GamePage` — board in scroll region; unfinished pieces + finish disappear + return travel from nearest center; holes for `removedTaskKeys` (not landable; piece may stand); grille overlays from `holdingGrilleKeys` (`grille.png` drop/rise, **`GRILLE_ANIM_MS = 1000`**); trapped pieces visible (no move/peek); rescue affordance + `sendRescue`; **top** presence row (seated opponents / spectator all occupied); sticky bottom `.game-hud` **only when seated** (own + strip — wide row N,E,W,S / HUD ≤~420 → 2×2; **no** chip/`q-menu`); finish flag on strip; return → confirm modal «Вернуть на поле?» → same red `.tile--target` ring + `sendReturnFromFinish` (dim finished only if `!canReturn`; no undo btn); chrome grille on strip when trapped; finish 2×2 click → nearest legal center (Chebyshev); all-jail warning modal (`allJailWarning`); dual rings + 72px avatar + place/ready top-left + say top-right; say: top markers bubbles **down**, own bottom **up**; budgets **above** own avatar; «Завершить ход» in end-turn dock above HUD right (`sendEndTurn` / `canSendEndTurn`); peek eye + Correct/Wrong modal; keep-focus after non-finishing move; +N budget fall ≈ 2 s; solo peeks∞ + dual timer-vs-steps end modals; ready/countdown UX; syncs via `useGameStore()`; `rejoinGame(roomId)` on mount / soft-fail / browser reopen. **No** page-local leave/status/roomId chrome — that lives in `App.vue` on Game route.
@@ -207,7 +213,7 @@ If an old path changes, keep a redirect in `routes.ts`:
 
 | Domain | Page | Typical stores / notes |
 |--------|------|------------------------|
-| Auth | `LoginPage` / `ForgotPasswordPage` / `AccountPage` | `stores/auth`; guest vs requiresAuth; soft verify modal in App |
+| Auth | `LoginPage` / `ForgotPasswordPage` / `ConfirmEmailPage` / `ResetPasswordPage` / `AccountPage` | `stores/auth`; guest / public / requiresAuth; soft verify modal in App |
 | Theme (chrome Dark) | `App.vue` header | `stores/theme` + `boot/theme` |
 | Game leave + match status | `App.vue` header (Game route only) | `stores/game` status / `leaveGame`; confirm dialog in App |
 | Lobby / rooms | `LobbyPage` | `stores/game.subscribeLobby`, create `{ maxSeats, grilleDensity }` / join; `meta.requiresAuth` |

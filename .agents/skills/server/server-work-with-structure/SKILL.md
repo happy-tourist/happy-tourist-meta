@@ -55,7 +55,7 @@ Sibling client: `../happy-tourist.github.io` (room type `tourist`, board + piece
 | Server wiring | `src/app.config.ts` | `defineServer`: `database`, `rooms`, `routes`, `express`; import auth config; `configureAuthEmailFlows` after DB boot; thin `POST /api/auth/*` |
 | Auth config | `src/config/` | `auth.ts` — `getRuntimeAuth` / Google `addProvider` / email hooks; wrap OAuth callback for `emailVerified` only |
 | Mailer | `src/lib/` | `mailer.ts` — smtp.bz `sendEmail` (+ test setter) |
-| Auth HTML | `html/` | Confirm/reset templates (cwd; confirm success written at boot) |
+| Auth HTML | `html/` | Legacy Colyseus cwd templates; product confirm/reset UX is **SPA + JSON** (mail links via `CLIENT_APP_URL`) |
 | Database | `src/db/` | `GameDatabase` (`index.ts`) + Drizzle user schema (`schema.ts`) |
 | Rooms | `src/rooms/` | Room handlers (`onCreate` / `onJoin` / `onDrop` / `onReconnect` / leave / dispose; `onMessage('move'|'ready'|'say')`) |
 | Schema | `src/rooms/schema/` | `@colyseus/schema` synced state (`phase` / `maxSeats` / `countdownRemaining` + legacy `started` + `seats` + `currentTurnSessionId`) |
@@ -127,8 +127,8 @@ Decide in this order:
 2. **Synced state fields?** → `src/rooms/schema/<Name>State.ts` only; Room assigns/mutates them.
 3. **Game messages / rules?** → pure module under `src/game/` + Room `onMessage(…)` glue that validates, applies, updates schema.
 4. **User profile columns?** → `src/db/schema.ts`: **NOT NULL** columns need `.default(...)` so `/auth/register` / `/auth/login` stay compatible; nullable prefs (e.g. `theme`) do not; wire via `src/db/index.ts` if needed.
-5. **Thin HTTP (health, demo API, preference, auth send-confirm / change-email)?** → `express` hook or `createEndpoint` in `app.config.ts` (e.g. `GET|POST /api/theme`, `POST /api/auth/*`). CORS stays first.
-6. **Auth HTTP?** → Built-in `/auth/*` from `@colyseus/auth` when `database` is set — do not reimplement register/login; confirm mail only via our send-confirm endpoint.
+5. **Thin HTTP (health, demo API, preference, auth send-confirm / change-email / confirm-email / reset-password)?** → `express` hook or `createEndpoint` in `app.config.ts` (e.g. `GET|POST /api/theme`, `POST /api/auth/*`). CORS stays first.
+6. **Auth HTTP?** → Built-in `/auth/*` from `@colyseus/auth` when `database` is set — do not reimplement register/login; confirm mail only via our send-confirm endpoint; product confirm/reset via JSON SPA endpoints (not API HTML).
 7. **OAuth / email flows?** → `src/config/auth.ts` (`getRuntimeAuth`, `configureAuthEmailFlows`); wrap built-in OAuth callback for `emailVerified`; mailer in `src/lib/mailer.ts`.
 8. **Room gate?** → static `onAuth` with `JWT.verify` on the Room class (no hard `emailVerified` gate).
 9. **Test?** → `test/<Name>.test.ts` (boot `appConfig`, JWT, create/connect room; auth email → mock `setSendEmailImpl` + `keepLatestRequestListener`).
@@ -212,7 +212,7 @@ src/db/
 src/lib/
 └── mailer.ts   # smtp.bz sendEmail (+ setSendEmailImpl for tests)
 
-html/           # confirm/reset templates (cwd)
+html/           # legacy Colyseus cwd templates (not product SPA UX)
 ```
 
 ### Room + schema
@@ -245,7 +245,7 @@ ecosystem.config.cjs
 
 **Auth gate** — `MyRoom.onAuth` → `JWT.verify(token)` → userdata to `onJoin`.
 
-**HTTP** — CORS middleware first in `express`; `/health` JSON; `createEndpoint("/api/hello", …)` demo; `createEndpoint` `GET|POST /api/theme` JWT + registered theme preference; `POST /api/auth/send-email-confirmation` + `POST /api/auth/email`; `/auth/*` from `@colyseus/auth` via `database: db`.
+**HTTP** — CORS middleware first in `express`; `/health` JSON; `createEndpoint("/api/hello", …)` demo; `createEndpoint` `GET|POST /api/theme` JWT + registered theme preference; `POST /api/auth/send-email-confirmation` + `/api/auth/email` + `/api/auth/confirm-email` + `/api/auth/reset-password`; `/auth/*` from `@colyseus/auth` via `database: db` (built-in HTML not product UX).
 
 **Test** — `boot(appConfig)`, `JWT.sign(...)`, `createRoom("tourist")`, `connectTo`, assert `sessionId`; lobby `+`/`-` cases when listing changes; auth email suite mocks mailer (`setSendEmailImpl`) and uses `keepLatestRequestListener` after multi-suite boot.
 

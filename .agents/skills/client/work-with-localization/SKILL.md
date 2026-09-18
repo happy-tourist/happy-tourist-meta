@@ -20,7 +20,7 @@ There is **no** country config, phone masks, locale switcher, or brand localizat
 
 Boot and message catalog exist; Login / Lobby still mostly **hardcode Russian**. Scaffold keys (`failed` / `success`) are barely used. **Exceptions already on i18n:** `login.google`; **auth-email** `auth.forgot*` / `auth.confirmSentDialog` / cabinet / verify-reminder keys (RU; post-send texts mention папка «Спам»); `game.say.*` (preset labels / affordance — never put display copy in the wire `presetId`); `game.readyButton` / `game.countdownSoon`; leave UX `game.leave` (accessible name for icon-only Game exit — no visible `:label`) / `game.leaveConfirm` / `game.leaveCancel` / `game.leaveExit`; finish UX `game.finishPlaceModal` / `game.finishPlaceModalOk` / `game.finishStripAria` / `game.finishPlaceBadgeAria`; solo end UX `game.timeExpiredModal` / `game.timeExpiredModalOk` (timer) + `game.stepsExhaustedModal` / `game.stepsExhaustedModalOk` (steps loss — SC-PRESENCE-21); budgets/peek UX `game.stepsCounterAria` / `game.peeksCounterAria` / `game.budgetInfinity` / `game.endTurn` / `game.peekModal` / `game.peekCorrect` / `game.peekWrong` / `game.peekAffordance` / `game.soloUnlimitedModal` / `game.soloUnlimitedModalOk` (peeks∞ / steps finite); lobby grille density `lobby.grilleDensity` / `lobby.grilleDensityFew` / `lobby.grilleDensityMedium` / `lobby.grilleDensityMany` (мало/средне/много); grille UX `game.rescueAffordance` / `game.returnAffordance` / `game.returnConfirmModal` / `game.returnConfirmYes` / `game.returnConfirmCancel` / `game.allJailWarningModal` / `game.allJailWarningModalOk`. Product copy lives under locale key **`en-US`** (Russian strings) — there is no separate `ru-RU` catalog. Do **not** reintroduce `game.touristChipAria` (chip/`q-menu` removed).
 
-**Auth-email language canon:** new human-facing strings in the auth-email contour (confirm/forgot success, cabinet, verify reminder) MUST be **Russian**. After any mail send, remind the user to check the spam folder («Спам»). Do not require English copy for these surfaces.
+**Auth-email language canon:** new human-facing strings in the auth-email contour (confirm/forgot success, confirm/reset SPA outcomes, cabinet, verify reminder) MUST be **Russian**. After any mail send, remind the user to check the spam folder («Спам»). Forgot success must **not** hedge with «если аккаунт существует»; unknown email → `auth.forgotNotFound`. Do not require English copy for these surfaces.
 
 When adding **new** user-facing strings, prefer i18n keys via `$t` / `useI18n`. Do not mass-migrate hardcoded Russian unless the user asks.
 
@@ -74,9 +74,10 @@ export default {
   },
   auth: {
     forgotSuccess:
-      'Если аккаунт существует, письмо со ссылкой отправлено. Проверьте почту и папку «Спам».',
+      'Письмо со ссылкой отправлено. Проверьте почту и папку «Спам».',
+    forgotNotFound: 'Аккаунт с таким email не найден',
     confirmSentDialog: 'Письмо отправлено. Проверьте почту и папку «Спам».',
-    // … cabinet / forgot / verify-reminder keys — human-facing RU
+    // … cabinet / forgot / confirm / reset keys — human-facing RU
   },
   lobby: {
     grilleDensity: 'Плотность решёток',

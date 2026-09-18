@@ -97,9 +97,11 @@ For CORS / monitor details use `work-with-middleware` and `work-with-config`.
 | POST | `/api/theme` | `createEndpoint` (`api_theme`) | Body `{ theme: 'light' \| 'dark' }`; `auth.middleware()`; registered JWT only; updates `users.theme`; reject unauth / anonymous |
 | POST | `/api/auth/send-email-confirmation` | `createEndpoint` | `auth.middleware()`; registered non-anonymous; **60s cooldown only after successful send**; confirm JWT 30m → smtp.bz; already verified → no-op/reject; **no** auto-send on register |
 | POST | `/api/auth/email` | `createEndpoint` | Body `{ email }`; change email + `emailVerified = false`; unique check; **no** auto-send; returns user/token |
+| POST | `/api/auth/confirm-email` | `createEndpoint` | Unauthenticated JSON `{ token }` → JWT → `emailVerified`; product SPA confirm path |
+| POST | `/api/auth/reset-password` | `createEndpoint` | Unauthenticated JSON `{ token, password }` → reset + one-time token; product SPA reset path |
 | GET | `/health` | `express` hook | `{ status, uptime }` — deploy / monitor |
 | GET | `/hi` | `express` hook | Plain text smoke |
-| * | `/auth/*` | `@colyseus/auth` | Present when `database: db` is set (incl. confirm-email / forgot / reset HTML) |
+| * | `/auth/*` | `@colyseus/auth` | Present when `database: db` is set (register/login/forgot; built-in HTML not product UX) |
 | GET | `/rooms/:roomName` | Colyseus | Available-rooms HTTP listing (fallback; live UI uses LobbyRoom) |
 | GET | `/monitor` | `express` (non-prod) | Colyseus Monitor |
 | * | `/` playground | `express` (non-prod) | Dev playground |

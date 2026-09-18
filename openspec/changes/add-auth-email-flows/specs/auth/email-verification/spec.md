@@ -1,13 +1,13 @@
 ## Purpose
 
-Soft-подтверждение email по явному действию в личном кабинете: кнопка рядом с почтой, смена адреса, напоминание-модалка без автоотправки при регистрации и без блокировки игры. Human-facing тексты писем и HTML confirm — на русском; после отправки письма клиент напоминает проверить также папку «Спам».
+Soft-подтверждение email по явному действию в личном кабинете: кнопка рядом с почтой, смена адреса, напоминание-модалка без автоотправки при регистрации и без блокировки игры. Ссылка из письма открывает **клиентскую SPA**-страницу на `CLIENT_APP_URL` (не HTML на API); подтверждение идёт через **JSON**; после успеха — лобби. Письма и SPA-тексты — на русском; после отправки — напоминание про «Спам».
 
 ## Traceability
 
 | Scenario ID | Coverage |
 |-------------|----------|
 | SC-EMAIL-01 | covered (server: register does **not** send confirm mail) |
-| SC-EMAIL-02 | covered (server: confirm-email → verified flag; RU success page) |
+| SC-EMAIL-02 | pending-apply (client SPA + JSON confirm; was API HTML) |
 | SC-EMAIL-03 | covered-by-reuse (existing JWT lobby/game gate unchanged) |
 | SC-EMAIL-04 | covered (server: Google path sets verified) |
 | SC-EMAIL-05 | covered (server: existing rows default/migration verified) |
@@ -16,10 +16,11 @@ Soft-подтверждение email по явному действию в ли
 | SC-EMAIL-08 | covered (client: session modal → cabinet) |
 | SC-EMAIL-09 | covered-by-reuse (anonymous has no email verify UX) |
 | SC-EMAIL-10 | covered (client+server: change email resets verified) |
-| SC-EMAIL-11 | covered (server: redirect after confirm to client lobby) |
-| SC-EMAIL-12 | covered (server: confirm link JWT expires in 30m; RU expired outcome) |
-| SC-EMAIL-13 | covered (server: confirm email subject+body in Russian) |
+| SC-EMAIL-11 | pending-apply (SPA success → client `#/lobby`) |
+| SC-EMAIL-12 | pending-apply (expired token → SPA RU error; no verify) |
+| SC-EMAIL-13 | covered (server: confirm email subject+body in Russian; link target TBD Wave 3) |
 | SC-EMAIL-14 | covered (client: post-send UI mentions spam folder) |
+| SC-EMAIL-15 | pending-apply (confirm link host = client origin hash route) |
 
 ## ADDED Requirements
 
@@ -34,24 +35,41 @@ Email/password registration MUST create the account and issue a normal authentic
 - **THEN** the system creates the account and issues an auth session
 - **AND** no confirmation email is sent as part of that registration
 
-### Requirement: Confirming the email marks the account verified
+### Requirement: Confirming the email marks the account verified via client SPA
 
-Following the confirmation link from the email MUST mark the corresponding account as email-verified. Confirmation UX MAY be the built-in auth API HTML pages. After successful confirmation the user MUST be redirected to the client lobby entry URL (not the Login screen). Success and failure copy on the confirmation page MUST be in Russian (including expired or invalid token).
+Following the confirmation link from the email MUST open a **client application** guest route (hash path on the configured client origin), not an auth-API HTML page. The client MUST immediately submit the token to a JSON confirmation endpoint (no extra user click to “confirm”). A valid token MUST mark the account email-verified. After success the client MUST navigate to the lobby entry (`#/lobby`). Failure outcomes (expired, invalid token) MUST be shown in Russian on the SPA page. The system MUST NOT rely on legacy `api.*/auth/confirm-email` HTML links.
 
-#### Scenario [SC-EMAIL-02]: Link confirms email
+#### Scenario [SC-EMAIL-02]: Link confirms email on client SPA
 
 - **GIVEN** a registered email/password account that is not yet email-verified
 - **AND** the user previously requested a confirmation email from the account area
 - **WHEN** the user opens a valid confirmation link from that email
-- **THEN** the account is marked email-verified
-- **AND** the user is shown a successful confirmation outcome on the auth API in Russian
+- **THEN** the client SPA confirmation page loads with the token from the link
+- **AND** the client calls the JSON confirmation API without requiring another confirm button
+- **AND** the account is marked email-verified
+- **AND** the user is shown a successful confirmation outcome in Russian on the SPA
 
-#### Scenario [SC-EMAIL-11]: Success redirects to client lobby
+#### Scenario [SC-EMAIL-11]: Success navigates to client lobby
 
-- **GIVEN** the user has just successfully confirmed their email via the auth API link
+- **GIVEN** the user has just successfully confirmed their email via the SPA + JSON flow
 - **WHEN** the confirmation success flow completes
-- **THEN** the browser is directed to the client application lobby entry (hash lobby route on the configured client origin)
+- **THEN** the client navigates to the lobby entry (hash lobby route)
 - **AND** is not directed to the Login screen as the primary success destination
+
+#### Scenario [SC-EMAIL-15]: Confirmation link uses client origin
+
+- **GIVEN** the system composes a confirmation email
+- **WHEN** the confirmation link is built
+- **THEN** the link’s origin is the configured client application URL (`CLIENT_APP_URL`)
+- **AND** the path is the client hash confirm route with the token
+- **AND** the link does not use the API host as the user-facing confirmation page
+
+#### Scenario [SC-EMAIL-12]: Confirmation link expires after 30 minutes
+
+- **GIVEN** the user received a confirmation email whose link token is older than 30 minutes
+- **WHEN** the user opens that confirmation link
+- **THEN** the account is not marked email-verified via that link
+- **AND** the client SPA shows a failed/expired confirmation outcome in Russian
 
 ### Requirement: Soft verification does not block play
 
@@ -103,13 +121,6 @@ A registered (non-anonymous) user MUST see their current email in a personal acc
 - **THEN** the system rejects or ignores the new send
 - **AND** does not send another confirmation email for that request
 
-#### Scenario [SC-EMAIL-12]: Confirmation link expires after 30 minutes
-
-- **GIVEN** the user received a confirmation email whose link token is older than 30 minutes
-- **WHEN** the user opens that confirmation link
-- **THEN** the account is not marked email-verified via that link
-- **AND** the auth API shows a failed/expired confirmation outcome in Russian
-
 #### Scenario [SC-EMAIL-14]: Post-send UI mentions spam folder
 
 - **GIVEN** a registered non-anonymous user successfully requested a confirmation email from the account area
@@ -119,14 +130,14 @@ A registered (non-anonymous) user MUST see their current email in a personal acc
 
 ### Requirement: Confirmation email content is in Russian
 
-The confirmation email subject and body MUST be in Russian. The body MUST carry the same intent as the previous English template (welcome / ask to confirm / button to confirm), translated — not a new product flow.
+The confirmation email subject and body MUST be in Russian. The body MUST carry the same intent as the previous English template (welcome / ask to confirm / button to confirm), translated — not a new product flow. The button/link MUST target the client SPA confirm route.
 
 #### Scenario [SC-EMAIL-13]: Confirm mail is Russian
 
 - **GIVEN** the system sends a confirmation email from the account-area send endpoint
 - **WHEN** the message is composed
 - **THEN** the subject and HTML body are in Russian
-- **AND** the body includes a working confirmation link
+- **AND** the body includes a working confirmation link to the client SPA confirm route
 
 ### Requirement: Change email from account area
 

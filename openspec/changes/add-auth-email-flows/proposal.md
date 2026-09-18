@@ -1,61 +1,62 @@
 ## Why
 
-После регистрации по email сервер не умел подтверждать адрес и не умел «забыли пароль»: не было почтового транспорта и колбэков `@colyseus/auth`. Wave 1 закрыла flows; сейчас human-facing тексты писем и серверных HTML всё ещё на английском, а игроку нужен русский продукт (включая подсказку про папку «Спам»).
+Wave 1–2 закрыли smtp.bz, button-only confirm, forgot/cabinet и русский copy на серверных HTML Colyseus. Остаются UX-дыры: forgot говорит «если существует», хотя API уже отвечает «не найден»; ссылки confirm/reset ведут на `api.*` HTML; после сброса пароля пользователь остаётся на серверной форме. Нужны SPA-страницы на клиентском домене (`CLIENT_APP_URL`, prod: `https://happy-tourist.ru`) и JSON-эндпоинты без прокси `/auth/` на apex.
 
 ## What Changes
 
-- Soft-подтверждение email **только по кнопке** в личном кабинете (письмо не уходит автоматически при регистрации); клик по ссылке подтверждает адрес на стороне API (smtp.bz); ссылка действует **30 минут**; после успешной отправки — диалог «письмо отправлено, проверьте почту **и папку Спам**».
-- В кабинете: текущая почта, кнопка подтверждения рядом с почтой если ещё не подтверждена, возможность **сменить email** (после смены снова неподтверждён).
-- Soft-verify: незавершённое подтверждение не блокирует лобби и игру; модалка раз за сессию напоминает подтвердить **из личного кабинета**.
-- Google-аккаунты и уже существующие email-пользователи считаются подтверждёнными.
-- Сценарий «забыли пароль» (письмо + сброс через штатные HTML-эндпоинты Colyseus); на Login — ссылка на запрос сброса; feedback forgot тоже упоминает проверку спама.
-- **Русский human-facing copy** для всего нового в этом контуре: confirm/reset письма (subject + body), HTML confirm (успех / истекший или невалидный токен), HTML reset-форма и reset-письмо; клиентские строки отправки писем — на русском (каталог i18n может оставаться `en-US` технически).
-- После успешного confirm — редирект на клиентское лобби (`CLIENT_APP_URL/#/lobby`).
-- Канон в skills/AGENTS: новое, что читает человек в auth-email контуре — по-русски.
-- Ops docs: `.env.example` — хост smtp.bz `connect.smtp.bz` (не несуществующий `smtp.smtp.bz`).
+- Soft-подтверждение email **только по кнопке** в личном кабинете (письмо не уходит автоматически при регистрации); smtp.bz; ссылка **30 минут**; после отправки — диалог про почту **и Спам**.
+- Кабинет: почта, кнопка подтверждения рядом, смена email; soft-verify (не блочит игру); модалка раз за сессию → кабинет; Google/legacy verified.
+- **Confirm / reset UX на клиенте (SPA):** ссылки в письмах — `{CLIENT_APP_URL}/#/confirm-email?token=…` и `{CLIENT_APP_URL}/#/reset-password?token=…` (hash router), **не** `api.*` HTML Colyseus.
+- **JSON API** на сервере для confirm и reset (тонкие `createEndpoint`); SPA не парсит HTML-redirect Colyseus.
+- Confirm: открытие ссылки → SPA сразу вызывает JSON (без второй кнопки «Подтвердить») → при успехе → `#/lobby`.
+- Reset: SPA-форма нового пароля → JSON → при успехе → `#/login` (войти с новым паролем).
+- Forgot: при неизвестном email — явная RU-ошибка «аккаунт не найден» (не soft «если существует»); при успехе — «письмо отправлено… и Спам».
+- Старые ссылки на `api.*/auth/confirm|reset` **не поддерживаем** (как будто их не было).
+- `AUTH_BACKEND_URL` остаётся для Google OAuth callback; в письмах base = `CLIENT_APP_URL`.
+- Русский human-facing copy (письма + SPA outcomes); skills/AGENTS; `.env.example` `connect.smtp.bz`.
 
 ## Capabilities
 
 ### New Capabilities
 
-- `auth/email-verification`: soft-подтверждение по кнопке в кабинете, смена email, модалка → кабинет, verified для Google и существующих аккаунтов; RU copy писем/HTML confirm.
-- `auth/password-reset`: запрос сброса пароля по email и установка нового пароля по ссылке; RU copy письма и HTML формы.
+- `auth/email-verification`: soft-confirm из кабинета; SPA confirm + JSON; verified Google/legacy; RU copy.
+- `auth/password-reset`: forgot + SPA reset + JSON; явный not-found; redirect login; RU copy.
 
 ### Modified Capabilities
 
-- (нет — поведение Google/email/anonymous login из `auth/login` не меняется на уровне требований входа)
+- (нет — `auth/login` требования входа не меняются)
 
 ## Scope
 
 - **Capability ID:** `auth/email-verification`, `auth/password-reset`
-- **Пакеты:** client (`happy-tourist.github.io`) и server (`happy-tourist-server`) + meta skills/AGENTS / `.env.example`
-- **UX:** Login forgot; кабинет; session-модалка; диалоги/баннеры после **любой** отправки письма — проверить почту и **Спам**; anonymous без verify-модалки
-- **Auth / HTTP:** как Wave 1 (button-only confirm, forgot, change-email, TTL 30m, cooldown 60s) + русский copy на серверных шаблонах/хелперах
-- **Почта:** smtp.bz; From на `happy-tourist.ru`; host в примере env — `connect.smtp.bz`
-- **Язык:** только русский для human-facing в этом контуре; полный аудит старого UI вне auth-email — out of scope
+- **Пакеты:** client + server + meta skills/AGENTS
+- **UX:** SPA confirm/reset guest routes; forgot not-found; post-send spam hints
+- **Auth / HTTP:** Wave 1 endpoints + новые JSON confirm/reset; письма с client hash links
+- **Почта:** smtp.bz; `connect.smtp.bz`
+- **Язык:** RU human-facing в этом контуре
 
 ## Out of scope
 
 - Автоотправка confirm при регистрации
-- Resend и любой второй mail-провайдер / `MAIL_PROVIDER`
-- Hard-gate лобби/комнат / рейтинга / разделов по `emailVerified` (волна позже)
-- Смена имени и смена пароля из кабинета (Wave 2)
-- Политика сложности пароля и strength meter (Wave 3)
-- Брендированные SPA-страницы confirm/reset вместо серверных HTML Colyseus (D4-B позже)
-- Другие OAuth-провайдеры, удаление anonymous/Google/email login
+- Resend / второй mail-провайдер / `MAIL_PROVIDER`
+- Hard-gate лобби/комнат по `emailVerified`
+- Смена имени / смена пароля из кабинета (отдельная волна)
+- Политика сложности пароля / strength meter
+- Nginx-прокси `/auth/` на apex (отклонён — только SPA)
+- Поддержка старых писем со ссылками на `api.*` HTML
+- Другие OAuth; удаление anonymous/Google/email login
 - Правила игры, lobby listing, board sync
-- Массовый перевод всего legacy UI вне поверхностей auth-email этого change
+- Массовый перевод legacy UI вне auth-email
 
 ## Impact
 
-- Client: i18n строки confirm/forgot success (+ спам); skills localization/auth.
-- Server: RU HTML/письма confirm+reset; маппинг EN query от Colyseus → RU на странице; `.env.example` host.
-- Meta: skills + AGENTS — канон human-facing RU для нового в auth-email.
-- Ops: VPS `SMTP_BZ_HOST=connect.smtp.bz`; `CLIENT_APP_URL` для редиректа после confirm.
+- Client: guest pages confirm/reset; auth store JSON actions; forgot i18n not-found; skills.
+- Server: JSON confirm/reset endpoints; link builder → `CLIENT_APP_URL` hash; можно убрать/не опираться на `writeConfirmSuccessHtml` / reset HTML как UX; тесты.
+- Meta: skills auth/pages/localization — SPA + JSON канон.
+- Ops: `CLIENT_APP_URL` = публичный client origin; `AUTH_BACKEND_URL` только OAuth/API origin.
 
 ## References
 
-- Explore: RU copy; spam hint; update current change; D1 reset HTML RU; D2 только новое auth-email + канон skills
-- Sibling: `happy-tourist.github.io/AGENTS.md`, `happy-tourist-server/AGENTS.md`
-- Skills: `client-work-with-auth`, `work-with-localization`, `server-work-with-auth`, `work-with-env-deploy`
-- Main spec (смежный): `openspec/specs/auth/login/spec.md`
+- Explore 2026-09-18: D1 not-found; D2 SPA без прокси; D3 reset→login; D4 JSON; D5 confirm→lobby; D6 нет fallback api.*
+- Sibling AGENTS; skills `client-work-with-auth`, `work-with-pages`, `server-work-with-auth`, `work-with-routes`
+- Main spec смежный: `openspec/specs/auth/login/spec.md`

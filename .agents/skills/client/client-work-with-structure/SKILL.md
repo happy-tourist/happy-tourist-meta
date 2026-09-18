@@ -138,7 +138,7 @@ Decide in this order:
 
 | Kind | Convention | Examples |
 |------|------------|----------|
-| Page file | PascalCase + `Page` suffix | `LoginPage.vue`, `ForgotPasswordPage.vue`, `AccountPage.vue`, `LobbyPage.vue`, `GamePage.vue` |
+| Page file | PascalCase + `Page` suffix | `LoginPage.vue`, `ForgotPasswordPage.vue`, `ConfirmEmailPage.vue`, `ResetPasswordPage.vue`, `AccountPage.vue`, `LobbyPage.vue`, `GamePage.vue` |
 | Route `name` | lowercase (existing) | `login`, `lobby`, `game` |
 | Component file | PascalCase | `EssentialLink.vue` (scaffold); new: `BoardCell.vue` |
 | Store file | kebab or descriptive | `auth.ts`, `theme.ts`, `game.ts` |
@@ -155,7 +155,7 @@ Pages are **flat files** under `src/pages/` (not `pages/LoginPage/LoginPage.vue`
 src/pages/LobbyPage.vue   # <script setup lang="ts"> + Quasar template
 ```
 
-Existing pages: `LoginPage`, `ForgotPasswordPage`, `AccountPage`, `LobbyPage`, `GamePage`.
+Existing pages: `LoginPage`, `ForgotPasswordPage`, `ConfirmEmailPage`, `ResetPasswordPage`, `AccountPage`, `LobbyPage`, `GamePage`.
 
 ### Component (when extracted)
 
@@ -184,7 +184,7 @@ Registered in `quasar.config.ts` boot array: `theme`, `i18n`, `colyseus` (+ `fra
 
 ## Real Composition Examples
 
-**Auth pages** — `LoginPage` / `ForgotPasswordPage` / `AccountPage` use `useAuthStore()` (register / login / anonymous / Google / forgot / send-confirm / change-email); show `error` banner / dialogs; no Colyseus calls outside the store. Confirm/reset HTML stays on the API — no SPA pages for those.
+**Auth pages** — `LoginPage` / `ForgotPasswordPage` / `ConfirmEmailPage` / `ResetPasswordPage` / `AccountPage` use `useAuthStore()` (register / login / anonymous / Google / forgot / confirmEmail / resetPassword / send-confirm / change-email); show `error` banner / dialogs; no Colyseus calls outside the store. Confirm/reset product UX is **SPA + JSON** (`/#/confirm-email`, `/#/reset-password`) — not API HTML.
 
 **Lobby** — `LobbyPage` uses `useGameStore().subscribeLobby` / `createGame({ maxSeats, grilleDensity })` / `joinGame` and `useAuthStore` for display/logout.
 
@@ -225,7 +225,7 @@ Registered in `quasar.config.ts` boot array: `theme`, `i18n`, `colyseus` (+ `fra
 
 | Domain | Page | Store / boot |
 |--------|------|----------------|
-| Auth | `LoginPage` / `ForgotPasswordPage` / `AccountPage` | `stores/auth` + `boot/colyseus` |
+| Auth | `LoginPage` / `ForgotPasswordPage` / `ConfirmEmailPage` / `ResetPasswordPage` / `AccountPage` | `stores/auth` + `boot/colyseus` |
 | Theme (chrome Dark) | `App.vue` header | `stores/theme` + `boot/theme` |
 | Lobby / rooms | `LobbyPage` | `stores/game.subscribeLobby` / create `{ maxSeats, grilleDensity }` / join |
 | Game session | `GamePage` | `stores/game` room attach + seats / grilles / top + seated-HUD presence / say / strip + rescue/return-modal; soft-drop gated by `consentedLeaving` |

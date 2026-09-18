@@ -3,10 +3,11 @@ name: client-work-with-auth
 description: >-
   Use when adding, changing, reviewing, or debugging client authentication:
   LoginPage register/login/anonymous guest/Google one-click, forgot-password,
-  AccountPage (confirm button + change email), session verify modal → cabinet,
-  Pinia auth store, client.auth from @colyseus/sdk, colyseus-auth-token,
-  whenReady, router requiresAuth / guest guards, or logout in this Quasar Vue 3
-  tourist SPA. No SPA confirm/reset pages; no auto mail on register.
+  ConfirmEmailPage / ResetPasswordPage (SPA + JSON), AccountPage (confirm button
+  + change email), session verify modal → cabinet, Pinia auth store,
+  client.auth from @colyseus/sdk, colyseus-auth-token, whenReady, router
+  requiresAuth / guest guards, or logout in this Quasar Vue 3 tourist SPA.
+  No auto mail on register; confirm/reset UX is client SPA not API HTML.
 ---
 
 # Work With Auth
@@ -15,20 +16,22 @@ Use this skill for **authentication** in the happy-tourist client (`happy-touris
 
 Auth is **token-based Colyseus Auth** via `client.auth` from `@colyseus/sdk`. The token is persisted under `colyseus-auth-token`. There is **no** cookie session, XSRF, captcha, or Qrator layer.
 
-**Important:** `@colyseus/auth` is a **server-side** package. The client never imports it; all client auth goes through `client.auth` on the SDK `Client` from `src/boot/colyseus.ts`. Confirm/reset **HTML** lives on the API — do **not** add SPA confirm/reset pages.
+**Important:** `@colyseus/auth` is a **server-side** package. The client never imports it; all client auth goes through `client.auth` on the SDK `Client` from `src/boot/colyseus.ts`. Confirm/reset **product UX** is **client SPA** + JSON (`POST /api/auth/confirm-email`, `POST /api/auth/reset-password`) — do **not** rely on Colyseus API HTML pages.
 
 ## Map Of Pieces
 
 | Layer | Path | Role |
 |-------|------|------|
 | Boot | `src/boot/colyseus.ts` | `Client` singleton (`VITE_COLYSEUS_URL`); `$colyseus` on app |
-| Store | `src/stores/auth.ts` | Pinia setup store: register / login / loginAnonymously / loginWithGoogle / logout / forgotPassword / sendEmailConfirmation / changeEmail / whenReady |
+| Store | `src/stores/auth.ts` | Pinia setup store: register / login / loginAnonymously / loginWithGoogle / logout / forgotPassword / confirmEmail / resetPassword / sendEmailConfirmation / changeEmail / whenReady |
 | Login | `src/pages/LoginPage.vue` | Email/password register↔login + anonymous guest + Google; link to forgot; **no** post-register «письмо уже ушло» |
-| Forgot | `src/pages/ForgotPasswordPage.vue` | Request reset email; `guest` route; banner feedback; back to Login |
+| Forgot | `src/pages/ForgotPasswordPage.vue` | Request reset email; `guest` route; success without «если существует»; `email_not_found` → RU not-found; back to Login |
+| Confirm | `src/pages/ConfirmEmailPage.vue` | Public hash route; **auto** `confirmEmail(token)` on mount (no Confirm button); success → lobby; RU errors |
+| Reset | `src/pages/ResetPasswordPage.vue` | Public hash route; password form → `resetPassword`; success → login; RU errors |
 | Cabinet | `src/pages/AccountPage.vue` | Current email; confirm button next to email if `!emailVerified`; change-email UI; success dialog after send (**RU**, mentions spam folder) |
-| App shell | `src/App.vue` | Session reminder modal → cabinet (once per `sessionStorage`; mark seen **when shown**); skip anonymous |
+| App shell | `src/App.vue` | Session reminder modal → cabinet (once per `sessionStorage`; mark seen **when shown**); skip anonymous + auth-email public routes |
 | Router | `src/router/index.ts` | `beforeEach` awaits `whenReady()`; `requiresAuth` / `guest` |
-| Routes | `src/router/routes.ts` | `/login`, `/forgot-password` `guest`; `/lobby`, `/account`, `/game/:roomId` `requiresAuth` |
+| Routes | `src/router/routes.ts` | `/login`, `/forgot-password` `guest`; `/confirm-email`, `/reset-password` **public** (no `guest` redirect — logged-in confirm must run); `/lobby`, `/account`, `/game/:roomId` `requiresAuth` |
 | Token | SDK storage key `colyseus-auth-token` | Persisted by `@colyseus/sdk` Auth; synced via `onChange` |
 
 Prefer Colyseus I/O in the Pinia auth store, not scattered `client.auth.*` / `client.http.*` calls in components.
@@ -46,7 +49,7 @@ App boot → Client(VITE_COLYSEUS_URL)
         │
         ├─ meta.requiresAuth && !isAuthenticated → /login
         ├─ meta.guest && isAuthenticated → /lobby
-        └─ else → proceed
+        └─ else → proceed  (confirm-email / reset-password have neither meta)
         │
         ▼
   [/login] LoginPage
@@ -73,7 +76,9 @@ App boot → Client(VITE_COLYSEUS_URL)
         └─ changeEmail → POST /api/auth/email (resets verified; no auto mail)
         │
         ▼
-  Confirm/reset links open **server HTML** on API host → redirect lobby
+  Mail links → CLIENT_APP_URL SPA:
+        /#/confirm-email?token=… → auto POST /api/auth/confirm-email → /lobby
+        /#/reset-password?token=… → form POST /api/auth/reset-password → /login
         │
         └─ logout → client.auth.signOut() → onChange clears session → /login
 ```
@@ -88,6 +93,7 @@ App boot → Client(VITE_COLYSEUS_URL)
 6. Success → `onChange` fills `token`/`user` → page `replace`s to `?redirect` or `/lobby`.
 7. Authenticated user opening `/login` or `/forgot-password` (`meta.guest`) is redirected to `/lobby`.
 8. Unverified registered users may see a one-shot session modal pointing to the cabinet; confirm mail is sent only from the cabinet button.
+9. Opening a confirm mail link loads `ConfirmEmailPage`, which immediately calls JSON confirm (no second button) and navigates to lobby on success.
 
 ## Pinia Auth Store
 
@@ -97,7 +103,7 @@ File: `src/stores/auth.ts` (setup store).
 |------------------|---------|
 | `user` | SDK userdata (`id`, `email`, `name`, `anonymous`, `emailVerified?`, optional `theme` `light`\|`dark`\|null, …) |
 | `token` | Auth token string or `null` |
-| `loading` / `error` | In-flight flag + last error message |
+| `loading` / `error` | In-flight flag + last error message (may be stable code like `email_not_found` / `token_expired`) |
 | `ready` | First `onChange` completed (session restore settled) |
 | `isAuthenticated` | `Boolean(token && user)` |
 | `needsEmailVerification` | Registered (has email, not anonymous) and `emailVerified !== true` |
@@ -112,7 +118,9 @@ Actions (all set `loading`/`error`; rethrow after storing message):
 | `loginAnonymously(options?)` | `client.auth.signInAnonymously` |
 | `loginWithGoogle()` | `client.auth.signInWithProvider('google')` |
 | `logout()` | `client.auth.signOut()` |
-| `forgotPassword(email)` | `client.auth.sendPasswordResetEmail(email)` |
+| `forgotPassword(email)` | `client.auth.sendPasswordResetEmail`; maps `email_not_found` |
+| `confirmEmail(token)` | `client.http.post('/api/auth/confirm-email', { body: { token } })` then optional `refreshUserData` |
+| `resetPassword(token, password)` | `client.http.post('/api/auth/reset-password', { body: { token, password } })` |
 | `sendEmailConfirmation()` | `client.http.post('/api/auth/send-email-confirmation')` |
 | `changeEmail(email)` | `client.http.post('/api/auth/email', { body: { email } })` then apply returned token/user + `refreshUserData` |
 | `refreshUserData()` | `client.auth.getUserData` into store |
@@ -154,8 +162,26 @@ Catch blocks intentionally empty — store already holds `error`.
 File: `src/pages/ForgotPasswordPage.vue`.
 
 - `guest` route `/forgot-password`.
-- Form: email → `auth.forgotPassword` → success banner (`auth.forgotSuccess` — RU; check inbox **and spam**); link back to Login.
-- Reset link itself is **server HTML** on the API — no client reset page.
+- Form: email → `auth.forgotPassword` → success banner (`auth.forgotSuccess` — RU; mail sent + check spam; **no** «если аккаунт существует» hedge).
+- Unknown email: store code `email_not_found` → page local banner `$t('auth.forgotNotFound')` (do not mutate `auth.error` string) (SC-RESET-07).
+- Reset link opens **SPA** `/#/reset-password?token=…` on `CLIENT_APP_URL` — not API HTML.
+
+## Confirm Email Page
+
+File: `src/pages/ConfirmEmailPage.vue` (public `/confirm-email`).
+
+- On mount: read `token` from query → `auth.confirmEmail(token)` immediately — **no** Confirm button.
+- Success RU banner (`auth.confirmSuccess`), then `router.replace({ name: 'lobby' })` (SC-EMAIL-02/11).
+- Expired/invalid → RU banner (`auth.confirmExpired` / `auth.confirmInvalid`).
+- Do **not** set `meta.guest` — authenticated users opening the mail link must still confirm.
+
+## Reset Password Page
+
+File: `src/pages/ResetPasswordPage.vue` (public `/reset-password`).
+
+- Form: new password (min 6) → `auth.resetPassword(token, password)`.
+- Success RU banner (`auth.resetSuccess`), then `router.replace({ name: 'login' })` (SC-RESET-02/08).
+- Expired / invalid / already-used → RU banner.
 
 ## Account (Cabinet) Page
 
@@ -167,13 +193,13 @@ File: `src/pages/AccountPage.vue` (`requiresAuth`, `/account`).
 - Change-email form → `changeEmail` (server resets verified; **no** auto-send).
 - Navigation from App / lobby into cabinet.
 
-**Language canon:** human-facing auth-email strings (`auth.confirmSentDialog`, `auth.forgotSuccess`, cabinet/forgot copy) are **Russian** in `src/i18n/en-US/` (technical locale name). New copy in this contour stays RU; do not require EN.
+**Language canon:** human-facing auth-email strings (`auth.confirmSentDialog`, `auth.forgotSuccess`, confirm/reset outcomes, cabinet/forgot copy) are **Russian** in `src/i18n/en-US/` (technical locale name). New copy in this contour stays RU; do not require EN.
 
 ## Session Verify Reminder
 
 File: `src/App.vue`.
 
-- Once per browser session (`sessionStorage` key); skip anonymous and guest routes.
+- Once per browser session (`sessionStorage` key); skip anonymous and auth-email public routes (login / forgot / confirm / reset).
 - Mark the session key **when the modal is shown** (not only on dismiss/OK), so another tab in the same browser session does not reopen it (SC-EMAIL-08).
 - Copy: confirm from the **personal cabinet** (+ CTA to `/account`).
 - Do **not** claim that mail was already sent.
@@ -202,11 +228,10 @@ Route meta (`src/router/routes.ts`):
 | Path | Meta |
 |------|------|
 | `/login`, `/forgot-password` | `guest: true` |
+| `/confirm-email`, `/reset-password` | public (neither `guest` nor `requiresAuth`) |
 | `/lobby`, `/account`, `/game/:roomId` | `requiresAuth: true` |
 
-Router mode is **hash** (`/#/login`, `/#/lobby`, `/#/account`). Always await `whenReady()` before deciding auth redirects — otherwise a restored token looks logged-out on first paint.
-
-**No** client routes for confirm-email or reset-password — those are API HTML pages.
+Router mode is **hash** (`/#/login`, `/#/confirm-email`, `/#/reset-password`, `/#/lobby`). Always await `whenReady()` before deciding auth redirects — otherwise a restored token looks logged-out on first paint.
 
 ## Client Singleton
 
@@ -230,9 +255,9 @@ Env: `VITE_COLYSEUS_URL` (also `VITE_API_URL` for HTTP). Local defaults → `loc
 | `signInWithProvider('google')` | Google OAuth one-click (store: `loginWithGoogle`) |
 | `sendPasswordResetEmail(email)` | Forgot-password request (store: `forgotPassword`) |
 | `signOut()` | Clear session / token |
-| `getUserData()` | Refresh userdata (e.g. after confirm elsewhere) |
+| `getUserData()` | Refresh userdata (e.g. after confirm) |
 | `token` / `onChange` | Current token + userdata sync |
-| `client.http.post(...)` | Thin authenticated HTTP (send-confirm, change-email) |
+| `client.http.post(...)` | Thin HTTP (send-confirm, change-email, confirm-email, reset-password) |
 
 Coordinate register options and userdata shape (`email`, `emailVerified`) with [`../happy-tourist-server`](../../../../happy-tourist-server) (Colyseus Auth backend). Do not add axios Authorization headers for auth — the SDK owns the token.
 
@@ -245,7 +270,8 @@ Coordinate register options and userdata shape (`email`, `emailVerified`) with [
 | Use `meta.requiresAuth` / `meta.guest` | Re-implement cookie/XSRF or Bearer axios auth |
 | Keep token key as SDK default `colyseus-auth-token` | Import `@colyseus/auth` in the client |
 | Surface errors in store `error` + page banner | Swallow failures without setting `error` |
-| Confirm mail only from cabinet button + dialog | Auto-mail UX on register or SPA confirm/reset pages |
+| Confirm mail only from cabinet button + dialog | Auto-mail UX on register |
+| SPA confirm/reset via JSON store actions | Parse Colyseus API HTML or treat `/auth/confirm-email` HTML as product UX |
 | Session modal → cabinet for unverified registered users | Show verify modal to anonymous guests |
 | Sync contract changes with `happy-tourist-server` | Change auth endpoints only on the client |
 
@@ -253,12 +279,12 @@ Coordinate register options and userdata shape (`email`, `emailVerified`) with [
 
 When touching auth:
 
-1. Which piece? store / LoginPage / ForgotPasswordPage / AccountPage / App modal / router guard / colyseus boot / server Auth hooks.
+1. Which piece? store / LoginPage / ForgotPasswordPage / ConfirmEmailPage / ResetPasswordPage / AccountPage / App modal / router guard / colyseus boot / server Auth hooks.
 2. Keep all client auth through `client.auth` / store `http` helpers (`@colyseus/sdk`), not `@colyseus/auth`.
 3. Preserve `onChange` → `token`/`user`/`ready` and `whenReady()` for the router.
 4. Preserve `isAuthenticated === Boolean(token && user)`.
-5. Keep `requiresAuth` → `/login` and `guest` → `/lobby` behavior (incl. forgot + account routes).
-6. Update Login / forgot / cabinet + store together; keep anonymous guest and Google one-click paths.
-7. Never add SPA pages for confirm-email / reset-password; never imply auto mail on register.
+5. Keep `requiresAuth` → `/login` and `guest` → `/lobby` behavior; keep confirm/reset **public**.
+6. Update Login / forgot / confirm / reset / cabinet + store together; keep anonymous guest and Google one-click paths.
+7. Never imply auto mail on register; never document API HTML as the product confirm/reset path.
 8. If register/userdata options or `emailVerified` change, coordinate with `happy-tourist-server`.
 9. Prefer store `error` + existing `q-banner` / dialogs over a new toast layer.
