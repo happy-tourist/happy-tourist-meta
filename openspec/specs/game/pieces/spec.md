@@ -16,8 +16,8 @@
 | SC-PIECE-06 | covered-by-reuse (server mocha — spectator) |
 | SC-PIECE-07 | covered (server mocha — leave in waiting reopens) |
 | SC-PIECE-08 | covered (server mocha — leave in playing does NOT reopen) |
-| SC-PIECE-09 | covered-by-reuse (client UX) |
-| SC-PIECE-10 | covered-by-reuse (client UX) |
+| SC-PIECE-09 | covered (client full strip in bottom HUD — row or 2×2) |
+| SC-PIECE-10 | covered-by-reuse (client UX — spectator no strip) |
 | SC-PIECE-11 | covered (server mocha — unexpected hold before start) |
 | SC-PIECE-12 | covered (server mocha — unexpected hold after start) |
 | SC-PIECE-13 | covered (server mocha — reconnect within grace) |
@@ -36,8 +36,10 @@
 | SC-PIECE-26 | covered (server mocha — occupancy while trapped) |
 | SC-PIECE-27 | covered (client UX — trapped piece still on board) |
 | SC-PIECE-28 | covered (server mocha — leave clears holding) |
+| SC-PIECE-31 | covered (client UX — grille on strip slots when trapped) |
+| SC-PIECE-32 | covered (client UX — strip row vs 2×2 by width) |
 
-Related: phase transition — `game/start`; turn timers — `game/move`; finish occupancy — `game/finish`; trap/rescue/all-jail — `game/move`; grille clear — `game/board`.
+Related: phase transition — `game/start`; turn timers — `game/move`; finish occupancy — `game/finish`; trap/rescue/all-jail — `game/move`; grille clear — `game/board`; bottom HUD — `game/presence`.
 
 ## Requirements
 
@@ -215,21 +217,27 @@ After a seated player successfully enters a tourist room, the client MUST persis
 
 ### Requirement: Board pieces and personal four-slot strip
 
-All clients in the room SHALL see all current unfinished pieces on the Game board at their synced cells, using the tourist image for each piece’s kind. While a seated player has no pieces yet (phase `waiting` or `countdown`), no pieces for that seat MUST appear on the board. Finished pieces MUST NOT be rendered on the board (see `game/finish`). A seated client SHALL see a personal strip below the board once their four pieces exist, with exactly four slots corresponding one-to-one to that client’s four pieces by side (same kind image per slot). Until pieces exist, the seated client MUST NOT be shown moveable strip slots for that seat’s missing pieces. Each strip slot whose piece is finished MUST show a finish indicator at the top-right and MUST NOT participate in move selection. Slots for unfinished pieces keep existing move-selection behavior while applicable (`game/move`). The strip MUST remain visible for finished seats. The strip MUST NOT show other players’ tourists. A spectator MUST NOT be shown that personal strip.
+All clients in the room SHALL see all current unfinished pieces on the Game board at their synced cells, using the tourist image for each piece’s kind. While a seated player has no pieces yet (phase `waiting` or `countdown`), no pieces for that seat MUST appear on the board. Finished pieces MUST NOT be rendered on the board (see `game/finish`). A seated client SHALL see a personal four-slot strip once their four pieces exist, corresponding one-to-one to that client’s four pieces by side (same kind image per side). That strip MUST appear inside the bottom Game HUD panel (`game/presence`) beside the seated user’s own presence/budgets cluster and MUST NOT use a separate caption label such as «Мои туристы».
+
+The strip MUST present four interactive slots (not a compact status-only chip and not a picker menu). Slot order for a **2×2** layout MUST be **N, E** on the top row and **W, S** on the bottom row; for a **single row** layout MUST be **N, E, W, S** left-to-right. Each slot MUST reflect status: finish indicator when finished (`game/finish`); grille presentation when the piece is trapped. Until pieces exist, the seated client MUST NOT be shown the strip. The strip MUST remain visible for finished seats. The chrome MUST NOT show other players’ tourists. A spectator MUST NOT be shown that personal strip.
+
+Activating an unfinished non-trapped slot MUST select that piece for move UX while applicable (`game/move`). Finished and trapped pieces MUST NOT be used for move selection (finished return flow is `game/finish`). Board piece click MUST still select without opening any menu. The Game UI MUST NOT use a picker menu opened from a compact chip.
+
+On viewports / HUD widths where a single row of four slots plus the own avatar cluster cannot fit without horizontal scrolling as the primary layout (target content width about **320** CSS pixels, preferably about **300**), the strip MUST use the **2×2** grid with slot size **smaller than** the own presence avatar image box. When width allows, the strip MUST use a single horizontal row of four slots.
 
 #### Scenario [SC-PIECE-09]: Seated client sees own four-slot strip
 
 - **GIVEN** the user is on the Game screen as a seated player with four pieces of one kind
 - **WHEN** the game UI is shown
-- **THEN** a strip below the board displays exactly four images of that user’s tourist kind
+- **THEN** the bottom HUD panel shows four personal tourist slots after the user’s own presence/budgets cluster
+- **AND** no compact chip-only chrome and no tourist picker menu are required to select a piece
+- **AND** no separate «Мои туристы» (or equivalent) caption labels that strip
 - **AND** the strip does not display other players’ tourist kinds
-- **AND** the four strip slots correspond to the user’s four pieces (one per side)
-- **AND** any finished piece’s slot shows a finish indicator and is not used for move selection
 
 #### Scenario [SC-PIECE-10]: Spectator sees pieces but no strip
 
 - **GIVEN** the user is on the Game screen as a spectator while at least one seat exists
-- **WHEN** the game UI is shown
+- **WHEN** the Game presence layout is shown
 - **THEN** seated players’ unfinished pieces are visible on the board at their cells
 - **AND** no personal tourist strip is shown for that user
 
@@ -239,6 +247,24 @@ All clients in the room SHALL see all current unfinished pieces on the Game boar
 - **WHEN** any client views the Game board
 - **THEN** no tourist pieces for those seats are shown on the board
 - **AND** when phase becomes `playing` and pieces are materialized, those pieces appear at their synced cells
+
+#### Scenario [SC-PIECE-32]: Narrow width uses 2×2 strip
+
+- **GIVEN** the seated user views Game at about 320 CSS pixels content width (or narrower about 300)
+- **WHEN** the bottom HUD with own avatar and personal strip is shown
+- **THEN** the four tourist slots are laid out as a 2×2 grid with slots smaller than the own avatar image
+- **AND** the own avatar cluster plus strip fit without relying on horizontal scrolling as the primary UX
+
+### Requirement: Trap grille mirrored on personal tourist chrome
+
+When a seated user’s piece is trapped, the matching strip slot MUST show a grille presentation over that tourist (same asset family as the board grille). When the piece is freed, that grille presentation MUST clear. The chrome grille MUST use the same about **1000 ms** drop/rise timing as board revealed grilles (`game/board`).
+
+#### Scenario [SC-PIECE-31]: Trapped side shows grille on strip slot
+
+- **GIVEN** the user’s piece for side N is trapped and unfinished
+- **WHEN** the user views the personal tourist strip
+- **THEN** the N strip slot shows a grille over that tourist
+- **AND** when that piece is no longer trapped, that grille presentation is cleared
 
 ### Requirement: Finished seats occupy capacity until leave
 

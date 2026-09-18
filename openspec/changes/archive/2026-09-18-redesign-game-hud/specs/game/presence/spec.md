@@ -6,17 +6,17 @@ Related: bubbles — `game/say`; strip — `game/pieces`; exit — `game/leave`;
 
 | Scenario ID | Coverage |
 |-------------|----------|
-| SC-PRESENCE-02 | pending (client seated: opponents above board, own in bottom HUD) |
-| SC-PRESENCE-03 | pending (client spectator: all markers above board) |
-| SC-PRESENCE-15 | pending (client budgets beside own avatar) |
+| SC-PRESENCE-02 | implemented (client seated: opponents above board, own in bottom HUD) |
+| SC-PRESENCE-03 | implemented (client spectator: all markers above board) |
+| SC-PRESENCE-15 | implemented (client budgets beside own avatar) |
 | SC-PRESENCE-16 | covered-by-reuse (solo infinity peeks — layout only moves) |
-| SC-PRESENCE-17 | pending (client end-turn above panel right) |
+| SC-PRESENCE-17 | implemented (client end-turn above panel right) |
 | SC-PRESENCE-18 | covered-by-reuse (solo hides end-turn) |
 | SC-PRESENCE-20 | covered-by-reuse (+N animation unchanged) |
-| SC-PRESENCE-22 | pending (client sticky bottom HUD — own+strip when seated) |
+| SC-PRESENCE-22 | implemented (client sticky bottom HUD — own+strip when seated) |
 | SC-PRESENCE-23 | covered-by-reuse (match status in shared header — phase 1) |
 | SC-PRESENCE-24 | covered-by-reuse (no room id — phase 1) |
-| SC-PRESENCE-25 | pending (client end-turn not in budgets row) |
+| SC-PRESENCE-25 | implemented (client end-turn not in budgets row) |
 
 ## MODIFIED Requirements
 

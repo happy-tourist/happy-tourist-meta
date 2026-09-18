@@ -6,8 +6,8 @@ Related: shared header chrome also carries theme (`ui/theme`) and match status (
 
 | Scenario ID | Coverage |
 |-------------|----------|
-| SC-LEAVE-01 | pending (client icon-only exit in shared header left) |
-| SC-LEAVE-08 | pending (client exit only on Game, not Login/Lobby) |
+| SC-LEAVE-01 | implemented (client icon-only exit in shared header left) |
+| SC-LEAVE-08 | implemented (client exit only on Game, not Login/Lobby) |
 
 ## MODIFIED Requirements
 

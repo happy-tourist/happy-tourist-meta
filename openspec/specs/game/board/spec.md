@@ -25,8 +25,8 @@
 | SC-BOARD-15 | covered (server mocha — land on hole rejected; mirrors SC-MOVE-49) |
 | SC-BOARD-16 | covered (server mocha — medium density seed count) |
 | SC-BOARD-17 | covered (client UX — hidden until land) |
-| SC-BOARD-18 | covered (client UX — drop anim ≥1500 ms all clients) |
-| SC-BOARD-19 | covered (client UX — rise+vanish on clear) |
+| SC-BOARD-18 | covered (client UX — drop anim ~1000 ms all clients) |
+| SC-BOARD-19 | covered (client UX — rise+vanish ~1000 ms on clear) |
 | SC-BOARD-20 | covered (server mocha — spent tile still peekable) |
 | SC-BOARD-21 | covered (client UX — rise on leave clear all clients) |
 
@@ -202,27 +202,25 @@ Until a piece lands on a cell that still holds an unspent grille, clients MUST N
 
 ### Requirement: Revealed grille drop and clear animations are public
 
-When a piece lands on an unspent grille, every client that displays the board MUST show the grille lowering onto that cell (product sense: drops from above downward) for about **1500 ms**. When that grille is later cleared (rescue, all-jail holding clear, or permanent leave of the seat whose piece held that grille), every such client MUST show the grille rising and disappearing for about **1500 ms**. Cleared grilles MUST NOT remain visible afterward.
+When a piece lands on an unspent grille, every client that displays the board MUST show the grille lowering onto that cell (product sense: drops from above downward) for about **1000 ms**. When that grille is later cleared (rescue, all-jail holding clear, or permanent leave of the seat whose piece held that grille), every such client MUST show the grille rising and disappearing for about **1000 ms**. Cleared grilles MUST NOT remain visible afterward. Personal tourist chrome that mirrors a trapped piece (`game/pieces`) MUST use the same about **1000 ms** timing for its grille drop/rise presentation.
 
 #### Scenario [SC-BOARD-18]: Everyone sees the drop
 
-- **GIVEN** seated players and a spectator view the board
-- **WHEN** a piece lands on a cell with an unspent grille
-- **THEN** every client shows the grille drop animation on that cell lasting about 1500 ms
+- **GIVEN** phase is `playing` and a piece lands on a cell with an unspent grille
+- **WHEN** the move settles on that cell
+- **THEN** every client shows the grille drop animation on that cell lasting about 1000 ms
 
 #### Scenario [SC-BOARD-19]: Everyone sees rise and vanish on clear
 
 - **GIVEN** a revealed grille is holding a trapped piece and is then cleared by a successful rescue
-- **WHEN** clients update
-- **THEN** every client shows the grille rise and vanish lasting about 1500 ms
-- **AND** the cell no longer shows grille artwork
+- **WHEN** the holding grille is cleared
+- **THEN** every client shows the grille rise and vanish lasting about 1000 ms
 
 #### Scenario [SC-BOARD-21]: Everyone sees rise when leave clears holding
 
-- **GIVEN** a revealed grille is holding a trapped piece of a seated player who then permanently leaves
-- **WHEN** the server removes that seat and clears those holding grilles
-- **THEN** every client shows the grille rise and vanish lasting about 1500 ms
-- **AND** the cell no longer shows grille artwork
+- **GIVEN** a revealed holding grille is cleared because that seat permanently left
+- **WHEN** clients update the board
+- **THEN** every client shows the grille rise and vanish lasting about 1000 ms
 
 ### Requirement: Spent grille leaves the task tile peekable
 

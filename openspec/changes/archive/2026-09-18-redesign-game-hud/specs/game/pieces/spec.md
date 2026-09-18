@@ -6,12 +6,12 @@ Related: bottom HUD — `game/presence`; return — `game/finish`; grille chrome
 
 | Scenario ID | Coverage |
 |-------------|----------|
-| SC-PIECE-09 | pending (client full strip in bottom HUD — row or 2×2) |
+| SC-PIECE-09 | implemented (client full strip in bottom HUD — row or 2×2) |
 | SC-PIECE-10 | covered-by-reuse (spectator still no strip) |
 | SC-PIECE-29 | REMOVED intent — no compact chip / picker menu |
 | SC-PIECE-30 | REMOVED intent — select from strip slots / board only |
-| SC-PIECE-31 | pending (client grille on strip slots when trapped) |
-| SC-PIECE-32 | pending (client strip layout row vs 2×2 by width) |
+| SC-PIECE-31 | implemented (client grille on strip slots when trapped) |
+| SC-PIECE-32 | implemented (client strip layout row vs 2×2 by width) |
 
 ## MODIFIED Requirements
 

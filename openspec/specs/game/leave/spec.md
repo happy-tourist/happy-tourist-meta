@@ -2,33 +2,35 @@
 
 ## Purpose
 
-Клиентский выход из room `tourist` обратно в лобби: icon-only exit (`logout`) с accessible name «Выход из игры» и модальное подтверждение перед irreversible consented leave для seated-игрока в `playing` без finish place и без time-expired. Серверный контракт leave не меняется (`game/pieces`); finished — `game/finish`; time-expired — `game/move`.
+Клиентский выход из room `tourist` обратно в лобби: icon-only exit (`logout`) слева в общей шапке приложения (только на Game) с accessible name «Выход из игры» и модальное подтверждение перед irreversible consented leave для seated-игрока в `playing` без finish place и без time-expired. Серверный контракт leave не меняется (`game/pieces`); finished — `game/finish`; time-expired — `game/move`; match status в шапке — `game/presence`.
 
 ## Traceability
 
 | Scenario ID | Coverage |
 |-------------|----------|
-| SC-LEAVE-01 | covered (client UX — icon-only exit) |
+| SC-LEAVE-01 | covered (client UX — icon-only exit in shared header left) |
 | SC-LEAVE-02 | covered (client UX — active playing still confirms) |
 | SC-LEAVE-03 | covered (client UX) |
 | SC-LEAVE-04 | covered (client UX) |
 | SC-LEAVE-05 | covered (client UX — includes time-expired) |
 | SC-LEAVE-06 | covered-by-reuse (client UX — finished) |
 | SC-LEAVE-07 | covered (client UX) |
+| SC-LEAVE-08 | covered (client UX — exit only on Game) |
 
-Related: time-expired lock — `game/move`; finished leave — `game/finish`.
+Related: time-expired lock — `game/move`; finished leave — `game/finish`; match status — `game/presence`.
 
 ## Requirements
 
 ### Requirement: Exit control label
 
-On the game screen the primary control that returns the user to the lobby SHALL be presented as an **icon-only** exit control using the Material Icons glyph `logout` (no visible text label on the control). The control MUST expose an accessible name equivalent to leaving the game (product Russian accessible name «Выход из игры», localized per client locale files). The control MUST NOT use a visible text label such as «Выход из игры» that consumes horizontal header space on narrow viewports.
+On the game screen the primary control that returns the user to the lobby SHALL be presented as an **icon-only** exit control using the Material Icons glyph `logout` (no visible text label on the control), placed at the **left** side of the shared application header (theme toggle remains on the right). The control MUST expose an accessible name equivalent to leaving the game (product Russian accessible name «Выход из игры», localized per client locale files). The control MUST NOT use a visible text label such as «Выход из игры» that consumes horizontal header space on narrow viewports. Confirm / immediate-leave rules for activating the control are unchanged by this requirement.
 
 #### Scenario [SC-LEAVE-01]: Exit control wording
 
 - **GIVEN** the user is on the game screen of a tourist room
 - **WHEN** the primary leave-to-lobby control is shown
 - **THEN** the control shows the `logout` icon without a visible text label
+- **AND** it is positioned at the left of the shared application header
 - **AND** its accessible name is «Выход из игры» (localized per client locale files)
 
 ### Requirement: Confirm leave after play has started
@@ -80,3 +82,14 @@ The confirmation dialog MUST NOT be required when the user is not an active move
 - **WHEN** that player activates the exit control
 - **THEN** no leave confirmation dialog is shown
 - **AND** the client performs a consented leave and navigates to the lobby
+
+### Requirement: Exit control only while on Game
+
+The shared application header MUST show the leave-to-lobby exit control only while the user is on the Game screen of a tourist room. On Login and Lobby screens the exit control MUST NOT appear. Theme toggle availability on those screens MUST remain unchanged (`ui/theme`).
+
+#### Scenario [SC-LEAVE-08]: No exit control on Lobby
+
+- **GIVEN** the user is on the Lobby screen
+- **WHEN** the shared application header is shown
+- **THEN** the leave-to-lobby `logout` control is not shown
+- **AND** the theme toggle remains available

@@ -74,6 +74,7 @@
 | SC-MOVE-62 | covered (server mocha — auto-end waits for rescue/return) |
 | SC-MOVE-63 | covered (client UX — all-jail modal self only) |
 | SC-MOVE-64 | covered (server mocha — solo same rules) |
+| SC-MOVE-65 | covered (client UX — finish-block click → nearest legal center) |
 
 Related: board peek / removed tiles / grilles — `game/board`; presence counters / end-turn — `game/presence`; solo finish / return — `game/finish`; trapped sync — `game/pieces`.
 
@@ -467,7 +468,7 @@ While the start phase is not `playing`, the current-turn seated client MUST NOT 
 
 ### Requirement: Local selection and move hints for the current player only
 
-While it is a seated client’s own turn, that client SHALL be able to select one of their own pieces by activating it on the board or the matching slot in their personal strip. The selected piece’s cell MUST show a white selection outline, and every currently legal destination for that piece MUST show a red outline. Selection and red destination hints MUST be local UX only (not authoritative truth) and MUST NOT be shown to other seated players or spectators. The current player MAY change selection among their own pieces until a move is submitted. Clients that are not the current-turn seated player MUST NOT show white or red move chrome and MUST NOT submit a move as a result of board activation. Activating a red destination cell MUST submit the corresponding move for the selected piece.
+While it is a seated client’s own turn, that client SHALL be able to select one of their own pieces by activating it on the board or the matching slot in their personal strip. The selected piece’s cell MUST show a white selection outline, and every currently legal destination for that piece MUST show a red outline. Legal **return-from-finish** ring cells shown while return-mode is active MUST use that **same** red destination outline presentation (not a distinct orange-only chrome). Selection and red destination hints MUST be local UX only (not authoritative truth) and MUST NOT be shown to other seated players or spectators. The current player MAY change selection among their own pieces until a move is submitted; changing selection MUST cancel return-mode without spending a step. Clients that are not the current-turn seated player MUST NOT show white or red move chrome and MUST NOT submit a move as a result of board activation. Activating a red destination cell MUST submit the corresponding move for the selected piece (or the return when return-mode is active).
 
 #### Scenario [SC-MOVE-11]: Current player sees white selection chrome
 
@@ -482,6 +483,7 @@ While it is a seated client’s own turn, that client SHALL be able to select on
 - **WHEN** legal destinations exist for that piece under the move rules
 - **THEN** those destination cells show a red outline on that user’s client only
 - **AND** occupied or non-playable neighbors are not outlined as destinations
+- **AND** when return-mode is active with legal ring cells, those cells show the same red outline presentation
 
 #### Scenario [SC-MOVE-13]: Reselection before commit
 
@@ -489,6 +491,18 @@ While it is a seated client’s own turn, that client SHALL be able to select on
 - **WHEN** the user selects a different own piece before submitting a move
 - **THEN** the white outline moves to the newly selected piece’s cell
 - **AND** red destination outlines update for the newly selected piece
+- **AND** any prior return-mode is cancelled without spending a step
+
+### Requirement: Finish-block click resolves to nearest legal center cell
+
+The central finish area MAY be presented as one visual 2×2 block. While the client is submitting a move (not return-mode) and the selected piece has at least one legal destination among the four center cells, activating **any** point on that finish block MUST submit a move to the **nearest** of those **legal** center cells relative to the selected piece’s current cell (Chebyshev distance; ties broken by lower row, then lower column). The client MUST NOT require the user to hit a specific quadrant of the block matching that cell. If none of the four center cells is a legal destination for the selected piece, activating the finish block MUST NOT submit a move.
+
+#### Scenario [SC-MOVE-65]: Any click on finish picks nearest legal center
+
+- **GIVEN** it is the user’s turn, an own piece is selected, and exactly one of the four center cells is a legal one-step destination for that piece
+- **WHEN** the user activates any point on the visual finish 2×2 block
+- **THEN** the client submits a move to that legal center cell
+- **AND** the submission does not depend on which quadrant of the block was clicked
 
 ### Requirement: Keep local selection after a successful non-finishing move
 
@@ -550,7 +564,7 @@ While a piece is trapped, the server MUST reject move and peek intents that targ
 
 ### Requirement: Rescue own adjacent trapped piece for one step
 
-While it is a seated client’s own turn with steps ≥ 1, that client MAY rescue exactly one of their own trapped pieces when at least one of their own free unfinished pieces stands at Chebyshev distance 1 from the trapped piece’s cell (orthogonal or diagonal). A successful rescue MUST decrease steps by 1, clear trapped on the rescued piece, and clear the holding grille (rise and vanish ~1500 ms per `game/board`). Rescue of another seat’s piece MUST be rejected. Rescue MUST NOT permanently relocate the rescuer (approach animation is client presentation only).
+While it is a seated client’s own turn with steps ≥ 1, that client MAY rescue exactly one of their own trapped pieces when at least one of their own free unfinished pieces stands at Chebyshev distance 1 from the trapped piece’s cell (orthogonal or diagonal). A successful rescue MUST decrease steps by 1, clear trapped on the rescued piece, and clear the holding grille (rise and vanish ~1000 ms per `game/board`). Rescue of another seat’s piece MUST be rejected. Rescue MUST NOT permanently relocate the rescuer (approach animation is client presentation only).
 
 #### Scenario [SC-MOVE-54]: Rescue spends one step and frees the piece
 

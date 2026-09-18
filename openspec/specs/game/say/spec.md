@@ -139,19 +139,23 @@ Each accepted say MUST appear as a comic-style speech bubble near the sender’s
 
 ### Requirement: Bubble stack orientation by presence slot
 
-Speech bubbles for a seat MUST stack against that seat’s presence marker on the side toward the board: for markers in the top presence row, bubbles appear below the avatar; for the seated viewer’s own marker in the bottom row, bubbles appear above the avatar. Newer bubbles MUST appear closer to the avatar than older ones. Horizontal spacing between neighboring presence markers MUST keep concurrent bubbles of adjacent seats from overlapping. Bubbles MUST NOT use viewport toast notifications as their primary presentation. Left/right side-slot stack rules MUST NOT apply (those slots are removed by `game/presence`).
+Speech bubbles for a seat MUST stack against that seat’s presence marker **toward the board**:
+- markers in the row **above** the board → bubbles stack **below** the avatar (down toward the board);
+- the seated user’s marker in the **bottom** HUD → bubbles stack **above** the avatar (up toward the board).
+
+Newer bubbles MUST appear closer to the avatar than older ones. Horizontal spacing between neighboring presence markers MUST keep concurrent bubbles of adjacent seats from overlapping. Bubbles MUST NOT use viewport toast notifications as their primary presentation. Left/right side-slot stack rules MUST NOT apply.
 
 #### Scenario [SC-SAY-11]: Side slots stack newer below
 
-- **GIVEN** a sender whose presence marker is in the top row for the viewing client and that sender already has one live bubble
+- **GIVEN** a sender whose presence marker is visible above the board for the viewing client and that sender already has one live bubble
 - **WHEN** a second say from that sender is accepted
 - **THEN** both bubbles appear below that avatar toward the board
 - **AND** the newer bubble is closer to the avatar than the older bubble
-- **AND** no left/right side-column presence slot is used for bubble orientation
+- **AND** no bubble stack appears above that top-row avatar away from the board
 
 #### Scenario [SC-SAY-12]: Home and opposite slots keep newer closer to avatar
 
-- **GIVEN** a seated viewer whose own presence marker is in the bottom row and multiple live bubbles exist for that seat
+- **GIVEN** the seated user’s own presence marker in the bottom HUD with multiple live bubbles
 - **WHEN** any client views that marker
 - **THEN** the bubbles appear above the avatar toward the board
 - **AND** the newest bubble is visually closer to the avatar than older bubbles

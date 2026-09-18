@@ -6,11 +6,11 @@ Related: personal strip — `game/pieces`; return geometry / step cost — `game
 
 | Scenario ID | Coverage |
 |-------------|----------|
-| SC-FINISH-09 | pending (client finish indicator on strip; conditional dim) |
-| SC-FINISH-10 | pending (client strip keeps four sides after full finish) |
-| SC-FINISH-13 | pending (client modal return flow) |
+| SC-FINISH-09 | implemented (client finish indicator on strip; conditional dim) |
+| SC-FINISH-10 | implemented (client strip keeps four sides after full finish) |
+| SC-FINISH-13 | implemented (client modal return flow) |
 | SC-FINISH-14 | covered-by-reuse (server — strip selectable after return) |
-| SC-FINISH-15 | pending (client return travel animation from nearest center) |
+| SC-FINISH-15 | implemented (client return travel animation from nearest center) |
 
 ## MODIFIED Requirements
 

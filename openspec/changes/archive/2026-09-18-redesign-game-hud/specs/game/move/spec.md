@@ -6,11 +6,12 @@ Related: finish return UX — `game/finish`; center block presentation — `game
 
 | Scenario ID | Coverage |
 |-------------|----------|
-| SC-MOVE-11 | pending (client selection; return-mode cancel on reselect) |
-| SC-MOVE-12 | pending (client legal targets; return targets same red outline) |
-| SC-MOVE-13 | pending (client reselection cancels return-mode) |
-| SC-MOVE-63 | pending (client center-block click → nearest legal center cell) |
+| SC-MOVE-11 | implemented (client selection; return-mode cancel on reselect) |
+| SC-MOVE-12 | implemented (client legal targets; return targets same red outline) |
+| SC-MOVE-13 | implemented (client reselection cancels return-mode) |
+| SC-MOVE-65 | implemented (client center-block click → nearest legal center cell) |
 | SC-MOVE-57 | covered-by-reuse (server — return costs 1 step on accept) |
+| SC-MOVE-63 | covered-by-reuse (all-jail modal — unrelated; keep main ID) |
 
 ## MODIFIED Requirements
 
@@ -47,7 +48,7 @@ While it is a seated client’s own turn, that client SHALL be able to select on
 
 The central finish area MAY be presented as one visual 2×2 block. While the client is submitting a move (not return-mode) and the selected piece has at least one legal destination among the four center cells, activating **any** point on that finish block MUST submit a move to the **nearest** of those **legal** center cells relative to the selected piece’s current cell (Chebyshev distance; ties broken by lower row, then lower column). The client MUST NOT require the user to hit a specific quadrant of the block matching that cell. If none of the four center cells is a legal destination for the selected piece, activating the finish block MUST NOT submit a move.
 
-#### Scenario [SC-MOVE-63]: Any click on finish picks nearest legal center
+#### Scenario [SC-MOVE-65]: Any click on finish picks nearest legal center
 
 - **GIVEN** it is the user’s turn, an own piece is selected, and exactly one of the four center cells is a legal one-step destination for that piece
 - **WHEN** the user activates any point on the visual finish 2×2 block

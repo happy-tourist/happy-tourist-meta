@@ -61,7 +61,7 @@
 
 ### D9 — Skills
 
-**Статус:** сделано — `work-with-game-board` / pages / styles / localization / AGENTS индексы отражают фазу 2 (420 CQ, return modal, top presence, nearest center).
+**Статус:** сделано — `work-with-game-board` / pages / styles / localization / AGENTS индексы отражают фазы 2–3 (420 CQ, return modal, top presence tight to board, budgets справа, nearest center).
 
 ## Risks / Trade-offs
 

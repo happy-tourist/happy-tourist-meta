@@ -6,8 +6,8 @@ Related: trap chrome on strip — `game/pieces`.
 
 | Scenario ID | Coverage |
 |-------------|----------|
-| SC-BOARD-18 | pending (client drop/rise ~1000 ms) |
-| SC-BOARD-19 | pending (client rise ~1000 ms — covered with 18) |
+| SC-BOARD-18 | implemented (client drop/rise ~1000 ms) |
+| SC-BOARD-19 | implemented (client rise ~1000 ms — covered with 18) |
 | SC-BOARD-21 | covered-by-reuse (leave clear still public rise) |
 
 ## MODIFIED Requirements

@@ -50,7 +50,7 @@
 
 ## 9. Client — finish-block nearest legal center
 
-- [x] 9.1 Клик по любому месту visual finish 2×2 → submit на nearest legal center cell относительно selected piece; без quadrant mapping — verify: SC-MOVE-63
+- [x] 9.1 Клик по любому месту visual finish 2×2 → submit на nearest legal center cell относительно selected piece; без quadrant mapping — verify: SC-MOVE-65
 
 ## 10. Client — skills + quality (фаза 2)
 

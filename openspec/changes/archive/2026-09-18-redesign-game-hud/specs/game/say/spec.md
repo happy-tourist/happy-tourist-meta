@@ -6,8 +6,8 @@ Related: presence top/bottom — `game/presence`.
 
 | Scenario ID | Coverage |
 |-------------|----------|
-| SC-SAY-11 | pending (client bubbles toward board from top markers) |
-| SC-SAY-12 | pending (client bubbles toward board from bottom marker) |
+| SC-SAY-11 | implemented (client bubbles toward board from top markers) |
+| SC-SAY-12 | implemented (client bubbles toward board from bottom marker) |
 
 ## MODIFIED Requirements
 
