@@ -3,7 +3,8 @@ name: work-with-env-deploy
 description: >-
   Use when changing server env vars, PM2, VPS deploy, GitHub Actions rsync, or
   DATABASE_URL for happy-tourist-server — AUTH_SALT / JWT_SECRET / SESSION_SECRET /
-  GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET, .env.development / .env.production,
+  GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET, SMTP_BZ_* / MAIL_FROM /
+  AUTH_BACKEND_URL / CLIENT_APP_URL, .env.development / .env.production,
   ecosystem.config.cjs, or .github/workflows/deploy.yml.
 ---
 
@@ -22,7 +23,7 @@ Deploy target: VPS under `/var/www/happy-tourist-server`, Node 22, PM2. Trigger:
 | Keep production secrets only on the server (`.env.production`) | Commit prod secrets or `.env.production` with real values |
 | Keep rsync excludes for `.env*` and `game.db*` | Let CI overwrite server DB or prod env |
 | Document new env keys in `.env.example` | Invent CI-injected app secrets (unlike the client; app secrets stay on VPS) |
-| Use GH secrets `SSH_*` only for deploy SSH | Put `AUTH_SALT` / `JWT_SECRET` / `SESSION_SECRET` / `GOOGLE_CLIENT_*` in GitHub Actions vars |
+| Use GH secrets `SSH_*` only for deploy SSH | Put `AUTH_SALT` / `JWT_SECRET` / `SESSION_SECRET` / `GOOGLE_CLIENT_*` / `SMTP_BZ_*` in GitHub Actions vars |
 | Run local `npm test` / `build` / `dev` from server package root | Skip verification or assume pass without running |
 
 ## Env vars
@@ -36,6 +37,12 @@ Deploy target: VPS under `/var/www/happy-tourist-server`, Node 22, PM2. Trigger:
 | `SESSION_SECRET` | Auth session | same | same |
 | `GOOGLE_CLIENT_ID` | Google OAuth Web client ID | same | same |
 | `GOOGLE_CLIENT_SECRET` | Google OAuth Web client secret | same | same |
+| `SMTP_BZ_HOST` | smtp.bz SMTP host (`src/lib/mailer.ts`) | same | same |
+| `SMTP_BZ_PORT` | SMTP port (default `587`) | same | same |
+| `SMTP_BZ_USER` / `SMTP_BZ_PASS` | smtp.bz credentials | same | same |
+| `MAIL_FROM` | From header (e.g. `Happy Tourist <noreply@happy-tourist.ru>`) | same | same |
+| `AUTH_BACKEND_URL` | Public API origin for confirm/reset links (`auth.backend_url`) | e.g. `http://localhost:2567` | `https://api.happy-tourist.ru` |
+| `CLIENT_APP_URL` | Client origin; confirm success → `{CLIENT_APP_URL}/#/lobby` | e.g. `http://localhost:9000` | `https://happy-tourist.github.io` |
 | `DATABASE_URL` | SQLite path for GameDatabase | `./game.db` | often `/var/www/happy-tourist-server/game.db` |
 | `NODE_ENV` | `development` / `production` (CORS, monitor/playground) | `development` | `production` (also set in PM2 `env`) |
 | `PORT` | Listen port | `2567` | `2567` (PM2 `env` + file) |
@@ -43,6 +50,8 @@ Deploy target: VPS under `/var/www/happy-tourist-server`, Node 22, PM2. Trigger:
 Generate secrets: `openssl rand -base64 32`. Template: `.env.example`.
 
 Google OAuth also needs Authorized redirect URI in Google Cloud Console (`http://localhost:2567/auth/provider/google/callback` locally; `https://<api-host>/auth/provider/google/callback` in prod) — documented in `.env.example`, not injected by CI.
+
+Mail delivery (smtp.bz) also needs DNS/SPF(+DKIM) for `happy-tourist.ru` on the ops side — outside CI.
 
 When adding a new env key:
 
@@ -92,7 +101,7 @@ Sibling client Pages deploy is a separate repo/workflow — do not mix client `V
 ### Repo / Actions / VPS checklist
 
 - GitHub secrets: `SSH_PRIVATE_KEY`, `SSH_KNOWN_HOSTS`, `SSH_PORT`, `SSH_USER`, `SSH_HOST`.
-- On VPS once: Node 22, PM2, log dir `/var/log/happy-tourist-server/`, `.env.production` with real secrets + `DATABASE_URL`, writable SQLite path.
+- On VPS once: Node 22, PM2, log dir `/var/log/happy-tourist-server/`, `.env.production` with real secrets + `DATABASE_URL` + mail (`SMTP_BZ_*`, `MAIL_FROM`) + `AUTH_BACKEND_URL` / `CLIENT_APP_URL`, writable SQLite path.
 - Confirm rsync never ships `.env*` or `game.db*`.
 
 ## Files map
@@ -133,9 +142,10 @@ pm2 logs happy-tourist-server --lines 50
 
 ## Anti-patterns
 
-- Committing `.env.production` with real `AUTH_SALT` / `JWT_SECRET` / `SESSION_SECRET` / `GOOGLE_CLIENT_*`.
+- Committing `.env.production` with real `AUTH_SALT` / `JWT_SECRET` / `SESSION_SECRET` / `GOOGLE_CLIENT_*` / `SMTP_BZ_*`.
 - Removing `.env*` or `game.db*` from rsync excludes (wipes prod secrets/DB on deploy).
 - Putting app secrets in GitHub Actions `vars`/`secrets` and expecting the Node process to see them without a server-side `.env.production`.
 - Raising PM2/Node memory past ~350–500M on a 1 GB VPS without a plan.
 - Assuming client GitHub Pages deploy updates this server (separate pipeline).
 - Changing `DATABASE_URL` without ensuring the SQLite file path exists and is writable on the VPS.
+- Leaving `AUTH_BACKEND_URL` / `CLIENT_APP_URL` wrong in prod (broken confirm/reset links or post-confirm redirect).

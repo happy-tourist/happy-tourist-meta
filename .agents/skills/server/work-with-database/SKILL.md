@@ -3,7 +3,7 @@ name: work-with-database
 description: >-
   Use when adding, changing, reviewing, or debugging GameDatabase, Drizzle user
   schema, colyseus_users extensions, DATABASE_URL / game.db paths, or profile
-  fields (displayName, rating, gamesPlayed, gamesWon, theme) in
+  fields (displayName, rating, gamesPlayed, gamesWon, theme, emailVerified) in
   happy-tourist-server so built-in /auth/register and /auth/login keep working.
 ---
 
@@ -36,8 +36,9 @@ Driver: **better-sqlite3**. ORM surface: **drizzle-orm** via Colyseus `tables.sq
 | `gamesPlayed` | `games_played` | `integer().notNull().default(0)` |
 | `gamesWon` | `games_won` | `integer().notNull().default(0)` |
 | `theme` | `theme` | nullable `text` — `light` \| `dark` \| unset (`null`); **no** NOT NULL / no default required |
+| `emailVerified` | `email_verified` | `integer({ mode: "boolean" }).notNull().default(false)`; Google + legacy non-anonymous backfill → `true`; change-email resets to `false`; in userdata |
 
-These are **profile** fields (display name, rating, games played/won, UI theme) for auth users — not room/board state. `theme` is written by thin `POST /api/theme` and read by `GET /api/theme` for registered users only; it also lands in JWT userdata on subsequent login (client restore must not rely on JWT alone after reload).
+These are **profile** fields (display name, rating, games played/won, UI theme, email verify flag) for auth users — not room/board state. `theme` is written by thin `POST /api/theme` and read by `GET /api/theme` for registered users only; it also lands in JWT userdata on subsequent login (client restore must not rely on JWT alone after reload). `emailVerified` is updated by confirm callback / Google path / change-email endpoint (see `server-work-with-auth`).
 
 ## Relation To Auth
 
@@ -79,6 +80,9 @@ export const users = tables.sqlite.users("colyseus_users", {
   gamesPlayed: integer("games_played").notNull().default(0),
   gamesWon: integer("games_won").notNull().default(0),
   theme: text("theme"), // nullable light | dark | unset
+  emailVerified: integer("email_verified", { mode: "boolean" })
+    .notNull()
+    .default(false),
   // newField: integer("new_field").notNull().default(0),
 });
 ```

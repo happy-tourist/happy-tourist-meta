@@ -67,12 +67,12 @@ OpenSpec: [`openspec/config.yaml`](../openspec/config.yaml); артефакты 
 | [`client-locate-change-points`](skills/client/client-locate-change-points/SKILL.md) | Где править / куда класть новые файлы (вкл. Google auth) |
 | [`client-verify-code`](skills/client/client-verify-code/SKILL.md) | Проверка кода / compliance skills + DRY/KISS/YAGNI (incl. sticky `.game-hud` presence + sibling avatar / SC-PRESENCE-12) |
 | [`colyseus-client`](skills/client/colyseus-client/SKILL.md) | `client.http` + room messages (`move`/`rescue`/`returnFromFinish`/`peek`/`endTurn`/`say` + private `budgets`/`peekOpen`/`allJailWarning`; `infinite`=peeks∞ only; holes + holding grilles; not axios/BFF) |
-| [`client-work-with-auth`](skills/client/client-work-with-auth/SKILL.md) | Colyseus Auth (email/anonymous/Google), `onChange`, route guards |
+| [`client-work-with-auth`](skills/client/client-work-with-auth/SKILL.md) | Colyseus Auth (email/anonymous/Google), forgot/cabinet/`emailVerified`, `onChange`, route guards |
 | [`client-work-with-errors`](skills/client/client-work-with-errors/SKILL.md) | Store `error` + `q-banner` (pages + App theme), room `onError`; soft-drop rejoin gated by store `consentedLeaving` |
 | [`client-work-with-structure`](skills/client/client-work-with-structure/SKILL.md) | pages / components / boot / stores placement (theme shell + Game leave/status in App) |
 | [`work-with-forms`](skills/client/work-with-forms/SKILL.md) | LoginPage `q-form` / guest + Google buttons |
-| [`work-with-pages`](skills/client/work-with-pages/SKILL.md) | Routes + guards login/lobby/game; App header (theme + Game leave/status); Lobby create grilleDensity; GamePage top opponents + seated HUD strip / budgets above / end-turn dock / return modal / nearest center / dual end + all-jail overview |
-| [`work-with-stores`](skills/client/work-with-stores/SKILL.md) | Pinia `auth` / `theme` / `game` (incl. peeks∞ / finite steps / peek / rescue/return / grilleDensity create / end-turn / holes) |
+| [`work-with-pages`](skills/client/work-with-pages/SKILL.md) | Routes + guards login/forgot/account/lobby/game; App header (theme + verify reminder + Game leave/status); Lobby create grilleDensity; GamePage top opponents + seated HUD strip / budgets above / end-turn dock / return modal / nearest center / dual end + all-jail overview |
+| [`work-with-stores`](skills/client/work-with-stores/SKILL.md) | Pinia `auth` (forgot/confirm/change-email) / `theme` / `game` (incl. peeks∞ / finite steps / peek / rescue/return / grilleDensity create / end-turn / holes) |
 | [`work-with-styles`](skills/client/work-with-styles/SKILL.md) | Quasar Dark + GET/POST `/api/theme`, header, muted chrome, tourist board (holes + grille overlays / `--grille-anim-ms` 1000) + top presence + seated strip HUD / budgets/end-turn dock / say top↓ own↑ CSS |
 | [`work-with-localization`](skills/client/work-with-localization/SKILL.md) | vue-i18n boot; `game.say` / ready / leave / finish / returnConfirm* / timer+steps end / steps/peeks / endTurn / peek / solo-peeks∞ / grille density + rescue/return/all-jail keys |
 | [`work-with-lobby`](skills/client/work-with-lobby/SKILL.md) | Live LobbyRoom subscribe, create-with-maxSeats + grilleDensity modal (12/22/35% seed; no Play shortcut), quiet resubscribe |
@@ -89,19 +89,19 @@ OpenSpec: [`openspec/config.yaml`](../openspec/config.yaml); артефакты 
 | [`server-align-code`](skills/server/server-align-code/SKILL.md) | Audit ветки / диффа против требований, skills и аналогов; handler/lifecycle-петли; first-sync races |
 | [`server-locate-change-points`](skills/server/server-locate-change-points/SKILL.md) | Где править / куда класть новые файлы (вкл. `config/auth`) |
 | [`server-verify-code`](skills/server/server-verify-code/SKILL.md) | Проверка кода на соответствие skills + DRY/KISS/YAGNI |
-| [`server-work-with-auth`](skills/server/server-work-with-auth/SKILL.md) | `@colyseus/auth`, Google OAuth `addProvider`, JWT `onAuth`, userdata |
+| [`server-work-with-auth`](skills/server/server-work-with-auth/SKILL.md) | `@colyseus/auth`, Google OAuth, smtp.bz mailer, `emailVerified`, send-confirm / change-email, JWT `onAuth` |
 | [`server-work-with-errors`](skills/server/server-work-with-errors/SKILL.md) | Auth/game failures, HTTP health, client-facing errors |
-| [`server-work-with-structure`](skills/server/server-work-with-structure/SKILL.md) | rooms / schema / db / config / app.config placement |
-| [`server-work-with-test`](skills/server/server-work-with-test/SKILL.md) | mocha + `@colyseus/testing` (SC-PIECE + SC-START + SC-MOVE peeks∞/solo become-current +1 / step-loss/holes/grilles trap-rescue-return/leave-clear + SC-BOARD + SC-FINISH + SC-SAY + lobby density 12/22/35% + `GET|POST /api/theme`) |
+| [`server-work-with-structure`](skills/server/server-work-with-structure/SKILL.md) | rooms / schema / db / config / lib / app.config placement |
+| [`server-work-with-test`](skills/server/server-work-with-test/SKILL.md) | mocha + `@colyseus/testing` (SC-PIECE + SC-START + SC-MOVE peeks∞/solo become-current +1 / step-loss/holes/grilles trap-rescue-return/leave-clear + SC-BOARD + SC-FINISH + SC-SAY + lobby density 12/22/35% + `GET|POST /api/theme` + auth email) |
 | [`work-with-rooms`](skills/server/work-with-rooms/SKILL.md) | Room lifecycle (`onDrop`/`onReconnect`/`onLeave` leave-clear holding / `onDispose` clearTurnDeadline), registration, maxSeats / grilleDensity / waiting-only seating / phase / seats |
 | [`work-with-schema`](skills/server/work-with-schema/SKILL.md) | `@colyseus/schema` sync (`phase` / `maxSeats` / countdown + `seats` + connectivity/`ready`/`finishPlace`/`timeExpired` + piece `finished`/`trapped` + turn fields + `removedTaskKeys` + `holdingGrilleKeys`) |
 | [`work-with-messages`](skills/server/work-with-messages/SKILL.md) | Room `onMessage('move'|'rescue'|'returnFromFinish'|'peek'|'peekAnswer'|'endTurn'|'ready'|'say')` + private `budgets`/`peekOpen`/`allJailWarning` (trap/rescue/return; peeks∞; holes reject land) |
 | [`work-with-game`](skills/server/work-with-game/SKILL.md) | Waiting-only seating + deferred pieces + start/ready/countdown + reconnect + private steps/peeks∞ + grille density 12/22/35%/trap/rescue/return/all-jail/leave-clear + become-current grant + multi peek + step-loss + holes not landable + turn deadlines + center finish + `touristMove.ts`; room `tourist` |
-| [`work-with-routes`](skills/server/work-with-routes/SKILL.md) | HTTP `createEndpoint` / thin routes (incl. `GET|POST /api/theme`) |
+| [`work-with-routes`](skills/server/work-with-routes/SKILL.md) | HTTP `createEndpoint` / thin routes (incl. `GET|POST /api/theme`, `POST /api/auth/send-email-confirmation`, `POST /api/auth/email`) |
 | [`work-with-middleware`](skills/server/work-with-middleware/SKILL.md) | CORS, `/health`, monitor/playground |
-| [`work-with-config`](skills/server/work-with-config/SKILL.md) | env, secrets, OAuth `config/auth`, `defineServer` |
-| [`work-with-database`](skills/server/work-with-database/SKILL.md) | GameDatabase, users schema (incl. nullable `theme`) |
-| [`work-with-env-deploy`](skills/server/work-with-env-deploy/SKILL.md) | VPS, PM2, GitHub Actions rsync |
+| [`work-with-config`](skills/server/work-with-config/SKILL.md) | env, secrets, OAuth + email `config/auth`, `defineServer` |
+| [`work-with-database`](skills/server/work-with-database/SKILL.md) | GameDatabase, users schema (incl. nullable `theme`, `emailVerified`) |
+| [`work-with-env-deploy`](skills/server/work-with-env-deploy/SKILL.md) | VPS, PM2, GitHub Actions rsync; smtp.bz + `AUTH_BACKEND_URL` / `CLIENT_APP_URL` |
 | [`work-with-loadtest`](skills/server/work-with-loadtest/SKILL.md) | `@colyseus/loadtest` scripts |
 
 Runtime-пути в skills (`src/…`) — относительно корня соответствующего sibling-репозитория.

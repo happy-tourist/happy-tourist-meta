@@ -44,7 +44,7 @@ Sibling client: `../happy-tourist.github.io` (room type `tourist`, board + piece
 4. Respect **allowed dependency direction** (see below). Never invert layers.
 5. **Room** owns authoritative game logic and message handlers. **Schema** owns sync fields only.
 6. Keep HTTP thin: `express` hook and/or `createEndpoint` — no fat REST BFF, no invented session/Redis auth.
-7. Auth is `@colyseus/auth` (register/login/anonymous/Google + JWT) and Room `onAuth` → `JWT.verify`. Register OAuth providers in `src/config/auth.ts`. Do not invent express-session + Redis.
+7. Auth is `@colyseus/auth` (register/login/anonymous/Google + JWT + email confirm/forgot) and Room `onAuth` → `JWT.verify`. Auth config in `src/config/auth.ts` (`getRuntimeAuth` / `configureAuthEmailFlows`); mailer in `src/lib/`. Do not invent express-session + Redis.
 8. Prefer aligning **room name**, **state schema**, and **messages** with the client rather than changing the client unilaterally.
 
 ## Folder Map
@@ -52,13 +52,15 @@ Sibling client: `../happy-tourist.github.io` (room type `tourist`, board + piece
 | Layer | Path | Role |
 |-------|------|------|
 | Entry | `src/index.ts` | `listen(app)` only |
-| Server wiring | `src/app.config.ts` | `defineServer`: `database`, `rooms`, `routes`, `express`; side-effect import of OAuth config |
-| OAuth config | `src/config/` | `auth.ts` — `auth.oauth.addProvider('google', …)`; no custom `onOAuthProviderCallback` in MVP |
+| Server wiring | `src/app.config.ts` | `defineServer`: `database`, `rooms`, `routes`, `express`; import auth config; `configureAuthEmailFlows` after DB boot; thin `POST /api/auth/*` |
+| Auth config | `src/config/` | `auth.ts` — `getRuntimeAuth` / Google `addProvider` / email hooks; wrap OAuth callback for `emailVerified` only |
+| Mailer | `src/lib/` | `mailer.ts` — smtp.bz `sendEmail` (+ test setter) |
+| Auth HTML | `html/` | Confirm/reset templates (cwd; confirm success written at boot) |
 | Database | `src/db/` | `GameDatabase` (`index.ts`) + Drizzle user schema (`schema.ts`) |
 | Rooms | `src/rooms/` | Room handlers (`onCreate` / `onJoin` / `onDrop` / `onReconnect` / leave / dispose; `onMessage('move'|'ready'|'say')`) |
 | Schema | `src/rooms/schema/` | `@colyseus/schema` synced state (`phase` / `maxSeats` / `countdownRemaining` + legacy `started` + `seats` + `currentTurnSessionId`) |
 | Pure rules | `src/game/` | Authoritative move validate/apply (`touristMove.ts`) — no Colyseus I/O |
-| Tests | `test/` | mocha + `@colyseus/testing` (`*.test.ts`) |
+| Tests | `test/` | mocha + `@colyseus/testing` (`*.test.ts`; auth email + theme + room) |
 | Loadtest | `loadtest/` | `@colyseus/loadtest` scripts |
 | Deploy | `ecosystem.config.cjs`, `.github/workflows/` | PM2 + CI rsync |
 
@@ -69,8 +71,9 @@ Env templates: `.env.example`, `.env.development`, `.env.production` (do not com
 | Layer | Owns | Does not own |
 |-------|------|--------------|
 | **`index.ts`** | Process listen | Room logic, HTTP handlers, schema |
-| **`app.config.ts`** | Wire `database`, register rooms, thin `routes` / `express` (CORS first, health, dev monitor/playground); import `./config/auth.js` | Game rules, board mutation |
-| **`config/`** | OAuth provider registration (`addProvider`) | Room gate, user schema, custom OAuth callback (leave built-in) |
+| **`app.config.ts`** | Wire `database`, register rooms, thin `routes` / `express` (CORS first, health, auth email endpoints, `configureAuthEmailFlows`); import `./config/auth.js` | Game rules, board mutation |
+| **`config/`** | OAuth + email confirm/forgot hooks (`getRuntimeAuth`, wrap OAuth for verified) | Room gate, user schema, from-scratch OAuth callback |
+| **`lib/`** | Outbound mail (`mailer.ts` smtp.bz) | Auth routes, rooms |
 | **`db/`** | SQLite GameDatabase; extend `colyseus_users` with defaults | Room messages; inventing a second auth store |
 | **`rooms/`** | Auth gate (`onAuth`), seats, start phases/ready/countdown, reconnect grace, turn order (skip finished), `onMessage('move'|'ready'|'say')` + schema writes (move/ready/finish side-effects) / ephemeral broadcast (say) | Raw HTTP; client-trusted board; pure geometry tables (prefer `src/game/`) |
 | **`rooms/schema/`** | Sync fields (`phase` / `maxSeats` / `countdownRemaining` + `seats` → `touristId` + `pieces` (+ `finished`) + connectivity/`ready`/`finishPlace` + `currentTurnSessionId` + `nextFinishPlace`; legacy `started`) | Validation / rules / side effects |
@@ -83,9 +86,10 @@ Typical path:
 
 ```text
 index.ts → app.config.ts
-app.config.ts → db / rooms (defineRoom) / config/auth / thin HTTP
+app.config.ts → db / rooms (defineRoom) / config/auth / lib/mailer / thin HTTP
 rooms → rooms/schema + game (pure rules) (+ JWT from @colyseus/auth)
-config → @colyseus/auth (oauth.addProvider only)
+config → @colyseus/auth (runtime singleton) + db + lib/mailer
+lib → nodemailer / env only
 db → @colyseus/database / drizzle schema only
 game → no Colyseus / no express (pure functions only)
 ```
@@ -93,13 +97,14 @@ game → no Colyseus / no express (pure functions only)
 Allowed:
 
 ```text
-app.config   →  db, rooms, config/auth, colyseus tools (monitor, playground, createEndpoint)
-config       →  @colyseus/auth (addProvider; no rooms / no express)
+app.config   →  db, rooms, config/auth, lib/mailer, colyseus tools (monitor, playground, createEndpoint)
+config       →  @colyseus/auth (getRuntimeAuth), db, lib/mailer (no rooms / no express game)
+lib          →  nodemailer / env (no rooms / no auth routes)
 rooms        →  rooms/schema, game/*, @colyseus/auth (JWT), colyseus Room/Client APIs
 rooms/schema →  @colyseus/schema only
 game         →  pure TS only (no rooms / schema / express)
 db           →  @colyseus/database, drizzle (no rooms / no express)
-test         →  app.config, game, @colyseus/testing, JWT
+test         →  app.config, game, lib/mailer mocks, @colyseus/testing, JWT
 loadtest     →  @colyseus/sdk / loadtest CLI
 ```
 
@@ -122,11 +127,11 @@ Decide in this order:
 2. **Synced state fields?** → `src/rooms/schema/<Name>State.ts` only; Room assigns/mutates them.
 3. **Game messages / rules?** → pure module under `src/game/` + Room `onMessage(…)` glue that validates, applies, updates schema.
 4. **User profile columns?** → `src/db/schema.ts`: **NOT NULL** columns need `.default(...)` so `/auth/register` / `/auth/login` stay compatible; nullable prefs (e.g. `theme`) do not; wire via `src/db/index.ts` if needed.
-5. **Thin HTTP (health, demo API, preference read/save)?** → `express` hook or `createEndpoint` in `app.config.ts` (e.g. `GET|POST /api/theme`). CORS stays first.
-6. **Auth HTTP?** → Already from `@colyseus/auth` when `database` is set — do not reimplement `/auth/*`.
-7. **OAuth provider (Google)?** → `src/config/auth.ts` via `auth.oauth.addProvider`; side-effect import from `app.config.ts`; do not override built-in `onOAuthProviderCallback` unless product asks.
-8. **Room gate?** → static `onAuth` with `JWT.verify` on the Room class.
-9. **Test?** → `test/<Name>.test.ts` (boot `appConfig`, JWT, create/connect room).
+5. **Thin HTTP (health, demo API, preference, auth send-confirm / change-email)?** → `express` hook or `createEndpoint` in `app.config.ts` (e.g. `GET|POST /api/theme`, `POST /api/auth/*`). CORS stays first.
+6. **Auth HTTP?** → Built-in `/auth/*` from `@colyseus/auth` when `database` is set — do not reimplement register/login; confirm mail only via our send-confirm endpoint.
+7. **OAuth / email flows?** → `src/config/auth.ts` (`getRuntimeAuth`, `configureAuthEmailFlows`); wrap built-in OAuth callback for `emailVerified`; mailer in `src/lib/mailer.ts`.
+8. **Room gate?** → static `onAuth` with `JWT.verify` on the Room class (no hard `emailVerified` gate).
+9. **Test?** → `test/<Name>.test.ts` (boot `appConfig`, JWT, create/connect room; auth email → mock `setSendEmailImpl` + `keepLatestRequestListener`).
 10. **Load script?** → `loadtest/` (update room name when registered name changes).
 11. **PM2 / CI?** → `ecosystem.config.cjs` / `.github/workflows/` only for deploy process — not game logic.
 
@@ -158,7 +163,8 @@ Decide in this order:
 
 - `index.ts`: `listen` only.
 - `app.config.ts`: register rooms, attach `database`, thin routes, CORS + `/health` + dev monitor/playground; side-effect import `./config/auth.js`.
-- `src/config/auth.ts`: OAuth `addProvider('google', …)` only — leave built-in OAuth callback alone.
+- `src/config/auth.ts`: OAuth + email flows (`getRuntimeAuth`, `configureAuthEmailFlows`); wrap built-in OAuth callback only for `emailVerified`.
+- `src/lib/mailer.ts`: smtp.bz outbound mail only.
 
 ### What NOT to put
 
@@ -196,12 +202,17 @@ src/index.ts          # listen(app) only
 src/app.config.ts     # defineServer({ database, rooms, routes, express })
 ```
 
-### Database
+### Database + mail
 
 ```text
 src/db/
 ├── index.ts    # export const db = new GameDatabase(...)
 └── schema.ts   # users = tables.sqlite.users("colyseus_users", { ... })
+
+src/lib/
+└── mailer.ts   # smtp.bz sendEmail (+ setSendEmailImpl for tests)
+
+html/           # confirm/reset templates (cwd)
 ```
 
 ### Room + schema
@@ -217,6 +228,10 @@ src/rooms/
 
 ```text
 test/MyRoom.test.ts
+test/theme.test.ts
+test/zz-authEmail.test.ts
+test/setupEnv.ts
+test/keepLatestRequestListener.ts
 loadtest/example.ts
 ecosystem.config.cjs
 .github/workflows/deploy.yml
@@ -230,9 +245,9 @@ ecosystem.config.cjs
 
 **Auth gate** — `MyRoom.onAuth` → `JWT.verify(token)` → userdata to `onJoin`.
 
-**HTTP** — CORS middleware first in `express`; `/health` JSON; `createEndpoint("/api/hello", …)` demo; `createEndpoint` `GET|POST /api/theme` JWT + registered theme preference; `/auth/*` from `@colyseus/auth` via `database: db`.
+**HTTP** — CORS middleware first in `express`; `/health` JSON; `createEndpoint("/api/hello", …)` demo; `createEndpoint` `GET|POST /api/theme` JWT + registered theme preference; `POST /api/auth/send-email-confirmation` + `POST /api/auth/email`; `/auth/*` from `@colyseus/auth` via `database: db`.
 
-**Test** — `boot(appConfig)`, `JWT.sign(...)`, `createRoom("tourist")`, `connectTo`, assert `sessionId`; lobby `+`/`-` cases when listing changes.
+**Test** — `boot(appConfig)`, `JWT.sign(...)`, `createRoom("tourist")`, `connectTo`, assert `sessionId`; lobby `+`/`-` cases when listing changes; auth email suite mocks mailer (`setSendEmailImpl`) and uses `keepLatestRequestListener` after multi-suite boot.
 
 **Client contract** — room `tourist` + live `lobby`; synced `phase` / `maxSeats` / `countdownRemaining` / `seats` (+ `ready` / `finishPlace` / piece `finished`) / `currentTurnSessionId` / `nextFinishPlace` (+ legacy `started`) + `move` `{ side, row, col }` (center → finish side-effect) + `ready` + ephemeral `say` `{ presetId }` → broadcast `{ sessionId, presetId, at }`; HTTP `/rooms/tourist` is fallback only.
 

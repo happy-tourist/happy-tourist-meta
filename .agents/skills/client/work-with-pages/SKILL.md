@@ -46,11 +46,13 @@ From `src/router/routes.ts` (hash mode via `createWebHashHistory` when `vueRoute
 |------|------|------|-------|
 | `/` | — | — | redirect → `/lobby` |
 | `/login` | `login` | `LoginPage` | `meta.guest` |
+| `/forgot-password` | `forgot-password` | `ForgotPasswordPage` | `meta.guest`; reset request only (no SPA reset form) |
 | `/lobby` | `lobby` | `LobbyPage` | `meta.requiresAuth` |
+| `/account` | `account` | `AccountPage` | `meta.requiresAuth`; cabinet (registered only — anonymous → lobby) |
 | `/game/:roomId` | `game` | `GamePage` | `meta.requiresAuth`; param `roomId` |
 | `/:catchAll(.*)*` | — | — | redirect → `/lobby`; keep last |
 
-Deep links on GitHub Pages use the hash form: `/#/lobby`, `/#/game/<roomId>`, `/#/login`.
+Deep links on GitHub Pages use the hash form: `/#/lobby`, `/#/account`, `/#/forgot-password`, `/#/game/<roomId>`, `/#/login`.
 
 ## Page Component
 
@@ -59,6 +61,8 @@ Flat file with the `*Page` suffix (no per-page folder required):
 ```text
 src/pages/
 |-- LoginPage.vue
+|-- ForgotPasswordPage.vue
+|-- AccountPage.vue
 |-- LobbyPage.vue
 `-- GamePage.vue
 ```
@@ -92,8 +96,10 @@ Allowed dependency direction:
 
 Examples:
 
-- `LoginPage` — form UI; calls `useAuthStore()` (`register` / `login` / `loginAnonymously`), then `router.replace`.
-- `LobbyPage` — room list / create (maxSeats + `grilleDensity` few/medium/many, default medium) / join via `useGameStore()`; navigates to `game` with `roomId`.
+- `LoginPage` — form UI; calls `useAuthStore()` (`register` / `login` / `loginAnonymously` / Google); link to forgot-password; then `router.replace`.
+- `ForgotPasswordPage` — email → `auth.forgotPassword`; success banner; back to login.
+- `AccountPage` — cabinet: confirm send + change email via store; anonymous redirect to lobby on mount.
+- `LobbyPage` — room list / create (maxSeats + `grilleDensity` few/medium/many, default medium) / join via `useGameStore()`; navigates to `game` with `roomId`; account link for non-anonymous.
 - `GamePage` — board in scroll region; unfinished pieces + finish disappear + return travel from nearest center; holes for `removedTaskKeys` (not landable; piece may stand); grille overlays from `holdingGrilleKeys` (`grille.png` drop/rise, **`GRILLE_ANIM_MS = 1000`**); trapped pieces visible (no move/peek); rescue affordance + `sendRescue`; **top** presence row (seated opponents / spectator all occupied); sticky bottom `.game-hud` **only when seated** (own + strip — wide row N,E,W,S / HUD ≤~420 → 2×2; **no** chip/`q-menu`); finish flag on strip; return → confirm modal «Вернуть на поле?» → same red `.tile--target` ring + `sendReturnFromFinish` (dim finished only if `!canReturn`; no undo btn); chrome grille on strip when trapped; finish 2×2 click → nearest legal center (Chebyshev); all-jail warning modal (`allJailWarning`); dual rings + 72px avatar + place/ready top-left + say top-right; say: top markers bubbles **down**, own bottom **up**; budgets **above** own avatar; «Завершить ход» in end-turn dock above HUD right (`sendEndTurn` / `canSendEndTurn`); peek eye + Correct/Wrong modal; keep-focus after non-finishing move; +N budget fall ≈ 2 s; solo peeks∞ + dual timer-vs-steps end modals; ready/countdown UX; syncs via `useGameStore()`; `rejoinGame(roomId)` on mount / soft-fail / browser reopen. **No** page-local leave/status/roomId chrome — that lives in `App.vue` on Game route.
 
 Do not put a second app shell (global layout host) inside a page — `App.vue` already mounts `router-view`.
@@ -122,7 +128,7 @@ Every route renders inside:
 </q-layout>
 ```
 
-Shared theme toggle + `theme.error` banner live here (`useThemeStore`). On **Game** (`route.name === 'game'`): icon-only leave left + centered status from `useGameStore` (same branches as former page `statusLabel` — SC-PRESENCE-23); Login/Lobby omit leave/status (SC-LEAVE-08). Leave confirm when seated ∧ `playing` ∧ `finishPlace === 0` ∧ `!timeExpired`, else immediate `leaveGame` → lobby (`work-with-rooms`). Wire theme restore with a stable multi-source watch — `watch([() => auth.ready, () => auth.user?.id, () => auth.user?.anonymous], …)` → `syncFromAuthUser` (registered → `GET /api/theme`, guest → `localStorage`) — not JWT `user.theme` alone, and not `watch(() => […])` (new array each run). Do **not** replace `auth.user` after GET (theme lives in the theme store; SC-THEME-10). Do not duplicate a layout wrapper, per-page theme control, or page-local leave/status header when adding pages.
+Shared theme toggle + `theme.error` banner live here (`useThemeStore`). Account nav + once-per-session email-verify reminder modal (registered, `needsEmailVerification`) also live in `App.vue` — CTA to `/account`; do not claim mail was already sent (`client-work-with-auth`). On **Game** (`route.name === 'game'`): icon-only leave left + centered status from `useGameStore` (same branches as former page `statusLabel` — SC-PRESENCE-23); Login/Forgot/Lobby omit leave/status (SC-LEAVE-08). Leave confirm when seated ∧ `playing` ∧ `finishPlace === 0` ∧ `!timeExpired`, else immediate `leaveGame` → lobby (`work-with-rooms`). Wire theme restore with a stable multi-source watch — `watch([() => auth.ready, () => auth.user?.id, () => auth.user?.anonymous], …)` → `syncFromAuthUser` (registered → `GET /api/theme`, guest → `localStorage`) — not JWT `user.theme` alone, and not `watch(() => […])` (new array each run). Do **not** replace `auth.user` after GET (theme lives in the theme store; SC-THEME-10). Do not duplicate a layout wrapper, per-page theme control, or page-local leave/status header when adding pages.
 
 ## Router Patterns
 
@@ -201,7 +207,7 @@ If an old path changes, keep a redirect in `routes.ts`:
 
 | Domain | Page | Typical stores / notes |
 |--------|------|------------------------|
-| Auth | `LoginPage` | `stores/auth`; `meta.guest` |
+| Auth | `LoginPage` / `ForgotPasswordPage` / `AccountPage` | `stores/auth`; guest vs requiresAuth; soft verify modal in App |
 | Theme (chrome Dark) | `App.vue` header | `stores/theme` + `boot/theme` |
 | Game leave + match status | `App.vue` header (Game route only) | `stores/game` status / `leaveGame`; confirm dialog in App |
 | Lobby / rooms | `LobbyPage` | `stores/game.subscribeLobby`, create `{ maxSeats, grilleDensity }` / join; `meta.requiresAuth` |

@@ -3,10 +3,12 @@ name: work-with-config
 description: >-
   Use when adding, changing, reviewing, or debugging Colyseus server config:
   env loading (.env.${NODE_ENV}), secrets (AUTH_SALT / JWT_SECRET /
-  SESSION_SECRET / GOOGLE_CLIENT_*), DATABASE_URL / PORT / NODE_ENV,
-  src/app.config.ts defineServer wiring, src/config/auth.ts OAuth providers,
-  CORS (ALLOWED_ORIGIN, credentials), /health /hi, or non-prod monitor /
-  playground. Not for APP_NAME brand merge (not a BFF).
+  SESSION_SECRET / GOOGLE_CLIENT_* / SMTP_BZ_* / MAIL_FROM /
+  AUTH_BACKEND_URL / CLIENT_APP_URL), DATABASE_URL / PORT / NODE_ENV,
+  src/app.config.ts defineServer wiring, src/config/auth.ts OAuth + email
+  flows (getRuntimeAuth / configureAuthEmailFlows), CORS (ALLOWED_ORIGIN,
+  credentials), /health /hi, or non-prod monitor / playground. Not for
+  APP_NAME brand merge (not a BFF).
 ---
 
 # Work With Config
@@ -77,6 +79,10 @@ From `.env.example`:
 | `SESSION_SECRET` | Required secret for `@colyseus/auth` sessions |
 | `GOOGLE_CLIENT_ID` | Google OAuth Web client ID (`auth.oauth.addProvider` in `src/config/auth.ts`) |
 | `GOOGLE_CLIENT_SECRET` | Google OAuth Web client secret |
+| `SMTP_BZ_HOST` / `SMTP_BZ_PORT` / `SMTP_BZ_USER` / `SMTP_BZ_PASS` | smtp.bz transport (`src/lib/mailer.ts`) |
+| `MAIL_FROM` | From header for outbound mail |
+| `AUTH_BACKEND_URL` | Public API origin → `auth.backend_url` (confirm/reset links) |
+| `CLIENT_APP_URL` | Client origin; confirm success → `{CLIENT_APP_URL}/#/lobby` |
 | `DATABASE_URL` | SQLite path (local `./game.db`; prod often under `/var/www/happy-tourist-server/game.db`) |
 | `NODE_ENV` | `development` / `production` — picks env file, CORS origin, monitor/playground |
 | `PORT` | Listen port (default `2567` via `@colyseus/tools` `listen`) |
@@ -88,8 +94,8 @@ Generate secrets locally with e.g. `openssl rand -base64 32`. Keep the same
 
 | Belongs in **env** | Belongs in **`app.config.ts`** |
 | --- | --- |
-| Secrets (`AUTH_SALT`, `JWT_SECRET`, `SESSION_SECRET`, `GOOGLE_CLIENT_*`) | `defineServer` shape: `database`, `rooms`, `routes`, `express`; side-effect import `./config/auth.js` |
-| Contour (`NODE_ENV`, `PORT`, `DATABASE_URL`) | CORS middleware order and headers |
+| Secrets (`AUTH_SALT`, `JWT_SECRET`, `SESSION_SECRET`, `GOOGLE_CLIENT_*`, `SMTP_BZ_*`, `MAIL_FROM`) | `defineServer` shape: `database`, `rooms`, `routes`, `express`; auth email configure + thin `/api/auth/*` |
+| Contour (`NODE_ENV`, `PORT`, `DATABASE_URL`, `AUTH_BACKEND_URL`, `CLIENT_APP_URL`) | CORS middleware order and headers |
 | Anything that must change without a code change | `/health`, `/hi`, non-prod `monitor()` / `playground()` |
 | | Room name → room class mapping; `createEndpoint` paths |
 

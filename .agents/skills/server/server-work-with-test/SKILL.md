@@ -41,11 +41,12 @@ babel setups.
 
 | Piece | Role |
 |-------|------|
-| Script | `npm test` → `mocha -r tsx test/**.test.ts --exit --timeout 15000` |
-| Runner | mocha + `@types/mocha`; load TS via tsx |
+| Script | `npm test` → `mocha -r tsx -r ./test/setupEnv.ts test/**.test.ts --exit --timeout 15000` |
+| Runner | mocha + `@types/mocha`; load TS via tsx; `setupEnv.ts` sets `COLYSEUS_TESTING=1` |
 | Harness | `@colyseus/testing`: `boot(appConfig)`, `cleanup()`, `shutdown()` |
-| Auth | `JWT` from `@colyseus/auth` — `JWT.sign` then `colyseus.sdk.auth.token` |
+| Auth | `JWT` from `@colyseus/auth` — `JWT.sign` then `colyseus.sdk.auth.token`; email flows use runtime JWT helpers |
 | App under test | `import appConfig from "../src/app.config.js"` |
+| Multi-suite HTTP | After each `boot`, call `keepLatestRequestListener(colyseus.server)` so stacked `request` listeners from reused `defineServer` do not double-fire (e.g. duplicate `sendEmail`) |
 
 Do **not** add `jest.config`, `babel-jest`, `vitest`, or `.cjs` test files.
 
@@ -60,6 +61,7 @@ tests; fix failures before claiming done.
 | Room schema / messages covered with room | Same room test file (or `test/<Room>.messages.test.ts` if large) |
 | HTTP helpers (`/health`, `/rooms/:name`) | `test/http.test.ts` or next to the feature under test |
 | Preference HTTP (`GET`/`POST /api/theme`) | `test/theme.test.ts` (auth reject + persist/login + GET after POST same JWT + cross-device older JWT) |
+| Auth email flows (confirm / forgot / change-email / cooldown) | `test/zz-authEmail.test.ts` — mock `setSendEmailImpl`; `clearConfirmSendCooldownForTests`; `keepLatestRequestListener` after boot |
 
 Mocha picks up `test/**.test.ts` via the npm script. Mirror room names under
 `test/` as rooms grow; keep relative imports to `../src/...`.

@@ -53,7 +53,7 @@ Outside `src`: `public/`, `quasar.config.ts`, `.env.development` / `.env.product
 
 **Not used in this project:** `src/blocks/`, `src/dialogs/`, Vuex, axios BFF layer, `*View` page suffix.
 
-Scaffold leftovers (`EssentialLink.vue`, `example-store.ts`, unused `pages/index*`) — prefer the login / lobby / game flow; do not extend scaffold paths for new features.
+Scaffold leftovers (`EssentialLink.vue`, `example-store.ts`, unused `pages/index*`) — prefer the login / forgot / account / lobby / game flow; do not extend scaffold paths for new features.
 
 ## Dependency Direction
 
@@ -130,7 +130,7 @@ Decide in this order:
 | New `*View.vue` naming | `*Page.vue` |
 | `src/blocks/` or `src/dialogs/index` registry | Page-local UI or a plain component |
 | Empty layer folders “for later” | Add when the first file is needed |
-| Extending unused scaffold pages (`pages/index*`) | Login / lobby / game routes only |
+| Extending unused scaffold pages (`pages/index*`) | Login / forgot / account / lobby / game routes only |
 | Manual Quasar component registration | Auto-import |
 | New axios/API module for Colyseus HTTP | LobbyRoom via store (`subscribeLobby`); `client.http` only as unused fallback |
 
@@ -138,7 +138,7 @@ Decide in this order:
 
 | Kind | Convention | Examples |
 |------|------------|----------|
-| Page file | PascalCase + `Page` suffix | `LoginPage.vue`, `LobbyPage.vue`, `GamePage.vue` |
+| Page file | PascalCase + `Page` suffix | `LoginPage.vue`, `ForgotPasswordPage.vue`, `AccountPage.vue`, `LobbyPage.vue`, `GamePage.vue` |
 | Route `name` | lowercase (existing) | `login`, `lobby`, `game` |
 | Component file | PascalCase | `EssentialLink.vue` (scaffold); new: `BoardCell.vue` |
 | Store file | kebab or descriptive | `auth.ts`, `theme.ts`, `game.ts` |
@@ -155,7 +155,7 @@ Pages are **flat files** under `src/pages/` (not `pages/LoginPage/LoginPage.vue`
 src/pages/LobbyPage.vue   # <script setup lang="ts"> + Quasar template
 ```
 
-Existing pages: `LoginPage`, `LobbyPage`, `GamePage`.
+Existing pages: `LoginPage`, `ForgotPasswordPage`, `AccountPage`, `LobbyPage`, `GamePage`.
 
 ### Component (when extracted)
 
@@ -184,7 +184,7 @@ Registered in `quasar.config.ts` boot array: `theme`, `i18n`, `colyseus` (+ `fra
 
 ## Real Composition Examples
 
-**Auth page** — `LoginPage` uses `useAuthStore()` for register / login / anonymous / Google; shows `error` banner; no Colyseus calls outside the store.
+**Auth pages** — `LoginPage` / `ForgotPasswordPage` / `AccountPage` use `useAuthStore()` (register / login / anonymous / Google / forgot / send-confirm / change-email); show `error` banner / dialogs; no Colyseus calls outside the store. Confirm/reset HTML stays on the API — no SPA pages for those.
 
 **Lobby** — `LobbyPage` uses `useGameStore().subscribeLobby` / `createGame({ maxSeats, grilleDensity })` / `joinGame` and `useAuthStore` for display/logout.
 
@@ -225,7 +225,7 @@ Registered in `quasar.config.ts` boot array: `theme`, `i18n`, `colyseus` (+ `fra
 
 | Domain | Page | Store / boot |
 |--------|------|----------------|
-| Auth | `LoginPage` | `stores/auth` + `boot/colyseus` |
+| Auth | `LoginPage` / `ForgotPasswordPage` / `AccountPage` | `stores/auth` + `boot/colyseus` |
 | Theme (chrome Dark) | `App.vue` header | `stores/theme` + `boot/theme` |
 | Lobby / rooms | `LobbyPage` | `stores/game.subscribeLobby` / create `{ maxSeats, grilleDensity }` / join |
 | Game session | `GamePage` | `stores/game` room attach + seats / grilles / top + seated-HUD presence / say / strip + rescue/return-modal; soft-drop gated by `consentedLeaving` |
