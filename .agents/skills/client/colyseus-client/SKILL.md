@@ -84,7 +84,7 @@ export default defineBoot(({ app }) => {
 | `VITE_COLYSEUS_URL` | WebSocket / SDK endpoint (`new Client(...)`) |
 | `VITE_API_URL` | HTTP base when needed (same host family as Colyseus) |
 
-Local defaults: `.env.development` → `localhost:2567`. Production: `.env.production` / CI vars → `happy-tourist.duckdns.org` (WSS/HTTPS).
+Local defaults: `.env.development` → `localhost:2567`. Production: `.env.production` / CI vars → `api.happy-tourist.ru` (WSS/HTTPS).
 
 ## Where Colyseus I/O lives
 

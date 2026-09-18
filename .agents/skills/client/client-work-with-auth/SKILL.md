@@ -164,7 +164,7 @@ export const client = new Client(import.meta.env.VITE_COLYSEUS_URL);
 
 In `<script setup>`, import `client` from `@/boot/colyseus` (or use the auth store). Prefer store actions over calling `client.auth` from pages.
 
-Env: `VITE_COLYSEUS_URL` (also `VITE_API_URL` for HTTP). Local defaults → `localhost:2567`; production → `happy-tourist.duckdns.org`.
+Env: `VITE_COLYSEUS_URL` (also `VITE_API_URL` for HTTP). Local defaults → `localhost:2567`; production → `api.happy-tourist.ru`.
 
 ## SDK Surface (client)
 

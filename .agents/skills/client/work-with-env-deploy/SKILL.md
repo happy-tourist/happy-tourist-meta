@@ -27,12 +27,12 @@ Deploy target: GitHub Pages **user/org site at domain root**. Router mode is **h
 
 | Variable | Role | Local (`.env.development`) | Prod (`.env.production`) |
 |----------|------|----------------------------|--------------------------|
-| `VITE_COLYSEUS_URL` | Colyseus SDK / WebSocket (`new Client(...)` in `src/boot/colyseus.ts`) | `ws://localhost:2567` | `wss://happy-tourist.duckdns.org` |
-| `VITE_API_URL` | HTTP base (same host family as Colyseus) | `http://localhost:2567` | `https://happy-tourist.duckdns.org` |
+| `VITE_COLYSEUS_URL` | Colyseus SDK / WebSocket (`new Client(...)` in `src/boot/colyseus.ts`) | `ws://localhost:2567` | `wss://api.happy-tourist.ru` |
+| `VITE_API_URL` | HTTP base (same host family as Colyseus) | `http://localhost:2567` | `https://api.happy-tourist.ru` |
 
 - Typed in `env.d.ts` as `ImportMetaEnv` (`readonly VITE_COLYSEUS_URL`, `readonly VITE_API_URL`).
 - Consumed at build/dev time via `import.meta.env.VITE_*` (Vite).
-- Local defaults: **localhost:2567**. Prod defaults: **duckdns WSS/HTTPS**.
+- Local defaults: **localhost:2567**. Prod defaults: **api.happy-tourist.ru** WSS/HTTPS.
 - Sibling server: `../happy-tourist-server` (same host/port locally).
 
 When adding a new env key:
