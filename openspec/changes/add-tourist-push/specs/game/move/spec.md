@@ -6,16 +6,16 @@ Delta этого change: действие push (толкнуть), стоимо�
 
 | Scenario ID | Coverage |
 |-------------|----------|
-| SC-MOVE-66 | pending (server mocha — push costs 1 step, relocates target) |
-| SC-MOVE-67 | pending (server mocha — collinear through geometry) |
-| SC-MOVE-68 | pending (server mocha — cannot push trapped) |
-| SC-MOVE-69 | pending (server mocha — push onto center finishes target) |
-| SC-MOVE-70 | pending (server mocha — push onto grille traps target) |
-| SC-MOVE-71 | pending (server mocha — reject hole / occupied / no steps) |
-| SC-MOVE-72 | pending (server mocha — push does not advance turn) |
-| SC-MOVE-73 | pending (server mocha — auto-end waits for legal push) |
-| SC-MOVE-74 | pending (client UX — push icons over targets of selected) |
-| SC-MOVE-75 | pending (client UX — approach/back + target travel; keep selection) |
+| SC-MOVE-66 | covered (server mocha — push costs 1 step, relocates target) |
+| SC-MOVE-67 | covered (server mocha + unit — collinear through geometry) |
+| SC-MOVE-68 | covered (server mocha + unit — cannot push trapped) |
+| SC-MOVE-69 | covered (server mocha — push onto center finishes target) |
+| SC-MOVE-70 | covered (server mocha — push onto grille traps target) |
+| SC-MOVE-71 | covered (server mocha + unit — reject hole / occupied / no steps) |
+| SC-MOVE-72 | covered (server mocha — push does not advance turn) |
+| SC-MOVE-73 | covered (server mocha — auto-end waits for legal push) |
+| SC-MOVE-74 | covered (client UX — push icons over targets of selected) |
+| SC-MOVE-75 | covered (client UX — approach/back + target travel; keep selection) |
 
 Related: finish side-effect — `game/finish`; grille trap visuals — `game/board`; return strip UX — delta `game/finish`.
 

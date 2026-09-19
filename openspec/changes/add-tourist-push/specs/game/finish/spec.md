@@ -6,8 +6,8 @@ Delta этого change: UX возврата с финиша — зелёная 
 
 | Scenario ID | Coverage |
 |-------------|----------|
-| SC-FINISH-13 | pending (client UX — green return icon; no confirm modal) |
-| SC-FINISH-16 | pending (client UX — finished strip slot click does not start return) |
+| SC-FINISH-13 | covered (client UX — green return icon; no confirm modal) |
+| SC-FINISH-16 | covered (client UX — finished strip slot click does not start return) |
 
 Related: return geometry and steps — `game/move`; strip dimming — main `game/finish`.
 

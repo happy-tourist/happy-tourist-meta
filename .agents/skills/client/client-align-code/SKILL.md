@@ -305,7 +305,7 @@ Report as hard `[defect]` when a reachable enter/subscribe path can miss the fir
 
 ### Quasar nested slots / visual overlays (обязательно при касании presence / progress / stacked chrome)
 
-Когда diff/ветка трогает `GamePage` presence, `q-circular-progress`, stacked rings/badges, absolute overlays поверх аватара/иконки, вложенные Quasar-компоненты со **default slot**, или tourist strip / return modal chrome — **отдельно** проверь, не прячет ли композиция обязательный видимый контент (tourist PNG, badge, affordance) и не ломает ли layout.
+Когда diff/ветка трогает `GamePage` presence, `q-circular-progress`, stacked rings/badges, absolute overlays поверх аватара/иконки, вложенные Quasar-компоненты со **default slot**, или tourist strip / return strip icon / push affordance chrome — **отдельно** проверь, не прячет ли композиция обязательный видимый контент (tourist PNG, badge, affordance) и не ломает ли layout.
 
 Контекст Quasar `QCircularProgress`:
 
