@@ -2,7 +2,7 @@
 
 См. `proposal.md` и delta specs `game/move`, `game/finish`, `game/board`, `game/presence`. Push + return-strip + polish (affordance/end-turn/push→finish) уже в runtime; этот апдейт — client fix: свой ход на центр должен давать тот же travel+fade.
 
-Чеклист — `tasks.md` (блоки 1–5 done; блок 6 — finish-travel fix).
+Чеклист — `tasks.md` (блоки 1–6 done).
 
 ## Goals / Non-Goals
 

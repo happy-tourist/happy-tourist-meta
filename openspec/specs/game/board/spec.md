@@ -20,7 +20,7 @@
 | SC-BOARD-10 | covered (server mocha) |
 | SC-BOARD-11 | covered (client UX + server — hole not landable) |
 | SC-BOARD-12 | covered (client UX — piece may stand on hole) |
-| SC-BOARD-13 | covered (server mocha) |
+| SC-BOARD-13 | covered (client UX — eye centered above peekable tourist) |
 | SC-BOARD-14 | covered (client UX — eye; no one-peek-per-turn) |
 | SC-BOARD-15 | covered (server mocha — land on hole rejected; mirrors SC-MOVE-49) |
 | SC-BOARD-16 | covered (server mocha — medium density seed count) |
@@ -163,13 +163,13 @@ When a peek resolves as **correct**, the server SHALL mark that task cell as rem
 
 ### Requirement: Eye affordance to open a peek
 
-While it is the user’s multiplayer or solo turn and a peek is currently allowed for one of their unfinished pieces on a still-present task cell, activating that piece MUST offer an eye affordance to open the peek modal. When local selection is already kept on such a piece after a move (`game/move` keep-focus), the eye MUST appear without requiring another activation click. Clients that are not allowed to peek MUST NOT show that affordance as a way to open a peek. A removed-task hole under the piece MUST NOT offer the eye.
+While it is the user’s multiplayer or solo turn and a peek is currently allowed for one of their unfinished pieces on a still-present task cell, activating that piece MUST offer an eye affordance to open the peek modal. The eye affordance MUST be shown **centered above** that tourist on the board (same top-center family as strip return and board rescue/push affordances). When local selection is already kept on such a piece after a move (`game/move` keep-focus), the eye MUST appear without requiring another activation click. Clients that are not allowed to peek MUST NOT show that affordance as a way to open a peek. A removed-task hole under the piece MUST NOT offer the eye.
 
 #### Scenario [SC-BOARD-13]: Current player sees eye on a peekable tourist
 
 - **GIVEN** it is the user’s turn with an allowed peek and an own unfinished piece on a still-present task cell
 - **WHEN** the user activates that piece
-- **THEN** an eye affordance is available to open the peek
+- **THEN** an eye affordance is available centered above that tourist to open the peek
 - **AND** other clients do not gain that peek affordance for the user’s piece
 
 #### Scenario [SC-BOARD-14]: Eye after move without re-select when still on a present task tile

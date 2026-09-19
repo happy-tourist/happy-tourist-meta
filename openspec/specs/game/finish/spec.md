@@ -8,7 +8,7 @@
 
 | Scenario ID | Coverage |
 |-------------|----------|
-| SC-FINISH-01 | covered (server mocha) |
+| SC-FINISH-01 | covered (server mocha + client UX — move onto center travel then disappear) |
 | SC-FINISH-02 | covered (server mocha) |
 | SC-FINISH-03 | covered (server mocha + client UX modal) |
 | SC-FINISH-04 | covered (server mocha + client UX modal) |
@@ -20,17 +20,20 @@
 | SC-FINISH-10 | covered (client UX strip) |
 | SC-FINISH-11 | covered (server mocha) |
 | SC-FINISH-12 | covered (server mocha — return clears finished) |
-| SC-FINISH-13 | covered (client UX — modal return flow) |
+| SC-FINISH-13 | covered (client UX — green return icon; no confirm modal) |
 | SC-FINISH-14 | covered (server mocha — strip selectable after return) |
 | SC-FINISH-15 | covered (client UX — return travel from nearest center) |
+| SC-FINISH-16 | covered (client UX — finished strip slot click does not start return) |
+| SC-FINISH-17 | covered (client UX — push onto center travel+disappear) |
+| SC-FINISH-18 | covered (client UX — move onto center seeds lastKnown; travel+disappear parity) |
 
-Related: seating gate — `game/pieces` (new seats only in `waiting`); return geometry and steps — `game/move`.
+Related: seating gate — `game/pieces` (new seats only in `waiting`); return geometry and steps — `game/move`; push finish — `game/move` SC-MOVE-76.
 
 ## Requirements
 
 ### Requirement: Entering any center cell finishes a piece
 
-When the room start phase is `playing` and the server accepts a legal move whose target is any of the four center cells of the tourist layout, the server SHALL mark that piece finished. A finished piece MUST NOT occupy any board cell for subsequent move validation (the center cell becomes free for other pieces immediately). Every client that displays the board MUST remove that piece from the board after a short disappear animation on the landing cell (no travel toward the strip). Finished piece state MUST be synchronized to all clients in the room.
+When the room start phase is `playing` and the server accepts a legal **move or push** whose landing target is any of the four center cells of the tourist layout, the server SHALL mark that piece finished. A finished piece MUST NOT occupy any board cell for subsequent move validation (the center cell becomes free for other pieces immediately). Every client that displays the board MUST remove that piece from the board after travel onto the landing cell and a short disappear animation on that cell (no travel toward the strip) — for finish caused by a **move** and by a **push**, with the same presentation. The piece MUST NOT vanish from its pre-finish board cell without that travel. Finished piece state MUST be synchronized to all clients in the room.
 
 #### Scenario [SC-FINISH-01]: Move onto a center cell finishes the piece
 
@@ -38,7 +41,7 @@ When the room start phase is `playing` and the server accepts a legal move whose
 - **WHEN** that player submits a move onto that center cell
 - **THEN** that piece is marked finished in synced state
 - **AND** that center cell is not occupied by that piece for later moves
-- **AND** every client observes the piece leave the board after a short disappear animation
+- **AND** every client observes the piece travel onto the center cell then leave the board after a short disappear animation
 
 #### Scenario [SC-FINISH-02]: Another piece may reuse the same center cell
 
@@ -46,6 +49,21 @@ When the room start phase is `playing` and the server accepts a legal move whose
 - **WHEN** another unfinished piece legally moves onto that same center cell on a later turn
 - **THEN** the server accepts the move and finishes that second piece
 - **AND** the first finished piece remains finished off the board
+
+#### Scenario [SC-FINISH-17]: Push onto a center cell finishes with the same presentation
+
+- **GIVEN** a legal push whose far-side cell is a free center cell
+- **WHEN** the push is accepted and the target finishes
+- **THEN** every client that displays the board observes the target travel onto that center cell then leave after the same short disappear animation as a move finish
+- **AND** the target does not vanish from its pre-push cell without that travel
+
+#### Scenario [SC-FINISH-18]: Own move onto center travels from the pre-move cell
+
+- **GIVEN** it is a seated player’s turn and an own unfinished piece has a free neighbor center cell
+- **WHEN** that player submits a move onto that center cell and the server accepts
+- **THEN** clients that display the board show that piece traveling from its pre-move cell onto the center cell
+- **AND** then leaving after the same short disappear animation used for push→center
+- **AND** the piece does not vanish from its pre-move cell without that travel
 
 ### Requirement: Completing all four pieces assigns finish place
 
@@ -149,16 +167,23 @@ When the server accepts a legal return-from-finish for a seat with finish place 
 
 ### Requirement: Return affordance beside finished strip indicator
 
-For a seated client on their own turn with steps ≥ 1 and finish place 0, each finished side that has at least one legal ring cell MUST be actionable via a **click on that strip slot** (no separate undo control on the slot). Activating such a slot MUST open a confirmation dialog asking whether to return the tourist to the field (product Russian sense «Вернуть на поле?»). Confirming MUST enter ring-target selection on the board; dismissing MUST leave selection and return-mode unchanged. Choosing a legal ring cell MUST submit the return. Steps MUST decrease only when the server accepts that return (`game/move`), not when the dialog opens or ring highlights appear. Switching selection to another tourist MUST cancel return-mode without spending a step. When return is not available, the finished slot MUST remain non-actionable (see dimming above). Legal return target cells MUST use the **same** destination highlight presentation as ordinary legal move targets (`game/move`).
+For a seated client on their own turn with steps ≥ 1 and finish place 0, each finished side that has at least one legal ring cell MUST show a green return affordance centered above that tourist in the personal strip (same visual family as board rescue/push affordances). Activating that affordance MUST enter ring-target selection on the board without a confirmation dialog. Choosing a legal ring cell MUST submit the return. Steps MUST decrease only when the server accepts that return (`game/move`), not when ring highlights appear. Switching selection to another tourist MUST cancel return-mode without spending a step. When return is not available, the finished slot MUST remain non-actionable (see dimming above) and MUST NOT show the return affordance. Activating the finished strip slot body (the tourist image area) MUST NOT open a confirmation dialog and MUST NOT enter return-mode by itself — only the return affordance starts return. Legal return target cells MUST use the **same** destination highlight presentation as ordinary legal move targets (`game/move`).
 
 #### Scenario [SC-FINISH-13]: Return control appears next to the flag when steps remain
 
 - **GIVEN** it is the user’s turn with steps ≥ 1, finish place 0, a finished side, and at least one legal free non-hole ring cell
-- **WHEN** the user activates that finished strip slot
-- **THEN** a confirmation dialog asks whether to return that tourist to the field
-- **AND** after the user confirms, legal ring cells are highlighted like ordinary move targets
+- **WHEN** the user views that finished strip slot
+- **THEN** a green return affordance is shown centered above that tourist (same visual family as board rescue/push)
+- **AND** activating the affordance highlights legal ring cells like ordinary move targets without a confirmation dialog
 - **AND** choosing a highlighted ring cell submits the return
-- **AND** no separate undo icon control is required on the strip slot
+- **AND** no confirmation dialog is shown
+
+#### Scenario [SC-FINISH-16]: Finished strip slot click alone does not start return
+
+- **GIVEN** the same setup as SC-FINISH-13
+- **WHEN** the user activates the finished strip slot body without using the return affordance
+- **THEN** no confirmation dialog appears
+- **AND** return-mode is not entered solely from that slot-body activation
 
 ### Requirement: Return-from-finish travel animation
 

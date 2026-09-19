@@ -24,7 +24,7 @@
 | SC-PRESENCE-14 | covered (client finish/ready/say corner affordances) |
 | SC-PRESENCE-15 | covered (client UX — budgets vertical stack right of avatar) |
 | SC-PRESENCE-16 | covered (client UX — solo ∞ peeks only) |
-| SC-PRESENCE-17 | covered (client UX — end-turn above panel right) |
+| SC-PRESENCE-17 | covered (client UX — end-turn icon right-center of own avatar) |
 | SC-PRESENCE-18 | covered (client UX) |
 | SC-PRESENCE-19 | covered (client UX — peeks-unlimited modal) |
 | SC-PRESENCE-20 | covered (client UX — +N anim ~2s) |
@@ -32,7 +32,7 @@
 | SC-PRESENCE-22 | covered (client sticky bottom HUD — own+strip when seated) |
 | SC-PRESENCE-23 | covered (client match status in shared header) |
 | SC-PRESENCE-24 | covered (client no room id in chrome) |
-| SC-PRESENCE-25 | covered (client end-turn not in budgets stack) |
+| SC-PRESENCE-25 | covered (client UX — not in budgets stack; not above-panel dock label) |
 
 Related: turn deadlines / budgets / end-turn / solo — `game/move`; peek modal — `game/board`; reconnect grace — `game/pieces`; bubbles — `game/say`; exit chrome — `game/leave`; board width — `game/board`.
 
@@ -217,27 +217,28 @@ While the user is a seated player on the Game screen in phase `playing`, the sys
 
 ### Requirement: End-turn control next to own avatar
 
-While it is the seated user’s multiplayer turn in phase `playing` (two or more eligible seats) and the user is not time-expired, the Game presence chrome MUST show a control whose visible label is exactly **«Завершить ход»** **above** the sticky bottom HUD panel, aligned toward the **right** edge of the board/HUD content width (lower-right of the board region). Activating it MUST submit end-turn per `game/move`. The control MUST NOT appear in the budgets stack beside the avatar. The control MUST NOT appear for spectators, for seats that are not current turn, during solo play, or for finished / time-expired seats.
+While it is the seated user’s multiplayer turn in phase `playing` (two or more eligible seats) and the user is not time-expired, the Game presence chrome MUST show an **icon-only** end-turn control (Material `skip_next` or equivalent) on the **right** edge of that user’s own presence avatar, **vertically centered** on that edge (mirror of a say/dialog affordance centered on the **top** edge). Activating it MUST submit end-turn per `game/move` **immediately** — no confirmation dialog. The control MUST NOT show a visible text label (tooltips later are out of scope). The control MUST NOT appear in the budgets stack beside the avatar. The control MUST NOT appear as a labeled dock above the sticky bottom HUD. The control MUST NOT appear for spectators, for seats that are not current turn, during solo play, or for finished / time-expired seats.
 
 #### Scenario [SC-PRESENCE-17]: Current multiplayer seat sees «Завершить ход»
 
 - **GIVEN** it is the user’s turn in a multiplayer `playing` room
 - **WHEN** the user views Game chrome
-- **THEN** a control labeled «Завершить ход» is shown above the bottom HUD toward the right
-- **AND** activating it submits end-turn
+- **THEN** an icon-only end-turn control is shown on the right edge of the own avatar, vertically centered
+- **AND** activating it submits end-turn without a confirmation dialog
+- **AND** no visible «Завершить ход» label is required on the control
 
 #### Scenario [SC-PRESENCE-18]: Solo hides end-turn
 
 - **GIVEN** the user is the sole eligible seated player in solo play
 - **WHEN** the user views Game chrome
-- **THEN** the «Завершить ход» control is not shown
+- **THEN** the end-turn control is not shown
 
 #### Scenario [SC-PRESENCE-25]: End-turn not inline with budgets
 
 - **GIVEN** it is the local seated user’s turn in multi-seat play and end-turn is available
 - **WHEN** the bottom HUD budgets stack beside the own avatar is shown
 - **THEN** steps and peeks appear in that stack without the end-turn control inline
-- **AND** the end-turn control remains above the bottom panel toward the right
+- **AND** the end-turn control remains on the right edge of the avatar (not a separate above-panel text dock)
 
 ### Requirement: Solo peeks-unlimited modal
 
