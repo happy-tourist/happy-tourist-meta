@@ -9,7 +9,7 @@ description: >-
   + grille overlay drop/rise via `--grille-anim-ms` / `GRILLE_ANIM_MS=1000`
   + trapped piece chrome + top presence + sticky seated `.game-hud`
   presence/ring/avatar + strip row/narrow 2×2 + chrome grille + budgets
-  above avatar + end-turn dock + peek affordance + say bubbles top↓/own↑),
+  beside avatar + end-turn icon right-center + peek/rescue/push top-center + say bubbles top↓/own↑),
   Quasar utility classes, Material Icons / Roboto, or color props on Quasar
   components.
 ---
@@ -172,9 +172,10 @@ Board UI is custom CSS Grid (not Quasar widgets). Keep selectors local and class
 
 | Class | Role |
 |-------|------|
-| `.game-page` | Column page: board scroll region (top presence + board + end-turn dock) + sticky seated HUD |
+| `.game-page` | Column page: board scroll region (top presence + board) + sticky seated HUD |
 | `.presence-row--top` | Opponents (seated) or all occupied (spectator) above the board |
-| `.end-turn-dock` / `.end-turn-btn` | End-turn above sticky HUD, right-aligned — **not** in budgets row (SC-PRESENCE-25) |
+| `.end-turn-affordance` | Icon-only `skip_next` **right-center** on own avatar (`right: -8px`, 36px hit) — **not** in budgets row, **no** labeled dock (SC-PRESENCE-17/25) |
+| `.presence-slot--own` | Own HUD cluster: avatar | budgets; **`gap: 20px`** (≥ end-turn hit so `skip_next` does not cover budgets — SC-PRESENCE-25) |
 | `.game-hud` / `__scroll` / `__bar--seated` | Sticky bottom **seated** panel only (`container-name: game-hud`); scroll wrapper owns `overflow-x` so say chrome is not clipped (SC-SAY-15); spectator has **no** bottom HUD |
 | `.tourist-board` | 10×10 CSS Grid; `--cell` / `--gap` / `--radius`; `aspect-ratio: 1`; transparent holes |
 | `.grille-overlay` / `--drop` / `--rise` | Revealed holding grille from `src/assets/grilles/grille.png`; duration via `--grille-anim-ms` (`GRILLE_ANIM_MS = 1000`) for drop/rise incl. leave-clear (SC-BOARD-18/19/21) |
@@ -195,14 +196,14 @@ Board UI is custom CSS Grid (not Quasar widgets). Keep selectors local and class
 | `.my-tourist-slot--dimmed` / `--returnable` / `--returning` | Dim finished **only** when `!canReturn`; returnable / returning chrome (SC-FINISH-09/13) |
 | `.my-tourist-chrome-grille` / `--drop` / `--rise` | Grille overlay on strip slots when `trapped`; same `--grille-anim-ms` / `GRILLE_ANIM_MS = 1000` as board (SC-PIECE-31) |
 | `.presence-place-badge` / `.ready-affordance` | Top-left corners (SC-PRESENCE-14) |
-| `.presence-budgets` / `.budget-counter` / `.budget-fall` | Own steps/peeks **above** own avatar (SC-PRESENCE-15…16); `.budget-fall` ≈ **2 s** (keep CSS in sync with `BUDGET_FALL_MS` / SC-PRESENCE-20); not on opponents; end-turn is **not** here |
-| `.peek-affordance` | Eye on selected piece standing on present `*` (SC-BOARD-08) |
+| `.presence-budgets` / `.budget-counter` / `.budget-fall` | Own steps/peeks **beside** own avatar (SC-PRESENCE-15…16); `.budget-fall` ≈ **2 s** (keep CSS in sync with `BUDGET_FALL_MS` / SC-PRESENCE-20); not on opponents; end-turn is **not** here |
+| `.peek-affordance` / `.rescue-affordance` / `.push-affordance` | Top-center above piece (same family as `.return-affordance`; SC-BOARD-13 / SC-MOVE-74/77) |
 | `.say-affordance` | Top-right on own marker; hit-area ≥ ~32 CSS px (glyph may be smaller); z-index above rings/avatar (SC-SAY-07 / SC-SAY-15) |
 | `.say-bubble` / `.say-picker` | Presence comic bubbles + picker; chrome follows Dark via `body.body--dark` overrides (not tile fills) |
 | `.say-bubbles--top` | Top-row markers: bubbles grow **down** toward the board |
 | `.say-bubbles--bottom` | Own bottom marker: bubbles grow **up** toward the board |
 
-Current-turn interactivity, dual turn/reconnect rings, top presence + seated sticky `.game-hud` (own + strip), own budgets beside avatar / end-turn dock, peek eye, removed-task holes, grille overlays + strip chrome grille + rescue/push/return-icon, corner affordances, say top↓/own↑, nearest-center finish click, and travel/return animation live in `work-with-game-board` — do not reintroduce draughts `.cell` / selection classes, all-markers-bottom HUD, compact chip / `q-menu`, page-local `.game-header`, orange-only return targets, return confirm modal, `GRILLE_ANIM_MS = 1500`, or a static blue turn outline.
+Current-turn interactivity, dual turn/reconnect rings, top presence + seated sticky `.game-hud` (own + strip), own budgets beside avatar / end-turn icon right-center, peek/rescue/push top-center, removed-task holes, grille overlays + strip chrome grille + return-icon, say top↓/own↑, nearest-center finish click, and travel/return/push-finish animation live in `work-with-game-board` — do not reintroduce draughts `.cell` / selection classes, all-markers-bottom HUD, compact chip / `q-menu`, page-local `.game-header`, orange-only return targets, return confirm modal, `.end-turn-dock`, `GRILLE_ANIM_MS = 1500`, or a static blue turn outline.
 
 When editing board visuals:
 

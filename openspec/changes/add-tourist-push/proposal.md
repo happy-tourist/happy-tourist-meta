@@ -1,30 +1,32 @@
 ## Why
 
-На поле уже есть ход, peek, спасение и возврат с финиша, но нет действия **толкнуть** соседа по прямой — полезный тактический ход своим или чужим туристом. Параллельно возврат с финиша всё ещё открывает лишнюю модалку подтверждения; нужен такой же зелёный affordance над головой, как у спасения на поле.
+На поле уже есть ход, peek, спасение, возврат с финиша и **толчок**, но после первой реализации остались UX-дыры: иконки действий сидят в углу клетки (не как return в strip), «Завершить ход» — крупная текстовая кнопка в dock, а push на центр визуально «съедает» цель без travel→fade как у обычного хода в финиш.
 
 ## What Changes
 
-- Новое действие **push**: выбранный свободный свой турист может толкать соседнего (свой/чужой, не trapped) на клетку «с другой стороны» по прямой (Chebyshev-вектор), если посадка туда — как обычный ход (включая финиш и решётку; дыры нельзя).
-- Стоимость **1 шаг**; ход не передаётся; при остатке шагов можно толкать снова (в т.ч. другого соседа).
-- UX: иконки push над **целями**; глаз peek — над выбранным; после пуша selection остаётся на толкающем; анимация подхода/отскока толкающего + travel жертвы.
-- Legal push учитывается в auto-end-turn (как rescue/return).
-- Return-from-finish: убрать модалку; зелёная кнопка над головой finished-туриста в нижней панели; клик по слоту strip сам по себе return не стартует.
+- Действие **push** (уже в коде): −1 step; far-side геометрия; finish/trap side-effects; auto-end; message `push`.
+- Return-from-finish: зелёная иконка над strip; без модалки; слот body не стартует return (уже в коде).
+- **Polish (этот апдейт):** peek / rescue / push affordances — **сверху по центру** над туристом (как return в strip).
+- End-turn: убрать текстовый dock; иконка `skip_next` **справа по центру** у своего аватара (зеркало say сверху по центру); клик сразу шлёт end-turn **без** диалога и без видимого лейбла; solo по-прежнему без кнопки.
+- Push (и тот же путь) на центр: цель **доежает** на финишную клетку и исчезает как при обычном ходе (`SC-FINISH-01`), не пропадает мгновенно.
 
 ## Scope
 
-- **Пакеты:** client + server (room `tourist`).
+- **Пакеты:** client (+ server уже для push; polish — client-only, кроме уже закрытых server-задач).
 - **Capability ID:**
-  - `game/move` — push (−1 step), геометрия, trap/finish side-effects посадки, reject trapped target, auto-end;
-  - `game/finish` — return affordance без модалки (иконка над strip).
-- **Экраны:** Game (board affordances + strip return).
-- **Контракт:** room `tourist`; новое message push (имя в design); returnFromFinish без смены wire shape.
+  - `game/move` — push + centering push/rescue + push→finish travel/fade;
+  - `game/finish` — return strip UX (уже); finish disappear parity для push;
+  - `game/board` — peek eye сверху по центру;
+  - `game/presence` — end-turn icon у аватара.
+- **Экраны:** Game (board affordances + strip + own presence).
+- **Контракт:** room `tourist`; wire push / endTurn / returnFromFinish без смены shape.
 
 ## Out of scope
 
 - Толкать пойманного (только rescue).
-- Красные кольца на клетку назначения пуша (только иконка).
-- Новые типы ловушек / смена layout.
-- Публичные чужие budgets.
+- Красные кольца на клетку назначения пуша.
+- Confirm-dialog на end-turn; видимые подсказки/tooltips (позже).
+- Смена набора Material-иконок целиком (позже).
 - Auth / lobby / HTTP / reconnect.
 
 ## Capabilities
@@ -35,17 +37,19 @@
 
 ### Modified Capabilities
 
-- `game/move`: действие push; стоимость; side-effects посадки; auto-end.
-- `game/finish`: UX return — иконка вместо модалки; слот strip не активирует return.
+- `game/move`: push; centering rescue/push; push→finish presentation.
+- `game/finish`: return strip без модалки; disappear parity при finish от push.
+- `game/board`: peek affordance сверху по центру.
+- `game/presence`: end-turn — иконка справа по центру у аватара, без текстового dock.
 
 ## Impact
 
-- **Server:** validate/apply push; handler; mocha SC; auto-end включает legal push.
-- **Client:** board push icons + anim; strip return icon; удаление return-confirm dialog; i18n; keep-focus после push.
-- **Docs/skills:** при необходимости по `docs/projects-map.md` и sibling AGENTS.
+- **Server:** push validate/handler/tests (уже); polish не требует server.
+- **Client:** GamePage affordance CSS/layout; end-turn у presence; finish travel для push; skills/i18n по необходимости.
+- **Docs/skills:** client board/pages/presence; meta индекс при drift.
 
 ## References
 
-- Explore (этот чат): D1=1 step; D2=no push trapped; D3=grille like move; D4=return green icon over strip head, no modal, slot not the control; Q1=icons per pushable neighbor of selected; Q2=eye on selected, push on target; Q3=keep selection; auto-end as current steps logic.
-- Main specs: `openspec/specs/game/move/spec.md`, `openspec/specs/game/finish/spec.md`.
+- Explore (этот чат): push D*; polish D1=center peek/rescue/push; D2=end-turn без dialog; D3=`skip_next`; D4=push→finish как ход; мелочи: icon справа по центру как say сверху; без видимого текста; solo без end-turn.
+- Main specs: `game/move`, `game/finish`, `game/board`, `game/presence`.
 - Sibling AGENTS; `docs/projects-map.md`.

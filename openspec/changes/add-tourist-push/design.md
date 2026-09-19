@@ -1,106 +1,94 @@
 ## Context
 
-См. `proposal.md` и delta specs `game/move`, `game/finish`. Сейчас: `move` / `rescue` / `returnFromFinish` / peek / endTurn; `touristMove.ts` validate one-step + rescue/return helpers; GamePage — eye (синий), rescue (зелёный), return через confirm modal на strip slot. Explore D*/Q* закрыты — ниже как решения, не блокеры.
+См. `proposal.md` и delta specs `game/move`, `game/finish`, `game/board`, `game/presence`. Push + return-strip уже в runtime; этот апдейт — client UX polish поверх. Explore polish D*/мелочи закрыты — ниже как решения.
 
-Чеклист — `tasks.md`.
+Чеклист — `tasks.md` (блоки 1–4 done; блок 5 — polish).
 
 ## Goals / Non-Goals
 
 **Goals:**
 
-- Message `push` + pure validate/apply в `touristMove.ts`; −1 step; side-effects посадки цели как у `move` (finish / grille trap).
-- Client: push icons над целями выбранного pusher; approach/back + travel; keep selection.
-- Return: зелёная иконка над strip; без модалки; слот body не стартует return.
-- Auto-end учитывает legal push.
+- Message `push` + pure validate/apply (уже).
+- Client: push icons; return strip без modal (уже).
+- Affordance anchor: peek / rescue / push — top-center над piece (как `.return-affordance`).
+- End-turn: icon `skip_next` right-center у own avatar; сразу `endTurn`; без dock/label/dialog; solo без контрола.
+- Push→center: тот же travel + disappear, что move→center.
 
 **Non-Goals:**
 
-- Push trapped; red rings для dest push; schema-поля под push; новые deps.
+- Push trapped; red rings для dest push; schema под push; новые deps; tooltips; массовая смена иконок.
 
 ## Decisions
 
-### D1 — Wire: `push`
+### D1 — Wire: `push` (done)
 
 | Message | Payload | Effect |
 |---------|---------|--------|
-| `push` | `pusherSide`, `targetSessionId`, `targetSide`, `row`, `col` | −1 step текущего seat; цель на `(row,col)`; pusher coords без изменений |
+| `push` | `pusherSide`, `targetSessionId`, `targetSide`, `row`, `col` | −1 step; цель на `(row,col)`; pusher coords без изменений |
 
-- `pusherSide` — свой unfinished free piece текущего seat.
-- `targetSessionId` + `targetSide` — любая unfinished free piece в room (свой или чужой).
-- `(row,col)` — far-side клетка: `target + (target − pusher)` в row/col; Chebyshev(pusher,target)=1 и Chebyshev(target,dest)=1.
-- Reject: не ход / steps 0 / trapped target или pusher / bad geometry / hole / occupied / not playable — без смены state.
-- После apply: те же side-effects, что land после `move` для **цели** (center → finish; unspent grille → trap + all-jail check).
+### D2–D3 — Server pure + MyRoom (done)
 
-### D2 — Pure rules в `touristMove.ts`
+`touristMove.ts` helpers; `onMessage('push')` → `handlePush`; auto-end + `hasLegalPush`.
 
-- Helpers: `farSideCell(pusher, target)`, `listLegalPushes(pusherPieces, allPieces, removed)`, `validateTouristPush(...)`, `hasLegalPush(...)`.
-- Landing check: переиспользовать ту же landable-логику, что `validateTouristMove` для dest (occupancy excludes target’s current cell as it leaves).
-- `hasAvailableActions` / auto-end: `hasLegalPush` рядом с rescue/return.
+### D4 — Client store / GamePage push + return (done)
 
-### D3 — Server врезки
+`sendPush`; push affordances; approach/back; return icon; no return modal.
 
-| Место | Что |
-|-------|-----|
-| `src/rooms/MyRoom.ts` | `onMessage('push')` → `handlePush`; auto-end + `hasAvailableActions` |
-| `src/game/touristMove.ts` | validate/apply/list/hasLegalPush |
-| `test/MyRoom.test.ts` (+ unit pure) | SC-MOVE-66…73 |
+### D5 — UX icons (расширено polish)
 
-Порядок apply в handler (зеркало move):
+| Affordance | Placement | Icon (пока) |
+|------------|-----------|-------------|
+| Peek | top-center над selected | `visibility` |
+| Rescue | top-center над trapped | `lock_open` |
+| Push | top-center над target | `swipe` |
+| Return strip | top-center над finished slot | `undo` |
+| End-turn | **right-center** у own avatar (зеркало say top-center) | `skip_next` |
 
-1. validate push
-2. −1 step
-3. relocate target; clear occupancy from old cell
-4. if center → finish target
-5. else if grille → trap target (+ all-jail)
-6. `maybeAutoEndTurn`
+Общий board CSS-якорь (вместо угла `+ cell - 14px` / `- 6px`): центр клетки по X, чуть выше по Y — как strip `left: 50%; transform: translateX(-50%); top: -10px` в координатах board overlay.
 
-### D4 — Client врезки
+### D6 — Selection / multi-push (done)
 
-| Место | Что |
-|-------|-----|
-| `src/stores/game.ts` | `sendPush(pusherSide, targetSessionId, targetSide, row, col)` |
-| `src/pages/GamePage.vue` | compute push affordances от `selectedSide`; icons над targets; reuse `rescueAnimOverride` pattern для approach/back; target travel через существующий move anim; keep `selectedSide` after push; return icon на strip; удалить `returnConfirm*` dialog/flow; `onStripSlotClick` finished → noop |
-| `src/i18n/*` | `game.pushAffordance`; return aria уже есть — поправить тексты если про modal |
+Keep `selectedSide` после push.
 
-### D5 — UX icons
+### D7 — Skills
 
-- Push: зелёный круг как rescue; Material `swipe` (или `front_hand`); над **целью**.
-- Eye: без изменений (над selected).
-- Return strip: зелёный круг над центром finished tourist; Material `undo` / `replay`; клик → `returningSide` + red rings (как сейчас после confirm).
+При apply polish: client `work-with-game-board`, `work-with-pages`, `work-with-styles`, localization (aria only), presence notes; server skills уже покрывают push.
 
-### D6 — Selection / multi-push
-
-- Иконки только при selected own free + own turn + steps≥1.
-- Несколько targets → несколько icons; каждый клик = один push (−1 step); selection остаётся → можно второго.
-
-### D7 — Skills при apply
-
-Server: `work-with-messages`, `work-with-game`, `server-work-with-test`.  
-Client: `work-with-game-board`, `work-with-pages`, `work-with-stores`, `work-with-localization`, `colyseus-client`.  
-Cross-package: **server first**, затем client.
-
-### D8 — Explore (закрыты)
+### D8 — Explore push (закрыты) + polish
 
 | ID | Решение |
 |----|---------|
-| cost | 1 step |
-| trapped | нельзя толкать |
-| grille | как move land |
-| return UX | icon over strip; no modal; slot body не стартует |
-| icons | над targets выбранного |
-| eye vs push | eye на selected, push на target |
-| keep focus | да |
-| auto-end | legal push = available action |
+| cost / trapped / grille / return UX / icons / keep focus / auto-end | как раньше |
+| polish D1 | peek+rescue+push top-center |
+| polish D2 | end-turn без dialog |
+| polish D3 | `skip_next` |
+| polish D4 | push→finish как ход |
+| мелочь | end-turn right-center; без видимого текста; solo без кнопки |
+
+### D9 — End-turn chrome
+
+| Было | Станет |
+|------|--------|
+| `.end-turn-dock` + `q-btn` label «Завершить ход» | убрать dock; button на own `presence-marker` справа по центру |
+| Confirm | нет — `@click` → существующий `onEndTurnClick` / `sendEndTurn` |
+
+Budgets stack справа от аватара **не** включает end-turn (SC-PRESENCE-25). Say остаётся top (или top-center по продукту say — не менять в этом change, если уже top-right; end-turn — right-center независимо).
+
+### D10 — Push→finish presentation
+
+Проблема: при sync `row/col=center` + `finished` цель может отрисоваться сразу на центре / пропасть без кадра на старой клетке.
+
+Подход: при появлении нового finished key (вкл. от push) — если есть last-known board cell ≠ center, один кадр paint `from` (как `returnAnimFromByKey`), затем slide на center + `piece--disappearing` (тот же MOVE_ANIM + FINISH_FADE, что move finish). Не менять server.
 
 ## Risks / Trade-offs
 
-- [Чужой finish от push] → ожидаемо по продукту; тесты SC-MOVE-69.
-- [Overlap icon с rescue на соседней клетке] → rescue только над trapped; push не на trapped — конфликт нет.
-- [Клиент шлёт чужой targetSessionId] → server валидирует геометрию от pusher текущего seat.
+- [Чужой finish от push] → ожидаемо; SC-MOVE-69 / SC-FINISH-17.
+- [End-turn без текста] → aria-label ok; видимые tooltips out of scope.
+- [Say сейчас top-right в CSS] → не блокер; end-turn right-center по продукту.
 
 ## Migration Plan
 
-Не требуется (новое message; старые клиенты просто не шлют push; return UX только client).
+Не требуется (client UX; push message уже на сервере).
 
 ## Open Questions
 

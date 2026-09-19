@@ -1,6 +1,6 @@
 ## Purpose
 
-Delta этого change: действие push (толкнуть), стоимость в steps, side-effects посадки, UX affordances, auto-end. Базовые budgets/turn/move — main `game/move`.
+Delta этого change: действие push (толкнуть), стоимость в steps, side-effects посадки, UX affordances (вкл. centering), push→finish travel/fade, auto-end. Базовые budgets/turn/move — main `game/move`.
 
 ## Traceability
 
@@ -14,10 +14,12 @@ Delta этого change: действие push (толкнуть), стоимо�
 | SC-MOVE-71 | covered (server mocha + unit — reject hole / occupied / no steps) |
 | SC-MOVE-72 | covered (server mocha — push does not advance turn) |
 | SC-MOVE-73 | covered (server mocha — auto-end waits for legal push) |
-| SC-MOVE-74 | covered (client UX — push icons over targets of selected) |
+| SC-MOVE-74 | covered (client UX — push icons centered above targets) |
 | SC-MOVE-75 | covered (client UX — approach/back + target travel; keep selection) |
+| SC-MOVE-76 | covered (client UX — push onto center: travel then disappear like move) |
+| SC-MOVE-77 | covered (client UX — rescue affordance centered above trapped) |
 
-Related: finish side-effect — `game/finish`; grille trap visuals — `game/board`; return strip UX — delta `game/finish`.
+Related: finish side-effect — `game/finish`; peek centering — delta `game/board`; return strip UX — delta `game/finish`.
 
 ## ADDED Requirements
 
@@ -79,15 +81,15 @@ While it is a seated client’s own turn with steps ≥ 1, that client MAY push 
 
 ### Requirement: Push affordances on targets of the selected pusher
 
-While it is the user’s own turn with steps ≥ 1 and a free unfinished own piece is locally selected, the client MUST show a green push affordance over each unfinished free piece (own or other) that that selected piece can legally push under the push requirement. The peek eye affordance MUST remain on the selected own piece when peek is available. Push affordances MUST NOT appear for trapped targets, when no piece is selected, when it is not the user’s turn, or when steps are 0. Activating a push affordance MUST submit that push. Destination cells for push MUST NOT use red move-target rings; only the affordance initiates push. After a successful push the submitting client MUST keep selection on the pusher. The client MUST present an approach-and-back animation of the pusher toward the target and ordinary piece travel of the target to the destination (visible to the submitting client for approach; travel visible to clients that display the board).
+While it is the user’s own turn with steps ≥ 1 and a free unfinished own piece is locally selected, the client MUST show a green push affordance **centered above** each unfinished free piece (own or other) that that selected piece can legally push under the push requirement (same top-center family as strip return). The peek eye affordance MUST remain on the selected own piece when peek is available (centered above that piece per `game/board`). Push affordances MUST NOT appear for trapped targets, when no piece is selected, when it is not the user’s turn, or when steps are 0. Activating a push affordance MUST submit that push. Destination cells for push MUST NOT use red move-target rings; only the affordance initiates push. After a successful push the submitting client MUST keep selection on the pusher. The client MUST present an approach-and-back animation of the pusher toward the target and ordinary piece travel of the target to the destination (visible to the submitting client for approach; travel visible to clients that display the board). When the destination is a center cell and the target finishes, every client that displays the board MUST present the same travel-to-landing then disappear animation as for an ordinary move onto center (`game/finish` / SC-FINISH-01) — the target MUST NOT vanish without traveling to the center cell.
 
 #### Scenario [SC-MOVE-74]: Push icons appear over pushable neighbors of the selection
 
 - **GIVEN** it is the user’s turn with steps ≥ 1, one own free piece is selected, and two different free neighbors are each legally pushable through their far-side cells
 - **WHEN** the board renders affordances
-- **THEN** a push affordance is shown over each of those two targets
+- **THEN** a push affordance is shown centered above each of those two targets
 - **AND** no push affordance is shown over the selected pusher for those actions
-- **AND** if a peek is also available for the selected piece, the eye remains on the selected piece
+- **AND** if a peek is also available for the selected piece, the eye remains centered above the selected piece
 
 #### Scenario [SC-MOVE-75]: Push click animates and keeps selection
 
@@ -96,6 +98,24 @@ While it is the user’s own turn with steps ≥ 1 and a free unfinished own pie
 - **THEN** the pusher shows an approach-and-back presentation
 - **AND** the target travels to the destination
 - **AND** local selection remains on the pusher
+
+#### Scenario [SC-MOVE-76]: Push onto center travels then disappears
+
+- **GIVEN** it is a seated player’s turn with a legal push whose far-side cell is a free center cell
+- **WHEN** that player successfully pushes the target onto that center cell
+- **THEN** clients that display the board show the target traveling onto the center cell
+- **AND** then removing that piece with the same short disappear animation as an ordinary center finish
+- **AND** the target does not disappear from its pre-push cell without that travel
+
+### Requirement: Rescue affordance centered above trapped tourist
+
+While it is the user’s own turn with steps ≥ 1 and a legal own rescue exists for a trapped unfinished piece, the client MUST show the green rescue affordance **centered above** that trapped tourist on the board (same top-center family as push / peek / strip return).
+
+#### Scenario [SC-MOVE-77]: Rescue icon centered above trapped
+
+- **GIVEN** it is the user’s turn with steps ≥ 1 and a legal own rescue exists
+- **WHEN** the board renders affordances
+- **THEN** a rescue affordance is shown centered above that trapped tourist
 
 ## MODIFIED Requirements
 

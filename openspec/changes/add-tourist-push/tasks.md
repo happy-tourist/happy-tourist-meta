@@ -24,3 +24,11 @@
 - [x] 4.1 Обновить server skills (`work-with-game`, `work-with-messages`) — message `push`, auto-end
 - [x] 4.2 Обновить client skills (`work-with-game-board`, `work-with-pages`, `colyseus-client` / stores, localization) — push icons, return icon без modal
 - [x] 4.3 При необходимости — краткие строки в sibling AGENTS Business Entities (без дублирования specs)
+
+## 5. Client — affordance polish + end-turn + push finish anim
+
+- [x] 5.1 Прочитать `design.md` D5/D9/D10, delta `specs/game/move` (SC-MOVE-74/76/77), `game/board` (SC-BOARD-13), `game/presence` (SC-PRESENCE-17/25), `game/finish` (SC-FINISH-17); skills board/pages/styles
+- [x] 5.2 GamePage CSS: peek / rescue / push — top-center над piece (общий якорь как return strip) — SC-MOVE-74/77, SC-BOARD-13
+- [x] 5.3 Убрать `.end-turn-dock` / текстовый btn; icon `skip_next` right-center на own avatar; клик → endTurn сразу; solo без контрола — SC-PRESENCE-17/18/25
+- [x] 5.4 Push→center: travel с pre-push клетки + disappear как move finish (D10) — SC-MOVE-76 / SC-FINISH-17
+- [x] 5.5 Обновить client skills (board/pages/styles/localization aria); `npm run lint` + `npm run typecheck`
