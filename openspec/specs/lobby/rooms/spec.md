@@ -23,8 +23,11 @@ Live-список доступных игровых комнат на экран
 | SC-LOBBY-13 | covered (client UX + server parse) |
 | SC-LOBBY-14 | covered (server mocha — many → 35%) |
 | SC-LOBBY-15 | covered (client UX default medium) |
+| SC-LOBBY-16 | covered (client UX + server parse) |
+| SC-LOBBY-17 | covered (server mocha create options — many → 35% catapults) |
+| SC-LOBBY-18 | covered (client UX default medium for catapults) |
 
-Related: grille seed — `game/board` / `game/move`.
+Related: grille / catapult seed — `game/board` / `game/move`.
 
 ## Requirements
 
@@ -167,3 +170,29 @@ When an authenticated user opens create-game from the lobby, the system SHALL pr
 - **WHEN** the create modal appears
 - **THEN** medium (22%) is selected by default for grille density
 - **AND** max seats default remains 2 per existing create rules
+
+### Requirement: Create game chooses catapult density
+
+When an authenticated user opens create-game from the lobby, the system SHALL present a choice of catapult density with three presets: few, medium, and many, **independent** of the grille density choice. The presets MUST map to **12%**, **22%**, and **35%** of task cells on the tourist layout at playing seed time (rounded to the nearest integer, clamped to the task-cell count). Confirming create MUST pass the selected catapult density into the new `tourist` room create options alongside grille density. Cancelling MUST NOT create a room. Product labels remain мало / средне / много without showing the percent numbers.
+
+#### Scenario [SC-LOBBY-16]: Catapult density presets are few medium many
+
+- **GIVEN** the user is on the lobby screen and opens create-game
+- **WHEN** the create modal appears
+- **THEN** the selectable catapult density options are few, medium, and many
+- **AND** the product sense of the labels is мало / средне / много
+- **AND** catapult density is chosen separately from grille density
+
+#### Scenario [SC-LOBBY-17]: Confirm create uses selected catapult density
+
+- **GIVEN** the create modal is open with catapult density many selected
+- **WHEN** the user confirms create
+- **THEN** a new `tourist` room is created with catapult density many (35% of task cells at seed)
+- **AND** the user enters that game session
+
+#### Scenario [SC-LOBBY-18]: Default catapult density is medium
+
+- **GIVEN** the user is on the lobby screen and opens create-game
+- **WHEN** the create modal appears
+- **THEN** medium (22%) is selected by default for catapult density
+- **AND** grille density default remains medium per existing create rules
