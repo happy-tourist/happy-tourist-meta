@@ -1,28 +1,28 @@
 ## Why
 
-На поле уже есть решётки и катапульты (seed / fling / lobby density / client land→overlay→fling). Playtest показал два дефекта презентации vs authority:
+На поле уже есть решётки и катапульты (seed / fling / lobby density / paced hop / deferred turn). Playtest после §7 показал ещё два дефекта:
 
-1. **Ход уходит раньше анимации** — после последнего шага на катапульту `maybeAutoEndTurn` / deadline сменяют `currentTurn`, а fling/overlay догоняют позже (катапульта «не видна», турист откидывается уже на чужом ходе).
-2. **Цепочка «заранее»** — сервер в одном тике резолвит всю цепочку catapult→…→grille; sync сразу на финале + `holdingGrilleKeys`; решётка падает «в другом месте без кота», пока клиент ещё рисует hop’ы.
+1. **Ход не уходит после решётки** — шаги кончились, остался peek на live `*`, фишка попала за решётку → peek этой фишки запрещён, остальные на старте peek не дают; `onTrapPipelineIdle` не делает re-eval auto-end (только заранее выставленный `pendingTurnAdvance`), ход зависает.
+2. **Fling на финиш без полёта** — при paced finish sync приходит **после** reveal; client enqueue не помечает deferred finish → фишка исчезает с клетки катапульты без finish travel.
 
-Нужен follow-up: **server-paced** только следующий hop (fling-land = новый land-sense, без −1 step), единый timeline, **переход хода только после** конца презентации; без client ack.
+Нужен follow-up §8: **re-eval auto-end на idle**; **всегда** finish travel после vanish (в т.ч. цепочка hop→…→центр).
 
 ## What Changes
 
 - В create — отдельный выбор плотности катапульт: мало / средне / много (те же **12% / 22% / 35%**, default средне) — уже сделано.
 - Seed / fling geometry / broken / overlap с решётками — уже сделано; экономика steps **без изменений** (fling не −1).
-- **Paced trap resolve:** после land (move / push / return / post-rescue / post-fling) сервер резолвит **только текущую** клетку: reveal → ждать presentation budget (общие ms с client) → применить один эффект → если fling — новая клетка как новый land; **не** считать всю цепочку в одном тике.
-- **Deferred turn:** `maybeAutoEndTurn` и сработавший turn-deadline **не** `advanceTurn`, пока идёт trap-presentation pipeline; если переход уже «нужен» — выполнить **после** idle. Без `presentationDone` с клиента.
-- **Презентация:** один последовательный timeline (land → catapult overlay → fling travel → … → grille drop); board lock; spectator = игрок. Client следует hop-sync, а не реконструирует финал из одного patch.
+- **Paced trap resolve / deferred turn / sequential UX** — уже сделано (§7).
+- **Idle re-eval (F1):** на `onTrapPipelineIdle` — если был `pendingTurnAdvance` (deadline / заранее no-actions) → `advanceTurn`; иначе заново `maybeAutoEndTurn` (+ solo exhaustion), чтобы решётка, снявшая единственный legal peek, сменила ход.
+- **Finish travel always (F2):** после vanish hop’а, если piece `finished` / dest = center — всегда finish travel с клетки катапульты → центр → fade (не телепорт); каждый hop цепочки анимируется; finish travel после **последнего** vanish.
 
 ## Scope
 
 - **Пакеты:** client + server (room `tourist`).
 - **Capability ID:**
   - `lobby/rooms` — create option плотности (done);
-  - `game/board` — overlay; land-before-overlay; sequential hops; grille после prior hops; board lock;
-  - `game/move` — seed/fling (done) + **paced resolve** + **deferred auto-end / deadline advance**;
-  - `game/finish` — fling на center; finish travel после vanish текущего hop.
+  - `game/board` — overlay; sequential hops; grille после prior hops; board lock; finish travel после last hop;
+  - `game/move` — paced + deferred + **idle re-eval auto-end** после trap (в т.ч. grille);
+  - `game/finish` — fling на center; **всегда** finish travel после vanish (paced).
 - **Экраны:** Lobby (done); Game (board + turn chrome после анимаций).
 - **Контракт:** room `tourist`; sync reveal/holding по hop; **нет** нового client→server presentation ack.
 
@@ -48,19 +48,19 @@
 ### Modified Capabilities
 
 - `lobby/rooms`: create выбирает плотность катапульт (12/22/35%), независимо от решёток.
-- `game/board`: видимость/анимация; sequential hop timeline; grille не раньше своего land; board anim lock.
-- `game/move`: seed/fling; **paced** land resolve; deferred turn advance after presentation idle.
-- `game/finish`: fling на center = finish; presentation after catapult vanish того hop.
+- `game/board`: sequential hop timeline; always-animated hops; finish travel after last vanish.
+- `game/move`: paced; deferred pending advance; **re-eval auto-end on idle** when trap removed available actions.
+- `game/finish`: fling на center = finish; **always** finish travel after catapult vanish under paced sync.
 
 ## Impact
 
-- **Server:** заменить мгновенный full-chain `resolveCellTraps` на paced pipeline + deferred `advanceTurn` / deadline; mocha на порядок и turn-after.
-- **Client:** упростить/выровнять queue под hop-sync; не стартовать grille «на финале» раньше времени; board lock на pipeline.
-- **Docs/skills:** game / board / messages blurbs под paced + deferred turn.
+- **Server:** `onTrapPipelineIdle` — pending → advance; else re-eval auto-end/solo; mocha SC-MOVE-93.
+- **Client:** deferred finish travel когда finish sync приходит после reveal enqueue; цепочка hop→центр; SC-FINISH-20 / board.
+- **Docs/skills:** idle re-eval + finish-after-vanish blurbs.
 
 ## References
 
-- Explore: paced hop; fling-land = land-sense; no presentationDone; deferred auto-end/deadline; append to this change.
-- Prior follow-ups: Anim-D4 / D13 land-before-overlay (секции 5–6) — остаются базой UX; Anim-D3 «client-only delay / server writes immediately» **снят** для trap chain + turn.
+- Explore §8: F1 idle re-eval after grille; F2 always finish travel; Q1 every hop animated; append to this change.
+- Prior: §7 paced + deferred; §5–6 land-before-overlay / sequencing.
 - Main specs: `openspec/specs/{lobby/rooms,game/board,game/move,game/finish}/spec.md`.
 - Sibling AGENTS; `docs/projects-map.md`.

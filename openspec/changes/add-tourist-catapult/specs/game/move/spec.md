@@ -1,6 +1,6 @@
 ## Purpose
 
-Delta этого change: seed катапульт, стек ловушек, fling / broken, **paced** land resolve, **deferred** turn advance after trap presentation. Базовые budgets/turn/move/grille/push — main `game/move`.
+Delta этого change: seed катапульт, стек ловушек, fling / broken, **paced** land resolve, **deferred** turn advance, **idle re-eval** auto-end after traps. Базовые budgets/turn/move/grille/push — main `game/move`.
 
 ## Traceability
 
@@ -21,6 +21,7 @@ Delta этого change: seed катапульт, стек ловушек, fling
 | SC-MOVE-90 | covered (server mocha — paced: next hop only after presentation budget) |
 | SC-MOVE-91 | covered (server mocha — auto-end deferred until trap pipeline idle) |
 | SC-MOVE-92 | covered (server mocha — deadline advance deferred until trap pipeline idle) |
+| SC-MOVE-93 | covered (server mocha — idle re-eval auto-end after grille removes peek) |
 
 Related: board anim — `game/board`; center finish — `game/finish`; grille trap/rescue — main `game/move`.
 
@@ -129,7 +130,7 @@ When a catapult resolves for a free unfinished piece on its cell, the server SHA
 
 ### Requirement: Turn does not advance during trap presentation pipeline
 
-While a trap presentation pipeline is active for the room (paced catapult/grille hops after a land), the server MUST NOT call `advanceTurn` for multiplayer auto-end-turn or for a turn-deadline expiry that fired during that pipeline. If auto-end-turn would otherwise apply, or the turn deadline fires while the pipeline is active, the server MUST record that a turn advance is pending and MUST perform that advance only after the pipeline becomes idle. The server MUST NOT require a client presentation-ack message to release the turn. Step/peek economy MUST remain unchanged. Manual `endTurn` while the pipeline is active MUST NOT skip pending presentation (reject or defer consistently with board non-interactive rules).
+While a trap presentation pipeline is active for the room (paced catapult/grille hops after a land), the server MUST NOT call `advanceTurn` for multiplayer auto-end-turn or for a turn-deadline expiry that fired during that pipeline. If auto-end-turn would otherwise apply, or the turn deadline fires while the pipeline is active, the server MUST record that a turn advance is pending and MUST perform that advance only after the pipeline becomes idle. When the pipeline becomes idle **without** a pending deadline/auto-end flag already set, the server MUST **re-evaluate** auto-end-turn (and solo steps-exhausted) against the seat’s available actions **after** the last hop’s effects — so a grille (or other trap) that removed the only legal peek or move can still advance the turn. The server MUST NOT require a client presentation-ack message to release the turn. Step/peek economy MUST remain unchanged. Manual `endTurn` while the pipeline is active MUST NOT skip pending presentation (reject or defer consistently with board non-interactive rules).
 
 #### Scenario [SC-MOVE-91]: Auto-end waits for trap pipeline idle
 
@@ -145,3 +146,11 @@ While a trap presentation pipeline is active for the room (paced catapult/grille
 - **THEN** the server MUST NOT advance the turn immediately
 - **AND** after the pipeline becomes idle the server MUST advance the turn (pending deadline advance)
 - **AND** clients MUST still be able to complete the in-flight hop presentations before the turn chrome switches
+
+#### Scenario [SC-MOVE-93]: Idle re-eval after grille removes the only peek
+
+- **GIVEN** multiplayer playing, it is a seat’s turn with steps 0, peeks ≥ 1, and exactly one own unfinished piece on a still-present task cell (so a legal peek exists), and the other own pieces are not on live task cells
+- **WHEN** that piece lands on the task cell and a grille traps it as part of the trap pipeline
+- **THEN** after the pipeline becomes idle the server MUST re-evaluate available actions
+- **AND** because the trapped piece can no longer peek and no other legal peek/move/rescue/return/push remains, the server MUST auto-advance the turn to the next eligible seat
+- **AND** a prior `pendingTurnAdvance` from deadline MUST still force advance on idle without being skipped by this re-eval path

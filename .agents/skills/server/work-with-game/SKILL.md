@@ -6,9 +6,10 @@ description: >-
   pieces until playing, turn order (skip finished / time-expired), private
   steps/peeks budgets (become-current grant: multi +1/+1; solo +1 step;
   already-current→solo no re-grant), peek / endTurn, grille + catapult density
-  seed / land-resolve trap stack / fling / rescue / push / returnFromFinish /
-  all-jail, removed task tiles, turn deadlines (60s / solo 5min), center finish
-  / finishPlace, and one-step move rules in the happy-tourist Colyseus server —
+  seed / paced trap pipeline / pendingTurnAdvance / idle re-eval (SC-MOVE-93) /
+  fling / rescue / push / returnFromFinish / all-jail, removed task tiles, turn
+  deadlines (60s / solo 5min), center finish / finishPlace, and one-step move
+  rules in the happy-tourist Colyseus server —
   Room handlers, schema seats/phase/maxSeats/ready/countdown/currentTurnSessionId/
   turnUntil/turnBudgetSeconds/removedTaskKeys/holdingGrilleKeys/
   revealingCatapultKeys/brokenCatapultKeys/piece trapped/connectivity/finish/
@@ -19,7 +20,7 @@ description: >-
 
 Use this skill for **authoritative tourist-room game logic** («Счастливый турист») in `happy-tourist-server`.
 
-Server owns seating, reconnect grace, turn order, private step/peek budgets, peek resolve, grille + catapult seed, **paced** `resolveCellTraps` / trap pipeline (one hop + presentation budget; shared `MOVE_ANIM_MS` / `CATAPULT_ANIM_MS`; no `presentationDone`), deferred `pendingTurnAdvance` until pipeline idle, rescue/push/return/all-jail, and one-step move validation. Client board geometry is local CSS Grid; pieces/strip/presence/hints mirror synced seats + `currentTurnSessionId` + `removedTaskKeys` + `holdingGrilleKeys` + short-lived `revealingCatapultKeys` / `brokenCatapultKeys`. Do not trust client-local seat assignment or client hints as authority. Do not invent legacy draughts rules. Preset **`say`** is **not** game rules — whitelist I/O + live-limit live in `work-with-messages` / `MyRoom.handleSay` (ephemeral broadcast; not `touristMove.ts`, not schema).
+Server owns seating, reconnect grace, turn order, private step/peek budgets, peek resolve, grille + catapult seed, **paced** `resolveCellTraps` / trap pipeline (one hop + presentation budget; shared `MOVE_ANIM_MS` / `CATAPULT_ANIM_MS`; no `presentationDone`), deferred `pendingTurnAdvance` until pipeline idle (**idle re-eval** auto-end/solo when no pending — SC-MOVE-93), rescue/push/return/all-jail, and one-step move validation. Client board geometry is local CSS Grid; pieces/strip/presence/hints mirror synced seats + `currentTurnSessionId` + `removedTaskKeys` + `holdingGrilleKeys` + short-lived `revealingCatapultKeys` / `brokenCatapultKeys`. Do not trust client-local seat assignment or client hints as authority. Do not invent legacy draughts rules. Preset **`say`** is **not** game rules — whitelist I/O + live-limit live in `work-with-messages` / `MyRoom.handleSay` (ephemeral broadcast; not `touristMove.ts`, not schema).
 
 Pair with client board UX: `happy-tourist-meta/.agents/skills/client/work-with-game-board/SKILL.md`.
 
@@ -27,7 +28,7 @@ Pair with client board UX: `happy-tourist-meta/.agents/skills/client/work-with-g
 
 | Surface | Path | Role |
 | --- | --- | --- |
-| Room | `src/rooms/MyRoom.ts` | JWT `onAuth`; seat assign; start / ready / countdown; `turnOrder` + private `budgets` / `taskRewards` / `openPeek` / hidden grilles + hidden catapults; paced trap pipeline after land / post-rescue; `pendingTurnAdvance` defers auto-end/deadline; `onMessage('move'\|'rescue'\|'push'\|'returnFromFinish'\|'peek'\|'peekAnswer'\|'endTurn'\|'ready'\|'say')`; `handlePush`; `onDrop`/`onReconnect`/`onLeave` |
+| Room | `src/rooms/MyRoom.ts` | JWT `onAuth`; seat assign; start / ready / countdown; `turnOrder` + private `budgets` / `taskRewards` / `openPeek` / hidden grilles + hidden catapults; paced trap pipeline after land / post-rescue; `pendingTurnAdvance` defers auto-end/deadline; idle without pending **re-evals** auto-end/solo (SC-MOVE-93); `onMessage('move'\|'rescue'\|'push'\|'returnFromFinish'\|'peek'\|'peekAnswer'\|'endTurn'\|'ready'\|'say')`; `handlePush`; `onDrop`/`onReconnect`/`onLeave` |
 | Schema | `src/rooms/schema/MyRoomState.ts` | `phase` + `maxSeats` + `countdownRemaining` + `started` (legacy) + `seats` (+ `ready` / `finishPlace` / `timeExpired`) + piece `finished`/`trapped` + `currentTurnSessionId` + `turnUntil` + `turnBudgetSeconds` + `nextFinishPlace` + `removedTaskKeys` + `holdingGrilleKeys` + `revealingCatapultKeys` + `brokenCatapultKeys` |
 | Rules | `src/game/touristMove.ts` | Pure validate/apply one-step move; playable layout; landing excludes removed holes; `hasLegalMove` / `hasLegalPeek` / `hasLegalRescue` / `hasLegalReturn` / `farSideCell` / `validateTouristPush` / `hasLegalPush`; occupancy ignores `finished` (trapped still occupy); center landing is room side-effect; grille/catapult density + `catapultFlingCandidates` / `pickCatapultFlingDest` / `shuffleArray` |
 | Registration | `src/app.config.ts` | Room name must be `tourist` for client lobby |
@@ -94,7 +95,7 @@ Behavior:
 - Enter `playing`: budgets start **0/0**; seed rewards + hidden grilles + hidden catapults; clear `removedTaskKeys` / `holdingGrilleKeys` / catapult reveal arrays; grant current seat (multi +1/+1; solo become-current +1 step only).
 - Multi (≥2 eligible) on becoming current: `steps++`, `peeks++`. Solo (1 eligible) on becoming current: `infinite=true` (peeks∞) then **+1 step only** (no peek increment); already-current→solo (non-current leave/finish) → peeks∞ + 5:00 **without** re-grant. No end-turn while solo.
 - `move`: always spend 1 step; **keep** turn; reject if piece `trapped`; after land → paced trap pipeline; then `maybeAutoEndTurn` (deferred while pipeline active) / solo step-loss. Landing on removed hole → reject.
-- **Paced trap pipeline (`startTrapPipeline` / `resolveNextTrapHop`):** one next trap on current cell after land/arrival budget → shuffle → grille applies holding then idle; catapult consume + sync reveal → wait overlay budget → fire-time fling/broken → clear reveal → fling travel budget → resolve **only** dest cell. No full-chain sync in one tick; no client `presentationDone`. Fling does **not** spend an extra step. `pendingTurnAdvance` + `onTrapPipelineIdle` defer auto-end / deadline `advanceTurn` (SC-MOVE-90…92).
+- **Paced trap pipeline (`startTrapPipeline` / `resolveNextTrapHop`):** one next trap on current cell after land/arrival budget → shuffle → grille applies holding then idle; catapult consume + sync reveal → wait overlay budget → fire-time fling/broken → clear reveal → fling travel budget → resolve **only** dest cell. No full-chain sync in one tick; no client `presentationDone`. Fling does **not** spend an extra step. `pendingTurnAdvance` + `onTrapPipelineIdle`: pending → `advanceTurn`; else **re-eval** `maybeAutoEndTurn` + solo exhaustion (SC-MOVE-90…93).
 - `rescue` `{ side }`: own trapped + Chebyshev-1 free own piece + steps≥1 → −1 step; clear trapped + holding grille (rescuer coords unchanged); then paced pipeline if a catapult remains. Solo = multi.
 - `push` `{ pusherSide, targetSessionId, targetSide, row, col }`: own free pusher + free adj target → far-side dest; −1 step; relocate **target only**; land side-effects like move (paced pipeline on target). Reject trapped pusher/target, hole, occupied, bad geometry. Solo = multi.
 - `returnFromFinish` `{ side, row, col }`: `finishPlace===0` + finished side + legal center-ring cell → −1 step; unfinish onto cell → paced pipeline.

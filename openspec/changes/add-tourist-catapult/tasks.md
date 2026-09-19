@@ -49,3 +49,10 @@
 - [x] 7.3 Server: deferred `maybeAutoEndTurn` + deadline advance до pipeline idle (`pendingTurnAdvance`); push/return/rescue тот же path — SC-MOVE-91/92
 - [x] 7.4 Client: queue/grille follow hop-sync; не показывать holding grille на финале во время prior catapult hops; board lock на pipeline — SC-BOARD-26/29/30/27
 - [x] 7.5 Server `npm test` (SC-MOVE-90…92 + регресс 78…89); client `npm run lint` + `npm run typecheck`; обновить skills / AGENTS blurbs (paced + deferred turn)
+
+## 8. Server+client — idle re-eval + always finish travel (follow-up)
+
+- [x] 8.1 Прочитать `design.md` D15–D17, delta `specs/game/move` (SC-MOVE-93) + `game/finish` (SC-FINISH-20) + `game/board` (SC-BOARD-31), skills `server/work-with-game`, `server/work-with-rooms`, `client/work-with-game-board`
+- [x] 8.2 Server `onTrapPipelineIdle`: если `pendingTurnAdvance` → `advanceTurn`; иначе `maybeAutoEndTurn` + solo exhaustion — SC-MOVE-93
+- [x] 8.3 Client: после successful catapult vanish — если piece finished / dest center, всегда finish travel (даже если finish sync после reveal enqueue); цепочка hop→…→центр — анимация каждого hop, finish travel после последнего vanish — SC-FINISH-20, SC-BOARD-31
+- [x] 8.4 Server `npm test` (SC-MOVE-93 + регресс 90…92); client `npm run lint` + `npm run typecheck`; обновить skills / AGENTS blurbs (idle re-eval + finish-after-vanish)

@@ -8,7 +8,7 @@ description: >-
   grille density / trap / rescue / push / returnFromFinish / all-jail /
   leave-clear (SC-LOBBY-14 / SC-BOARD-16/20 / SC-MOVE-51…64 /
   SC-MOVE-66…73 / SC-PIECE-24…28 / SC-FINISH-12/14) + catapult paced pipeline /
-  deferred turn (SC-MOVE-78…92) + become-current grants
+  deferred turn (SC-MOVE-78…93) + become-current grants
   (multi +1/+1; solo +1 step;
   already-current→solo no re-grant) + turn deadlines (setTurnBudgetsForTests) +
   trap presentation budgets (setTrapPresentationBudgetsForTests),
@@ -139,7 +139,7 @@ Use these categories only when the SUT has relevant behavior:
   Zero trap presentation budgets in `beforeEach` via
   `setTrapPresentationBudgetsForTests({ moveAnimMs: 0, catapultMs: 0, brokenMs: 0, grilleMs: 0 })`
   + `resetTrapPresentationBudgets` in `afterEach` so paced pipeline finishes inside short `waitMs`
-  (override non-zero only for SC-MOVE-90…92 mid-hop asserts).
+  (override non-zero only for SC-MOVE-90…93 mid-hop / idle re-eval asserts).
   Pure rules: `test/touristMove.test.ts` (incl. finished occupancy /
   `finished` reject / `hasLegalMove` / `hasLegalPeek` / removed holes not landable).
 - Finish: cover SC-FINISH-* (center land → `piece.finished`; 4th finish →
@@ -306,7 +306,7 @@ Canonical coverage: `test/MyRoom.test.ts` (SC-MOVE-*) + pure `test/touristMove.t
 - Permanent leave of current → `applyTurnGrant` on next (multi +1/+1; solo become-current +1 step — SC-MOVE-50); already-current→solo carries steps (no re-grant — SC-MOVE-40); `onDrop` grace does not change turn (non-finished).
 - Grilles (add-grille-traps): create `grilleDensity` few/medium/many → seed count 12/22/35% (SC-LOBBY-14 / SC-BOARD-16); land → trap + `holdingGrilleKeys` (SC-MOVE-51 / SC-PIECE-24/26); trapped rejects move/peek (SC-MOVE-52/53); `rescue` / `returnFromFinish` (SC-MOVE-54…59 / SC-FINISH-12/14); all-jail reset (SC-MOVE-60/61 / SC-PIECE-25); auto-end waits for rescue/return (SC-MOVE-62); solo same rules (SC-MOVE-64); spent grille leaves task peekable (SC-BOARD-20); permanent leave clears that seat’s holding (SC-PIECE-28; onDrop does not). Pure helpers cover density counts, ring cells, `hasLegalRescue` / `validateReturnFromFinish`.
 - Push (add-tourist-push): `push` `{ pusherSide, targetSessionId, targetSide, row, col }` relocates target only (−1 step; no turn advance; land side-effects like move) — SC-MOVE-66…72; auto-end / solo step-loss count `hasLegalPush` (SC-MOVE-73); pure `farSideCell` / `validateTouristPush` / `hasLegalPush` in `test/touristMove.test.ts`.
-- Catapults / paced trap pipeline (add-tourist-catapult): create `catapultDensity` same 12/22/35% ratios (SC-LOBBY-17); land → paced hop + presentation budget (SC-MOVE-78…89); **SC-MOVE-90** mid-overlay: piece still on catapult, dest grille not holding yet, `isTrapPipelineActiveForTests()`; **SC-MOVE-91/92** auto-end / deadline set `pendingTurnAdvance` until pipeline idle; reject further turn actions while pipeline active (board-lock parity). Helpers: `clearCatapultsForTests` / `plantHiddenCatapultForTests` / `setTrapRngForTests` / `setTrapPresentationBudgetsForTests`. With zeroed budgets, do **not** assert long-lived `revealingCatapultKeys` / `brokenCatapultKeys` after fire — assert pipeline idle instead.
+- Catapults / paced trap pipeline (add-tourist-catapult): create `catapultDensity` same 12/22/35% ratios (SC-LOBBY-17); land → paced hop + presentation budget (SC-MOVE-78…89); **SC-MOVE-90** mid-overlay: piece still on catapult, dest grille not holding yet, `isTrapPipelineActiveForTests()`; **SC-MOVE-91/92** auto-end / deadline set `pendingTurnAdvance` until pipeline idle; **SC-MOVE-93** idle without pending **re-evals** auto-end after grille removes peek (land budget > 0 so post-move auto-end still sees free peek); reject further turn actions while pipeline active (board-lock parity). Helpers: `clearCatapultsForTests` / `plantHiddenCatapultForTests` / `setTrapRngForTests` / `setTrapPresentationBudgetsForTests`. With zeroed budgets, do **not** assert long-lived `revealingCatapultKeys` / `brokenCatapultKeys` after fire — assert pipeline idle instead.
 - Pure module tests cover playable set, Chebyshev, occupancy (ignores finished; trapped still occupy) without room I/O.
 
 Server is authoritative; never assert by trusting a client-only board copy.

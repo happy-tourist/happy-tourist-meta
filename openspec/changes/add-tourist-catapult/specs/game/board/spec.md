@@ -1,6 +1,6 @@
 ## Purpose
 
-Delta этого change: публичная анимация катапульты, land-before-overlay, sequential hops под **server-paced** sync, grille не раньше своего land. Базовая геометрия и решётки — main `game/board`.
+Delta этого change: публичная анимация катапульты, land-before-overlay, sequential hops под **server-paced** sync, grille не раньше своего land, always-animated hops incl. finish. Базовая геометрия и решётки — main `game/board`.
 
 ## Traceability
 
@@ -15,8 +15,9 @@ Delta этого change: публичная анимация катапульт�
 | SC-BOARD-28 | covered (client UX — land arrives before overlay; all viewers) |
 | SC-BOARD-29 | covered (client UX — grille drop only on its hop after prior catapult hops) |
 | SC-BOARD-30 | covered (client UX — single sequential trap timeline; no early final grille) |
+| SC-BOARD-31 | covered (client UX — every hop animated; finish travel after last vanish to center) |
 
-Related: seed / fling / paced resolve / deferred turn — `game/move`; finish travel — `game/finish`.
+Related: seed / fling / paced resolve / deferred turn / idle re-eval — `game/move`; finish travel — `game/finish`.
 
 ## ADDED Requirements
 
@@ -65,6 +66,14 @@ When a piece triggers an unspent catapult that has at least one legal fling dest
 - **WHEN** that next catapult resolves for presentation
 - **THEN** clients complete the prior catapult vanish and prior fling travel, then arrival onto the next catapult cell, before starting the next catapult overlay
 - **AND** there is no product cap on chain length beyond one-shot consume per catapult
+
+#### Scenario [SC-BOARD-31]: Every hop animates including final fling to center
+
+- **GIVEN** a multi-hop catapult chain whose last fling destination is a center cell (finish)
+- **WHEN** clients present that pipeline
+- **THEN** each hop shows land → overlay → travel (or finish travel on the last hop after its vanish)
+- **AND** the piece MUST NOT disappear from an intermediate catapult cell without travel
+- **AND** finish travel to center starts only after the last successful catapult vanish
 
 ### Requirement: Broken catapult hold timeline
 

@@ -4,10 +4,11 @@ description: >-
   Use when adding, changing, reviewing, or debugging Colyseus room messages in
   the happy-tourist tourist server — onMessage handlers (move, rescue, push,
   returnFromFinish, peek, peekAnswer, endTurn, ready, say), private
-  budgets/peekOpen/allJailWarning sends, validating client intents before
-  mutating schema state or broadcasting ephemeral events, optional error
-  feedback, or aligning message contracts with the client. Not for lobby listing
-  (LobbyRoom / HTTP fallback).
+  budgets/peekOpen/allJailWarning sends, paced trap pipeline / pendingTurnAdvance
+  / idle re-eval (SC-MOVE-93), validating client intents before mutating schema
+  state or broadcasting ephemeral events, optional error feedback, or aligning
+  message contracts with the client. Not for lobby listing (LobbyRoom / HTTP
+  fallback).
 ---
 
 # Work With Messages
@@ -51,7 +52,7 @@ Coordinate with: `work-with-rooms` (lifecycle / registration), `work-with-schema
 | Server → client | room error channel | Client sets `game.error` from `room.onError` |
 | Lobby | HTTP fallback | `client.http.get('/rooms/tourist')` — **not** a room message |
 
-**`move`:** accept only when `phase === 'playing'` + seated + `finishPlace === 0` + `!timeExpired` + current turn + `steps > 0` + **trap pipeline idle**; legal one-step per `touristMove.ts` (occupancy ignores finished; trapped still occupy; **landing on removed holes rejected**; stand/leave OK; **reject if piece trapped**). Reject (no mutate) otherwise. On accept: update piece `row`/`col`; always spend 1 step + `sendBudgets`; if target is center → `piece.finished = true` and maybe assign `finishPlace`; else paced trap pipeline (one hop + presentation budget; catapult fling/broken or grille); **do not** `advanceTurn` solely for move — then `maybeAutoEndTurn` / solo step-loss / finish-advance (**deferred** via `pendingTurnAdvance` while pipeline active).
+**`move`:** accept only when `phase === 'playing'` + seated + `finishPlace === 0` + `!timeExpired` + current turn + `steps > 0` + **trap pipeline idle**; legal one-step per `touristMove.ts` (occupancy ignores finished; trapped still occupy; **landing on removed holes rejected**; stand/leave OK; **reject if piece trapped**). Reject (no mutate) otherwise. On accept: update piece `row`/`col`; always spend 1 step + `sendBudgets`; if target is center → `piece.finished = true` and maybe assign `finishPlace`; else paced trap pipeline (one hop + presentation budget; catapult fling/broken or grille); **do not** `advanceTurn` solely for move — then `maybeAutoEndTurn` / solo step-loss / finish-advance (**deferred** via `pendingTurnAdvance` while pipeline active; on idle: pending → `advanceTurn`, else **re-eval** auto-end/solo — SC-MOVE-93).
 
 **`rescue`:** current turn + steps≥1 + own trapped unfinished + Chebyshev-1 free own piece + **pipeline idle** → −1 step; clear `trapped` + holding grille; rescuer coords unchanged; then paced pipeline if a catapult remains. Silent reject otherwise.
 
@@ -71,7 +72,7 @@ Coordinate with: `work-with-rooms` (lifecycle / registration), `work-with-schema
 
 ## Server Today
 
-- `src/rooms/MyRoom.ts` — seating + start + budgets/peek/grilles/catapults + paced trap pipeline (`startTrapPipeline` / `pendingTurnAdvance`) + `onMessage('move'|'rescue'|'push'|'returnFromFinish'|'peek'|'peekAnswer'|'endTurn'|'ready'|'say')`; `handlePush`; auto-end includes `hasLegalPush`; turn actions rejected while pipeline active.
+- `src/rooms/MyRoom.ts` — seating + start + budgets/peek/grilles/catapults + paced trap pipeline (`startTrapPipeline` / `pendingTurnAdvance` / idle re-eval SC-MOVE-93) + `onMessage('move'|'rescue'|'push'|'returnFromFinish'|'peek'|'peekAnswer'|'endTurn'|'ready'|'say')`; `handlePush`; auto-end includes `hasLegalPush`; turn actions rejected while pipeline active.
 - Pure move/peek/grille/push/catapult helpers: `src/game/touristMove.ts` (`farSideCell`, `validateTouristPush`, `hasLegalPush`, `catapultFlingCandidates`, `pickCatapultFlingDest`).
 - Room registered as `tourist` (+ `lobby` for live list); do not reintroduce `my_room`.
 - **No** dedicated catapult room message — reveal/broken are schema-only (`revealingCatapultKeys` / `brokenCatapultKeys`).

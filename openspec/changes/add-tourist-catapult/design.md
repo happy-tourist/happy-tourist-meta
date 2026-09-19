@@ -1,17 +1,16 @@
 ## Context
 
-См. `proposal.md`. Секции 1–6 (seed/fling/lobby/client land→overlay→fling + D13) уже в runtime. Playtest: ход уходит до анимации; full-chain sync показывает решётку на финале «заранее».
+См. `proposal.md`. Секции 1–7 (seed/fling/lobby/paced hop/deferred turn) уже в runtime. Playtest после §7: ход зависает после grille, снявшей peek; fling→центр без finish travel.
 
-**Пакеты:** server (`tourist`) + client (Game board). Follow-up §7: **server-paced** hop + **deferred turn**.
+**Пакеты:** server (`tourist`) + client (Game board). Follow-up §8: **idle re-eval auto-end** + **always finish travel**.
 
 ## Goals / Non-Goals
 
 **Goals:**
 
-- Paced trap pipeline: на клетке — только следующий trap; после presentation budget — эффект; fling-dest = новый land (без −1 step).
-- Общие presentation ms client↔server (без `presentationDone`).
-- Auto-end и deadline-triggered advance — только после pipeline idle (если переход уже «нужен»).
-- Один sequential timeline: catapult hops затем grille; board lock.
+- Paced trap pipeline + deferred pending advance (§7) — остаются.
+- На pipeline idle: pending → advance; иначе **re-eval** `maybeAutoEndTurn` / solo (F1).
+- Каждый catapult hop анимируется; fling→центр — **всегда** finish travel после последнего vanish (F2).
 - Экономика steps/peeks без изменений.
 
 **Non-Goals:**
@@ -61,6 +60,7 @@
 2. Overlay: successful ~**1000 ms**; broken 300+300 (+ vanish).
 3. Fling travel `MOVE_ANIM_MS` **после** vanish (или grille drop после своего hop).
 4. Следующий hop только после sync следующего reveal/holding — не заранее.
+5. **Fling→центр (F2):** finish travel + fade **после** vanish того hop’а (и после prior hops в цепи). Не полагаться на `finished` в том же tick, что reveal — при paced finish приходит позже; после vanish проверить finished/center и запустить тот же path, что move/push→центр. Не телепортировать / не снимать pin без travel.
 
 **Authority timing:** server clock задаёт момент coords/holding; client анимирует в тех же ms. Синтез full-chain из одного patch больше не нужен как основной путь (D13 atomic mirror остаётся страховкой).
 
@@ -72,23 +72,23 @@
 
 | Место | Что |
 |-------|-----|
-| `MyRoom.ts` | paced trap pipeline; presentation budgets; deferred `advanceTurn` / deadline |
-| `MyRoomState.ts` | reveal/holding как сейчас; не слать всю цепочку разом |
+| `MyRoom.ts` | paced pipeline; deferred pending; **idle re-eval** auto-end/solo (F1) |
+| `MyRoomState.ts` | reveal/holding как сейчас |
 | `touristMove.ts` | fling helpers / density *(done)* |
-| `test/MyRoom.test.ts` | SC-MOVE-90…92 + регресс 78…89 |
+| `test/MyRoom.test.ts` | SC-MOVE-90…93 + регресс |
 
 ### D8 — Точки врезки (client)
 
 | Место | Что |
 |-------|-----|
-| `GamePage.vue` | queue следует hop-sync; grille не раньше своего land; board busy на pipeline |
-| `game.ts` | mirror; без presentationDone message |
-| skills / AGENTS | paced + deferred turn blurbs |
+| `GamePage.vue` | hop-sync; grille defer; **finish travel after vanish even if finish sync late** (F2) |
+| `game.ts` | mirror; без presentationDone |
+| skills / AGENTS | idle re-eval + finish-after-vanish blurbs |
 
-### D9 — Skills при apply §7
+### D9 — Skills при apply §8
 
-Server: `work-with-game`, `work-with-messages`, `work-with-rooms`, `server-work-with-test`.  
-Client: `work-with-game-board`, `work-with-stores`, `colyseus-client`.
+Server: `work-with-game`, `work-with-rooms`, `server-work-with-test`.  
+Client: `work-with-game-board`.
 
 ### D10 — Explore prerequisites seed/rules — закрыты
 
@@ -128,10 +128,26 @@ Atomic seats+revealing / attribution / no silent skip — остаётся.
 ### D15 — Deferred turn advance
 
 - **Не** звать `advanceTurn` из `maybeAutoEndTurn` / deadline handler, пока trap pipeline active.
-- Если auto-end или deadline уже «должен» сменить ход — поставить `pendingTurnAdvance` (или эквивалент) и выполнить при `onTrapPipelineIdle`.
-- **Не** pause/extend wall-clock `turnUntil` (Out of scope).
-- **Не** client ack.
-- Push/return/rescue land — тот же pipeline и тот же defer.
+- Если auto-end или deadline уже «должен» сменить ход — поставить `pendingTurnAdvance` и выполнить при idle.
+- **Не** pause/extend wall-clock `turnUntil`; **не** client ack.
+- Push/return/rescue land — тот же pipeline и defer.
+
+### D16 — Idle re-eval after traps (F1) — §8
+
+На `onTrapPipelineIdle`:
+
+1. `trapPipelineActive = false`.
+2. Если `pendingTurnAdvance` — сбросить флаг и `advanceTurn` (deadline / заранее no-actions). **Не** глотать deadline re-eval’ом.
+3. Иначе — `maybeAutoEndTurn()` и (solo) `maybeSoloStepsExhausted()`.
+
+Закрывает: land с peeks на live `*` → grille → peek недоступен → без re-eval ход застревает.
+
+### D17 — Always finish travel under paced sync (F2) — §8
+
+- Enqueue на reveal **не** обязан видеть `finished` сразу.
+- После successful vanish: если piece уже finished / sync dest center — `markDeferredFinish` + finish travel с клетки катапульты (как SC-FINISH-01/19), не clear pin без travel.
+- Цепочка catapult→…→center: анимация **каждого** hop; finish travel только после **последнего** vanish.
+- Spectator = игрок.
 
 ## Risks / Trade-offs
 
@@ -141,12 +157,12 @@ Atomic seats+revealing / attribution / no silent skip — остаётся.
 | Тесты с реальным clock | mocha accelerate timeouts / stub clock как у turn budgets |
 | Client FPS отстаёт от server unlock hop | Краткий visual lag принят; ход всё равно общий |
 | Старый client reconstruction | Упростить queue; не ломать D13 fallback |
+| Finish sync mid-overlay | Pin + deferred finish until vanish (D17) |
 
 ## Migration Plan
 
-- Нет DB. Rollback: вернуть sync full-chain resolve (хуже UX).
-- §7 — server + client + skills; секции 1–6 остаются.
+- Нет DB. §8 — точечные server idle + client finish path; 1–7 остаются.
 
 ## Open Questions
 
-- (нет — S1/S2 закрыты explore)
+- (нет — F1/F2/Q1/Q2 закрыты explore)
