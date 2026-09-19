@@ -1,173 +1,152 @@
 ## Context
 
-См. `proposal.md`. Seed / `resolveCellTraps` / lobby density / sync reveal и черновая client queue (секции 1–5) уже в runtime. **Defect:** overlay часто не играется — фишка сразу на fling dest. Follow-up (секция 6): надёжный detect reveal + порядок land → overlay → fling для всех клиентов.
+См. `proposal.md`. Секции 1–6 (seed/fling/lobby/client land→overlay→fling + D13) уже в runtime. Playtest: ход уходит до анимации; full-chain sync показывает решётку на финале «заранее».
 
-**Пакеты:** server (`tourist` room) + client (Lobby create + Game board). Server authority без anim-delay; presentation — client.
+**Пакеты:** server (`tourist`) + client (Game board). Follow-up §7: **server-paced** hop + **deferred turn**.
 
 ## Goals / Non-Goals
 
 **Goals:**
 
-- Create: независимый `catapultDensity` few/medium/many → **12/22/35%**, default medium.
-- Seed скрытых катапульт только на `*` при `playing`; overlap с решётками OK.
-- Единый land-resolve стека ловушек (move / push / return / post-fling / post-rescue).
-- Fling: Chebyshev-2 free landable → else -1; else broken consume, piece stays.
-- **Presentation:** у игрока и spectator одинаково: **сначала** визуальный доезд на клетку катапульты → **потом** overlay (successful ~**1000 ms**; broken 300+300) → **потом** fling / finish travel; цепочки с доездом на каждую следующую катапульту; board lock на всю последовательность.
-- Надёжный enqueue несмотря на split Pinia mirror (`seats` до `revealingCatapultKeys`).
-- Ассеты `catapult.png` / `catapult-broken.png`.
+- Paced trap pipeline: на клетке — только следующий trap; после presentation budget — эффект; fling-dest = новый land (без −1 step).
+- Общие presentation ms client↔server (без `presentationDone`).
+- Auto-end и deadline-triggered advance — только после pipeline idle (если переход уже «нужен»).
+- Один sequential timeline: catapult hops затем grille; board lock.
+- Экономика steps/peeks без изменений.
 
 **Non-Goals:**
 
-- Новые типы ловушек; правка правил решёток вне совместного резолва; редактор карт; новые HTTP/auth.
-- Server clock delay для coords/`finished`.
+- Client ack для хода; pause/extend wall-clock `turnUntil`; новые ловушки; смена fling geometry / density.
 
 ## Decisions
 
 ### D1 — Плотность как у решёток
 
-- **Выбор:** create option `catapultDensity: 'few' | 'medium' | 'many'` → те же `0.12 / 0.22 / 0.35`; count = `clamp(0, taskCount, Math.round(taskCount * p))` → **6 / 11 / 17** на стандартном layout.
-- Переиспользовать `GRILLE_DENSITY_RATIO` / общий helper плотности, не дублировать магические числа.
-- Default create: `medium`. Persist: private на room instance + seed once (как grille).
+- Create `catapultDensity` → `0.12 / 0.22 / 0.35`; default medium; reuse grille ratio helpers. *(done)*
 
 ### D2 — Скрытие до reveal + минимальный sync
 
-- Private `Set`/`Map` hidden catapult keys (зеркало `hiddenGrilleKeys`).
-- Sync для UI: кратковременный reveal (ключи «сейчас анимируется» и/или событие/поле с флагом broken). Достаточно, чтобы все клиенты показали overlay; после consume ключ убрать.
-- Hidden locations never synced.
-- **Альтернатива отвергнута:** держать permanent broken markers на доске — продукт: гаснет и исчезает.
+- Private hidden sets; short-lived `revealingCatapultKeys` / broken; hidden never synced. *(done)*
+- Reveal живёт на hop до конца presentation budget; не чистить mid-hop так, чтобы оборвать overlay.
 
-### D3 — Единый `resolveCellTraps(piece, cell)`
+### D3 — Paced `resolveCellTraps` (замена мгновенной full-chain)
 
-Порядок на сервере после принятого land (move/push/return) и после successful rescue (если piece free на клетке):
+После принятого land (move / push / return / post-rescue) и после каждого fling-land:
 
-1. Собрать оставшиеся unspent traps на клетке (grille, catapult).
-2. Shuffle порядок.
-3. Пока список не пуст и piece ещё на этой клетке и free (не finished): взять следующий trap.
-4. Grille → существующий trap path (может all-jail).
-5. Catapult → consume; pick dest; relocate или broken stay; если relocate — **рекурсивно/циклически** `resolveCellTraps` на dest (как новый land).
-6. Catapult one-shot: удалить из hidden сразу при resolve.
+1. Если pipeline уже занят для этой piece/room — не стартовать второй параллельный resolve.
+2. Собрать unspent traps на **текущей** клетке; если пусто → `onTrapPipelineIdle` (maybe deferred turn).
+3. Shuffle; взять **один** следующий trap (не while по всей цепочке в одном тике).
+4. **Catapult:** consume from hidden; sync reveal (+ broken if no dest); **не** relocate сразу; `clock.setTimeout(presentationBudget)` → затем fling relocate или stay; clear reveal; если fling — center finish или schedule resolve **только** dest cell.
+5. **Grille:** после budget «arrival на эту клетку» (если нужен) → holding + trapped (существующий path); затем idle.
+6. Fling **не** −1 step. Rescue→catapult: только стоимость rescue.
 
-Fling **не** тратит лишний step. Rescue→catapult: только стоимость rescue. Server пишет coords/`finished` **сразу** (без anim delay).
+**Отвергнуто:** мгновенный while/recursion всей цепочки + client reconstruction финала.  
+**Отвергнуто:** client `presentationDone` как источник отпуска хода.
 
 ### D4 — Геометрия fling
 
-- Кандидаты: `chebyshevDistance === 2` затем `=== 1`.
-- Фильтр: `isPlayableCell`, not in `removedTaskKeys`, not occupied by unfinished (excl. self when leaving cell).
-- Center допустим → finish через существующий land-on-center path.
-- Unit-pure helpers в `touristMove.ts`: `catapultFlingCandidates`, `pickCatapultFlingDest`.
+- Ring-2 then ring-1; free landable; center → finish. Helpers в `touristMove.ts`. *(done)*  
+- Dest pick **at fire time** того hop (после budget, перед relocate).
 
-### D5 — Client UX / ассеты / presentation sequencing
+### D5 — Client UX / presentation
 
 | Ассет | Путь |
 |-------|------|
-| Intact | `happy-tourist.github.io/src/assets/catapults/catapult.png` |
-| Broken | `happy-tourist.github.io/src/assets/catapults/catapult-broken.png` |
+| Intact | `…/catapults/catapult.png` |
+| Broken | `…/catapults/catapult-broken.png` |
 
-**Порядок на каждом выстреле (игрок = spectator):**
+**Порядок на hop (игрок = spectator):**
 
-1. **Land / доезд** на клетку катапульты с travel sense обычного шага (`MOVE_ANIM_MS`; push/return — их arrival sense). Sync может уже держать piece на fling dest — client синтезирует доезд (pin/visual override).
-2. **Только после** завершения доезда — overlay на клетке выстрела.
-3. **Successful:** appear→vanish суммарно ~**1000 ms** (одна презентация, не 1000+1000).
-4. Пока overlay жив: piece **pinned** на клетке катапульты.
-5. После полного vanish: fling travel `MOVE_ANIM_MS` на sync dest; center → finish travel+fade **после** vanish.
-6. Цепочка: fling land на новую катапульту → снова доезд на ту клетку → overlay → travel (без cap).
+1. Visual land/arrival на клетку ловушки (`MOVE_ANIM_MS` sense; push/return — их arrival).
+2. Overlay: successful ~**1000 ms**; broken 300+300 (+ vanish).
+3. Fling travel `MOVE_ANIM_MS` **после** vanish (или grille drop после своего hop).
+4. Следующий hop только после sync следующего reveal/holding — не заранее.
 
-**Broken:** после доезда — appear → **300 ms** intact → broken → **300 ms** broken → vanish; piece остаётся (нет fling travel).
-
-**Уже на клетке** (напр. post-rescue, доезжать некуда): не синтезировать фейковый шаг; overlay после завершения текущей arrival-анимации (если ещё идёт), иначе сразу.
-
-**Authority:** client-only presentation delay. Краткий visual desync принят.
+**Authority timing:** server clock задаёт момент coords/holding; client анимирует в тех же ms. Синтез full-chain из одного patch больше не нужен как основной путь (D13 atomic mirror остаётся страховкой).
 
 ### D6 — Lobby
 
-- Второй option-group в create modal рядом с grille density; отдельные i18n keys (sense: катапульты мало/средне/много).
-- `CreateGameOptions` + room `onCreate` parse оба density.
+- Второй density selector. *(done)*
 
 ### D7 — Точки врезки (server)
 
 | Место | Что |
 |-------|-----|
-| `src/rooms/MyRoom.ts` | parse `catapultDensity`; seed on enterPlaying; land-resolve после move/push/return; post-rescue catapult; consume |
-| `src/rooms/schema/MyRoomState.ts` | sync reveal keys / broken flag (минимально для анимации) |
-| `src/game/touristMove.ts` | density reuse; fling candidate pick; shuffle helper |
-| `test/MyRoom.test.ts` (+ unit) | SC-MOVE-78…89, SC-LOBBY-17, SC-FINISH-19 |
+| `MyRoom.ts` | paced trap pipeline; presentation budgets; deferred `advanceTurn` / deadline |
+| `MyRoomState.ts` | reveal/holding как сейчас; не слать всю цепочку разом |
+| `touristMove.ts` | fling helpers / density *(done)* |
+| `test/MyRoom.test.ts` | SC-MOVE-90…92 + регресс 78…89 |
 
 ### D8 — Точки врезки (client)
 
 | Место | Что |
 |-------|-----|
-| `src/pages/LobbyPage.vue` | catapult density UI |
-| `src/stores/game.ts` | create option; mirror reveal; optional atomic snapshot для catapult watch |
-| `src/pages/GamePage.vue` | queue: **land → overlay → fling**; broken holds; board busy; finish after vanish; spectator parity |
-| `src/i18n/*` | lobby catapult density labels |
-| `src/assets/catapults/*.png` | user-provided art |
+| `GamePage.vue` | queue следует hop-sync; grille не раньше своего land; board busy на pipeline |
+| `game.ts` | mirror; без presentationDone message |
+| skills / AGENTS | paced + deferred turn blurbs |
 
-### D9 — Skills при apply
+### D9 — Skills при apply §7
 
-Server: `work-with-schema`, `work-with-messages`, `work-with-game`, `work-with-rooms`, `server-work-with-test`.  
-Client: `work-with-lobby`, `work-with-game-board`, `work-with-pages`, `work-with-stores`, `work-with-localization`, `colyseus-client`.  
-Follow-up §6: game-board / styles / AGENTS — land-before-overlay + enqueue fix.
+Server: `work-with-game`, `work-with-messages`, `work-with-rooms`, `server-work-with-test`.  
+Client: `work-with-game-board`, `work-with-stores`, `colyseus-client`.
 
-### D10 — Explore prerequisites (закрыты, seed/rules)
+### D10 — Explore prerequisites seed/rules — закрыты
 
-| ID | Решение |
-|----|---------|
-| D1 | overlap OK; random order each resolve; count like grille |
-| D2 | only free landable (no holes/edge/occupied) |
-| D3 | post-fling = ordinary land (move/push sense) |
-| triggers | move, push, return |
-| center | fling = finish |
-| D5b | same 12/22/35, default medium, separate selector |
-| D6 | one-shot disappear |
-| D7 | task `*` only |
-| D8 | broken consume, piece stays |
-| dest pick | at fire time |
+*(без изменений; fling без −1 step подтверждён S2)*
 
-### D11 — Presentation follow-up (закрыты)
+### D11 — Presentation UX — закрыты (уточнение)
 
 | ID | Решение |
 |----|---------|
-| Anim-D1 | Travel **после** полного исчезновения overlay |
-| Anim-D2 | Цепочка последовательно (каждый выстрел: land → overlay → travel) |
-| Anim-D3 | Client-only delay (не server clock) |
-| Anim-D4 | **Доезд на клетку катапульты завершается до начала overlay**; затем vanish; затем fling |
-| Spectator | Та же последовательность, что у игрока (синтез land при необходимости) |
-| Triggers UX | move / push / return land — сначала «как шаг» на клетку, потом катапульта |
-| Broken | Appear → 300 ms intact → break → 300 ms broken → vanish; no travel |
-| Successful ms | Суммарно ~1000 ms appear→vanish |
-| Center | Vanish first, then finish travel+fade |
-| Input | Board non-interactive while **any** board anim runs (land, grille, catapult, finish, fling) |
-| Chain cap | Нет |
-| Already on cell | Нет фейкового шага; overlay после текущей arrival-анимации или сразу |
+| Anim-D1…D4 / spectator / broken / lock | как в §5–6 |
+| **Anim-D3** | **Снято:** client-only delay при мгновенном server full-chain. Канон: **server-paced** + общие ms |
+| Chain | sequential; no cap |
+| Grille | только на своём hop после prior catapult hops |
 
 ### D12 — Board input lock
 
-Общий board-busy: `isInteractive` false, пока живы land/move travel, grille drop/rise, catapult overlay (+ broken holds), finish disappear, deferred fling travel. На чужом ходе и так не interactive для текущего игрока; **презентация** всё равно идёт у всех зрителей.
+`isInteractive` false на весь pipeline (land, catapult, fling travel, grille drop/rise, finish). Во время pipeline действия хода не принимать (сервер тоже не advance’ит).
 
-### D13 — Root cause missed overlay + fix
+### D13 — Missed overlay (client) — done §6
 
-**Баг:** `_mirrorRoomState` пишет `seats` затем `revealingCatapultKeys`. Watch с `flush: 'sync'` на комбинированном getter срабатывает дважды: (1) pieces уже на fling dest, revealing ещё пуст; (2) revealing появился, но prev/next pieces уже оба на dest → `resolveFlingPieceKey` → `null` → silent skip.
+Atomic seats+revealing / attribution / no silent skip — остаётся.
 
-**Fix (выбрать минимальный работающий):**
+### D14 — Presentation budget (общие ms)
 
-- Не полагаться на «кто стоит на клетке» после relocate: атрибутить piece по переходу coords / last-known / единственному moved в том же patch; **и/или**
-- Один атомарный снимок mirror (seats+revealing в одном реактивном тике) / `flush: 'pre'` без промежуточного fire; **и/или**
-- Не silent-skip: fallback enqueue overlay даже без piece key (хотя бы artwork).
+Канон констант (имена могут жить в server export + client mirror):
 
-Land-before-overlay строится поверх рабочего enqueue.
+| Hop phase | Budget |
+|-----------|--------|
+| Land/arrival sense | `MOVE_ANIM_MS` (как обычный шаг) |
+| Successful catapult overlay | ~**1000 ms** |
+| Broken | 300 + 300 + vanish (~как сейчас) |
+| Fling travel | `MOVE_ANIM_MS` |
+| Grille drop | `GRILLE_ANIM_MS` (1000) |
+
+Сервер ждёт сумму фаз **до применения эффекта следующего sync** так, чтобы клиент успел показать текущий hop. Точная нарезка (один timeout на hop vs несколько) — implementation detail, поведение — specs.
+
+### D15 — Deferred turn advance
+
+- **Не** звать `advanceTurn` из `maybeAutoEndTurn` / deadline handler, пока trap pipeline active.
+- Если auto-end или deadline уже «должен» сменить ход — поставить `pendingTurnAdvance` (или эквивалент) и выполнить при `onTrapPipelineIdle`.
+- **Не** pause/extend wall-clock `turnUntil` (Out of scope).
+- **Не** client ack.
+- Push/return/rescue land — тот же pipeline и тот же defer.
 
 ## Risks / Trade-offs
 
 | Risk | Mitigation |
 |------|------------|
-| Длинная цепочка land+overlay+fling × N | Продуктово без cap; playtest |
-| Client pin vs server dest | Принято; short window |
-| Sync spam на reveal | Короткоживущие keys |
-| Split mirror / sync flush | D13 fix обязателен в §6 |
-| Spectator без локального beginMove | Синтез land travel к клетке катапульты |
+| Длинная цепочка × budget | Продуктово без cap; playtest |
+| Тесты с реальным clock | mocha accelerate timeouts / stub clock как у turn budgets |
+| Client FPS отстаёт от server unlock hop | Краткий visual lag принят; ход всё равно общий |
+| Старый client reconstruction | Упростить queue; не ломать D13 fallback |
 
 ## Migration Plan
 
-- Нет DB-миграций. Старые комнаты без `catapultDensity` → default `medium` на parse.
-- Rollback: убрать option + seed/resolve; ассеты безопасно оставить.
-- Presentation follow-up §6 — только client (+ skills); server coords logic без изменений.
+- Нет DB. Rollback: вернуть sync full-chain resolve (хуже UX).
+- §7 — server + client + skills; секции 1–6 остаются.
+
+## Open Questions
+
+- (нет — S1/S2 закрыты explore)

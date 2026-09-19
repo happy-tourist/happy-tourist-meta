@@ -1,6 +1,6 @@
 ## Purpose
 
-Delta этого change: seed катапульт, стек ловушек на клетке, fling / broken, триггеры land. Базовые budgets/turn/move/grille/push — main `game/move`.
+Delta этого change: seed катапульт, стек ловушек, fling / broken, **paced** land resolve, **deferred** turn advance after trap presentation. Базовые budgets/turn/move/grille/push — main `game/move`.
 
 ## Traceability
 
@@ -18,6 +18,9 @@ Delta этого change: seed катапульт, стек ловушек на �
 | SC-MOVE-87 | covered (server mocha — stacked traps resolve in random order) |
 | SC-MOVE-88 | covered (server mocha — catapult one-shot consumed) |
 | SC-MOVE-89 | covered (server mocha — fling onto center finishes — see game/finish) |
+| SC-MOVE-90 | covered (server mocha — paced: next hop only after presentation budget) |
+| SC-MOVE-91 | covered (server mocha — auto-end deferred until trap pipeline idle) |
+| SC-MOVE-92 | covered (server mocha — deadline advance deferred until trap pipeline idle) |
 
 Related: board anim — `game/board`; center finish — `game/finish`; grille trap/rescue — main `game/move`.
 
@@ -42,7 +45,9 @@ When the room start phase becomes `playing`, the server SHALL place a hidden cat
 
 ### Requirement: Landing resolves remaining traps on the cell
 
-When phase is `playing` and a piece **lands** on a cell via an accepted move, push, or return-from-finish, the server SHALL resolve every still-unspent trap on that cell (grille and/or catapult) in a **fresh random order** for that resolve. Landing after a catapult fling MUST use the same resolve rules as an ordinary move/push landing on the destination cell. While a piece is trapped by a grille on a cell, remaining unspent catapults on that cell MUST wait until the piece becomes free on that cell (successful rescue) and then MUST resolve as a new land-style resolve for that piece. Each trap type’s existing consume rules apply (grille → trap holding; catapult → fling or broken, then spent).
+When phase is `playing` and a piece **lands** on a cell via an accepted move, push, or return-from-finish, the server SHALL resolve still-unspent traps on that cell (grille and/or catapult) in a **fresh random order** for that resolve. Landing after a catapult fling MUST use the same resolve rules as an ordinary move/push landing on the destination cell. While a piece is trapped by a grille on a cell, remaining unspent catapults on that cell MUST wait until the piece becomes free on that cell (successful rescue) and then MUST resolve as a new land-style resolve for that piece. Each trap type’s existing consume rules apply (grille → trap holding; catapult → fling or broken, then spent).
+
+The server MUST NOT apply an entire multi-hop catapult/grille chain in a single synchronous tick. It MUST resolve **one** next trap effect at a time, waiting a presentation budget (shared with client timing in `game/board`) after reveal / before applying relocate, grille holding, or scheduling the next cell’s resolve — so synced state exposes only the current hop, not the final chain outcome early.
 
 #### Scenario [SC-MOVE-87]: Stacked traps shuffle order each resolve
 
@@ -55,17 +60,25 @@ When phase is `playing` and a piece **lands** on a cell via an accepted move, pu
 
 - **GIVEN** a piece is trapped on a cell that still holds an unspent catapult after the grille is holding
 - **WHEN** that piece is successfully rescued and becomes free on that same cell
-- **THEN** the remaining catapult resolves immediately for that piece (fling or broken)
+- **THEN** the remaining catapult resolves for that piece (fling or broken) under the paced pipeline
 - **AND** the catapult is consumed
+
+#### Scenario [SC-MOVE-90]: Paced resolve applies only the next hop after budget
+
+- **GIVEN** a free unfinished piece lands on a cell with an unspent catapult that will fling onto another cell that still holds an unspent grille
+- **WHEN** the catapult hop is revealed
+- **THEN** synced piece coordinates MUST remain on the catapult cell until that hop’s presentation budget elapsed
+- **AND** the destination grille MUST NOT appear in `holdingGrilleKeys` until after the fling relocation is applied and that destination land hop begins
+- **AND** the server MUST NOT pre-compute and sync the final trapped position in the same tick as the initial land
 
 ### Requirement: Catapult flings to a free landable ring cell
 
-When a catapult resolves for a free unfinished piece on its cell, the server SHALL consume that catapult (one-shot) and MUST attempt to relocate the piece as follows: pick uniformly at random among **free legal landing** cells at Chebyshev distance **2** from the catapult cell; if that set is empty, pick uniformly among free legal landing cells at Chebyshev distance **1**. A legal landing cell MUST be playable on the tourist layout, MUST NOT be a removed-task hole, MUST NOT be outside the board, and MUST NOT be occupied by any unfinished piece (including trapped). The piece’s own former cell MUST NOT count as occupied against itself once the fling relocates it. Destination selection MUST use occupancy and holes **at fire time**. If both rings are empty, the catapult MUST still be consumed, the piece MUST remain on the catapult cell, and clients MUST present the broken vanish per `game/board`. A successful fling MUST NOT spend an extra step beyond the step already spent for the triggering move/push/return (rescue-triggered fling spends no additional step beyond the rescue). After a successful fling relocation, destination side-effects MUST follow ordinary landing rules (including further traps and center finish).
+When a catapult resolves for a free unfinished piece on its cell, the server SHALL consume that catapult (one-shot) and MUST attempt to relocate the piece as follows: pick uniformly at random among **free legal landing** cells at Chebyshev distance **2** from the catapult cell; if that set is empty, pick uniformly among free legal landing cells at Chebyshev distance **1**. A legal landing cell MUST be playable on the tourist layout, MUST NOT be a removed-task hole, MUST NOT be outside the board, and MUST NOT be occupied by any unfinished piece (including trapped). The piece’s own former cell MUST NOT count as occupied against itself once the fling relocates it. Destination selection MUST use occupancy and holes **at fire time** (when the hop’s relocate is applied after the presentation budget). If both rings are empty, the catapult MUST still be consumed, the piece MUST remain on the catapult cell, and clients MUST present the broken vanish per `game/board`. A successful fling MUST NOT spend an extra step beyond the step already spent for the triggering move/push/return (rescue-triggered fling spends no additional step beyond the rescue). After a successful fling relocation, destination side-effects MUST follow ordinary landing rules (including further traps and center finish), paced as above.
 
 #### Scenario [SC-MOVE-80]: Move onto catapult flings when ring-2 is free
 
 - **GIVEN** it is a seated player’s turn with steps ≥ 1 and a legal move lands a free unfinished piece on a cell with an unspent catapult and at least one free legal landing cell at Chebyshev-2
-- **WHEN** that move is accepted and the catapult resolves
+- **WHEN** that move is accepted and the catapult hop completes (reveal + presentation budget + relocate)
 - **THEN** the piece occupies one uniformly chosen free Chebyshev-2 legal landing cell
 - **AND** the catapult on the origin cell is spent
 - **AND** steps decreased by 1 for the move only
@@ -73,7 +86,7 @@ When a catapult resolves for a free unfinished piece on its cell, the server SHA
 #### Scenario [SC-MOVE-81]: Fling falls back to ring-1 when ring-2 empty
 
 - **GIVEN** a catapult resolves and no free legal landing cell exists at Chebyshev-2, but at least one exists at Chebyshev-1
-- **WHEN** the destination is chosen
+- **WHEN** the destination is chosen at fire time
 - **THEN** the piece is relocated to a uniformly chosen free Chebyshev-1 legal landing cell
 
 #### Scenario [SC-MOVE-82]: No destination leaves piece and spends broken catapult
@@ -88,18 +101,18 @@ When a catapult resolves for a free unfinished piece on its cell, the server SHA
 
 - **GIVEN** a successful push relocates a free unfinished target onto a cell with an unspent catapult
 - **WHEN** that landing is resolved
-- **THEN** the catapult resolves for the target as on an ordinary move landing
+- **THEN** the catapult resolves for the target as on an ordinary move landing (paced)
 
 #### Scenario [SC-MOVE-84]: Return onto catapult triggers the same resolve
 
 - **GIVEN** a successful return-from-finish places a piece onto a cell with an unspent catapult
 - **WHEN** that landing is resolved
-- **THEN** the catapult resolves for that piece as on an ordinary move landing
+- **THEN** the catapult resolves for that piece as on an ordinary move landing (paced)
 
 #### Scenario [SC-MOVE-85]: After fling, destination land effects apply
 
 - **GIVEN** a catapult flings a piece onto a destination that still holds an unspent grille
-- **WHEN** destination landing is resolved
+- **WHEN** destination landing is resolved (after the fling hop’s budget and relocate)
 - **THEN** that grille traps the piece per existing grille rules
 
 #### Scenario [SC-MOVE-88]: Catapult is one-shot
@@ -113,3 +126,22 @@ When a catapult resolves for a free unfinished piece on its cell, the server SHA
 - **GIVEN** a catapult flings a piece onto a center cell that is a legal landing at fire time
 - **WHEN** that destination landing is applied
 - **THEN** the piece finishes per `game/finish` as if it had moved onto that center cell
+
+### Requirement: Turn does not advance during trap presentation pipeline
+
+While a trap presentation pipeline is active for the room (paced catapult/grille hops after a land), the server MUST NOT call `advanceTurn` for multiplayer auto-end-turn or for a turn-deadline expiry that fired during that pipeline. If auto-end-turn would otherwise apply, or the turn deadline fires while the pipeline is active, the server MUST record that a turn advance is pending and MUST perform that advance only after the pipeline becomes idle. The server MUST NOT require a client presentation-ack message to release the turn. Step/peek economy MUST remain unchanged. Manual `endTurn` while the pipeline is active MUST NOT skip pending presentation (reject or defer consistently with board non-interactive rules).
+
+#### Scenario [SC-MOVE-91]: Auto-end waits for trap pipeline idle
+
+- **GIVEN** multiplayer playing and a seated player’s last available action is a move that starts a catapult presentation pipeline
+- **WHEN** after accepting that move the seat would otherwise auto-end-turn
+- **THEN** `currentTurnSessionId` MUST remain that seat until the trap pipeline is idle
+- **AND** only then MAY the server advance to the next eligible seat
+
+#### Scenario [SC-MOVE-92]: Deadline during pipeline advances only after idle
+
+- **GIVEN** a turn deadline fires while a trap presentation pipeline is still active for that turn’s seat
+- **WHEN** the deadline handler runs
+- **THEN** the server MUST NOT advance the turn immediately
+- **AND** after the pipeline becomes idle the server MUST advance the turn (pending deadline advance)
+- **AND** clients MUST still be able to complete the in-flight hop presentations before the turn chrome switches

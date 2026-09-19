@@ -34,13 +34,13 @@ Coordinate with: `work-with-rooms` (lifecycle / registration), `work-with-schema
 
 | Direction | Name | Payload / behavior |
 |-----------|------|--------------------|
-| Client → server | `move` | `{ side: 'N'\|'E'\|'S'\|'W', row: number, col: number }` — via `sendMove` when `phase === 'playing'`, `isMyTurn`, `!isMySeatFinished`, `!isMySeatTimeExpired`. Spends a step; **does not** advance turn; land → `resolveCellTraps` (grille / catapult) |
+| Client → server | `move` | `{ side: 'N'\|'E'\|'S'\|'W', row: number, col: number }` — via `sendMove` when `phase === 'playing'`, `isMyTurn`, `!isMySeatFinished`, `!isMySeatTimeExpired`. Spends a step; **does not** advance turn; land → paced trap pipeline (grille / catapult) |
 | Client → server | `rescue` | `{ side }` — via `sendRescue`; own trapped + adj free own piece + steps≥1; then remaining catapult on cell resolves |
-| Client → server | `push` | `{ pusherSide, targetSessionId, targetSide, row, col }` — via `sendPush`; own free pusher + adj free target → far-side cell; −1 step; relocates target only; land → `resolveCellTraps` |
-| Client → server | `returnFromFinish` | `{ side, row, col }` — via `sendReturnFromFinish`; finished side onto legal center-ring cell; land → `resolveCellTraps` |
+| Client → server | `push` | `{ pusherSide, targetSessionId, targetSide, row, col }` — via `sendPush`; own free pusher + adj free target → far-side cell; −1 step; relocates target only; land → paced trap pipeline |
+| Client → server | `returnFromFinish` | `{ side, row, col }` — via `sendReturnFromFinish`; finished side onto legal center-ring cell; land → paced trap pipeline |
 | Client → server | `peek` | `{ side }` — via `sendPeek`; own unfinished **non-trapped** piece on present `*`; server replies with private `peekOpen` |
 | Client → server | `peekAnswer` | `{ correct: boolean }` — via `sendPeekAnswer`; Correct removes tile; Incorrect KEEP |
-| Client → server | `endTurn` | empty — via `sendEndTurn` when `canSendEndTurn` (multi finite only) |
+| Client → server | `endTurn` | empty — via `sendEndTurn` when `canSendEndTurn` (multi finite only); **reject** while trap pipeline active |
 | Client → server | `ready` | empty — via `sendReady` (waiting, ≥2 seated, under maxSeats, not yet ready) |
 | Client → server | `say` | `{ presetId: 'hello' \| 'luck' }` — via `sendSay`; whitelist only (no free text; **not** `ready`); finished seats may still say |
 | Server → owner | `budgets` | `{ steps, peeks, infinite, peekedThisTurn }` — private; `infinite` = **peeks∞ only** (steps always finite); `peekedThisTurn` legacy (no gate) |
@@ -51,19 +51,19 @@ Coordinate with: `work-with-rooms` (lifecycle / registration), `work-with-schema
 | Server → client | room error channel | Client sets `game.error` from `room.onError` |
 | Lobby | HTTP fallback | `client.http.get('/rooms/tourist')` — **not** a room message |
 
-**`move`:** accept only when `phase === 'playing'` + seated + `finishPlace === 0` + `!timeExpired` + current turn + `steps > 0`; legal one-step per `touristMove.ts` (occupancy ignores finished; trapped still occupy; **landing on removed holes rejected**; stand/leave OK; **reject if piece trapped**). Reject (no mutate) otherwise. On accept: update piece `row`/`col`; always spend 1 step + `sendBudgets`; if target is center → `piece.finished = true` and maybe assign `finishPlace`; else `resolveCellTraps` (grille trap and/or catapult fling/broken); **do not** `advanceTurn` solely for move — then `maybeAutoEndTurn` / solo step-loss / finish-advance.
+**`move`:** accept only when `phase === 'playing'` + seated + `finishPlace === 0` + `!timeExpired` + current turn + `steps > 0` + **trap pipeline idle**; legal one-step per `touristMove.ts` (occupancy ignores finished; trapped still occupy; **landing on removed holes rejected**; stand/leave OK; **reject if piece trapped**). Reject (no mutate) otherwise. On accept: update piece `row`/`col`; always spend 1 step + `sendBudgets`; if target is center → `piece.finished = true` and maybe assign `finishPlace`; else paced trap pipeline (one hop + presentation budget; catapult fling/broken or grille); **do not** `advanceTurn` solely for move — then `maybeAutoEndTurn` / solo step-loss / finish-advance (**deferred** via `pendingTurnAdvance` while pipeline active).
 
-**`rescue`:** current turn + steps≥1 + own trapped unfinished + Chebyshev-1 free own piece → −1 step; clear `trapped` + holding grille; rescuer coords unchanged; then `resolveCellTraps` if a catapult remains. Silent reject otherwise.
+**`rescue`:** current turn + steps≥1 + own trapped unfinished + Chebyshev-1 free own piece + **pipeline idle** → −1 step; clear `trapped` + holding grille; rescuer coords unchanged; then paced pipeline if a catapult remains. Silent reject otherwise.
 
-**`push`:** current turn + steps≥1 + own unfinished free `pusherSide` + free (non-trapped) target at Chebyshev-1 → dest = far-side cell `target + (target − pusher)`; reject hole/occupied/bad geometry/trapped; −1 step; relocate **target only** (pusher stays); land side-effects like `move` (`resolveCellTraps` on target). Does **not** advance turn. Silent reject otherwise.
+**`push`:** current turn + steps≥1 + own unfinished free `pusherSide` + free (non-trapped) target at Chebyshev-1 + **pipeline idle** → dest = far-side cell `target + (target − pusher)`; reject hole/occupied/bad geometry/trapped; −1 step; relocate **target only** (pusher stays); land side-effects like `move` (paced pipeline on target). Does **not** advance turn. Silent reject otherwise.
 
-**`returnFromFinish`:** current turn + steps≥1 + `finishPlace===0` + own finished side + legal ring cell (Chebyshev-1 from center block, excl. center/holes/occupancy) → −1 step; unfinish onto cell → `resolveCellTraps`. Silent reject otherwise.
+**`returnFromFinish`:** current turn + steps≥1 + `finishPlace===0` + own finished side + legal ring cell (Chebyshev-1 from center block, excl. center/holes/occupancy) + **pipeline idle** → −1 step; unfinish onto cell → paced pipeline. Silent reject otherwise.
 
-**`peek`:** current turn + peek budget (or solo peeks∞); **no** one-peek/turn gate; piece on present task cell and **not trapped**; set room `openPeek` + `client.send('peekOpen', …)`. Silent reject otherwise.
+**`peek`:** current turn + peek budget (or solo peeks∞) + **pipeline idle**; **no** one-peek/turn gate; piece on present task cell and **not trapped**; set room `openPeek` + `client.send('peekOpen', …)`. Silent reject otherwise.
 
 **`peekAnswer`:** resolve open peek for that seat; spend peek (finite peeks only); Correct adds reward steps (always, including solo) and pushes `"r,c"` to `removedTaskKeys`; Incorrect KEEP tile + hidden reward; `sendBudgets`; then maybe auto-end / solo step-loss.
 
-**`endTurn`:** multi (≥2 eligible) + current + not finished/expired; force-close open peek as incorrect KEEP if any; `advanceTurn` (next grant: multi +1/+1; solo become-current +1 step only). Solo peeks∞ → reject.
+**`endTurn`:** multi (≥2 eligible) + current + not finished/expired + **pipeline idle**; force-close open peek as incorrect KEEP if any; `advanceTurn` (next grant: multi +1/+1; solo become-current +1 step only). Solo peeks∞ → reject. While pipeline active → silent reject (board-lock parity).
 
 **`ready`:** accept only in `waiting`, seated + connected, seated count ≥ 2 and `< maxSeats`, seat not already ready. On accept: `seat.ready = true`, broadcast say preset `ready` (bypass live-say cap), maybe start countdown. Silent reject otherwise.
 
@@ -71,7 +71,7 @@ Coordinate with: `work-with-rooms` (lifecycle / registration), `work-with-schema
 
 ## Server Today
 
-- `src/rooms/MyRoom.ts` — seating + start + budgets/peek/grilles/catapults + `resolveCellTraps` + `onMessage('move'|'rescue'|'push'|'returnFromFinish'|'peek'|'peekAnswer'|'endTurn'|'ready'|'say')`; `handlePush`; auto-end includes `hasLegalPush`.
+- `src/rooms/MyRoom.ts` — seating + start + budgets/peek/grilles/catapults + paced trap pipeline (`startTrapPipeline` / `pendingTurnAdvance`) + `onMessage('move'|'rescue'|'push'|'returnFromFinish'|'peek'|'peekAnswer'|'endTurn'|'ready'|'say')`; `handlePush`; auto-end includes `hasLegalPush`; turn actions rejected while pipeline active.
 - Pure move/peek/grille/push/catapult helpers: `src/game/touristMove.ts` (`farSideCell`, `validateTouristPush`, `hasLegalPush`, `catapultFlingCandidates`, `pickCatapultFlingDest`).
 - Room registered as `tourist` (+ `lobby` for live list); do not reintroduce `my_room`.
 - **No** dedicated catapult room message — reveal/broken are schema-only (`revealingCatapultKeys` / `brokenCatapultKeys`).

@@ -8,7 +8,8 @@ description: >-
   tourist + enableRealtimeListing), maxSeats / grilleDensity / catapultDensity
   create options / waiting-only seating / deferred pieces / seat connectivity /
   start phase, consented leave clears that seat’s holding grilles (SC-PIECE-28;
-  onDrop does not), JWT room gate, or aligning room name with client TOURIST_ROOM.
+  onDrop does not), onDispose cancels paced trap pipeline + clearTurnDeadline,
+  JWT room gate, or aligning room name with client TOURIST_ROOM.
 ---
 
 # Work With Rooms
@@ -38,7 +39,7 @@ Coordinate with sibling skills when they exist: `work-with-schema`, `work-with-m
 
 Registered room keys today: **`lobby`** (built-in listing) and **`tourist`** (playable `MyRoom` with realtime listing). Client `TOURIST_ROOM` / `LOBBY_ROOM` match these names — do not reintroduce `my_room`.
 
-Constants: `RECONNECT_GRACE_SECONDS = 30`, `COUNTDOWN_SECONDS = 5`, `TURN_BUDGET_SECONDS = 60`, `SOLO_BUDGET_SECONDS = 300` exported from `MyRoom.ts` (tests: `setTurnBudgetsForTests` / `resetTurnBudgets`).
+Constants: `RECONNECT_GRACE_SECONDS = 30`, `COUNTDOWN_SECONDS = 5`, `TURN_BUDGET_SECONDS = 60`, `SOLO_BUDGET_SECONDS = 300` exported from `MyRoom.ts` (tests: `setTurnBudgetsForTests` / `resetTurnBudgets`). Trap presentation budgets shared with client (`MOVE_ANIM_MS`, `CATAPULT_ANIM_MS`, `CATAPULT_BROKEN_PRESENTATION_MS`, `GRILLE_ANIM_MS`) — mocha: `setTrapPresentationBudgetsForTests` / `resetTrapPresentationBudgets`. Paced trap pipeline / `pendingTurnAdvance` rules: `work-with-game`.
 
 ## Lifecycle Flow
 
@@ -74,7 +75,7 @@ client create({ maxSeats, grilleDensity?, catapultDensity? }) / joinById / joinO
         │  seating for subsequent joins only while phase===waiting (D13)
         │  if seats.size===0 → disconnect() (spectators do not hold room)
         ▼
-  onDispose()              ← clearTurnDeadline(); room empty / locked shut → lobby `-`
+  onDispose()              ← cancel trap pipeline + clearTurnDeadline(); room empty → lobby `-`
 ```
 
 ### Hook responsibilities
@@ -87,7 +88,7 @@ client create({ maxSeats, grilleDensity?, catapultDensity? }) / joinById / joinO
 | `onDrop` | Seated: mark offline + `allowReconnection(client, 30)`; hold seat/pieces; do not cancel countdown; do **not** pause turn deadline | Treat unexpected drop as immediate seat delete; grace for spectators or LobbyRoom |
 | `onReconnect` | Restore seat online (`connected=true`, `reconnectUntil=0`) | Re-assign a new seat / touristId |
 | `onLeave` | Clear holding grilles of this seat’s trapped cells (SC-PIECE-28), then permanent remove seat; subsequent joins get seats only while `phase === 'waiting'`; refreshMetadata; maybeStartCountdown; if zero seats → `disconnect()` | Leave stale seats; leave orphan holding grilles; clear holding on `onDrop` grace; let spectators keep an empty-seated room alive; clear others' `ready` on leave; reopen seating in countdown/playing |
-| `onDispose` | `clearTurnDeadline()` + cleanup other timers / logs | Assume clients still connected; leave dangling turn timeouts |
+| `onDispose` | Bump `trapPipelineGeneration` + clear `trapPipelineActive` / `pendingTurnAdvance`; `clearTurnDeadline()` + cleanup other timers / logs | Assume clients still connected; leave dangling turn / trap pipeline timeouts |
 
 ## Current Room (`MyRoom.ts`)
 
@@ -116,7 +117,7 @@ export class MyRoom extends Room<{ state: MyRoomState }> {
   onDrop(client: Client, _code?: number) { /* seated: offline + allowReconnection(30); deadline keeps ticking */ }
   onReconnect(client: Client) { /* seat online again */ }
   onLeave(client: Client, _code?: number) { /* clear holding of seat’s trapped cells (SC-PIECE-28); delete seat; empty → disconnect(); no seating reopen outside waiting */ }
-  onDispose() { this.clearTurnDeadline(); }
+  onDispose() { /* cancel trap pipeline generation; clearTurnDeadline() */ }
 }
 ```
 

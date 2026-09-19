@@ -41,3 +41,11 @@
 - [x] 6.3 Queue order: visual land/arrival on catapult cell → then overlay (~1000 ms success / broken 300+300) → then fling/finish travel; same for spectators; push/return as step; already-on-cell no fake step — SC-BOARD-23…26/28, SC-FINISH-19
 - [x] 6.4 Board-busy lock covers land-before-overlay + full chain — SC-BOARD-27
 - [x] 6.5 `npm run lint` + `npm run typecheck`; обновить client skills / AGENTS blurbs (land→overlay→fling, spectator parity, D13)
+
+## 7. Server+client — paced trap hops + deferred turn (follow-up)
+
+- [x] 7.1 Прочитать `design.md` D3/D14/D15, delta `specs/game/move` (SC-MOVE-90…92) + `game/board` (SC-BOARD-29/30), skills `server/work-with-game`, `server/work-with-rooms`, `client/work-with-game-board`
+- [x] 7.2 Server: заменить мгновенный full-chain `resolveCellTraps` на paced pipeline (один hop → presentation budget → эффект → следующий land); общие ms с client; без `presentationDone` — SC-MOVE-90
+- [x] 7.3 Server: deferred `maybeAutoEndTurn` + deadline advance до pipeline idle (`pendingTurnAdvance`); push/return/rescue тот же path — SC-MOVE-91/92
+- [x] 7.4 Client: queue/grille follow hop-sync; не показывать holding grille на финале во время prior catapult hops; board lock на pipeline — SC-BOARD-26/29/30/27
+- [x] 7.5 Server `npm test` (SC-MOVE-90…92 + регресс 78…89); client `npm run lint` + `npm run typecheck`; обновить skills / AGENTS blurbs (paced + deferred turn)

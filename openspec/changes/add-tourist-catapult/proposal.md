@@ -1,28 +1,30 @@
 ## Why
 
-На поле уже есть решётки, но нет второй one-shot ловушки с перемещением. **Катапульта** добавляет риск «шагнул — отбросило», пересекается с решётками на одной клетке и использует тот же паттерн плотности при создании комнаты.
+На поле уже есть решётки и катапульты (seed / fling / lobby density / client land→overlay→fling). Playtest показал два дефекта презентации vs authority:
 
-Базовый seed / fling / lobby density и черновая presentation-очередь уже в runtime, но **overlay часто не стартует**: sync сразу ставит фишку на dest fling’а, клиент теряет reveal → визуально «просто перекидывает». Нужен follow-up: надёжный enqueue + порядок **доезд на клетку → overlay ~1000 ms → fling** одинаково у игрока и spectator.
+1. **Ход уходит раньше анимации** — после последнего шага на катапульту `maybeAutoEndTurn` / deadline сменяют `currentTurn`, а fling/overlay догоняют позже (катапульта «не видна», турист откидывается уже на чужом ходе).
+2. **Цепочка «заранее»** — сервер в одном тике резолвит всю цепочку catapult→…→grille; sync сразу на финале + `holdingGrilleKeys`; решётка падает «в другом месте без кота», пока клиент ещё рисует hop’ы.
+
+Нужен follow-up: **server-paced** только следующий hop (fling-land = новый land-sense, без −1 step), единый timeline, **переход хода только после** конца презентации; без client ack.
 
 ## What Changes
 
-- В create — отдельный выбор плотности катапульт: мало / средне / много (те же **12% / 22% / 35%** task-клеток, default средне), независимо от решёток.
-- На `enterPlaying` сервер сеет скрытые катапульты только на коричневые task-клетки; пересечение с решётками на одной клетке разрешено.
-- Любой step на клетку (ход, push, return с финиша) резолвит оставшиеся ловушки на клетке в случайном порядке; катапульта one-shot: reveal → fling (или broken) → исчезает.
-- Fling: случайная свободная landable-клетка на Chebyshev-2, иначе на Chebyshev-1; иначе broken path; после приземления — те же эффекты, что после хода/push (в т.ч. center = финиш).
-- После rescue, если на клетке ещё катапульта — тот же resolve.
-- **Презентация:** у **всех** клиентов (игрок + spectator) одна цепочка: сначала визуальный доезд на клетку катапульты (как шаг / push / return land), затем overlay (successful ~**1000 ms** appear→vanish; broken: 300+300), затем fling travel / finish travel; цепочка fling→catapult снова с доезда; board lock на всю последовательность. Фикс: не терять reveal при split mirror seats→revealing.
+- В create — отдельный выбор плотности катапульт: мало / средне / много (те же **12% / 22% / 35%**, default средне) — уже сделано.
+- Seed / fling geometry / broken / overlap с решётками — уже сделано; экономика steps **без изменений** (fling не −1).
+- **Paced trap resolve:** после land (move / push / return / post-rescue / post-fling) сервер резолвит **только текущую** клетку: reveal → ждать presentation budget (общие ms с client) → применить один эффект → если fling — новая клетка как новый land; **не** считать всю цепочку в одном тике.
+- **Deferred turn:** `maybeAutoEndTurn` и сработавший turn-deadline **не** `advanceTurn`, пока идёт trap-presentation pipeline; если переход уже «нужен» — выполнить **после** idle. Без `presentationDone` с клиента.
+- **Презентация:** один последовательный timeline (land → catapult overlay → fling travel → … → grille drop); board lock; spectator = игрок. Client следует hop-sync, а не реконструирует финал из одного patch.
 
 ## Scope
 
 - **Пакеты:** client + server (room `tourist`).
 - **Capability ID:**
-  - `lobby/rooms` — create option плотности катапульт (мало/средне/много, default средне), отдельно от решёток;
-  - `game/board` — overlay/анимация; **land-before-overlay**; sequential fling; broken hold; board lock; spectator = игрок;
-  - `game/move` — seed; land/push/return → стек ловушек; fling rings; broken; цепочка после приземления; rescue → оставшаяся катапульта;
-  - `game/finish` — fling на center завершает фишку; finish travel **после** vanish катапульты (и после land+overlay).
-- **Экраны:** Lobby (create modal — второй селектор плотности); Game (board overlay + анимации + lock).
-- **Контракт:** room `tourist`; create options + sync/reveal катапульт. Авторитетный relocate на server без delay; presentation delay — client-only.
+  - `lobby/rooms` — create option плотности (done);
+  - `game/board` — overlay; land-before-overlay; sequential hops; grille после prior hops; board lock;
+  - `game/move` — seed/fling (done) + **paced resolve** + **deferred auto-end / deadline advance**;
+  - `game/finish` — fling на center; finish travel после vanish текущего hop.
+- **Экраны:** Lobby (done); Game (board + turn chrome после анимаций).
+- **Контракт:** room `tourist`; sync reveal/holding по hop; **нет** нового client→server presentation ack.
 
 ## Out of scope
 
@@ -31,10 +33,11 @@
 - Тонкая настройка % плотности в UI (только три пресета).
 - Публичный показ чужих budgets.
 - Новые HTTP / auth / reconnect-политика.
-- Изменение правил решёток (trap/rescue/all-jail/leave-clear), кроме совместного резолва на клетке с катапультой.
-- Server-side delay coords/`finished` на время анимации (отклонено: проще client-only).
+- Изменение правил решёток (trap/rescue/all-jail/leave-clear), кроме совместного резолва и paced порядка с катапультой.
+- Client `presentationDone` / доверие клиенту для отпуска хода.
 - Лимит длины цепочки fling→fling.
-- Отдельные тайминги appear/vanish сверх суммарных ~1000 ms для successful.
+- Смена экономики steps/peeks (fling по-прежнему без лишнего step).
+- Pause/extend `turnUntil` wall-clock (только отложенный `advanceTurn` после idle).
 
 ## Capabilities
 
@@ -45,18 +48,19 @@
 ### Modified Capabilities
 
 - `lobby/rooms`: create выбирает плотность катапульт (12/22/35%), независимо от решёток.
-- `game/board`: видимость/анимация; land-before-overlay; sequential piece travel; broken timeline; board anim lock; same sequence for spectators.
-- `game/move`: seed катапульт; стек ловушек; fling / broken; триггеры move/push/return; цепочка land после fling; rescue → catapult.
-- `game/finish`: fling на center = finish piece; presentation after catapult vanish.
+- `game/board`: видимость/анимация; sequential hop timeline; grille не раньше своего land; board anim lock.
+- `game/move`: seed/fling; **paced** land resolve; deferred turn advance after presentation idle.
+- `game/finish`: fling на center = finish; presentation after catapult vanish того hop.
 
 ## Impact
 
-- **Server:** seed / resolve / fling / create option (секции 1–4 done; presentation follow-up — client).
-- **Client:** create option + i18n; board overlay; **fix enqueue + land→overlay→fling** для всех зрителей; board lock; ассеты.
-- **Docs/skills:** game-board / AGENTS blurbs под land-before-overlay.
+- **Server:** заменить мгновенный full-chain `resolveCellTraps` на paced pipeline + deferred `advanceTurn` / deadline; mocha на порядок и turn-after.
+- **Client:** упростить/выровнять queue под hop-sync; не стартовать grille «на финале» раньше времени; board lock на pipeline.
+- **Docs/skills:** game / board / messages blurbs под paced + deferred turn.
 
 ## References
 
-- Explore: seed/fling D*; Anim-D1…D3; **Anim-D4** land затем overlay затем fling; spectator = player; push/return как шаг; successful ~1000 ms; root cause sync `flush:'sync'` + seats before revealing.
+- Explore: paced hop; fling-land = land-sense; no presentationDone; deferred auto-end/deadline; append to this change.
+- Prior follow-ups: Anim-D4 / D13 land-before-overlay (секции 5–6) — остаются базой UX; Anim-D3 «client-only delay / server writes immediately» **снят** для trap chain + turn.
 - Main specs: `openspec/specs/{lobby/rooms,game/board,game/move,game/finish}/spec.md`.
 - Sibling AGENTS; `docs/projects-map.md`.
