@@ -5,9 +5,9 @@ description: >-
   setup vs options defineStore, auth vs game vs theme ownership, local page
   state vs Pinia, Colyseus I/O in stores (budgets peeks∞ / finite steps,
   removed-task holes, grille trap/rescue/push/return, catapult reveal keys,
-  peek/end-turn), acceptHMRUpdate, and Quasar pinia entry. Use when adding,
-  changing, reviewing, or debugging Pinia stores, shared game/auth/theme state,
-  or page-to-store wiring.
+  D13 atomic `$patch` seats+revealing/broken, peek/end-turn), acceptHMRUpdate,
+  and Quasar pinia entry. Use when adding, changing, reviewing, or debugging
+  Pinia stores, shared game/auth/theme state, or page-to-store wiring.
 ---
 
 # Work With Stores
@@ -263,7 +263,7 @@ export const useGameStore = defineStore('game', {
 
 Notes:
 - Live lobby listing uses `subscribeLobby` / LobbyRoom messages — not LobbyPage HTTP poll. `refreshRooms` HTTP remains unused fallback. Set `lobby.reconnection.enabled = false`; filter reservation/reconnect noise (see `work-with-lobby`).
-- Mirror `seats` (incl. connectivity + `ready` + `finishPlace` + `timeExpired` + piece `trapped`) / `phase` / `maxSeats` / `countdownRemaining` / `currentTurnSessionId` / `turnUntil` / `turnBudgetSeconds` / `removedTaskKeys` / `holdingGrilleKeys` / `revealingCatapultKeys` / `brokenCatapultKeys` / `sessionId` in the store; listen `budgets` / `peekOpen` / `allJailWarning` privately. Keep tile geometry + presence + selection/hints + peek/rescue/push/return/end-turn chrome + catapult sequential overlays (pin→vanish→travel / board-busy) + say/timeout/place/solo/all-jail modals on `GamePage` (not Pinia). Ephemeral `sayEvents` stay in the store (room I/O).
+- Mirror `seats` (incl. connectivity + `ready` + `finishPlace` + `timeExpired` + piece `trapped`) / `phase` / `maxSeats` / `countdownRemaining` / `currentTurnSessionId` / `turnUntil` / `turnBudgetSeconds` / `removedTaskKeys` / `holdingGrilleKeys` / `revealingCatapultKeys` / `brokenCatapultKeys` / `sessionId` in the store; **D13:** `$patch` seats + revealing/broken catapult keys in one tick (avoid split mirror). Listen `budgets` / `peekOpen` / `allJailWarning` privately. Keep tile geometry + presence + selection/hints + peek/rescue/push/return/end-turn chrome + catapult sequential overlays (land→overlay→fling / board-busy) + say/timeout/place/solo/all-jail modals on `GamePage` (not Pinia). Ephemeral `sayEvents` stay in the store (room I/O).
 - Persist tourist `reconnectionToken` in `localStorage` (`ht-tourist-reconnect`); clear on consented `leaveGame` / `_leaveTouristRoom` and after failed `reconnect`; keep on unexpected `onLeave`; cross-tab steal OK (see `work-with-rooms`).
 - `leaveGame` sets store `consentedLeaving` around room clear (gates GamePage soft-drop), unsubscribes lobby, swallows leave errors (room may already be closed), then clears the flag in `finally`. `GamePage` calls `rejoinGame(roomId)` on mount / soft-fail (reconnect → `joinById`). Leave confirm UX lives in `App.vue` on Game (`work-with-pages`).
 
@@ -322,7 +322,7 @@ Dependency direction: `pages` → `stores` / `boot` / `components`. Keep Colyseu
 - Keep Colyseus Auth and room I/O inside `auth` / `game`.
 - Use local `ref` for form drafts, layout constants, and page-only spinners.
 - Sync auth from `client.auth.onChange`; gate routes with `whenReady()`.
-- Map only needed room fields from `onStateChange` (incl. `currentTurnSessionId` / `removedTaskKeys` / `holdingGrilleKeys` / `revealingCatapultKeys` / `brokenCatapultKeys` / piece `trapped`); keep `sendMove` / `sendRescue` / `sendPush` / `sendReturnFromFinish` / `sendPeek` / `sendEndTurn` / `sendSay` lockstep with server `onMessage`.
+- Map only needed room fields from `onStateChange` (incl. `currentTurnSessionId` / `removedTaskKeys` / `holdingGrilleKeys` / `revealingCatapultKeys` / `brokenCatapultKeys` / piece `trapped`); **D13:** `$patch` seats + removed/holding + revealing/broken together (never assign revealing after seats in separate ticks); keep `sendMove` / `sendRescue` / `sendPush` / `sendReturnFromFinish` / `sendPeek` / `sendEndTurn` / `sendSay` lockstep with server `onMessage`.
 - Add `acceptHMRUpdate` to every new store file.
 - Coordinate room name / state schema / messages with `../happy-tourist-server`.
 

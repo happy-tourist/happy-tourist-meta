@@ -33,3 +33,11 @@
 - [x] 5.4 Sequential queue for fling→catapult chains (no cap) — SC-BOARD-26
 - [x] 5.5 Board-busy lock: `isInteractive` false during move/grille/catapult/finish/fling anims — SC-BOARD-27
 - [x] 5.6 `npm run lint` + `npm run typecheck`; обновить client skills / AGENTS blurbs про sequencing + lock
+
+## 6. Client — land-before-overlay + reliable enqueue (follow-up)
+
+- [x] 6.1 Прочитать `design.md` D5/D11/D13, delta `specs/game/board` (SC-BOARD-23…28) + `game/finish` SC-FINISH-19, skill `client/work-with-game-board`
+- [x] 6.2 Fix missed overlay: D13 (atomic mirror и/или attribution without «piece still on cell»; no silent skip) — overlay стартует при reveal — SC-BOARD-23/24/28
+- [x] 6.3 Queue order: visual land/arrival on catapult cell → then overlay (~1000 ms success / broken 300+300) → then fling/finish travel; same for spectators; push/return as step; already-on-cell no fake step — SC-BOARD-23…26/28, SC-FINISH-19
+- [x] 6.4 Board-busy lock covers land-before-overlay + full chain — SC-BOARD-27
+- [x] 6.5 `npm run lint` + `npm run typecheck`; обновить client skills / AGENTS blurbs (land→overlay→fling, spectator parity, D13)

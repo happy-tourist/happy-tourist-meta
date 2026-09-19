@@ -223,7 +223,7 @@ Mirror seating + turn from schema.
 | `currentTurnSessionId` | Synced whose turn; `""` if no seated / all finished → getter `isMyTurn` |
 | `removedTaskKeys` | Synced `"r,c"` holes after **correct** peek only; **not landable** (stand-on-hole OK). Incorrect KEEP → no hole |
 | `holdingGrilleKeys` | Synced revealed holding grille cells (`"r,c"`); overlay on GamePage |
-| `revealingCatapultKeys` | Short-lived synced catapult cells for sequential client presentation (`"r,c"`); hidden unspent never sync |
+| `revealingCatapultKeys` | Short-lived synced catapult cells for sequential client presentation (`"r,c"`); hidden unspent never sync; client `$patch` seats+revealing atomically (D13) |
 | `brokenCatapultKeys` | Subset of revealing keys with no fling dest — client shows intact→broken holds then vanish (no travel) |
 | `sessionId` | From `room.sessionId` — for `mySeat` / strip / turn check |
 

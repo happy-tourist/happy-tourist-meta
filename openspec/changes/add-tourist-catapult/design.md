@@ -1,8 +1,6 @@
 ## Context
 
-См. `proposal.md`. Базовый seed / `resolveCellTraps` / lobby density / sync reveal уже в runtime. Gap: клиент показывает overlay параллельно с мгновенным sync-relocate → фишка «пропадает» во время fade. Follow-up — presentation sequencing + board input lock.
-
-Чеклист — `tasks.md` (секции 1–4 done; секция 5 — follow-up).
+См. `proposal.md`. Seed / `resolveCellTraps` / lobby density / sync reveal и черновая client queue (секции 1–5) уже в runtime. **Defect:** overlay часто не играется — фишка сразу на fling dest. Follow-up (секция 6): надёжный detect reveal + порядок land → overlay → fling для всех клиентов.
 
 **Пакеты:** server (`tourist` room) + client (Lobby create + Game board). Server authority без anim-delay; presentation — client.
 
@@ -14,7 +12,8 @@
 - Seed скрытых катапульт только на `*` при `playing`; overlap с решётками OK.
 - Единый land-resolve стека ловушек (move / push / return / post-fling / post-rescue).
 - Fling: Chebyshev-2 free landable → else -1; else broken consume, piece stays.
-- **Presentation:** после полного vanish overlay — piece travel (`MOVE_ANIM_MS`) / finish travel; цепочка catapult→catapult последовательно; broken hold 300+300; board lock на любой board-анимации.
+- **Presentation:** у игрока и spectator одинаково: **сначала** визуальный доезд на клетку катапульты → **потом** overlay (successful ~**1000 ms**; broken 300+300) → **потом** fling / finish travel; цепочки с доездом на каждую следующую катапульту; board lock на всю последовательность.
+- Надёжный enqueue несмотря на split Pinia mirror (`seats` до `revealingCatapultKeys`).
 - Ассеты `catapult.png` / `catapult-broken.png`.
 
 **Non-Goals:**
@@ -64,23 +63,20 @@ Fling **не** тратит лишний step. Rescue→catapult: только �
 | Intact | `happy-tourist.github.io/src/assets/catapults/catapult.png` |
 | Broken | `happy-tourist.github.io/src/assets/catapults/catapult-broken.png` |
 
-**Successful fling (есть dest):**
+**Порядок на каждом выстреле (игрок = spectator):**
 
-1. Reveal overlay на клетке выстрела (~fade in→out, порядок ~**1000 ms** как сейчас / grille magnitude).
-2. Пока overlay жив: piece **pinned** визуально на клетке катапульты (local override; sync dest уже известен).
-3. После полного vanish: снять pin → CSS travel `MOVE_ANIM_MS` на sync dest; если center — существующий finish travel + disappear **после** vanish (не параллельно с overlay).
-4. Цепочка: приземление на новую катапульту → снова полный overlay → затем следующий travel (без cap длины).
+1. **Land / доезд** на клетку катапульты с travel sense обычного шага (`MOVE_ANIM_MS`; push/return — их arrival sense). Sync может уже держать piece на fling dest — client синтезирует доезд (pin/visual override).
+2. **Только после** завершения доезда — overlay на клетке выстрела.
+3. **Successful:** appear→vanish суммарно ~**1000 ms** (одна презентация, не 1000+1000).
+4. Пока overlay жив: piece **pinned** на клетке катапульты.
+5. После полного vanish: fling travel `MOVE_ANIM_MS` на sync dest; center → finish travel+fade **после** vanish.
+6. Цепочка: fling land на новую катапульту → снова доезд на ту клетку → overlay → travel (без cap).
 
-**Broken (нет free ring-2/1):**
+**Broken:** после доезда — appear → **300 ms** intact → broken → **300 ms** broken → vanish; piece остаётся (нет fling travel).
 
-1. Appear целая.
-2. Hold **300 ms** целая.
-3. Swap → broken.
-4. Hold **300 ms** broken.
-5. Vanish.
-6. Piece остаётся на клетке (нет travel).
+**Уже на клетке** (напр. post-rescue, доезжать некуда): не синтезировать фейковый шаг; overlay после завершения текущей arrival-анимации (если ещё идёт), иначе сразу.
 
-**Authority:** client-only presentation delay (проще). Краткий visual desync ~1 с принят.
+**Authority:** client-only presentation delay. Краткий visual desync принят.
 
 ### D6 — Lobby
 
@@ -101,8 +97,8 @@ Fling **не** тратит лишний step. Rescue→catapult: только �
 | Место | Что |
 |-------|-----|
 | `src/pages/LobbyPage.vue` | catapult density UI |
-| `src/stores/game.ts` | create option; mirror reveal; no new message if sync-driven |
-| `src/pages/GamePage.vue` | overlay + broken holds; **pin→delay→travel**; board busy lock; finish after vanish |
+| `src/stores/game.ts` | create option; mirror reveal; optional atomic snapshot для catapult watch |
+| `src/pages/GamePage.vue` | queue: **land → overlay → fling**; broken holds; board busy; finish after vanish; spectator parity |
 | `src/i18n/*` | lobby catapult density labels |
 | `src/assets/catapults/*.png` | user-provided art |
 
@@ -110,7 +106,7 @@ Fling **не** тратит лишний step. Rescue→catapult: только �
 
 Server: `work-with-schema`, `work-with-messages`, `work-with-game`, `work-with-rooms`, `server-work-with-test`.  
 Client: `work-with-lobby`, `work-with-game-board`, `work-with-pages`, `work-with-stores`, `work-with-localization`, `colyseus-client`.  
-Cross-package: **server contract first**, then client. Follow-up: обновить game-board / styles / AGENTS blurbs про sequencing + lock.
+Follow-up §6: game-board / styles / AGENTS — land-before-overlay + enqueue fix.
 
 ### D10 — Explore prerequisites (закрыты, seed/rules)
 
@@ -132,28 +128,46 @@ Cross-package: **server contract first**, then client. Follow-up: обновит
 | ID | Решение |
 |----|---------|
 | Anim-D1 | Travel **после** полного исчезновения overlay |
-| Anim-D2 | Цепочка последовательно (каждый выстрел: vanish → travel) |
+| Anim-D2 | Цепочка последовательно (каждый выстрел: land → overlay → travel) |
 | Anim-D3 | Client-only delay (не server clock) |
+| Anim-D4 | **Доезд на клетку катапульты завершается до начала overlay**; затем vanish; затем fling |
+| Spectator | Та же последовательность, что у игрока (синтез land при необходимости) |
+| Triggers UX | move / push / return land — сначала «как шаг» на клетку, потом катапульта |
 | Broken | Appear → 300 ms intact → break → 300 ms broken → vanish; no travel |
+| Successful ms | Суммарно ~1000 ms appear→vanish |
 | Center | Vanish first, then finish travel+fade |
-| Input | Board non-interactive while **any** board anim runs (move, grille, catapult, finish, fling travel) |
+| Input | Board non-interactive while **any** board anim runs (land, grille, catapult, finish, fling) |
 | Chain cap | Нет |
+| Already on cell | Нет фейкового шага; overlay после текущей arrival-анимации или сразу |
 
 ### D12 — Board input lock
 
-Сейчас `moveAnimating` только на own submit (~250 ms / 2× rescue-push) — **дыра** на grille/catapult/finish. Расширить до общего board-busy: `isInteractive` false, пока живы move travel, grille drop/rise, catapult overlay (+ broken holds), finish disappear, pending fling travel после pin. На чужом ходе и так не interactive.
+Общий board-busy: `isInteractive` false, пока живы land/move travel, grille drop/rise, catapult overlay (+ broken holds), finish disappear, deferred fling travel. На чужом ходе и так не interactive для текущего игрока; **презентация** всё равно идёт у всех зрителей.
+
+### D13 — Root cause missed overlay + fix
+
+**Баг:** `_mirrorRoomState` пишет `seats` затем `revealingCatapultKeys`. Watch с `flush: 'sync'` на комбинированном getter срабатывает дважды: (1) pieces уже на fling dest, revealing ещё пуст; (2) revealing появился, но prev/next pieces уже оба на dest → `resolveFlingPieceKey` → `null` → silent skip.
+
+**Fix (выбрать минимальный работающий):**
+
+- Не полагаться на «кто стоит на клетке» после relocate: атрибутить piece по переходу coords / last-known / единственному moved в том же patch; **и/или**
+- Один атомарный снимок mirror (seats+revealing в одном реактивном тике) / `flush: 'pre'` без промежуточного fire; **и/или**
+- Не silent-skip: fallback enqueue overlay даже без piece key (хотя бы artwork).
+
+Land-before-overlay строится поверх рабочего enqueue.
 
 ## Risks / Trade-offs
 
 | Risk | Mitigation |
 |------|------------|
-| Длинная цепочка fling→fling × ~1 s | Продуктово без cap; playtest |
-| Client pin vs server dest (другая фишка на «пустую» клетку катапульты) | Принято ради простоты; short window |
+| Длинная цепочка land+overlay+fling × N | Продуктово без cap; playtest |
+| Client pin vs server dest | Принято; short window |
 | Sync spam на reveal | Короткоживущие keys |
-| Nested timers pin/travel/chain | Очередь презентаций на client; один active catapult play за раз на piece |
+| Split mirror / sync flush | D13 fix обязателен в §6 |
+| Spectator без локального beginMove | Синтез land travel к клетке катапульты |
 
 ## Migration Plan
 
 - Нет DB-миграций. Старые комнаты без `catapultDensity` → default `medium` на parse.
 - Rollback: убрать option + seed/resolve; ассеты безопасно оставить.
-- Follow-up presentation — только client (+ skills); server coords logic без изменений.
+- Presentation follow-up §6 — только client (+ skills); server coords logic без изменений.

@@ -1,17 +1,18 @@
 ## Purpose
 
-Delta этого change: публичная анимация катапульты на доске и sequential piece travel. Базовая геометрия и решётки — main `game/board`.
+Delta этого change: публичная анимация катапульты на доске, land-before-overlay и sequential piece travel. Базовая геометрия и решётки — main `game/board`.
 
 ## Traceability
 
 | Scenario ID | Coverage |
 |-------------|----------|
 | SC-BOARD-22 | covered (client UX — hidden until land) |
-| SC-BOARD-23 | covered (client UX — successful overlay vanish then piece travel) |
-| SC-BOARD-24 | covered (client UX — broken 300+300 hold then vanish; piece stays) |
-| SC-BOARD-25 | covered (client UX — piece pinned on catapult cell until overlay gone) |
-| SC-BOARD-26 | covered (client UX — fling→catapult chain sequential) |
-| SC-BOARD-27 | covered (client UX — board non-interactive during any board anim) |
+| SC-BOARD-23 | covered (client UX — land then ~1000 ms overlay then fling travel) |
+| SC-BOARD-24 | covered (client UX — land then broken 300+300 then vanish; piece stays) |
+| SC-BOARD-25 | covered (client UX — piece on catapult cell during overlay after land) |
+| SC-BOARD-26 | covered (client UX — chain: land→overlay→travel per hop) |
+| SC-BOARD-27 | covered (client UX — board non-interactive during full sequence) |
+| SC-BOARD-28 | covered (client UX — land arrives before overlay; all viewers) |
 
 Related: seed / fling / consume — `game/move`; finish travel — `game/finish`.
 
@@ -27,15 +28,26 @@ Until a piece lands on a cell that still holds an unspent catapult (including vi
 - **WHEN** the board is shown before any piece has landed on those cells
 - **THEN** no catapult artwork is shown on those cells
 
+### Requirement: Land on catapult cell before overlay for every viewer
+
+When a piece triggers an unspent catapult (via move, push, return-from-finish, or post-rescue resolve while free on the cell), every client that displays the board — including spectators and non-acting seats — MUST complete a visual arrival onto that catapult cell with ordinary piece-travel sense **before** starting the catapult overlay. If authoritative sync already relocated the piece to a fling destination, clients MUST still synthesize that arrival. If the piece is already visually on that cell and no arrival animation is in progress (e.g. post-rescue on the same cell), clients MUST NOT invent a fake step and MAY start the overlay immediately after any in-flight arrival animation ends.
+
+#### Scenario [SC-BOARD-28]: Arrival completes before catapult overlay
+
+- **GIVEN** phase is `playing` and a piece triggers an unspent catapult on a cell (including when the acting player is not the local viewer)
+- **WHEN** clients present that trigger
+- **THEN** every client finishes visual arrival onto that catapult cell before the catapult overlay begins
+- **AND** spectators use the same order as the acting player’s clients
+
 ### Requirement: Successful catapult presentation then piece travel
 
-When a piece triggers an unspent catapult that has at least one legal fling destination, every client that displays the board MUST: (1) show the intact catapult appear and fully disappear on that cell (about **1000 ms** total presentation sense, same order of magnitude as grille drop/rise); (2) while that overlay is visible, keep the piece visually on the catapult cell even if authoritative sync already relocated it; (3) **only after** the overlay is fully gone, animate the piece to the fling destination with the same travel sense as an ordinary move (`MOVE_ANIM_MS` order). After a successful consume, the catapult MUST NOT remain visible. Cleared/spent catapults MUST NOT remain visible afterward.
+When a piece triggers an unspent catapult that has at least one legal fling destination, every client that displays the board MUST, **after** SC-BOARD-28 arrival: (1) show the intact catapult appear and fully disappear on that cell (about **1000 ms** total presentation sense); (2) while that overlay is visible, keep the piece visually on the catapult cell even if authoritative sync already relocated it; (3) **only after** the overlay is fully gone, animate the piece to the fling destination with the same travel sense as an ordinary move (`MOVE_ANIM_MS` order). After a successful consume, the catapult MUST NOT remain visible. Cleared/spent catapults MUST NOT remain visible afterward.
 
 #### Scenario [SC-BOARD-23]: Successful catapult vanishes before travel
 
 - **GIVEN** phase is `playing` and a piece triggers an unspent catapult that has at least one legal fling destination
 - **WHEN** that catapult is revealed and consumed
-- **THEN** every client shows the intact catapult appear-then-vanish on that cell lasting about 1000 ms
+- **THEN** every client shows the intact catapult appear-then-vanish on that cell lasting about 1000 ms only after arrival on that cell completed
 - **AND** the catapult artwork is gone afterward
 - **AND** the piece travel to the fling destination starts only after that vanish completes
 
@@ -49,27 +61,27 @@ When a piece triggers an unspent catapult that has at least one legal fling dest
 
 - **GIVEN** a fling lands a piece onto another cell that still holds an unspent catapult
 - **WHEN** that next catapult resolves for presentation
-- **THEN** clients complete the prior catapult vanish and prior travel before starting the next catapult overlay
+- **THEN** clients complete the prior catapult vanish and prior fling travel, then arrival onto the next catapult cell, before starting the next catapult overlay
 - **AND** there is no product cap on chain length beyond one-shot consume per catapult
 
 ### Requirement: Broken catapult hold timeline
 
-When a piece triggers an unspent catapult with **no** legal fling destination, every client that displays the board MUST present: intact appear → hold about **300 ms** intact → switch to broken artwork → hold about **300 ms** broken → vanish. The piece MUST remain on that cell (no fling travel). Cleared/spent catapults MUST NOT remain visible afterward.
+When a piece triggers an unspent catapult with **no** legal fling destination, every client that displays the board MUST, **after** SC-BOARD-28 arrival, present: intact appear → hold about **300 ms** intact → switch to broken artwork → hold about **300 ms** broken → vanish. The piece MUST remain on that cell (no fling travel). Cleared/spent catapults MUST NOT remain visible afterward.
 
 #### Scenario [SC-BOARD-24]: Broken catapult 300+300 then vanish
 
 - **GIVEN** phase is `playing` and a piece triggers an unspent catapult with no legal fling destination
 - **WHEN** the broken presentation runs
-- **THEN** every client shows intact appear, about 300 ms intact, broken art about 300 ms, then vanish
+- **THEN** every client shows intact appear, about 300 ms intact, broken art about 300 ms, then vanish, only after arrival on that cell completed
 - **AND** the catapult artwork is gone afterward
 - **AND** the piece remains on that cell
 
 ### Requirement: Board is non-interactive during board animations
 
-While any board presentation animation is running for the local client (piece move travel, rescue/push approach, grille drop/rise, catapult overlay including broken holds, deferred fling travel after catapult vanish, finish travel/disappear), the seated current player MUST NOT be able to click the board to select pieces, submit moves, peek, rescue, push, return-from-finish, or end-turn board targets. Non-board chrome (e.g. leave/status outside board) is out of this requirement’s scope unless already gated elsewhere.
+While any board presentation animation is running for the local client (piece land/move travel, rescue/push approach, grille drop/rise, catapult overlay including broken holds, deferred fling travel after catapult vanish, finish travel/disappear), the seated current player MUST NOT be able to click the board to select pieces, submit moves, peek, rescue, push, return-from-finish, or end-turn board targets. Non-board chrome (e.g. leave/status outside board) is out of this requirement’s scope unless already gated elsewhere.
 
 #### Scenario [SC-BOARD-27]: Clicks blocked while board animates
 
-- **GIVEN** the local seated player’s turn and a board animation is in progress (including catapult overlay or pending fling travel)
+- **GIVEN** the local seated player’s turn and a board animation is in progress (including land-before-catapult, catapult overlay, or pending fling travel)
 - **WHEN** the player attempts a board click that would otherwise submit or select
 - **THEN** that board interaction is ignored until the animation sequence finishes
