@@ -1,3 +1,5 @@
+# auth/password-reset Specification
+
 ## Purpose
 
 Восстановление доступа к аккаунту email/password: запрос письма со ссылкой сброса и установка нового пароля без знания старого. Ссылка открывает **клиентскую SPA**-форму на `CLIENT_APP_URL` (не HTML на API); сброс через **JSON**; после успеха — Login. Неизвестный email при запросе — явная ошибка «не найден». Письмо и SPA — на русском; после успешной отправки письма — напоминание про «Спам».
@@ -6,16 +8,16 @@
 
 | Scenario ID | Coverage |
 |-------------|----------|
-| SC-RESET-01 | covered (server: forgot-password → RU mail; link target Wave 3) |
-| SC-RESET-02 | pending-apply (client SPA reset form + JSON; was API HTML) |
+| SC-RESET-01 | covered (server: forgot-password → RU mail; link → client SPA hash) |
+| SC-RESET-02 | covered (client SPA reset form + JSON; not API HTML) |
 | SC-RESET-03 | covered-by-reuse (login with new password via Colyseus auth) |
 | SC-RESET-04 | covered (client: Login link to forgot flow) |
-| SC-RESET-05 | pending-apply (forgot success clear + spam; unknown email RU not-found) |
+| SC-RESET-05 | covered (forgot success clear + spam; unknown email RU not-found) |
 | SC-RESET-06 | covered (server: reset email subject+body in Russian) |
-| SC-RESET-07 | pending-apply (unknown email → explicit not-found UX) |
-| SC-RESET-08 | pending-apply (reset link = client hash route; success → login) |
+| SC-RESET-07 | covered (unknown email → explicit not-found UX) |
+| SC-RESET-08 | covered (reset link = client hash route; success → login) |
 
-## ADDED Requirements
+## Requirements
 
 ### Requirement: Request password reset email
 

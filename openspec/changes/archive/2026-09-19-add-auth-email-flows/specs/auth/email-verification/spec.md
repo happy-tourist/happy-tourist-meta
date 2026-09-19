@@ -7,7 +7,7 @@ Soft-подтверждение email по явному действию в ли
 | Scenario ID | Coverage |
 |-------------|----------|
 | SC-EMAIL-01 | covered (server: register does **not** send confirm mail) |
-| SC-EMAIL-02 | pending-apply (client SPA + JSON confirm; was API HTML) |
+| SC-EMAIL-02 | covered (client SPA + JSON confirm; not API HTML) |
 | SC-EMAIL-03 | covered-by-reuse (existing JWT lobby/game gate unchanged) |
 | SC-EMAIL-04 | covered (server: Google path sets verified) |
 | SC-EMAIL-05 | covered (server: existing rows default/migration verified) |
@@ -16,11 +16,11 @@ Soft-подтверждение email по явному действию в ли
 | SC-EMAIL-08 | covered (client: session modal → cabinet) |
 | SC-EMAIL-09 | covered-by-reuse (anonymous has no email verify UX) |
 | SC-EMAIL-10 | covered (client+server: change email resets verified) |
-| SC-EMAIL-11 | pending-apply (SPA success → client `#/lobby`) |
-| SC-EMAIL-12 | pending-apply (expired token → SPA RU error; no verify) |
-| SC-EMAIL-13 | covered (server: confirm email subject+body in Russian; link target TBD Wave 3) |
+| SC-EMAIL-11 | covered (SPA success → client `#/lobby`) |
+| SC-EMAIL-12 | covered (expired token → SPA RU error; no verify) |
+| SC-EMAIL-13 | covered (server: confirm email subject+body in Russian; link → client SPA hash) |
 | SC-EMAIL-14 | covered (client: post-send UI mentions spam folder) |
-| SC-EMAIL-15 | pending-apply (confirm link host = client origin hash route) |
+| SC-EMAIL-15 | covered (confirm link host = client origin hash route) |
 
 ## ADDED Requirements
 
