@@ -9,7 +9,8 @@ description: >-
   + trap/rescue/push + return strip icon (no modal), peek eye + Correct/Wrong modal, say bubbles
   (top markers down / own bottom up), strip row N,E,W,S or HUD ≤~420 → 2×2,
   nearest-center finish click + return anim, tile kinds (start/task/center),
-  current-turn selection/hints/move submit, or piece travel animation for room
+  current-turn selection/hints/move submit, piece travel animation, or finish
+  travel lastKnown seed (move/push→center; no finishAnimFrom at submit) for room
   tourist. Leave + match status live in App.vue header on Game route (not
   page-local).
 ---
@@ -39,10 +40,10 @@ Product: настольная игра «Счастливый турист». On
 | Tourist strip | Inside HUD after own marker when `mySeat` (+ pieces exist): four `.my-tourist-slot` — wide: flex **row** N,E,W,S; `@container game-hud (max-width: 420px)`: **2×2** with smaller slots (when own+row would scroll; covers ≤320/300). **No** compact chip, **no** `q-menu`, **no** «Мои туристы» caption. Select unfinished non-trapped from slot or board; off-turn → view only. Finish flag on finished slots; grille overlay when trapped (SC-PIECE-09/31/32) |
 | Move UX | Local `selectedSide` + `legalTargets` only when `isPlaying && isMyTurn && !isMySeatFinished && !moveAnimating`; **keep-focus** after non-finishing move (SC-MOVE-46); never select finished **or trapped** pieces; move does **not** end the turn |
 | Rescue UX | Affordance **top-center** over own trapped when adj free own piece + steps≥1 → brief approach anim + `sendRescue(side)` (server rescuer coords unchanged) |
-| Push UX | Icons **top-center** over **targets** (not pusher) when selected own free pusher + steps≥1 + legal far-side dest; click → approach/back + target travel + `sendPush(pusherSide, targetSessionId, targetSide, row, col)`; keep `selectedSide` for multi-push; eye stays on selected, push on targets (SC-MOVE-74/75); push→center uses same travel+disappear as move finish (SC-MOVE-76) |
+| Push UX | Icons **top-center** over **targets** (not pusher) when selected own free pusher + steps≥1 + legal far-side dest; click → approach/back + target travel + `sendPush(pusherSide, targetSessionId, targetSide, row, col)`; keep `selectedSide` for multi-push; eye stays on selected, push on targets (SC-MOVE-74/75); push→center: after successful `sendPush`, seed target `lastKnown` from pre-push cell (not `finishAnimFrom`) + same travel+disappear as move finish (SC-MOVE-76 / D10) |
 | Return UX | Green circle + Material `undo` **top-center** over finished strip tourist when `canReturn(side)` → click sets `returningSide` (no confirm modal); ring cells use same `.tile--target` (red) as move. Strip slot **body** on finished → **noop** (does not start return — SC-FINISH-16). Dim (`.my-tourist-slot--dimmed`) **only** when finished ∧ `!canReturn`. Select another side / clear selection clears return-mode. Step only on server accept → `sendReturnFromFinish(side, row, col)`. Return travel anim: all clients slide from **nearest center** (Chebyshev; tie row, then col) to ring (`MOVE_ANIM_MS`) (SC-FINISH-09/13/15) |
 | Peek UX | Eye **top-center** only on **selected** own **non-trapped** piece on present `*` (peeks remain / solo peeks∞; multi peek while peeks remain — no one-peek/turn gate); spent grille cell still peekable; keep-focus → eye without re-click (SC-BOARD-14); **no** ambient peekable tile chrome; modal from `game.openPeek` → Correct/Wrong → `sendPeekAnswer` |
-| Finish UX | Center land (move **or** push) → slide from last board cell + fade (`disappearingKeys` / `finishAnimFromByKey`); own `finishPlace` 0→N → place modal; stay in room after close. Click any point on visual finish 2×2 → submit **nearest legal center** vs selected piece (Chebyshev; no quadrant mapping — SC-MOVE-63) |
+| Finish UX | Center land (move **or** push) → slide from last board cell + fade (`disappearingKeys` / `finishAnimFromByKey`); own move seeds `lastKnownBoardCellByKey` at submit (D11 / SC-FINISH-18; finish watch owns `finishAnimFrom`); own `finishPlace` 0→N → place modal; stay in room after close. Click any point on visual finish 2×2 → submit **nearest legal center** vs selected piece (Chebyshev; no quadrant mapping — SC-MOVE-63) |
 | All-jail | Own seat only: informational modal from `game.allJailWarning` |
 | Center | One element with `span 2` / `span 2` (solid 2×2), not four cells |
 | Room enter | Out of scope — see `work-with-lobby` / `work-with-rooms` (`rejoinGame`) |
@@ -77,13 +78,13 @@ Product: настольная игра «Счастливый турист». On
 
 Do **not** sync selection or hints — page-local refs only. Do **not** assume `sendMove` advances the turn. Do **not** reintroduce compact chip / `q-menu` picker (SC-PIECE-29/30 removed).
 
-## Piece Travel Animation (D6 / SC-MOVE-14…15 / SC-FINISH-15/17 / D10)
+## Piece Travel Animation (D6 / SC-MOVE-14…15 / SC-FINISH-01/15/17/18 / D10–D11)
 
 - Position pieces with CSS `transform` / absolute offsets from grid vars (`--prow` / `--pcol`), not tweening `grid-row`/`grid-column`.
 - Duration ~200–300ms ease-out (`MOVE_ANIM_MS`); all clients animate when synced `row`/`col` changes.
 - On submit: set `moveAnimating` and ignore board/strip clicks until timer ends; keep `selectedSide` unless the destination is center finish (SC-MOVE-46).
 - Skip transition on first paint so pieces do not fly from origin.
-- **Center finish (move or push):** sync may already place the piece on a center cell — paint one frame at `lastKnownBoardCellByKey` via `finishAnimFromByKey`, then clear so CSS slides onto center + fade (`disappearingKeys` / `FINISH_FADE_MS`) (SC-MOVE-76 / SC-FINISH-17 / D10). Track unfinished board cells with a sync-flush watcher before the finish watcher runs.
+- **Center finish (move or push):** sync may already place the piece on a center cell — paint one frame at `lastKnownBoardCellByKey` via `finishAnimFromByKey`, hold until painted (`nextTick` + forced layout + double `rAF`), then clear so CSS slides onto center + fade (`disappearingKeys` / `FINISH_FADE_MS`) (SC-MOVE-76 / SC-FINISH-01/17/18 / D10–D11). Track unfinished board cells with a sync-flush watcher (skip recording center coords; drop any stale `finishAnimFrom` for still-unfinished keys). **Own move onto center:** in `submitMove`, seed only `lastKnownBoardCellByKey` with the piece’s current cell **before** `sendMove` (do **not** pre-seed `finishAnimFromByKey` — silent reject would pin the piece). **Own push onto center:** after successful `sendPush`, seed target `lastKnown` from `push.targetRow/Col` the same way. Finish watch sets `finishAnimFrom` when finished arrives (SC-FINISH-18). Remote finish (other’s move/push) still uses the watch + lastKnown path.
 - **Return-from-finish:** when a piece leaves the finished set, all clients animate from `nearestCenterCell(target)` (Chebyshev among `CENTER_CELLS`; tie row, then col) onto the ring — mirror of finish disappear (SC-FINISH-15).
 
 ## Presence (occupied seats — top row + seated bottom HUD)
@@ -169,7 +170,7 @@ Picker open state (`sayPickerOpen`) is page-local; close if the local seat is lo
 - Show strip inside HUD when `mySeat` and pieces exist (**no** caption; **no** chip/`q-menu`); finish flag on finished slots; dim finished only if `!canReturn`; return via **green strip icon** (no confirm modal; slot body finished → noop); grille chrome on strip when trapped (`GRILLE_ANIM_MS = 1000`); wide row / HUD ≤~420 → 2×2; on own turn **in playing** select unfinished non-trapped from strip or board.
 - Board overlay: unfinished pieces only when seats have pieces (none in waiting/countdown).
 - On own turn in playing (not finished / not time-expired): white selection + red targets; center click → nearest legal center; submit via store `sendMove`; push icons over legal targets of selected pusher → `sendPush`; keep-focus after non-finishing move/push; peek eye (selected present `*` only — no ambient peekable chrome) + Correct/Wrong modal via `sendPeek` / `sendPeekAnswer`.
-- Animate piece travel; on center finish (move or push) keep DOM key for slide from last board cell then fade (`FINISH_FADE_MS` / `finishAnimFromByKey`) and clear selection; on return animate from nearest center; ignore input while `moveAnimating`.
+- Animate piece travel; on center finish (move or push) keep DOM key for slide from last board cell then fade (`FINISH_FADE_MS` / `finishAnimFromByKey`; own move/push seeds `lastKnown` only — D10/D11); clear selection; on return animate from nearest center; ignore input while `moveAnimating`.
 - Own `finishPlace` 0→N → place `q-dialog` (`game.finishPlaceModal*`); own `timeExpired` false→true → dual end `q-dialog` (`game.timeExpiredModal*` vs `game.stepsExhaustedModal*`); solo peeks∞ modal when `budgetsInfinite` becomes true; **no** return-confirm dialog; close keeps player in room; clear selection on expiry.
 - Budget +N fall ≈ 2 s (`BUDGET_FALL_MS` / `.budget-fall` CSS — SC-PRESENCE-20).
 - Remount without room → `rejoinGame(roomId)` via store. Leave confirm + status + icon-only exit live in **`App.vue`** (`work-with-pages` / `work-with-rooms`) — do **not** reintroduce page-local leave header or room-id chrome.
@@ -195,6 +196,8 @@ Picker open state (`sayPickerOpen`) is page-local; close if the local seat is lo
 - Assume a successful move ends the turn — use end-turn / auto / timeout.
 - Clear `selectedSide` after every successful non-finishing move — keep-focus (SC-MOVE-46).
 - Ambient-highlight other peekable cells — eye only on the selected piece (SC-BOARD-14).
+- Pre-seed `finishAnimFromByKey` in `submitMove` / `onPushClick` — seed only `lastKnownBoardCellByKey`; finish watch owns `finishAnimFrom` (silent reject would pin via `pieceStyle` — D11 / SC-FINISH-18).
+- Record a center cell into `lastKnownBoardCellByKey` (sync may land on center before `finished`; never use center as travel `from`).
 - Use Quasar Notify / screen-edge toasts as the say carrier; force all bubbles “always above” with only one stack class.
 - Depend tile fills on Quasar Dark / theme preference.
 - Invent client-local seat assignment (server assigns on join).

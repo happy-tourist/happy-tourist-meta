@@ -1,16 +1,17 @@
 ## Purpose
 
-Delta этого change: UX возврата с финиша — зелёная иконка над strip вместо модалки; disappear на центре при finish от push как при обычном ходе. Wire return и геометрия кольца — main `game/finish` / `game/move`.
+Delta этого change: UX возврата с финиша — зелёная иконка над strip вместо модалки; travel+disappear на центре при finish от **move и push** (parity). Wire return и геометрия кольца — main `game/finish` / `game/move`.
 
 ## Traceability
 
 | Scenario ID | Coverage |
 |-------------|----------|
-| SC-FINISH-01 | covered-by-reuse (server + client move finish travel+disappear) |
+| SC-FINISH-01 | covered (client UX — move onto center travel then disappear; server covered-by-reuse) |
 | SC-FINISH-02 | covered-by-reuse (server mocha — center reuse) |
 | SC-FINISH-13 | covered (client UX — green return icon; no confirm modal) |
 | SC-FINISH-16 | covered (client UX — finished strip slot click does not start return) |
-| SC-FINISH-17 | covered (client UX — push onto center same travel+disappear as move) |
+| SC-FINISH-17 | covered (client UX — push onto center travel+disappear) |
+| SC-FINISH-18 | covered (client UX — move onto center seeds lastKnown; travel+disappear parity) |
 
 Related: return geometry and steps — `game/move`; push finish — delta `game/move` SC-MOVE-76; strip dimming — main `game/finish`.
 
@@ -18,7 +19,7 @@ Related: return geometry and steps — `game/move`; push finish — delta `game/
 
 ### Requirement: Entering any center cell finishes a piece
 
-When the room start phase is `playing` and the server accepts a legal **move or push** whose landing target is any of the four center cells of the tourist layout, the server SHALL mark that piece finished. A finished piece MUST NOT occupy any board cell for subsequent move validation (the center cell becomes free for other pieces immediately). Every client that displays the board MUST remove that piece from the board after travel onto the landing cell and a short disappear animation on that cell (no travel toward the strip) — including when finish was caused by a **push**. Finished piece state MUST be synchronized to all clients in the room.
+When the room start phase is `playing` and the server accepts a legal **move or push** whose landing target is any of the four center cells of the tourist layout, the server SHALL mark that piece finished. A finished piece MUST NOT occupy any board cell for subsequent move validation (the center cell becomes free for other pieces immediately). Every client that displays the board MUST remove that piece from the board after travel onto the landing cell and a short disappear animation on that cell (no travel toward the strip) — for finish caused by a **move** and by a **push**, with the same presentation. The piece MUST NOT vanish from its pre-finish board cell without that travel. Finished piece state MUST be synchronized to all clients in the room.
 
 #### Scenario [SC-FINISH-01]: Move onto a center cell finishes the piece
 
@@ -41,6 +42,14 @@ When the room start phase is `playing` and the server accepts a legal **move or 
 - **WHEN** the push is accepted and the target finishes
 - **THEN** every client that displays the board observes the target travel onto that center cell then leave after the same short disappear animation as a move finish
 - **AND** the target does not vanish from its pre-push cell without that travel
+
+#### Scenario [SC-FINISH-18]: Own move onto center travels from the pre-move cell
+
+- **GIVEN** it is a seated player’s turn and an own unfinished piece has a free neighbor center cell
+- **WHEN** that player submits a move onto that center cell and the server accepts
+- **THEN** clients that display the board show that piece traveling from its pre-move cell onto the center cell
+- **AND** then leaving after the same short disappear animation used for push→center
+- **AND** the piece does not vanish from its pre-move cell without that travel
 
 ### Requirement: Return affordance beside finished strip indicator
 

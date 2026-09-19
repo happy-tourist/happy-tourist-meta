@@ -1,22 +1,21 @@
 ## Context
 
-См. `proposal.md` и delta specs `game/move`, `game/finish`, `game/board`, `game/presence`. Push + return-strip уже в runtime; этот апдейт — client UX polish поверх. Explore polish D*/мелочи закрыты — ниже как решения.
+См. `proposal.md` и delta specs `game/move`, `game/finish`, `game/board`, `game/presence`. Push + return-strip + polish (affordance/end-turn/push→finish) уже в runtime; этот апдейт — client fix: свой ход на центр должен давать тот же travel+fade.
 
-Чеклист — `tasks.md` (блоки 1–4 done; блок 5 — polish).
+Чеклист — `tasks.md` (блоки 1–5 done; блок 6 — finish-travel fix).
 
 ## Goals / Non-Goals
 
 **Goals:**
 
 - Message `push` + pure validate/apply (уже).
-- Client: push icons; return strip без modal (уже).
-- Affordance anchor: peek / rescue / push — top-center над piece (как `.return-affordance`).
-- End-turn: icon `skip_next` right-center у own avatar; сразу `endTurn`; без dock/label/dialog; solo без контрола.
-- Push→center: тот же travel + disappear, что move→center.
+- Client: push icons; return strip без modal; affordance top-center; end-turn `skip_next` (уже).
+- Push→center travel+disappear (уже).
+- **Move→center:** тот же travel с pre-move клетки + disappear; не vanish с соседней клетки.
 
 **Non-Goals:**
 
-- Push trapped; red rings для dest push; schema под push; новые deps; tooltips; массовая смена иконок.
+- Push trapped; red rings для dest push; schema под push; новые deps; tooltips; массовая смена иконок; server finish wire.
 
 ## Decisions
 
@@ -34,7 +33,7 @@
 
 `sendPush`; push affordances; approach/back; return icon; no return modal.
 
-### D5 — UX icons (расширено polish)
+### D5 — UX icons (done)
 
 | Affordance | Placement | Icon (пока) |
 |------------|-----------|-------------|
@@ -42,9 +41,7 @@
 | Rescue | top-center над trapped | `lock_open` |
 | Push | top-center над target | `swipe` |
 | Return strip | top-center над finished slot | `undo` |
-| End-turn | **right-center** у own avatar (зеркало say top-center) | `skip_next` |
-
-Общий board CSS-якорь (вместо угла `+ cell - 14px` / `- 6px`): центр клетки по X, чуть выше по Y — как strip `left: 50%; transform: translateX(-50%); top: -10px` в координатах board overlay.
+| End-turn | **right-center** у own avatar | `skip_next` |
 
 ### D6 — Selection / multi-push (done)
 
@@ -52,43 +49,42 @@ Keep `selectedSide` после push.
 
 ### D7 — Skills
 
-При apply polish: client `work-with-game-board`, `work-with-pages`, `work-with-styles`, localization (aria only), presence notes; server skills уже покрывают push.
+При apply fix: client `work-with-game-board` (finish travel move+push); pages/styles при drift. Server skills без изменений.
 
-### D8 — Explore push (закрыты) + polish
+### D8 — Explore push + polish (закрыты)
 
 | ID | Решение |
 |----|---------|
 | cost / trapped / grille / return UX / icons / keep focus / auto-end | как раньше |
-| polish D1 | peek+rescue+push top-center |
-| polish D2 | end-turn без dialog |
-| polish D3 | `skip_next` |
-| polish D4 | push→finish как ход |
-| мелочь | end-turn right-center; без видимого текста; solo без кнопки |
+| polish D1–D4 / мелочи end-turn | done |
 
-### D9 — End-turn chrome
+### D9 — End-turn chrome (done)
 
-| Было | Станет |
-|------|--------|
-| `.end-turn-dock` + `q-btn` label «Завершить ход» | убрать dock; button на own `presence-marker` справа по центру |
-| Confirm | нет — `@click` → существующий `onEndTurnClick` / `sendEndTurn` |
+Dock убран; `skip_next` right-center; без dialog/label; solo без контрола.
 
-Budgets stack справа от аватара **не** включает end-turn (SC-PRESENCE-25). Say остаётся top (или top-center по продукту say — не менять в этом change, если уже top-right; end-turn — right-center независимо).
+### D10 — Push→finish presentation (done)
 
-### D10 — Push→finish presentation
+`lastKnownBoardCellByKey` + `finishAnimFromByKey` + `disappearingKeys` — один кадр `from`, slide на center, fade.
 
-Проблема: при sync `row/col=center` + `finished` цель может отрисоваться сразу на центре / пропасть без кадра на старой клетке.
+### D11 — Move→center finish travel (fix)
 
-Подход: при появлении нового finished key (вкл. от push) — если есть last-known board cell ≠ center, один кадр paint `from` (как `returnAnimFromByKey`), затем slide на center + `piece--disappearing` (тот же MOVE_ANIM + FINISH_FADE, что move finish). Не менять server.
+**Проблема:** push→center анимируется, свой `move` на центр визуально пропадает (кадр `from` не удерживается / sync уже с center).
+
+**Подход (A+B):**
+
+1. **Capture at submit:** в `submitMove` при `isCenterCell(row,col)` сразу записать текущую клетку выбранной фигуры в `lastKnownBoardCellByKey` до ответа сервера — локальный own-move не теряет `from`. **Не** seed `finishAnimFromByKey` на submit (silent reject иначе pin’ит фигуру через `pieceStyle`).
+2. **Harden watch:** при новом finished key — paint `from` если last-known ≠ center; не clear `finishAnimFromByKey` до реального paint (nextTick + forced layout + double rAF); unfinished-watch сбрасывает stale `finishAnimFrom` для ещё незавершённых ключей; fade через существующий `piece--disappearing` после MOVE_ANIM. Remote finish (чужой ход / push) по-прежнему через watch + lastKnown.
+3. Server не менять.
 
 ## Risks / Trade-offs
 
-- [Чужой finish от push] → ожидаемо; SC-MOVE-69 / SC-FINISH-17.
-- [End-turn без текста] → aria-label ok; видимые tooltips out of scope.
-- [Say сейчас top-right в CSS] → не блокер; end-turn right-center по продукту.
+- [Чужой finish от push/move] → тот же watch path; SC-FINISH-01/17/18.
+- [Двойной seed lastKnown] → идемпотентно; ключ pieceKey.
+- [End-turn без текста] → aria ok (уже).
 
 ## Migration Plan
 
-Не требуется (client UX; push message уже на сервере).
+Не требуется (client UX).
 
 ## Open Questions
 

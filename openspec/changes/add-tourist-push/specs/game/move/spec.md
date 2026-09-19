@@ -16,7 +16,7 @@ Delta этого change: действие push (толкнуть), стоимо�
 | SC-MOVE-73 | covered (server mocha — auto-end waits for legal push) |
 | SC-MOVE-74 | covered (client UX — push icons centered above targets) |
 | SC-MOVE-75 | covered (client UX — approach/back + target travel; keep selection) |
-| SC-MOVE-76 | covered (client UX — push onto center: travel then disappear like move) |
+| SC-MOVE-76 | covered (client UX — push onto center: travel then disappear) |
 | SC-MOVE-77 | covered (client UX — rescue affordance centered above trapped) |
 
 Related: finish side-effect — `game/finish`; peek centering — delta `game/board`; return strip UX — delta `game/finish`.
@@ -104,8 +104,10 @@ While it is the user’s own turn with steps ≥ 1 and a free unfinished own pie
 - **GIVEN** it is a seated player’s turn with a legal push whose far-side cell is a free center cell
 - **WHEN** that player successfully pushes the target onto that center cell
 - **THEN** clients that display the board show the target traveling onto the center cell
-- **AND** then removing that piece with the same short disappear animation as an ordinary center finish
+- **AND** then removing that piece with the same short disappear animation as a center finish from a move
 - **AND** the target does not disappear from its pre-push cell without that travel
+
+Note: move→center presentation parity — delta `game/finish` SC-FINISH-01 / SC-FINISH-18.
 
 ### Requirement: Rescue affordance centered above trapped tourist
 

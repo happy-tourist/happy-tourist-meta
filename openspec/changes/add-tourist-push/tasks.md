@@ -32,3 +32,10 @@
 - [x] 5.3 Убрать `.end-turn-dock` / текстовый btn; icon `skip_next` right-center на own avatar; клик → endTurn сразу; solo без контрола — SC-PRESENCE-17/18/25
 - [x] 5.4 Push→center: travel с pre-push клетки + disappear как move finish (D10) — SC-MOVE-76 / SC-FINISH-17
 - [x] 5.5 Обновить client skills (board/pages/styles/localization aria); `npm run lint` + `npm run typecheck`
+
+## 6. Client — move→center finish travel (parity with push)
+
+- [x] 6.1 Прочитать `design.md` D11, delta `specs/game/finish` (SC-FINISH-01/18), `game/move` (SC-MOVE-76 note); skill `work-with-game-board` finish travel
+- [x] 6.2 `submitMove` на center: seed `lastKnownBoardCellByKey` (текущая клетка фигуры) до sync — D11 A — SC-FINISH-18
+- [x] 6.3 Harden finish watch: удержать кадр `finishAnimFromByKey` до paint; slide + fade как push — D11 B — SC-FINISH-01/18
+- [x] 6.4 Обновить client skill board (move+push finish travel); `npm run lint` + `npm run typecheck`
