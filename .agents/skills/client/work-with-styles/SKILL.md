@@ -7,7 +7,8 @@ description: >-
   ≠ JWT-only), muted chrome text, quasar.variables.scss tokens, app.scss, page
   scoped CSS (especially GamePage board gap/radius 2 + `.tile--removed` holes
   + grille overlay drop/rise via `--grille-anim-ms` / `GRILLE_ANIM_MS=1000`
-  + catapult fade via `--catapult-anim-ms` / `CATAPULT_ANIM_MS=1000`
+  + catapult reveal/broken-hold CSS via `--catapult-anim-ms` / `CATAPULT_ANIM_MS=1000`
+    (successful fade; broken uses intact/hold/vanish classes, not mid-fade swap)
   + trapped piece chrome + top presence + sticky seated `.game-hud`
   presence/ring/avatar + strip row/narrow 2×2 + chrome grille + budgets
   beside avatar + end-turn icon right-center + peek/rescue/push top-center + say bubbles top↓/own↑),
@@ -180,7 +181,7 @@ Board UI is custom CSS Grid (not Quasar widgets). Keep selectors local and class
 | `.game-hud` / `__scroll` / `__bar--seated` | Sticky bottom **seated** panel only (`container-name: game-hud`); scroll wrapper owns `overflow-x` so say chrome is not clipped (SC-SAY-15); spectator has **no** bottom HUD |
 | `.tourist-board` | 10×10 CSS Grid; `--cell` / `--gap` / `--radius`; `aspect-ratio: 1`; transparent holes |
 | `.grille-overlay` / `--drop` / `--rise` | Revealed holding grille from `src/assets/grilles/grille.png`; duration via `--grille-anim-ms` (`GRILLE_ANIM_MS = 1000`) for drop/rise incl. leave-clear (SC-BOARD-18/19/21) |
-| `.catapult-overlay` / `--reveal` | Short-lived catapult fade from `src/assets/catapults/catapult.png` (+ `catapult-broken.png` mid-fade); duration via `--catapult-anim-ms` (`CATAPULT_ANIM_MS = 1000`) (SC-BOARD-22…24) |
+| `.catapult-overlay` / `--reveal` / `--intact` / `--broken-hold` / `--vanish` | Catapult presentation from `src/assets/catapults/catapult.png` (+ `catapult-broken.png`); successful fade via `--catapult-anim-ms` (`CATAPULT_ANIM_MS = 1000`); broken timeline uses intact → hold → broken-hold → vanish classes (SC-BOARD-22…24) |
 | `.piece--trapped` | Trapped tourist still visible under grille (SC-PIECE-27); no own-select chrome |
 | `.tile` | Rounded tile (`border-radius: var(--radius)`); `pointer-events` only when interactive |
 | `.tile-start` | Green start tile (`#4caf50`) |
@@ -205,7 +206,7 @@ Board UI is custom CSS Grid (not Quasar widgets). Keep selectors local and class
 | `.say-bubbles--top` | Top-row markers: bubbles grow **down** toward the board |
 | `.say-bubbles--bottom` | Own bottom marker: bubbles grow **up** toward the board |
 
-Current-turn interactivity, dual turn/reconnect rings, top presence + seated sticky `.game-hud` (own + strip), own budgets beside avatar / end-turn icon right-center, peek/rescue/push top-center, removed-task holes, grille overlays + catapult fade + strip chrome grille + return-icon, say top↓/own↑, nearest-center finish click, and travel/return/push-finish animation live in `work-with-game-board` — do not reintroduce draughts `.cell` / selection classes, all-markers-bottom HUD, compact chip / `q-menu`, page-local `.game-header`, orange-only return targets, return confirm modal, `.end-turn-dock`, `GRILLE_ANIM_MS = 1500`, or a static blue turn outline.
+Current-turn interactivity, dual turn/reconnect rings, top presence + seated sticky `.game-hud` (own + strip), own budgets beside avatar / end-turn icon right-center, peek/rescue/push top-center, removed-task holes, grille overlays + catapult sequential presentation CSS + strip chrome grille + return-icon, say top↓/own↑, nearest-center finish click, and travel/return/push-finish animation live in `work-with-game-board` — do not reintroduce draughts `.cell` / selection classes, all-markers-bottom HUD, compact chip / `q-menu`, page-local `.game-header`, orange-only return targets, return confirm modal, `.end-turn-dock`, `GRILLE_ANIM_MS = 1500`, or a static blue turn outline.
 
 When editing board visuals:
 

@@ -24,3 +24,12 @@
 - [x] 4.1 Обновить server skills (`work-with-game`, `work-with-schema`, `work-with-rooms`, `work-with-messages` при необходимости) — catapultDensity, land-resolve stack, fling
 - [x] 4.2 Обновить client skills (`work-with-lobby`, `work-with-game-board`, `work-with-stores`, localization) — density UI, catapult overlay/assets
 - [x] 4.3 При необходимости — краткие строки в sibling AGENTS Business Entities (без дублирования specs)
+
+## 5. Client — sequential catapult presentation + board lock (follow-up)
+
+- [x] 5.1 Прочитать `design.md` D5/D11/D12, delta `specs/game/board` (SC-BOARD-23…27) + `game/finish` SC-FINISH-19, skill `client/work-with-game-board`
+- [x] 5.2 GamePage: pin piece on catapult cell during successful overlay; after full vanish → travel to sync dest / finish travel — SC-BOARD-23/25, SC-FINISH-19
+- [x] 5.3 Broken timeline: appear → 300 ms intact → broken → 300 ms broken → vanish; no travel — SC-BOARD-24
+- [x] 5.4 Sequential queue for fling→catapult chains (no cap) — SC-BOARD-26
+- [x] 5.5 Board-busy lock: `isInteractive` false during move/grille/catapult/finish/fling anims — SC-BOARD-27
+- [x] 5.6 `npm run lint` + `npm run typecheck`; обновить client skills / AGENTS blurbs про sequencing + lock
