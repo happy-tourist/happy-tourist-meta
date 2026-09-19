@@ -78,7 +78,7 @@ server: C:/Users/You/work/happy-tourist-server
 | `client.src` | `../happy-tourist.github.io/src/` | исходники UI |
 | `client.pages` | `../happy-tourist.github.io/src/pages/` | route pages (Login/Lobby/Game) |
 | `client.stores` | `../happy-tourist.github.io/src/stores/` | Pinia (`auth`, `theme`, `game`) |
-| `client.assets` | `../happy-tourist.github.io/src/assets/` | Static assets (e.g. `tourists/tourist{1–4}.png` pieces; `grilles/grille.png` holding overlay) |
+| `client.assets` | `../happy-tourist.github.io/src/assets/` | Static assets (e.g. `tourists/tourist{1–4}.png` pieces; `grilles/grille.png` holding overlay; `catapults/catapult.png` + `catapult-broken.png` reveal) |
 | `client.boot` | `../happy-tourist.github.io/src/boot/` | Quasar boot (`theme`, `colyseus`, `i18n`) |
 | `server` | `../happy-tourist-server/` | Colyseus backend |
 | `server.agents` | `../happy-tourist-server/AGENTS.md` | продукт / стек / домены server |

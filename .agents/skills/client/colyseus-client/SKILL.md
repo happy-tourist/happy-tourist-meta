@@ -4,10 +4,11 @@ description: >-
   Use when adding, changing, or reviewing Colyseus client I/O in the
   happy-tourist tourist SPA: Client singleton from src/boot/colyseus.ts,
   LobbyRoom live listing (subscribeLobby), room create/join/leave (incl.
-  grilleDensity), room.send move/rescue/push/returnFromFinish/peek/endTurn/say
+  grilleDensity + catapultDensity), room.send move/rescue/push/returnFromFinish/peek/endTurn/say
   messages, private budgets/peekOpen/allJailWarning (infinite=peeks∞ only;
-  holes not landable; holdingGrilleKeys), client.auth register/sign-in/sign-out,
-  Pinia auth/game stores, or VITE_COLYSEUS_URL / VITE_API_URL env wiring.
+  holes not landable; holdingGrilleKeys + revealingCatapultKeys / brokenCatapultKeys),
+  client.auth register/sign-in/sign-out, Pinia auth/game stores, or
+  VITE_COLYSEUS_URL / VITE_API_URL env wiring.
 ---
 
 # Colyseus Client
@@ -95,7 +96,7 @@ Local defaults: `.env.development` → `localhost:2567`. Production: `.env.produ
 | HTTP fallback | `stores/game.ts` → `refreshRooms` | `client.http.get('/rooms/tourist')` (unused by LobbyPage) |
 | Room lifecycle | `stores/game.ts` → `createGame` / `joinGame` / `leaveGame` | `client.create` / `joinById` / `joinOrCreate`, `room.leave` |
 | Game board UI | `pages/GamePage.vue` | Layout + pieces / strip / presence / grilles / budgets / peek / rescue / push / return icon / say; calls store sends (no direct `room.send`) |
-| Live state | `stores/game.ts` → `_attachRoom` | `onStateChange` (`seats`/`phase`/`maxSeats`/`countdownRemaining`/`currentTurnSessionId`/`removedTaskKeys`/`holdingGrilleKeys`); `onMessage('say'|'budgets'|'peekOpen'|'allJailWarning')`; `onError`, `onLeave` |
+| Live state | `stores/game.ts` → `_attachRoom` | `onStateChange` (`seats`/`phase`/`maxSeats`/`countdownRemaining`/`currentTurnSessionId`/`removedTaskKeys`/`holdingGrilleKeys`/`revealingCatapultKeys`/`brokenCatapultKeys`); `onMessage('say'|'budgets'|'peekOpen'|'allJailWarning')`; `onError`, `onLeave` |
 
 Allowed dependency direction: `pages` → `stores` / `boot` / `components`. Keep all `client.*` and `room.*` I/O in stores.
 
@@ -222,6 +223,8 @@ Mirror seating + turn from schema.
 | `currentTurnSessionId` | Synced whose turn; `""` if no seated / all finished → getter `isMyTurn` |
 | `removedTaskKeys` | Synced `"r,c"` holes after **correct** peek only; **not landable** (stand-on-hole OK). Incorrect KEEP → no hole |
 | `holdingGrilleKeys` | Synced revealed holding grille cells (`"r,c"`); overlay on GamePage |
+| `revealingCatapultKeys` | Short-lived synced catapult cells presenting fade (`"r,c"`); hidden unspent never sync |
+| `brokenCatapultKeys` | Subset of revealing keys that swap to broken artwork mid-fade |
 | `sessionId` | From `room.sessionId` — for `mySeat` / strip / turn check |
 
 Private (not schema) — wire in `_attachRoom`:
@@ -245,7 +248,7 @@ room.onStateChange((state) => {
   this.currentTurnSessionId =
     typeof s.currentTurnSessionId === 'string' ? s.currentTurnSessionId : '';
   // seats[] incl. ready/connectivity/trapped …
-  // removedTaskKeys[] / holdingGrilleKeys[] from sync
+  // removedTaskKeys[] / holdingGrilleKeys[] / revealingCatapultKeys[] / brokenCatapultKeys[] from sync
   this.status = this.phase === 'playing' ? 'playing' : 'waiting';
 });
 
@@ -254,7 +257,7 @@ room.onMessage('peekOpen', (message) => { /* openPeek */ });
 room.onMessage('allJailWarning', () => { this.allJailWarning = true; });
 ```
 
-`GamePage` may call `rejoinGame(roomId)` if Pinia lost the room after refresh / soft-fail / browser reopen (`localStorage` reconnection token → `reconnect`, clear stale on fail → `joinById`); failed rejoin → navigate to lobby. Board tile geometry is a **client constant** (`work-with-game-board`); seats + phase + connectivity + turn + removed tiles + holding grilles come from sync; own budgets from private messages. Token details: `work-with-rooms`.
+`GamePage` may call `rejoinGame(roomId)` if Pinia lost the room after refresh / soft-fail / browser reopen (`localStorage` reconnection token → `reconnect`, clear stale on fail → `joinById`); failed rejoin → navigate to lobby. Board tile geometry is a **client constant** (`work-with-game-board`); seats + phase + connectivity + turn + removed tiles + holding grilles + catapult reveal keys come from sync; own budgets from private messages. Token details: `work-with-rooms`.
 
 ## Messages: game actions
 
@@ -438,10 +441,10 @@ Show `auth.error` in a `q-banner`. Router already blocks until `whenReady()`.
 
 1. Belongs in `stores/auth` or `stores/game` (not a page).
 2. Uses shared `client` from `@/boot/colyseus`.
-3. Lobby list: LobbyRoom subscribe; rooms: `create({ maxSeats, grilleDensity })` / `joinById` (no Play shortcut); Game `sendMove` → `move`; `sendRescue` / `sendPush` / `sendReturnFromFinish`; `sendPeek` / `sendPeekAnswer` / `sendEndTurn`; `sendReady` → `ready`; `sendSay` → `say` + `onMessage('say'|'budgets'|'peekOpen'|'allJailWarning')`. HTTP only as unused fallback.
+3. Lobby list: LobbyRoom subscribe; rooms: `create({ maxSeats, grilleDensity, catapultDensity })` / `joinById` (no Play shortcut); Game `sendMove` → `move`; `sendRescue` / `sendPush` / `sendReturnFromFinish`; `sendPeek` / `sendPeekAnswer` / `sendEndTurn`; `sendReady` → `ready`; `sendSay` → `say` + `onMessage('say'|'budgets'|'peekOpen'|'allJailWarning')`. HTTP only as unused fallback.
 4. Room types use `TOURIST_ROOM` / `LOBBY_ROOM`.
 5. Loading flag cleared in `finally`; failures set store `error`.
-6. State fields / message payloads match `../happy-tourist-server` (lockstep), including `currentTurnSessionId` / `removedTaskKeys` / `holdingGrilleKeys` / piece `trapped` / private budgets.
+6. State fields / message payloads match `../happy-tourist-server` (lockstep), including `currentTurnSessionId` / `removedTaskKeys` / `holdingGrilleKeys` / `revealingCatapultKeys` / `brokenCatapultKeys` / piece `trapped` / private budgets.
 7. Pages only call store actions and bind store state.
 8. Run `npm run lint` / `npm run typecheck` from the client package root (and `quasar dev` if needed for smoke); fix failures before claiming done.
 

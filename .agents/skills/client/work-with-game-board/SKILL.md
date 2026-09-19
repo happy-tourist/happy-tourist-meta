@@ -6,7 +6,8 @@ description: >-
   overlay, top opponents / spectator presence + sticky bottom seated HUD (own +
   strip; no chip/q-menu), dual rings + top-center board affordances + budgets beside own
   avatar + end-turn `skip_next` right-center on own avatar, removed-task holes, grille overlays
-  + trap/rescue/push + return strip icon (no modal), peek eye + Correct/Wrong modal, say bubbles
+  + catapult fade overlays (`CATAPULT_ANIM_MS=1000`, intact/broken assets) + trap/rescue/push +
+  return strip icon (no modal), peek eye + Correct/Wrong modal, say bubbles
   (top markers down / own bottom up), strip row N,E,W,S or HUD ≤~420 → 2×2,
   nearest-center finish click + return anim, tile kinds (start/task/center),
   current-turn selection/hints/move submit, piece travel animation, or finish
@@ -26,8 +27,8 @@ Product: настольная игра «Счастливый турист». On
 | Surface | Path | Role |
 | --- | --- | --- |
 | App shell | `src/App.vue` | On Game route only: icon-only leave left + centered match status + theme right; leave confirm + `leaveGame` → lobby. Login/Lobby: theme only (no leave/status) |
-| Game page | `src/pages/GamePage.vue` | CSS Grid field in scroll region; unfinished pieces overlay (+ short center disappear); holes for `removedTaskKeys`; grille overlays from `holdingGrilleKeys` (drop/rise); rescue + **push** affordances **top-center** above pieces; **top** `.presence-row--top` tight to board (opponents / spectator all; no reserved bubble gap); sticky bottom `.game-hud` only when seated (own + strip); budgets **beside** own avatar; end-turn `skip_next` **right-center** on own avatar; local selection/hints/peek eye top-center; place / timer-vs-steps end / peek / solo-peeks∞ / all-jail; **return green icon** on finished strip (no confirm `q-dialog`); `rejoinGame(roomId)` — **no** leave/status/roomId chrome |
-| Game store | `src/stores/game.ts` | Room I/O; mirror `seats` (+ piece `finished`/`trapped` / seat `finishPlace`) / `phase` / `maxSeats` / `countdownRemaining` / `currentTurnSessionId` / `removedTaskKeys` / `holdingGrilleKeys` / `sessionId`; private `steps`/`peeks`/`budgetsInfinite` (peeks∞ only)/`peekedThisTurn` (legacy)/`openPeek`/`allJailWarning` from `budgets`/`peekOpen`/`allJailWarning`; `unfinishedBoardPieces` / `isMySeatFinished` / `myFinishedStripSides`; `isMyTurn` / `isPlaying` / `canSendReady` / `canSendEndTurn`; `sendMove` / `sendRescue` / `sendPush` / `sendReturnFromFinish` / `sendPeek` / `sendPeekAnswer` / `sendEndTurn` / `sendReady` / `sendSay` + `sayEvents` |
+| Game page | `src/pages/GamePage.vue` | CSS Grid field in scroll region; unfinished pieces overlay (+ short center disappear); holes for `removedTaskKeys`; grille overlays from `holdingGrilleKeys` (drop/rise); catapult fade overlays from `revealingCatapultKeys` / `brokenCatapultKeys`; rescue + **push** affordances **top-center** above pieces; **top** `.presence-row--top` tight to board (opponents / spectator all; no reserved bubble gap); sticky bottom `.game-hud` only when seated (own + strip); budgets **beside** own avatar; end-turn `skip_next` **right-center** on own avatar; local selection/hints/peek eye top-center; place / timer-vs-steps end / peek / solo-peeks∞ / all-jail; **return green icon** on finished strip (no confirm `q-dialog`); `rejoinGame(roomId)` — **no** leave/status/roomId chrome |
+| Game store | `src/stores/game.ts` | Room I/O; mirror `seats` (+ piece `finished`/`trapped` / seat `finishPlace`) / `phase` / `maxSeats` / `countdownRemaining` / `currentTurnSessionId` / `removedTaskKeys` / `holdingGrilleKeys` / `revealingCatapultKeys` / `brokenCatapultKeys` / `sessionId`; private `steps`/`peeks`/`budgetsInfinite` (peeks∞ only)/`peekedThisTurn` (legacy)/`openPeek`/`allJailWarning` from `budgets`/`peekOpen`/`allJailWarning`; `unfinishedBoardPieces` / `isMySeatFinished` / `myFinishedStripSides`; `isMyTurn` / `isPlaying` / `canSendReady` / `canSendEndTurn`; `sendMove` / `sendRescue` / `sendPush` / `sendReturnFromFinish` / `sendPeek` / `sendPeekAnswer` / `sendEndTurn` / `sendReady` / `sendSay` + `sayEvents` |
 
 | Concern | Location |
 | --- | --- |
@@ -35,6 +36,7 @@ Product: настольная игра «Счастливый турист». On
 | Tile build | `buildBoardTiles()` → `div.tile` with `gridColumn` / `gridRow`; removed `*` → visual hole (page background) |
 | Pieces | `unfinishedBoardPieces` (+ short-lived disappearing finishers) → `img.piece`; PNG from `touristId`; `piece--trapped` when trapped |
 | Grilles | Asset `src/assets/grilles/grille.png`; board overlay on `holdingGrilleKeys` **and** chrome grille on strip slots when `trapped`; drop/rise via **`GRILLE_ANIM_MS = 1000`** → CSS `--grille-anim-ms` for board + chrome (incl. leave-clear rise, SC-BOARD-18/19/21, SC-PIECE-31) |
+| Catapults | Assets `src/assets/catapults/catapult.png` + `catapult-broken.png`; short-lived overlay on `revealingCatapultKeys` (hidden until reveal); fade in→out ~**`CATAPULT_ANIM_MS = 1000`**; swap to broken src mid-fade when key ∈ `brokenCatapultKeys` (SC-BOARD-22…24) |
 | Presence | Seated: opponents in `.presence-row--top` above board; sticky bottom `.game-hud` = own + strip only. Spectator: all occupied in top row; **no** bottom HUD. Dual rings + 72px avatar; finish/ready top-left; say top-right; end-turn right-center |
 | Say (game/say) | Affordance top-right on **own** online marker (hit-area ≥ ~32px); **top** markers → `.say-bubbles--top` (down toward board); **own bottom** → `.say-bubbles--bottom` (up toward board). HUD scroll overflow must not clip (SC-SAY-15) |
 | Tourist strip | Inside HUD after own marker when `mySeat` (+ pieces exist): four `.my-tourist-slot` — wide: flex **row** N,E,W,S; `@container game-hud (max-width: 420px)`: **2×2** with smaller slots (when own+row would scroll; covers ≤320/300). **No** compact chip, **no** `q-menu`, **no** «Мои туристы» caption. Select unfinished non-trapped from slot or board; off-turn → view only. Finish flag on finished slots; grille overlay when trapped (SC-PIECE-09/31/32) |
@@ -179,7 +181,7 @@ Picker open state (`sayPickerOpen`) is page-local; close if the local seat is lo
 
 - Keep layout in one client constant; center as a single 2×2 grid area.
 - Preserve max tile 60px, gap 2, radius 2, hole = page background (incl. removed `*`).
-- Keep Colyseus I/O in `stores/game`; page reads seats/phase/turn/strip/presence/`sayEvents`/`steps`/`peeks`/`budgetsInfinite`/`openPeek`/`removedTaskKeys`/`holdingGrilleKeys` from store only.
+- Keep Colyseus I/O in `stores/game`; page reads seats/phase/turn/strip/presence/`sayEvents`/`steps`/`peeks`/`budgetsInfinite`/`openPeek`/`removedTaskKeys`/`holdingGrilleKeys`/`revealingCatapultKeys`/`brokenCatapultKeys` from store only.
 - Gate move interactivity with `isPlaying && isMyTurn && !isMySeatFinished && !isMySeatTimeExpired` (and `!moveAnimating`); never select finished pieces/slots as board movers; gate say with own seated+connected; ready via `sendReady`; end-turn via `canSendEndTurn` icon on own avatar.
 - Map `touristId` 1…4 to `tourist{N}.png`; strip only after pieces exist; finish icon on finished sides; return via green strip icon + same red targets as move (no confirm modal).
 - Drive turn/reconnect countdowns from synced `turnUntil` / `reconnectUntil`; countdown overlay from `countdownRemaining`.
