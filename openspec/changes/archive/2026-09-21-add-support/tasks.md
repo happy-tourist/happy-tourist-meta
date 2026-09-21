@@ -38,7 +38,7 @@
 
 
 
-- [x] 1.10 Admin API: list users + PATCH role; только admin; moderator cannot assign (SC-ROLE-03/04/05/07)
+- [x] 1.10 Admin API: list users + POST role; только admin; moderator cannot assign (SC-ROLE-03/04/05/07)
 
 
 

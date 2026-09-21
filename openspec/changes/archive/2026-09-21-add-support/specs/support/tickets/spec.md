@@ -30,7 +30,7 @@
 | SC-SUP-22 | server: support.test.ts |
 | SC-SUP-23 | client: SupportStaffPage filters |
 | SC-SUP-24 | client: SupportPage / SupportTicketPage clear + no red empty (lazy-rules / nextTick reset) |
-| SC-SUP-25 | client: SupportTicketPage thread spacing (messages + thread→form) |
+| SC-SUP-25 | client: SupportTicketPage thread message spacing |
 | SC-SUP-26 | client: SupportTicketPage gap between last message and reply composer |
 
 ## ADDED Requirements
