@@ -100,7 +100,9 @@ For CORS / monitor details use `work-with-middleware` and `work-with-config`.
 | POST | `/api/auth/send-email-confirmation` | `createEndpoint` | `auth.middleware()`; registered non-anonymous; **60s cooldown only after successful send**; confirm JWT 30m → smtp.bz; already verified → no-op/reject; **no** auto-send on register |
 | POST | `/api/auth/email` | `createEndpoint` | Body `{ email }`; change email + `emailVerified = false`; unique check; **no** auto-send; returns user/token |
 | POST | `/api/auth/confirm-email` | `createEndpoint` | Unauthenticated JSON `{ token }` → JWT → `emailVerified`; product SPA confirm path |
-| POST | `/api/auth/reset-password` | `createEndpoint` | Unauthenticated JSON `{ token, password }` → reset + one-time token; product SPA reset path |
+| POST | `/api/auth/reset-password` | `createEndpoint` | Unauthenticated JSON `{ token, password }` → password policy → reset + bumpTokenVersion + one-time token; product SPA reset path |
+| POST | `/api/auth/display-name` | `createEndpoint` | JWT; `{ displayName }` trim min 1 → `users.displayName` |
+| POST | `/api/auth/change-password` | `createEndpoint` | JWT; `{ currentPassword, newPassword }` → Hash.verify + policy → set hash + bumpTokenVersion; reject if no password credential |
 | POST | `/api/support/tickets` | `createEndpoint` | JWT any; `{ topic, body }` create + first message; create-ack mail (non-anonymous; distinct from status/auto-close); helpers in `src/lib/support.ts` |
 | GET | `/api/support/tickets` | `createEndpoint` | JWT; own list |
 | GET | `/api/support/tickets/:id` | `createEndpoint` | JWT; detail + messages (owner or staff) |

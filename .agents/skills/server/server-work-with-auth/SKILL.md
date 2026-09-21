@@ -4,10 +4,13 @@ description: >-
   Use when adding, changing, reviewing, or debugging server authentication:
   @colyseus/auth HTTP routes, Google OAuth addProvider, email confirm/forgot
   callbacks (no auto onSendEmailConfirmation), smtp.bz mailer, emailVerified,
-  POST /api/auth/send-email-confirmation + /api/auth/email + /api/auth/confirm-email
-  + /api/auth/reset-password (SPA JSON), CLIENT_APP_URL mail links, AUTH_SALT /
-  JWT_SECRET / SESSION_SECRET / GOOGLE_CLIENT_*, users schema defaults + `htRole`
-  (public `role` via onParseToken/onGenerateToken), BOOTSTRAP_ADMIN_IDS,
+  product password policy (`src/lib/passwordPolicy.ts` on Hash.make + JSON
+  reset/change-password), register `name` → displayName, POST
+  /api/auth/send-email-confirmation + /api/auth/email + /api/auth/confirm-email
+  + /api/auth/reset-password + /api/auth/display-name + /api/auth/change-password
+  (SPA JSON), CLIENT_APP_URL mail links, AUTH_SALT / JWT_SECRET / SESSION_SECRET
+  / GOOGLE_CLIENT_*, users schema defaults + `htRole` (public `role` via
+  onParseToken/onGenerateToken) + userdata `hasPassword`, BOOTSTRAP_ADMIN_IDS,
   MyRoom.onAuth JWT.verify, register/login/anonymous/Google → JWT → room join,
   or auth userdata in onJoin for this Colyseus tourist server.
 ---
@@ -63,6 +66,7 @@ guards. Do not put game rules in `/auth/*` handlers.
 | Mailer | `src/lib/mailer.ts` | `sendEmail(to, subject, html)` via smtp.bz only (`SMTP_BZ_*`, `MAIL_FROM`); host **`connect.smtp.bz`**; `secure` when port is **465 or 9465**; no Resend / `MAIL_PROVIDER`; `setSendEmailImpl` for tests |
 | Auth HTML | `html/` | Legacy Colyseus cwd templates may remain; confirm mail HTML is built inline; forgot rewrites `[LINK]` to SPA; product confirm/reset UX is **SPA + JSON** — do not treat API HTML pages as product |
 | DB init | `src/db/index.ts` | `GameDatabase` + `schemas: { users }` |
+| Password policy | `src/lib/passwordPolicy.ts` | Shared enforce: length ≥8 + `[a-z]` `[A-Z]` `[0-9]` `[^A-Za-z0-9]`; reject on register wrap + JSON reset + change-password (login unchanged) |
 | Users schema | `src/db/schema.ts` | Extends `colyseus_users`: `displayName`, `rating`, `gamesPlayed`, `gamesWon`, nullable `theme`, `emailVerified` (default `false`), `htRole` (SQL `ht_role`, default `user`; **not** JS `role`) |
 | Role → userdata | `src/config/auth.ts` | `onParseToken` / `onGenerateToken` map `htRole` → public `role` (never leak `htRole` / passwordHash) |
 | Bootstrap admins | `src/lib/support.ts` + `.env` | `BOOTSTRAP_ADMIN_IDS` → idempotent `bootstrapAdminIds()` at express boot |
@@ -189,7 +193,8 @@ cabinet button via our HTTP endpoint.
 | `onForgotPassword` | `sendEmail` with **RU** subject + rewrite Colyseus reset HTML `[LINK]` → `{CLIENT_APP_URL}/#/reset-password?token=` |
 | Confirm / reset UX | **Client SPA** + JSON — not Colyseus `/auth/confirm-email` / `/auth/reset-password` HTML as product path |
 | `POST /api/auth/confirm-email` | Body `{ token }` → JWT verify → `onEmailConfirmed` → `{ ok: true }`; errors `token_expired` / `token_invalid` |
-| `POST /api/auth/reset-password` | Body `{ token, password }` → JWT verify → `onResetPassword` + presence one-time token → `{ ok: true }` |
+| `POST /api/auth/reset-password` | Body `{ token, password }` → policy check → JWT verify → `onResetPassword` + **bumpTokenVersion** + presence one-time token → `{ ok: true }` |
+| Register `name` | Persist `options.name` → `users.displayName`; expose in userdata/JWT so client `displayName` prefers it |
 | Mail link base | **`CLIENT_APP_URL`** hash routes (`clientConfirmEmailUrl` / `clientResetPasswordUrl`) |
 | `auth.backend_url` | From `AUTH_BACKEND_URL` — **OAuth / API origin only**, not user-facing mail links |
 | Mailer | `sendEmail` → smtp.bz only; mockable in tests via `setSendEmailImpl` |
@@ -268,12 +273,14 @@ onJoin(client: Client, _options: any, auth: any) {
 | `POST /api/auth/send-email-confirmation` | `createEndpoint` + `auth.middleware()`; registered non-anonymous; **60s cooldown only after a successful send**; confirm JWT 30m; already verified → no-op/reject; **only** path that sends confirm mail |
 | `POST /api/auth/email` | Change email; unique check; `emailVerified = false`; **no** auto-send; returns updated user/token for client |
 | `POST /api/auth/confirm-email` | Unauthenticated JSON `{ token }` → verify → `emailVerified`; SPA product path |
-| `POST /api/auth/reset-password` | Unauthenticated JSON `{ token, password }` → reset + one-time presence key; SPA product path |
+| `POST /api/auth/reset-password` | Unauthenticated JSON `{ token, password }` → policy + reset + bumpTokenVersion + one-time presence; SPA product path |
+| `POST /api/auth/display-name` | `auth.middleware()`; body `{ displayName }` trim, min 1; persist `users.displayName` |
+| `POST /api/auth/change-password` | `auth.middleware()`; `{ currentPassword, newPassword }` → Hash.verify → set hash → **bumpTokenVersion**; reject weak new / bad current; no-op/reject if no `passwordHash` (Google) |
 | Room join | Auth via JWT in `onAuth`, not Express middleware |
 | CORS | Allow credentials + `Authorization`; keep CORS first in `express(app)` |
 
 Game logic stays in the Room. Thin HTTP (`/health`, `/api/hello`, `GET|POST /api/theme`,
-auth send-confirm / change-email / confirm-email / reset-password) uses `createEndpoint`
+auth send-confirm / change-email / confirm-email / reset-password / display-name / change-password) uses `createEndpoint`
 (see `work-with-routes` / `work-with-database`).
 
 ## Contract With Client
@@ -281,7 +288,7 @@ auth send-confirm / change-email / confirm-email / reset-password) uses `createE
 | Client (`happy-tourist.github.io`) | Server |
 |------------------------------------|--------|
 | `client.auth.registerWithEmailAndPassword` / `signInWithEmailAndPassword` / `signInAnonymously` / `signInWithProvider('google')` | `/auth/*` + Google provider via `@colyseus/auth` (**no** confirm mail on register) |
-| `sendPasswordResetEmail` / cabinet `http.post` send-confirm + change-email; SPA `confirmEmail` / `resetPassword` JSON | `onForgotPassword` + `POST /api/auth/send-email-confirmation` + `/api/auth/email` + `/api/auth/confirm-email` + `/api/auth/reset-password` |
+| `sendPasswordResetEmail` / cabinet `http.post` send-confirm + change-email + display-name + change-password; SPA `confirmEmail` / `resetPassword` JSON | `onForgotPassword` + `POST /api/auth/send-email-confirmation` + `/api/auth/email` + `/api/auth/confirm-email` + `/api/auth/reset-password` + `/api/auth/display-name` + `/api/auth/change-password` |
 | Token key `colyseus-auth-token` | JWT verified in `onAuth` |
 | Pinia `stores/auth`, LoginPage, AccountPage, ForgotPasswordPage, ConfirmEmailPage, ResetPasswordPage, router guards | **N/A on server** — do not port Vue patterns |
 | Userdata `email` + `emailVerified` | Persisted on `users`; returned in userdata / JWT payload |

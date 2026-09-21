@@ -101,21 +101,23 @@ Do not invent room schemas, HTTP routes, or move payloads — note the server pa
 
 ### Forms, i18n, deploy
 
-- Login / register / guest / Google → `pages/LoginPage.vue` + `stores/auth.ts`.
-- Lobby create / join / list → `pages/LobbyPage.vue` + `stores/game.ts`.
+- Login / register / guest / Google → `pages/LoginPage.vue` + `stores/auth.ts` + `lib/passwordPolicy.ts` + `components/PasswordStrengthMeter.vue`.
+- Forgot / confirm / reset SPA → `pages/ForgotPasswordPage.vue` / `ConfirmEmailPage.vue` / `ResetPasswordPage.vue` + `stores/auth`.
+- Cabinet displayName / change-password / email → `pages/AccountPage.vue` + `stores/auth` (`updateDisplayName` / `changePassword` / `canChangePassword`).
+- Lobby create / join / list (join busy-lock; clear stale rooms) → `pages/LobbyPage.vue` + `stores/game.ts`.
 - Support create / list / thread / staff / admin roles → `pages/Support*.vue` / `AdminUsersPage.vue` + `stores/support.ts` (+ `auth.role` gating).
-- Board interaction / presence / `rejoinGame` → `pages/GamePage.vue` + `stores/game.ts`.
-- Locale messages → `src/i18n/` (default `en-US`; support keys under `support.*`).
+- Board interaction / continuous board-busy / presence reserve / `rejoinGame` → `pages/GamePage.vue` + `stores/game.ts`.
+- Locale messages → `src/i18n/` (default `en-US`; auth policy/cabinet + support keys).
 - Deploy / Pages 404 fallback → `.github/workflows/deploy.yml` (`quasar build -m spa`, `index.html` → `404.html`).
 
 ## Domain Hotspots
 
 | Domain | Start here |
 |--------|------------|
-| Auth (email/password, anonymous, Google, logout, role nav) | `pages/LoginPage.vue` + `stores/auth.ts`; router guards in `router/index.ts` |
-| Lobby (list / create / join; quiet resubscribe; Support link) | `pages/LobbyPage.vue` + `stores/game` `subscribeLobby` / `createGame` / `joinGame` |
+| Auth (email/password policy, anonymous, Google, cabinet profile, logout, role nav) | `pages/LoginPage.vue` / `AccountPage.vue` + `stores/auth.ts` + `lib/passwordPolicy.ts`; router guards in `router/index.ts` |
+| Lobby (list / create / join busy-lock; clear stale rooms; quiet resubscribe; Support link) | `pages/LobbyPage.vue` + `stores/game` `subscribeLobby` / `createGame` / `joinGame` |
 | Support (tickets / staff queue / admin roles) | `pages/Support*.vue` / `AdminUsersPage.vue` + `stores/support.ts` |
-| Game board (layout, unfinished pieces, finish/timeout UX, dual presence rings, strip, turn select/`sendMove`, rejoin) | `pages/GamePage.vue` + `stores/game` `onStateChange` / `sendMove` / `rejoinGame(roomId)` |
+| Game board (layout, unfinished pieces, continuous board-busy, finish/timeout UX, dual presence rings + seated top-row reserve, strip, turn select/`sendMove`, rejoin) | `pages/GamePage.vue` + `stores/game` `onStateChange` / `sendMove` / `rejoinGame(roomId)` |
 | Env / deploy | `.env.*`, `env.d.ts`, `boot/colyseus.ts`, `.github/workflows/deploy.yml` |
 | Theme / layout chrome | `App.vue` header + `stores/theme` + `boot/theme` + `css/*` (board CSS ≠ app Dark) |
 | i18n copy | `src/i18n/`, boot `i18n` |

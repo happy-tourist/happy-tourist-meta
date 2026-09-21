@@ -41,7 +41,8 @@ may also host copies later).
 | Layer | Path | Role |
 |-------|------|------|
 | Pages | `src/pages/*Page.vue` | Route-level screens; compose stores + Quasar + optional components |
-| Components | `src/components/` | Reusable widgets (mostly Quasar scaffold leftovers today) |
+| Components | `src/components/` | Reusable widgets (e.g. `PasswordStrengthMeter.vue`; plus Quasar scaffold leftovers) |
+| Lib | `src/lib/` | Pure helpers without Pinia/Colyseus I/O (`passwordPolicy.ts`, `passwordStrength.ts`) |
 | Stores | `src/stores/` | Pinia: `auth`, `theme`, `game`, `support` (+ unused scaffold `example-store`) |
 | Boot | `src/boot/` | Quasar boot: `theme`, `i18n`, `colyseus` (registered in `quasar.config.ts`; `framework.plugins: ['Dark']`) |
 | Router | `src/router/` | `routes.ts` + guards in `index.ts` (`filenameBasedRouting: false`) |
@@ -225,7 +226,7 @@ Registered in `quasar.config.ts` boot array: `theme`, `i18n`, `colyseus` (+ `fra
 
 | Domain | Page | Store / boot |
 |--------|------|----------------|
-| Auth | `LoginPage` / `ForgotPasswordPage` / `ConfirmEmailPage` / `ResetPasswordPage` / `AccountPage` | `stores/auth` + `boot/colyseus` |
+| Auth | `LoginPage` / `ForgotPasswordPage` / `ConfirmEmailPage` / `ResetPasswordPage` / `AccountPage` | `stores/auth` + `boot/colyseus`; policy/meter: `lib/passwordPolicy` + `components/PasswordStrengthMeter` |
 | Theme (chrome Dark) | `App.vue` header | `stores/theme` + `boot/theme` |
 | Lobby / rooms | `LobbyPage` | `stores/game.subscribeLobby` / create `{ maxSeats, grilleDensity, catapultDensity }` / join |
 | Game session | `GamePage` | `stores/game` room attach + seats / grilles / catapults / top + seated-HUD presence / say / strip + rescue/push + return strip icon (no modal); soft-drop gated by `consentedLeaving` |

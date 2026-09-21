@@ -3,13 +3,13 @@ name: client-work-with-auth
 description: >-
   Use when adding, changing, reviewing, or debugging client authentication:
   LoginPage register/login/anonymous guest/Google one-click, forgot-password,
-  ConfirmEmailPage / ResetPasswordPage (SPA + JSON), AccountPage (confirm button
-  + change email), session verify modal → cabinet, Pinia auth store,
-  client.auth from @colyseus/sdk, colyseus-auth-token, whenReady, router
-  requiresAuth / guest / requiresStaff / requiresAdmin guards, userdata
-  `role` / `isStaff` / `isAdmin` (nav only — server enforces), or logout in
-  this Quasar Vue 3 tourist SPA. No auto mail on register; confirm/reset UX
-  is client SPA not API HTML.
+  ConfirmEmailPage / ResetPasswordPage (SPA + JSON, password policy + meter),
+  AccountPage (displayName, change-password, confirm button + change email),
+  session verify modal → cabinet, Pinia auth store, client.auth from
+  @colyseus/sdk, colyseus-auth-token, whenReady, router requiresAuth / guest /
+  requiresStaff / requiresAdmin guards, userdata `role` / `isStaff` / `isAdmin`
+  (nav only — server enforces), or logout in this Quasar Vue 3 tourist SPA.
+  No auto mail on register; confirm/reset UX is client SPA not API HTML.
 ---
 
 # Work With Auth
@@ -25,12 +25,13 @@ Auth is **token-based Colyseus Auth** via `client.auth` from `@colyseus/sdk`. Th
 | Layer | Path | Role |
 |-------|------|------|
 | Boot | `src/boot/colyseus.ts` | `Client` singleton (`VITE_COLYSEUS_URL`); `$colyseus` on app |
-| Store | `src/stores/auth.ts` | Pinia setup store: register / login / loginAnonymously / loginWithGoogle / logout / forgotPassword / confirmEmail / resetPassword / sendEmailConfirmation / changeEmail / whenReady; exposes `role` / `isStaff` / `isAdmin` from userdata |
-| Login | `src/pages/LoginPage.vue` | Email/password register↔login + anonymous guest + Google; link to forgot; **no** post-register «письмо уже ушло» |
+| Store | `src/stores/auth.ts` | Pinia setup store: register / login / loginAnonymously / loginWithGoogle / logout / forgotPassword / confirmEmail / resetPassword / sendEmailConfirmation / changeEmail / updateDisplayName / changePassword / whenReady; exposes `role` / `isStaff` / `isAdmin` / `canChangePassword` from userdata |
+| Password policy | `src/lib/passwordPolicy.ts` + `PasswordStrengthMeter.vue` | Client mirror of server rules (≥8 + lower/upper/digit/symbol); zxcvbn meter advisory only; gate Submit on policy (register / reset / change) — not login |
+| Login | `src/pages/LoginPage.vue` | Email/password register↔login + anonymous guest + Google; register: name + policy meter; login: no complexity; link to forgot; **no** post-register «письмо уже ушло» |
 | Forgot | `src/pages/ForgotPasswordPage.vue` | Request reset email; `guest` route; success without «если существует»; `email_not_found` → RU not-found; back to Login |
 | Confirm | `src/pages/ConfirmEmailPage.vue` | Public hash route; **auto** `confirmEmail(token)` on mount (no Confirm button); success → lobby; RU errors |
-| Reset | `src/pages/ResetPasswordPage.vue` | Public hash route; password form → `resetPassword`; success → login; RU errors |
-| Cabinet | `src/pages/AccountPage.vue` | Current email; confirm button next to email if `!emailVerified`; change-email UI; success dialog after send (**RU**, mentions spam folder) |
+| Reset | `src/pages/ResetPasswordPage.vue` | Public hash route; same policy + meter → `resetPassword`; success → login; RU errors |
+| Cabinet | `src/pages/AccountPage.vue` | displayName form; change-password if `canChangePassword` (hide Google/anonymous); email confirm + change-email; soft-verify (no hard-gate); logout |
 | App shell | `src/App.vue` | Session reminder modal → cabinet (once per `sessionStorage`; mark seen **when shown**); skip anonymous + auth-email public routes |
 | Router | `src/router/index.ts` | `beforeEach` awaits `whenReady()`; `requiresAuth` / `guest` / `requiresStaff` / `requiresAdmin` (staff/admin → `/support` if denied; **nav only**) |
 | Routes | `src/router/routes.ts` | `/login`, `/forgot-password` `guest`; `/confirm-email`, `/reset-password` **public** (no `guest` redirect — logged-in confirm must run); `/lobby`, `/account`, `/support` (+ staff/ticket), `/admin/users`, `/game/:roomId` `requiresAuth` |
@@ -76,6 +77,8 @@ App boot → Client(VITE_COLYSEUS_URL)
         │
         ▼
   [/account] AccountPage
+        ├─ updateDisplayName → POST /api/auth/display-name
+        ├─ changePassword → POST /api/auth/change-password → logout → /login
         ├─ sendEmailConfirmation → POST /api/auth/send-email-confirmation → dialog
         └─ changeEmail → POST /api/auth/email (resets verified; no auto mail)
         │
@@ -111,7 +114,8 @@ File: `src/stores/auth.ts` (setup store).
 | `ready` | First `onChange` completed (session restore settled) |
 | `isAuthenticated` | `Boolean(token && user)` |
 | `needsEmailVerification` | Registered (has email, not anonymous) and `emailVerified !== true` |
-| `displayName` | `name` → `email` → `'Гость'` if anonymous → `'Игрок'` |
+| `displayName` | persisted `user.displayName` → `name` → `email` → `'Гость'` if anonymous → `'Игрок'` |
+| `canChangePassword` | `user.hasPassword === true` (and registered) — show change-password in cabinet |
 | `role` | Product role from userdata (`user` \| `moderator` \| `admin`; default `user`) |
 | `isStaff` | `role === 'moderator' \|\| role === 'admin'` — staff support queue nav |
 | `isAdmin` | `role === 'admin'` — admin users page nav (SC-ROLE-08) |
@@ -130,6 +134,8 @@ Actions (all set `loading`/`error`; rethrow after storing message):
 | `resetPassword(token, password)` | `client.http.post('/api/auth/reset-password', { body: { token, password } })` |
 | `sendEmailConfirmation()` | `client.http.post('/api/auth/send-email-confirmation')` |
 | `changeEmail(email)` | `client.http.post('/api/auth/email', { body: { email } })` then apply returned token/user + `refreshUserData` |
+| `updateDisplayName(displayName)` | `client.http.post('/api/auth/display-name', { body: { displayName } })` then refresh userdata |
+| `changePassword(current, next)` | `client.http.post('/api/auth/change-password', …)` then **`logout()`** (tokenVersion bump) |
 | `refreshUserData()` | `client.auth.getUserData` into store |
 | `whenReady()` | Resolves when `ready` (or immediately if already ready) |
 
@@ -152,8 +158,8 @@ must not call `Dark` or theme HTTP.
 File: `src/pages/LoginPage.vue`.
 
 - Local `isRegister` toggles register ↔ login UI (not Vuex/Pinia).
-- Register shows optional display name → passed as `{ name }` options.
-- Email/password validation: required email; password min 6 chars.
+- Register requires display name (trim ≥ 1) → `{ name }` options; password uses shared policy + `PasswordStrengthMeter` (Submit only when policy passes — not zxcvbn score).
+- Login: required email; password required only (no complexity / meter).
 - Errors: `q-banner` bound to `auth.error`; clear on mode toggle.
 - Submit → `auth.register` or `auth.login` → `goAfterLogin()`.
 - Guest → `auth.loginAnonymously(options?)` → same redirect.
@@ -186,7 +192,7 @@ File: `src/pages/ConfirmEmailPage.vue` (public `/confirm-email`).
 
 File: `src/pages/ResetPasswordPage.vue` (public `/reset-password`).
 
-- Form: new password (min 6) → `auth.resetPassword(token, password)`.
+- Form: new password with same policy + meter as register → `auth.resetPassword(token, password)`.
 - Success RU banner (`auth.resetSuccess`), then `router.replace({ name: 'login' })` (SC-RESET-02/08).
 - Expired / invalid / already-used → RU banner.
 
@@ -195,10 +201,12 @@ File: `src/pages/ResetPasswordPage.vue` (public `/reset-password`).
 File: `src/pages/AccountPage.vue` (`requiresAuth`, `/account`).
 
 - Cabinet is for **registered non-anonymous** users only: on mount, if `auth.user?.anonymous` → `router.replace({ name: 'lobby' })` (design D7). Nav links in App/Lobby already hide for anonymous.
+- Display-name form → `updateDisplayName` (trim, min 1).
+- Change-password form (policy + meter) only when `canChangePassword`; hide for Google / anonymous; success → `changePassword` → logout → login.
 - Show current email; if `emailVerified` — caption confirmed.
-- If registered and `!emailVerified` — confirm button **next to** the email → `sendEmailConfirmation` → dialog `auth.confirmSentDialog` («письмо отправлено, проверьте почту **и папку Спам**»).
+- If registered and `!emailVerified` — confirm button **next to** the email → `sendEmailConfirmation` → dialog `auth.confirmSentDialog` («письмо отправлено, проверьте почту **и папку Спам**»). Soft-verify only — no hard-gate on lobby/game.
 - Change-email form → `changeEmail` (server resets verified; **no** auto-send).
-- Navigation from App / lobby into cabinet.
+- Logout action; navigation from App / lobby into cabinet.
 
 **Language canon:** human-facing auth-email strings (`auth.confirmSentDialog`, `auth.forgotSuccess`, confirm/reset outcomes, cabinet/forgot copy) are **Russian** in `src/i18n/en-US/` (technical locale name). New copy in this contour stays RU; do not require EN.
 

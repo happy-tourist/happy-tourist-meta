@@ -3,11 +3,12 @@ name: work-with-localization
 description: >-
   Patterns for vue-i18n strings in the happy-tourist Quasar client (boot/i18n,
   src/i18n, useI18n / $t). Use when adding or changing translations or
-  user-facing copy in pages/components — incl. lobby grilleDensity +
-  catapultDensity labels, game rescue / returnAffordance / pushAffordance /
-  all-jail modals (no touristChipAria; no returnConfirm*), and support
-  topics/statuses/guest warning / staff filters / emailUnverified /
-  rate-limit errors / roles (RU under en-US).
+  user-facing copy in pages/components — incl. auth password policy / strength /
+  displayName / change-password keys, lobby grilleDensity + catapultDensity
+  labels, game rescue / returnAffordance / pushAffordance / all-jail modals
+  (no touristChipAria; no returnConfirm*), and support topics/statuses/guest
+  warning / staff filters / emailUnverified / rate-limit errors / roles (RU
+  under en-US).
 ---
 
 # Work With Localization
@@ -20,9 +21,9 @@ There is **no** country config, phone masks, locale switcher, or brand localizat
 
 ## Reality check
 
-Boot and message catalog exist; Login / Lobby still mostly **hardcode Russian**. Scaffold keys (`failed` / `success`) are barely used. **Exceptions already on i18n:** `login.google`; **auth-email** `auth.forgot*` / `auth.confirmSentDialog` / cabinet / verify-reminder keys (RU; post-send texts mention папка «Спам»); `game.say.*` (preset labels / affordance — never put display copy in the wire `presetId`); `game.readyButton` / `game.countdownSoon`; leave UX `game.leave` (accessible name for icon-only Game exit — no visible `:label`) / `game.leaveConfirm` / `game.leaveCancel` / `game.leaveExit`; finish UX `game.finishPlaceModal` / `game.finishPlaceModalOk` / `game.finishStripAria` / `game.finishPlaceBadgeAria`; solo end UX `game.timeExpiredModal` / `game.timeExpiredModalOk` (timer) + `game.stepsExhaustedModal` / `game.stepsExhaustedModalOk` (steps loss — SC-PRESENCE-21); budgets/peek UX `game.stepsCounterAria` / `game.peeksCounterAria` / `game.budgetInfinity` / `game.endTurn` (aria-only for icon `skip_next` on own avatar — no visible label) / `game.peekModal` / `game.peekCorrect` / `game.peekWrong` / `game.peekAffordance` / `game.soloUnlimitedModal` / `game.soloUnlimitedModalOk` (peeks∞ / steps finite); lobby grille density `lobby.grilleDensity` / `lobby.grilleDensityFew` / `lobby.grilleDensityMedium` / `lobby.grilleDensityMany` (мало/средне/много); lobby catapult density `lobby.catapultDensity` / `lobby.catapultDensityFew` / `lobby.catapultDensityMedium` / `lobby.catapultDensityMany` (мало/средне/много); grille UX `game.rescueAffordance` / `game.pushAffordance` / `game.returnAffordance` / `game.allJailWarningModal` / `game.allJailWarningModalOk` (**no** `returnConfirm*` — return uses strip icon only); **support** `support.*` (topics/statuses/guest warning / staff+admin nav / rate-limit `support.errors.*` / roles — RU). Product copy lives under locale key **`en-US`** (Russian strings) — there is no separate `ru-RU` catalog. Do **not** reintroduce `game.touristChipAria` (chip/`q-menu` removed).
+Boot and message catalog exist; Login / Lobby still mostly **hardcode Russian**. Scaffold keys (`failed` / `success`) are barely used. **Exceptions already on i18n:** `login.google`; **auth-email** `auth.forgot*` / `auth.confirmSentDialog` / cabinet / verify-reminder keys (RU; post-send texts mention папка «Спам»); **password / cabinet profile** `auth.passwordPolicy` / `auth.passwordRule*` / `auth.passwordStrength*` / `auth.displayName*` / `auth.changePassword*` / `auth.currentPassword*` / `auth.logout` (RU; register/reset/change-password); `game.say.*` (preset labels / affordance — never put display copy in the wire `presetId`); `game.readyButton` / `game.countdownSoon`; leave UX `game.leave` (accessible name for icon-only Game exit — no visible `:label`) / `game.leaveConfirm` / `game.leaveCancel` / `game.leaveExit`; finish UX `game.finishPlaceModal` / `game.finishPlaceModalOk` / `game.finishStripAria` / `game.finishPlaceBadgeAria`; solo end UX `game.timeExpiredModal` / `game.timeExpiredModalOk` (timer) + `game.stepsExhaustedModal` / `game.stepsExhaustedModalOk` (steps loss — SC-PRESENCE-21); budgets/peek UX `game.stepsCounterAria` / `game.peeksCounterAria` / `game.budgetInfinity` / `game.endTurn` (aria-only for icon `skip_next` on own avatar — no visible label) / `game.peekModal` / `game.peekCorrect` / `game.peekWrong` / `game.peekAffordance` / `game.soloUnlimitedModal` / `game.soloUnlimitedModalOk` (peeks∞ / steps finite); lobby grille density `lobby.grilleDensity` / `lobby.grilleDensityFew` / `lobby.grilleDensityMedium` / `lobby.grilleDensityMany` (мало/средне/много); lobby catapult density `lobby.catapultDensity` / `lobby.catapultDensityFew` / `lobby.catapultDensityMedium` / `lobby.catapultDensityMany` (мало/средне/много); grille UX `game.rescueAffordance` / `game.pushAffordance` / `game.returnAffordance` / `game.allJailWarningModal` / `game.allJailWarningModalOk` (**no** `returnConfirm*` — return uses strip icon only); **support** `support.*` (topics/statuses/guest warning / staff+admin nav / rate-limit `support.errors.*` / roles — RU). Product copy lives under locale key **`en-US`** (Russian strings) — there is no separate `ru-RU` catalog. Do **not** reintroduce `game.touristChipAria` (chip/`q-menu` removed).
 
-**Auth-email language canon:** new human-facing strings in the auth-email contour (confirm/forgot success, confirm/reset SPA outcomes, cabinet, verify reminder) MUST be **Russian**. After any mail send, remind the user to check the spam folder («Спам»). Forgot success must **not** hedge with «если аккаунт существует»; unknown email → `auth.forgotNotFound`. Do not require English copy for these surfaces.
+**Auth-email language canon:** new human-facing strings in the auth-email contour (confirm/forgot success, confirm/reset SPA outcomes, cabinet, verify reminder, **password policy / strength / displayName / change-password**) MUST be **Russian**. After any mail send, remind the user to check the spam folder («Спам»). Forgot success must **not** hedge with «если аккаунт существует»; unknown email → `auth.forgotNotFound`. Do not require English copy for these surfaces.
 
 When adding **new** user-facing strings, prefer i18n keys via `$t` / `useI18n`. Do not mass-migrate hardcoded Russian unless the user asks.
 
@@ -79,6 +80,10 @@ export default {
       'Письмо со ссылкой отправлено. Проверьте почту и папку «Спам».',
     forgotNotFound: 'Аккаунт с таким email не найден',
     confirmSentDialog: 'Письмо отправлено. Проверьте почту и папку «Спам».',
+    passwordPolicy:
+      'Пароль: минимум 8 символов, латиница (строчная и заглавная), цифра и символ',
+    passwordRuleMin: 'Не меньше 8 символов',
+    // … passwordStrength* / displayName* / changePassword* / logout — human-facing RU
     // … cabinet / forgot / confirm / reset keys — human-facing RU
   },
   lobby: {

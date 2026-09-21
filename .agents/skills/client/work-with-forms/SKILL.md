@@ -3,9 +3,11 @@ name: work-with-forms
 description: >-
   Use when creating, changing, reviewing, or debugging Vue 3 forms in the
   happy-tourist client — Quasar q-form + q-input :rules, LoginPage register /
-  login toggle, ForgotPasswordPage / ResetPasswordPage, SupportPage create
-  ticket (topic + body), anonymous guest / Google one-click buttons, auth or
-  support store submit, or q-banner errors.
+  login toggle, ForgotPasswordPage / ResetPasswordPage / AccountPage
+  (displayName + change-password), shared password policy + PasswordStrengthMeter
+  (register/reset/change; login unchanged), SupportPage create ticket (topic +
+  body), anonymous guest / Google one-click buttons, auth or support store
+  submit, or q-banner errors.
 ---
 
 # Work With Forms
@@ -20,7 +22,8 @@ This package validates with Quasar `q-form` + `q-input` `:rules` and `<script se
 | --- | --- | --- |
 | Login | `src/pages/LoginPage.vue` | Email/password register or login → `auth`; guest + Google via separate buttons |
 | Forgot | `src/pages/ForgotPasswordPage.vue` | Email → `auth.forgotPassword`; `email_not_found` → RU not-found |
-| Reset | `src/pages/ResetPasswordPage.vue` | New password (min 6) → `auth.resetPassword(token, password)`; public route |
+| Reset | `src/pages/ResetPasswordPage.vue` | New password (shared policy + meter) → `auth.resetPassword(token, password)`; public route |
+| Cabinet | `src/pages/AccountPage.vue` | displayName + change-password (if `canChangePassword`) + email confirm/change; logout |
 | Support create | `src/pages/SupportPage.vue` | Topic `q-select` + body textarea → `support.createTicket`; on success clear → `await nextTick()` → `resetValidation`; `lazy-rules` on inputs; rate-limit codes → `support.errors.*` |
 | Support reply | `src/pages/SupportTicketPage.vue` | Body textarea → `support.postMessage`; on success clear → `await nextTick()` → `resetValidation`; `lazy-rules` on body |
 
@@ -29,10 +32,12 @@ Shared pieces:
 | Concern | Location |
 | --- | --- |
 | Auth actions / `error` / `loading` | `src/stores/auth.ts` |
+| Password policy (Submit gate) | `src/lib/passwordPolicy.ts` — ≥8 + lower/upper/digit/symbol; mirror of server |
+| Strength meter (advisory) | `src/components/PasswordStrengthMeter.vue` + `src/lib/passwordStrength.ts` (zxcvbn-ts; never gates Submit) |
 | Colyseus client | `src/boot/colyseus.ts` (`client.auth.*`) |
 | Route after success | `route.query.redirect` or `/lobby` |
 
-No captcha. No shared validation utils yet — rules are inline on `q-input`.
+No captcha. Password **complexity** uses shared `passwordPolicyRule` / meter; other field rules stay inline on `q-input`. Login sign-in keeps floor ≥6 only (no product policy / meter).
 
 ## Core Pattern (script setup + Quasar)
 
@@ -127,13 +132,20 @@ async function onSuccessClear() {
 
 - `q-form` → `onSubmit`; primary submit is `q-btn type="submit"`.
 - Toggle `isRegister`: same form for register vs login; clear `auth.error` in `toggleMode`.
-- Register: optional `displayName` → `auth.register(email, password, displayName ? { name } : {})`.
-- Login: `auth.login(email, password)`.
+- Register: required `displayName` (trim ≥ 1) → `auth.register(email, password, { name })`; password uses shared policy + `PasswordStrengthMeter` (Submit only when policy OK — not zxcvbn score).
+- Login: `auth.login(email, password)` — no complexity / meter.
 - Anonymous: **outside** the form (`q-card-actions`) → `auth.loginAnonymously(options)`; still uses `:loading="auth.loading"`. Does not go through `q-form` submit / email-password rules.
 - Google one-click: **outside** the form (same `q-card-actions`) → `auth.loginWithGoogle()`; label via `$t('login.google')`; same loading/error/redirect pattern as guest.
-- API failures: store sets `auth.error`; page shows `q-banner`. Handlers `catch` empty after store throw.
+- API failures: store sets `auth.error`; page shows `q-banner` (map `password_policy_failed` → `$t('auth.passwordPolicy')`). Handlers `catch` empty after store throw.
 - Success: `router.replace(route.query.redirect || '/lobby')`.
 - Password visibility toggle via `#append` `q-icon` — UI only.
+
+### ResetPasswordPage / AccountPage
+
+- Reset: same policy + meter → `auth.resetPassword`; success → login.
+- Account displayName: trim ≥ 1 → `auth.updateDisplayName`.
+- Account change-password: only when `auth.canChangePassword`; policy + meter on new password → `auth.changePassword` → logout → login.
+- Map store codes (`invalid_current_password`, `password_policy_failed`, `password_change_unavailable`, `display_name_invalid`) to RU `$t('auth.*')`.
 
 ## Submit And Errors
 
@@ -151,7 +163,7 @@ Keep I/O in `stores/auth` (`register` / `login` / `loginAnonymously` / `loginWit
 
 1. `<script setup lang="ts">`; field state in `ref()`.
 2. Wrap inputs in `<q-form @submit.prevent="…">`.
-3. Put `:rules` on required `q-input`s (email required; password min 6).
+3. Put `:rules` on required `q-input`s (email required; register/reset/change password → shared policy helper, not bare min 6).
 4. Show `auth.error` (or the relevant store error) with `q-banner`.
 5. Bind `:loading` on submit (and any parallel action buttons).
 6. Auth → call Pinia `auth` actions; navigate only after success.
@@ -161,7 +173,8 @@ Keep I/O in `stores/auth` (`register` / `login` / `loginAnonymously` / `loginWit
 
 - Match existing Quasar look: `outlined` + `dense` on login inputs.
 - Clear store error when switching register ↔ login.
-- Pass optional `{ name }` only when display name is non-empty.
+- Register: always pass trimmed `{ name }` (required); anonymous may omit empty name.
+- Reuse `passwordPolicyRule` + `PasswordStrengthMeter` on register / reset / change-password.
 - Keep anonymous login and Google one-click as buttons outside the form.
 
 ## Don't
@@ -170,4 +183,5 @@ Keep I/O in `stores/auth` (`register` / `login` / `loginAnonymously` / `loginWit
 - Call `client.auth.*` from the page — use `useAuthStore()`.
 - Put guest login behind email/password `:rules`.
 - Invent a second error channel when `auth.error` + `q-banner` already covers API failures.
-- Lower password min below 6 without a product change.
+- Gate Submit on zxcvbn score, or weaken product policy below ≥8 + lower/upper/digit/symbol without a product change.
+- Show change-password for Google / no-`hasPassword` accounts.

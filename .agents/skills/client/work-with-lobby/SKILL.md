@@ -56,6 +56,8 @@ Sibling server: `../happy-tourist-server`. Coordinate room name (`tourist`), `lo
 | Create modal → `createGame({ maxSeats, grilleDensity, catapultDensity })`; list click → `joinGame(roomId)` | Invent parallel enter helpers; restore «Играть» / bare `joinOrCreate` |
 | Navigate to `/game/:roomId` only after a successful enter | Stay on lobby with a live room and no route change |
 | Bind listing loading / `creating` / `joining` | Leave buttons clickable during connect |
+| Join busy-lock: early-return if `joining`; disable rows / non-clickable while joining (SC-LOBBY-19) | Allow double-join from row + button |
+| Clear `rooms = []` on subscribe start / unsubscribe / leave; keep `listing` until fresh `rooms` snapshot (SC-LOBBY-20) | Flash stale rooms after leave/resubscribe |
 | Show `game.error` with `q-banner` for real listing failure | Duplicate a second error channel; treat transient reconnect noise as SC-LOBBY-07 |
 | Logout via `useAuthStore().logout()` after `leaveGame()` | Call `client.auth.signOut` from LobbyPage |
 | Keep room type / metadata in sync with `../happy-tourist-server` | Change `TOURIST_ROOM` / `LOBBY_ROOM` without the server; add LobbyRoom grace on server |
@@ -79,6 +81,7 @@ async subscribeLobby() {
   await this.unsubscribeLobby();
   this.lobbyWanted = true;
   this.listing = true;
+  this.rooms = []; // SC-LOBBY-20 — no stale list until snapshot
   this.error = null;
 
   try {
@@ -108,6 +111,7 @@ async _joinLobbyRoom() {
 
 async unsubscribeLobby() {
   this.lobbyWanted = false;
+  this.rooms = []; // SC-LOBBY-20
   const lobby = this.lobbyRoom;
   this.lobbyRoom = null;
   if (lobby) {

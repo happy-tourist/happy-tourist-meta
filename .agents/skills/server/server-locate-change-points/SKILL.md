@@ -96,6 +96,9 @@ Use these rules to pick the layer before naming files.
 |-------------------|--------|
 | Room join gate / JWT verify | `MyRoom.onAuth` (`JWT.verify`) — userdata flows to `onJoin` |
 | Register / login / anonymous / Google OAuth HTTP | Built-in `@colyseus/auth` (`/auth/*`) via `database: db` in `app.config.ts`; Google via `src/config/auth.ts` `addProvider` — avoid reinventing unless extending |
+| Product password policy (≥8 + lower/upper/digit/symbol) | `src/lib/passwordPolicy.ts`; wrap `Hash.make` in `configureAuthEmailFlows`; also assert on JSON reset / change-password |
+| Register `name` → `displayName` | `src/config/auth.ts` `wireRegisterDisplayName` (wrap `onRegisterWithEmailAndPassword`) |
+| Cabinet display-name / change-password HTTP | `POST /api/auth/display-name` + `POST /api/auth/change-password` in `src/app.config.ts` (`createEndpoint`); bumpTokenVersion on password change/reset |
 | Persisted profile fields (`displayName`, `rating`, `gamesPlayed`, `gamesWon`, nullable `theme`, `emailVerified`, `htRole`, …) | `src/db/schema.ts` users extension — **NOT NULL** custom columns need `.default(...)` so `/auth/register` / `/auth/login` do not fail; nullable prefs like `theme` do not; **do not** name JS field `role` |
 | Support tickets / messages | `src/db/schema.ts` decls + `src/lib/support.ts` (`ensureSupportTables`) — not SchemaSet auto-sync |
 | GameDatabase wiring / schemas map | `src/db/index.ts` |
@@ -117,6 +120,8 @@ Use these rules to pick the layer before naming files.
 |-------------------|--------|
 | Room create/join, auth JWT connect | `test/MyRoom.test.ts` (update room name / contract when registration changes) |
 | Theme preference HTTP | `test/theme.test.ts` (`GET`/`POST /api/theme` auth + persist + reload GET) |
+| Auth email + password policy | `test/zz-authEmail.test.ts` |
+| Auth profile (displayName / change-password) | `test/zz-authProfile.test.ts` |
 | Multi-client join pressure | `loadtest/example.ts` (`joinOrCreate`; `--room` / `--numClients`) |
 
 ## Domain Hotspots
@@ -175,7 +180,7 @@ Use these rules to pick the layer before naming files.
 | OAuth providers (Google) | `src/config/auth.ts` (`addProvider`); import from `app.config.ts` |
 | User columns / defaults | `src/db/schema.ts` |
 | Express / CORS / health | `express(app)` in `src/app.config.ts` |
-| Custom HTTP routes (`/api/hello`, `GET|POST /api/theme`, `/api/support/*`, `/api/admin/*`, …) | `routes` / `createEndpoint` in `src/app.config.ts` (+ helpers in `src/lib/support.ts`) |
+| Custom HTTP routes (`/api/hello`, `GET|POST /api/theme`, `/api/auth/*` send-confirm/email/confirm/reset/display-name/change-password, `/api/support/*`, `/api/admin/*`, …) | `routes` / `createEndpoint` in `src/app.config.ts` (+ helpers in `src/lib/support.ts` / `src/lib/passwordPolicy.ts`) |
 | Env secrets / DB path | `.env.example`, `.env.development`, `.env.production` |
 | Tests | `test/**.test.ts` — boots `appConfig`, JWT, room name |
 | Loadtest | `loadtest/example.ts` |

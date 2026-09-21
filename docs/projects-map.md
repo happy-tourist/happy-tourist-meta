@@ -78,13 +78,14 @@ server: C:/Users/You/work/happy-tourist-server
 | `client.src` | `../happy-tourist.github.io/src/` | исходники UI |
 | `client.pages` | `../happy-tourist.github.io/src/pages/` | route pages (Login/Lobby/Support/Admin/Game) |
 | `client.stores` | `../happy-tourist.github.io/src/stores/` | Pinia (`auth`, `theme`, `game`, `support`) |
+| `client.lib` | `../happy-tourist.github.io/src/lib/` | Pure client helpers (`passwordPolicy`, `passwordStrength`) |
 | `client.assets` | `../happy-tourist.github.io/src/assets/` | Static assets (e.g. `tourists/tourist{1–4}.png` pieces; `grilles/grille.png` holding overlay; `catapults/catapult.png` + `catapult-broken.png` reveal) |
 | `client.boot` | `../happy-tourist.github.io/src/boot/` | Quasar boot (`theme`, `colyseus`, `i18n`) |
 | `server` | `../happy-tourist-server/` | Colyseus backend |
 | `server.agents` | `../happy-tourist-server/AGENTS.md` | продукт / стек / домены server |
 | `server.src` | `../happy-tourist-server/src/` | исходники сервера |
 | `server.config` | `../happy-tourist-server/src/config/` | OAuth providers (`auth.ts` / `addProvider`) |
-| `server.lib` | `../happy-tourist-server/src/lib/` | mailer + support tickets/roles helpers |
+| `server.lib` | `../happy-tourist-server/src/lib/` | mailer + support tickets/roles + passwordPolicy helpers |
 | `server.rooms` | `../happy-tourist-server/src/rooms/` | Room handlers |
 | `server.schema` | `../happy-tourist-server/src/rooms/schema/` | `@colyseus/schema` state |
 | `server.game` | `../happy-tourist-server/src/game/` | Pure authoritative rules (`touristMove.ts`) |
