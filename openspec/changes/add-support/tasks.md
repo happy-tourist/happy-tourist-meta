@@ -161,3 +161,26 @@
 - [x] 6.1 При необходимости точечно обновить skills/AGENTS: create-ack mail, staff query filters, admin list non-anonymous + emailVerified badge
 
 
+
+## 7. Client — reply UX (red empty + thread→form gap)
+
+
+
+- [x] 7.1 Прочитать design D8/D12, SC-SUP-24/26; `SupportTicketPage.vue`, `SupportPage.vue`; skill `work-with-forms`
+
+
+
+- [x] 7.2 Create/reply: после успеха clear → `await nextTick()` → `resetValidation`; `lazy-rules` на body (и create) inputs — без красного empty (SC-SUP-24)
+
+
+
+- [x] 7.3 Тред: видимый отступ между блоком сообщений и полем «Ответ» (SC-SUP-26)
+
+
+
+- [x] 7.4 В `../happy-tourist.github.io`: `npm run lint` и `npm run typecheck`; при падении починить
+
+
+
+- [x] 7.5 При необходимости точечно обновить `work-with-forms`: lazy-rules + nextTick перед resetValidation после clear
+

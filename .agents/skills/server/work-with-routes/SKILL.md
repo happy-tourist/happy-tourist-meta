@@ -105,12 +105,12 @@ For CORS / monitor details use `work-with-middleware` and `work-with-config`.
 | GET | `/api/support/tickets` | `createEndpoint` | JWT; own list |
 | GET | `/api/support/tickets/:id` | `createEndpoint` | JWT; detail + messages (owner or staff) |
 | POST | `/api/support/tickets/:id/messages` | `createEndpoint` | JWT; author/staff reply; closed rejects; author from `awaiting_response` → `in_progress` with `notify: false` (D4 — no status mail on self-reply bump) |
-| POST | `/api/support/tickets/:id/close` | `createEndpoint` | JWT; author close |
+| POST | `/api/support/tickets/:id/close` | `createEndpoint` | JWT; author **or** staff close |
 | GET | `/api/support/staff/tickets` | `createEndpoint` | JWT moderator\|admin; query `topic` (optional), `status`=`open`\|`closed`\|`all` (default `open`); cap ~50 **after** filter |
 | POST | `/api/support/tickets/:id/take` | `createEndpoint` | JWT staff; take into `in_progress` |
 | POST | `/api/support/tickets/:id/status` | `createEndpoint` | JWT staff; `{ status }` |
 | GET | `/api/admin/users` | `createEndpoint` | JWT admin; **exclude** anonymous; include `emailVerified` (+ id/email/role/displayName) |
-| POST | `/api/admin/users/:id/role` | `createEndpoint` | JWT admin; `{ role }`; **POST** (not PATCH) |
+| POST | `/api/admin/users/:id/role` | `createEndpoint` | JWT admin; `{ role }`; **POST** (not PATCH); response user includes `emailVerified` (same as list) |
 | GET | `/health` | `express` hook | `{ status, uptime }` — deploy / monitor |
 | GET | `/hi` | `express` hook | Plain text smoke |
 | * | `/auth/*` | `@colyseus/auth` | Present when `database: db` is set (register/login/forgot; built-in HTML not product UX) |

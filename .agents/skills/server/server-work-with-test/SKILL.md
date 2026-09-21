@@ -67,7 +67,7 @@ tests; fix failures before claiming done.
 | HTTP helpers (`/health`, `/rooms/:name`) | `test/http.test.ts` or next to the feature under test |
 | Preference HTTP (`GET`/`POST /api/theme`) | `test/theme.test.ts` (auth reject + persist/login + GET after POST same JWT + cross-device older JWT) |
 | Auth email flows (confirm / forgot / change-email / cooldown) | `test/zz-authEmail.test.ts` — mock `setSendEmailImpl`; `clearConfirmSendCooldownForTests`; `keepLatestRequestListener` after boot |
-| Support tickets + roles (SC-SUP-* / SC-ROLE-*) | `test/support.test.ts` — mock mailer; `ensureSupportTables` / `bootstrapAdminIds` / `setUserRoleForTests` / `runAutoClose`; cover create-ack (SC-SUP-21), staff `topic`/`status` filters (SC-SUP-22), author self-reply **no** status mail, admin list excludes anonymous + `emailVerified`; `keepLatestRequestListener` after boot |
+| Support tickets + roles (SC-SUP-* / SC-ROLE-*) | `test/support.test.ts` — mock mailer; `ensureSupportTables` / `bootstrapAdminIds` / `setUserRoleForTests` / `runAutoClose`; cover create-ack (SC-SUP-21), staff `topic`/`status` filters (SC-SUP-22), author self-reply **no** status mail, admin list excludes anonymous + `emailVerified`, role POST response includes `emailVerified` (SC-ROLE-09); `keepLatestRequestListener` after boot |
 
 Mocha picks up `test/**.test.ts` via the npm script. Mirror room names under
 `test/` as rooms grow; keep relative imports to `../src/...`.

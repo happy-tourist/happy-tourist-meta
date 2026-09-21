@@ -1,6 +1,6 @@
 ## Why
 
-Игрокам (включая гостей) нужен канал связи с командой: баг, предложение, отзыв, вопрос — без сокета и вне игровых комнат. После первой поставки support: в admin-списке мешают anonymous-гости; при создании тикета нет ack-письма; staff-очередь без фильтров; мелкие UX-дефекты формы и треда.
+Игрокам (включая гостей) нужен канал связи с командой: баг, предложение, отзыв, вопрос — без сокета и вне игровых комнат. После первой поставки support: в admin-списке мешают anonymous-гости; при создании тикета нет ack-письма; staff-очередь без фильтров; мелкие UX-дефекты формы и треда. После polish: после успешного ответа поле «Ответ» остаётся в красном error-state без текста ошибки; между последним сообщением треда и полем ввода нет видимого отступа.
 
 ## What Changes
 
@@ -32,7 +32,7 @@
 - **Почта:** smtp.bz → автору с email при **создании** (получили) и при **смене статуса**; anonymous — без писем
 - **Роли / admin list:** `BOOTSTRAP_ADMIN_IDS`; admin UI — только зарегистрированные (не anonymous), вкл. Google; индикация неподтверждённой почты
 - **Staff queue:** фильтр по теме (default все) и статусу open|closed|all (default open = не closed)
-- **UX polish:** сброс валидации формы после успешной отправки; отступ между сообщениями в треде; усиленное guest-предупреждение
+- **UX polish:** сброс валидации формы после успешной отправки (без ложного красного empty после clear); отступ между сообщениями **и** между тредом и полем ответа; усиленное guest-предупреждение
 - **Навигация:** «Поддержка» в хедере лобби
 
 ## Out of scope
@@ -60,5 +60,6 @@
 
 - Explore 2026-09-21 (v1): anonymous-гость; warn; roles; awaiting; limits; mail on status; env bootstrap; no staff mail; closed read-only
 - Explore polish 2026-09-21: D1 admin = non-anonymous + unverified badge (no guest purge); D2 mail on create ack; staff filters; form resetValidation; thread spacing; guest warn session loss
+- Explore UX 2026-09-21: reply field red after success (Quasar rules race); gap thread → reply input
 - Sibling AGENTS: client/server Support domain
 - Почта: `openspec/specs/auth/email-verification`, `auth/password-reset`

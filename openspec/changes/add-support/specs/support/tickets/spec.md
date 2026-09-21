@@ -29,8 +29,9 @@
 | SC-SUP-21 | server: support.test.ts |
 | SC-SUP-22 | server: support.test.ts |
 | SC-SUP-23 | client: SupportStaffPage filters |
-| SC-SUP-24 | client: SupportPage / SupportTicketPage resetValidation |
-| SC-SUP-25 | client: SupportTicketPage thread spacing |
+| SC-SUP-24 | client: SupportPage / SupportTicketPage clear + no red empty (lazy-rules / nextTick reset) |
+| SC-SUP-25 | client: SupportTicketPage thread spacing (messages + thread→form) |
+| SC-SUP-26 | client: SupportTicketPage gap between last message and reply composer |
 
 ## ADDED Requirements
 
@@ -103,6 +104,13 @@ The author MUST see a list of their own tickets and MUST open a ticket detail th
 - **GIVEN** a ticket detail with two or more messages
 - **WHEN** the author or staff views the thread
 - **THEN** messages are shown with visible separation between entries
+
+#### Scenario [SC-SUP-26]: Visible gap between thread and reply composer
+
+- **GIVEN** an open ticket with at least one message and a visible reply form
+- **WHEN** the author or staff views the ticket detail
+- **THEN** there is a visible vertical gap between the last message block and the reply input
+- **AND** the message block border and the reply field border are not flush against each other
 
 ### Requirement: Author and staff may post messages while the ticket is open
 
@@ -241,7 +249,7 @@ While the user is on the lobby experience with a valid session, the lobby header
 
 ### Requirement: Support forms clear validation after successful submit
 
-After a successful create or reply submit, the client MUST clear the message field and MUST NOT leave the empty field in an error/validation-failed visual state (empty after success is expected).
+After a successful create or reply submit, the client MUST clear the message field and MUST NOT leave the empty field in an error/validation-failed visual state (empty after success is expected). Clearing the model MUST NOT by itself re-trigger a required-field error for that empty state after success.
 
 #### Scenario [SC-SUP-24]: Create or reply does not show empty-field error after success
 
@@ -249,3 +257,4 @@ After a successful create or reply submit, the client MUST clear the message fie
 - **WHEN** the user successfully submits a non-empty message
 - **THEN** the message field is cleared
 - **AND** the form does not show a validation error for the empty field solely because of that clear
+- **AND** the empty field is not left in a red/error visual state without a real validation failure

@@ -7,7 +7,8 @@ description: >-
   removed-task holes, grille trap/rescue/push/return, catapult reveal keys,
   D13 atomic `$patch` seats+revealing/broken, peek/end-turn), acceptHMRUpdate,
   and Quasar pinia entry. Use when adding, changing, reviewing, or debugging
-  Pinia stores, shared game/auth/theme state, or page-to-store wiring.
+  Pinia stores, shared game/auth/theme/support state (incl. admin setUserRole merge /
+  emailVerified), or page-to-store wiring.
 ---
 
 # Work With Stores
@@ -39,7 +40,7 @@ Pinia is installed via Quasar store entry `src/stores/index.ts` (`createPinia()`
 | `auth` | **Setup** (`defineStore('auth', () => { … })`) | Refs + computed, `onChange` subscription, `whenReady` promise — fits Composition API |
 | `theme` | **Setup** (`defineStore('theme', () => { … })`) | Dark preference + `syncFromAuthUser` / `toggle`; registered GET restore + POST save |
 | `game` | **Options** (`defineStore('game', { state, getters, actions })`) | Clear room lifecycle, `this.*` mutations, private helpers `_enterRoom` / `_attachRoom` |
-| `support` | **Setup** (`defineStore('support', () => { … })`) | HTTP tickets/staff/admin via `client.http`; staff list passes `topic`/`status` query; admin users expect `emailVerified`; `error` + page `q-banner` |
+| `support` | **Setup** (`defineStore('support', () => { … })`) | HTTP tickets/staff/admin via `client.http`; staff list passes `topic`/`status` query; admin list expects `emailVerified`; after `setUserRole` **merge** `{ …u, …updated }` so list-only fields survive if API omits them; `error` + page `q-banner` |
 | `counter` (`example-store`) | Options | Scaffold only — do not extend for product features |
 
 **When to choose setup vs options**
@@ -86,6 +87,7 @@ Use a store for shared domain data, realtime session, or anything the router/oth
 | **auth** | `user` (`emailVerified?`, optional `theme`), `token`, `loading`, `error`, `ready`; `isAuthenticated`, `displayName`, `needsEmailVerification`; register/login/anonymous/Google/`logout`/`forgotPassword`/`confirmEmail`/`resetPassword`/`sendEmailConfirmation`/`changeEmail`/`refreshUserData`/`whenReady` | `LoginPage`, `ForgotPasswordPage`, `ConfirmEmailPage`, `ResetPasswordPage`, `AccountPage`, router `beforeEach`, `LobbyPage` logout/cabinet, `App.vue` theme sync + verify reminder |
 | **theme** | Quasar Dark `preference`, `error`; async `syncFromAuthUser` (GET restore + generation + `clearStoredTheme` when unset; **no** `auth.user` replace after GET), `toggle` (guest `localStorage` `ht-theme`; registered `get` ≠ JWT-only, `post` on toggle may patch `user.theme`) | `App.vue` header toggle + stable auth identity watch |
 | **game** | lobby `rooms`/`lobbyRoom`/`lobbyWanted`/`listing`; active `room`/`roomId`/`sessionId`; mirrored `seats` (`GameSeat`: `touristId` + `pieces[]` (+ `finished`/`trapped`) + connectivity + `ready` + `finishPlace` + `timeExpired`) / `phase` / `maxSeats` / `countdownRemaining` / legacy `started` / `currentTurnSessionId` / `turnUntil` / `turnBudgetSeconds` / `removedTaskKeys` / `holdingGrilleKeys` / `revealingCatapultKeys` / `brokenCatapultKeys`; private `steps`/`peeks`/`budgetsInfinite`/`peekedThisTurn`/`openPeek`/`allJailWarning` from `budgets`/`peekOpen`/`allJailWarning`; `consentedLeaving` (gate soft-drop during `leaveGame`); getters `mySeat`/`isSeated`/`isMyTurn`/`isPlaying`/`canSendReady`/`canSendEndTurn`/`unfinishedBoardPieces`/`isMySeatFinished`/`isMySeatTimeExpired`/`isSoloBudget`/`myFinishedStripSides`; helpers `isFinishedSeat`/`isFinishedPiece`/`isTimeExpiredSeat`/`isSoloBudgetSeconds`/`turnRemainingSeconds`; `sendMove` / `sendRescue` / `sendPush` / `sendReturnFromFinish` / `sendPeek` / `sendPeekAnswer` / `sendEndTurn`; `sendReady`; `sendSay` + ephemeral `sayEvents`; `status`, `error`; subscribe/unsubscribe / create(`maxSeats`+`grilleDensity`+`catapultDensity`)/join/`rejoinGame`/leave; tourist token in `localStorage` | `LobbyPage`, `GamePage`, `App.vue` (Game leave/status) |
+| **support** | tickets / messages / staff queue / `adminUsers` (`emailVerified?`); `loading` / `error`; create/list/get/reply/close/take/status + `listAdminUsers` / `setUserRole` (merge updated row into `adminUsers`) via `client.http` | `SupportPage`, `SupportTicketPage`, `SupportStaffPage`, `AdminUsersPage` |
 | **counter** | scaffold only | none in product flow — ignore unless cleaning scaffold |
 
 ### Auth vs theme vs game ownership

@@ -21,8 +21,8 @@ This package validates with Quasar `q-form` + `q-input` `:rules` and `<script se
 | Login | `src/pages/LoginPage.vue` | Email/password register or login → `auth`; guest + Google via separate buttons |
 | Forgot | `src/pages/ForgotPasswordPage.vue` | Email → `auth.forgotPassword`; `email_not_found` → RU not-found |
 | Reset | `src/pages/ResetPasswordPage.vue` | New password (min 6) → `auth.resetPassword(token, password)`; public route |
-| Support create | `src/pages/SupportPage.vue` | Topic `q-select` + body textarea → `support.createTicket`; on success clear + `resetValidation`; rate-limit codes → `support.errors.*` |
-| Support reply | `src/pages/SupportTicketPage.vue` | Body textarea → `support.postMessage`; on success clear + `resetValidation` |
+| Support create | `src/pages/SupportPage.vue` | Topic `q-select` + body textarea → `support.createTicket`; on success clear → `await nextTick()` → `resetValidation`; `lazy-rules` on inputs; rate-limit codes → `support.errors.*` |
+| Support reply | `src/pages/SupportTicketPage.vue` | Body textarea → `support.postMessage`; on success clear → `await nextTick()` → `resetValidation`; `lazy-rules` on body |
 
 Shared pieces:
 
@@ -98,6 +98,28 @@ Quasar rules: `(val) => true | string`. String = invalid message.
 | Display name (register) | Optional — no `:rules` |
 
 Prefer keeping rules next to the input (inline arrays) until a shared helper appears. Do not introduce Vuetify-style `$refs.validate()` or `vue-the-mask` unless product asks.
+
+## Support create / reply (clear without red empty)
+
+После успешного submit нельзя оставлять пустое поле в красном error-state Quasar (SC-SUP-24 / D8 / D12).
+
+1. На body (и create topic/body) inputs — `lazy-rules` (правила не срабатывают на каждое изменение `v-model` до blur/submit).
+2. После успеха: `field.value = ''` → `await nextTick()` → `formRef.value?.resetValidation()`.
+3. Одного `resetValidation()` сразу после clear недостаточно — rules успевают пересчитаться на пустой model.
+
+```ts
+import { nextTick, ref } from 'vue';
+import type { QForm } from 'quasar';
+
+const body = ref('');
+const formRef = ref<QForm | null>(null);
+
+async function onSuccessClear() {
+  body.value = '';
+  await nextTick();
+  formRef.value?.resetValidation();
+}
+```
 
 ## Form Catalogue
 
