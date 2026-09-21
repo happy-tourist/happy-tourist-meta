@@ -15,8 +15,8 @@ description: >-
     HUD ≤~420 → 2×2, nearest-center finish click + return anim, tile kinds
     (start/task/center), current-turn selection/hints/move submit, piece travel
     animation, or finish travel lastKnown seed (move/push→center; no
-    finishAnimFrom at submit) for room tourist. Leave + match status live in
-    App.vue header on Game route (not page-local).
+    finishAnimFrom at submit) for room tourist. Brand-logo leave + match status live in
+    App.vue header on Game route (not page-local Material logout).
 ---
 
 # Work With Game Board
@@ -29,7 +29,7 @@ Product: настольная игра «Счастливый турист». On
 
 | Surface | Path | Role |
 | --- | --- | --- |
-| App shell | `src/App.vue` | On Game route only: icon-only leave left + centered match status + theme right; leave confirm + `leaveGame` → lobby. Login/Lobby: theme only (no leave/status) |
+| App shell | `src/App.vue` | Brand logo left always; on Game: logo click = leave + centered match status + theme right; leave confirm + `leaveGame` → lobby. Non-Game: logo decorative/noop/toLobby (no Material `logout` leave) |
 | Game page | `src/pages/GamePage.vue` | CSS Grid field in scroll region; unfinished pieces overlay (+ short center disappear); holes for `removedTaskKeys`; grille overlays from `holdingGrilleKeys` (drop/rise); catapult sequential overlays from `revealingCatapultKeys` / `brokenCatapultKeys` (land→overlay→fling; pin→vanish→travel; broken 300+300; spectator parity); board-busy lock via `isBoardBusy` / `isInteractive`; rescue + **push** affordances **top-center** above pieces; **top** `.presence-row--top` tight to board (opponents / spectator all; no reserved bubble gap); sticky bottom `.game-hud` only when seated (own + strip); budgets **beside** own avatar; end-turn `skip_next` **right-center** on own avatar; local selection/hints/peek eye top-center; place / timer-vs-steps end / peek / solo-peeks∞ / all-jail; **return green icon** on finished strip (no confirm `q-dialog`); `rejoinGame(roomId)` — **no** leave/status/roomId chrome |
 | Game store | `src/stores/game.ts` | Room I/O; mirror `seats` (+ piece `finished`/`trapped` / seat `finishPlace`) / `phase` / `maxSeats` / `countdownRemaining` / `currentTurnSessionId` / `removedTaskKeys` / `holdingGrilleKeys` / `revealingCatapultKeys` / `brokenCatapultKeys` / `sessionId` (**D13:** `$patch` seats+revealing+broken atomically); private `steps`/`peeks`/`budgetsInfinite` (peeks∞ only)/`peekedThisTurn` (legacy)/`openPeek`/`allJailWarning` from `budgets`/`peekOpen`/`allJailWarning`; `unfinishedBoardPieces` / `isMySeatFinished` / `myFinishedStripSides`; `isMyTurn` / `isPlaying` / `canSendReady` / `canSendEndTurn`; `sendMove` / `sendRescue` / `sendPush` / `sendReturnFromFinish` / `sendPeek` / `sendPeekAnswer` / `sendEndTurn` / `sendReady` / `sendSay` + `sayEvents` |
 
@@ -180,7 +180,7 @@ Picker open state (`sayPickerOpen`) is page-local; close if the local seat is lo
 - Animate piece travel; on center finish (move or push) keep DOM key for slide from last board cell then fade (`FINISH_FADE_MS` / `finishAnimFromByKey`; own move/push seeds `lastKnown` only — D10/D11); clear selection; on return animate from nearest center; catapult: land→overlay→fling (yield own move anim; pin during overlay → travel after vanish); ignore input while `isBoardBusy` (SC-BOARD-27/28).
 - Own `finishPlace` 0→N → place `q-dialog` (`game.finishPlaceModal*`); own `timeExpired` false→true → dual end `q-dialog` (`game.timeExpiredModal*` vs `game.stepsExhaustedModal*`); solo peeks∞ modal when `budgetsInfinite` becomes true; **no** return-confirm dialog; close keeps player in room; clear selection on expiry.
 - Budget +N fall ≈ 2 s (`BUDGET_FALL_MS` / `.budget-fall` CSS — SC-PRESENCE-20).
-- Remount without room → `rejoinGame(roomId)` via store. Leave confirm + status + icon-only exit live in **`App.vue`** (`work-with-pages` / `work-with-rooms`) — do **not** reintroduce page-local leave header or room-id chrome.
+- Remount without room → `rejoinGame(roomId)` via store. Leave confirm + status + brand-logo leave live in **`App.vue`** (`work-with-pages` / `work-with-rooms`) — do **not** reintroduce page-local leave header, Material `logout` exit, or room-id chrome.
 
 ## Do
 

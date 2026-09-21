@@ -38,6 +38,7 @@ boots `theme` before `i18n` / `colyseus`. Theme tokens live in
 |-------|------|----------|
 | Quasar Dark (runtime) | Chrome light / dark / device `auto` | `quasar.config.ts` plugin + `boot/theme.ts` + `stores/theme.ts` |
 | Shared header toggle | Explicit light ↔ dark on all pages | `App.vue` `q-header` |
+| Brand logo chrome | ~30px `logo.png` left; scoped `.brand-logo` / `.brand-logo-control` | `App.vue` + `src/assets/brand/logo.png` |
 | Quasar theme Sass variables | Brand/palette tokens (`$primary`, `$negative`, …) | `src/css/quasar.variables.scss` |
 | Global app CSS | App-wide rules (e.g. `.text-muted` for dark-friendly chrome) | `src/css/app.scss` |
 | Quasar extras | Roboto font + Material Icons | `quasar.config.ts` → `extras` |
@@ -79,8 +80,9 @@ override) instead of hardcoding `text-grey-7` on Login / Lobby / Game chrome.
 - Prefer Quasar utility classes in templates for spacing, flex, typography, and
   text color (`q-pa-md`, `row`, `text-h5`, `text-muted` for secondary chrome).
 - Prefer Material Icons via Quasar `icon` / `q-icon` (`arrow_back`, `refresh`,
-  `logout`, `sports_esports`, `visibility`, `dark_mode`, `light_mode`) — already
-  loaded as extras.
+  `logout` for account/lobby sign-out only — **not** Game leave, `sports_esports`,
+  `visibility`, `dark_mode`, `light_mode`) — already loaded as extras. Game leave
+  is the brand logo in `App.vue`, not a Material icon.
 - Put game-board and other custom visuals in **scoped** `<style>` on the owning
   page (see `GamePage.vue`). Do not invent a co-located `styles.scss` folder
   pattern unless the project already has one for that feature.
@@ -264,8 +266,7 @@ Prefer `color="primary"` / `bg-negative` over hardcoding `#1976d2` /
 | Board / pieces | `src/pages/GamePage.vue` (`<style scoped>`) |
 | Lobby / most chrome | Template Quasar classes only (`LobbyPage.vue`) |
 
-Scaffold leftovers under `src/pages/index*` may still use Quasar demo classes;
-prefer the login → lobby → game flow for new UI.
+Prefer the login → lobby → game flow for new UI (dead `pages/index*` scaffold removed).
 
 ## How To Add Or Change Styles
 

@@ -240,7 +240,7 @@ Apply always; sibling skills win when they exist and conflict on a detail.
   Colyseus I/O inside Pinia stores (`auth`, `theme`, `game`) rather than scattering
   `client.*` calls across many components.
 - Prefer the login / lobby / game flow over scaffold leftovers
-  (`EssentialLink.vue`, `example-store.ts`, unused `pages/index*`).
+  (`EssentialLink.vue`, `example-store.ts`).
 
 ### Colyseus / HTTP (no axios)
 
@@ -263,7 +263,7 @@ Apply always; sibling skills win when they exist and conflict on a detail.
   default slot without `show-value` (SC-PRESENCE-12); board `--gap`/`--radius` 2;
   local selection / hints when `isMyTurn` and eligible; travel + return-from-nearest-center
   animation; finish 2×2 → nearest legal center; submit only via `game.sendMove`.
-  Leave + match status in App header on Game (not page-local).
+  Brand logo + match status in App header; Game leave via logo (not Material `logout`, not page-local).
   Return: confirm modal → same red `.tile--target` as move; `GRILLE_ANIM_MS = 1000`
   on board + strip chrome.
 - Mirror `currentTurnSessionId` / `turnUntil` / `turnBudgetSeconds` / seat `timeExpired`;

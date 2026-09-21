@@ -25,7 +25,7 @@ Coordinate schema / protocol (room name, state shape, seat connectivity, `move` 
 | Store | `src/stores/game.ts` | `TOURIST_ROOM`, create/join/rejoin/leave, token persist, `_attachRoom` listeners |
 | Lobby | `src/pages/LobbyPage.vue` | `createGame` / `joinGame` → navigate to `game` with `roomId` |
 | Game | `src/pages/GamePage.vue` | Board + bottom HUD presence; `rejoinGame(roomId)` on mount / soft-fail |
-| Leave UX | `src/App.vue` (Game route) | Icon-only leave + confirm dialog → `leaveGame` → lobby |
+| Leave UX | `src/App.vue` (Game route) | Brand-logo leave + confirm dialog → `leaveGame` → lobby |
 | Boot | `src/boot/colyseus.ts` | Shared `Client` (`VITE_COLYSEUS_URL`) |
 | Route | `/game/:roomId` | Hash mode; `meta.requiresAuth` |
 
@@ -148,7 +148,7 @@ async leaveGame() {
 }
 ```
 
-- Used for logout / explicit leave (Lobby «Выйти», App header icon-only `logout` on Game with accessible name `game.leave` / «Выход из игры») — **consented** leave on server (immediate seat remove, no grace).
+- Used for logout / explicit leave (Lobby «Выйти», App header brand logo on Game with accessible name `game.leave` / «Выход из игры») — **consented** leave on server (immediate seat remove, no grace).
 - Leave-confirm UX (`q-dialog` when seated ∧ `phase === 'playing'` ∧ `finishPlace === 0` ∧ `!timeExpired`) lives in **`App.vue`** on Game route (`work-with-pages`); finished / time-expired seats and spectators leave immediately; store `leaveGame` stays confirm-agnostic. Do **not** reintroduce page-local leave header on `GamePage`.
 - Clear tourist token, reset Pinia, then call `leave`.
 - **Swallow** closed-room errors — do not surface them as `game.error`.

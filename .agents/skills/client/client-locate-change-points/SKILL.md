@@ -37,7 +37,7 @@ Composition is flat under `src/`. Search and assign ownership top-down.
 
 Allowed dependency direction: `pages` → `stores` / `boot` / `components`. Keep **Colyseus I/O inside Pinia stores** (`auth`, `theme`, `game`, `support`) — do not scatter `client.*` across many components. Prefer importing `client` from `@/boot/colyseus` over `$colyseus`.
 
-Scaffold leftovers (`EssentialLink.vue`, `example-store.ts`, unused `pages/index*`) are not part of the game flow — prefer login / lobby / support / game.
+Scaffold leftovers (`EssentialLink.vue`, `example-store.ts`) are not part of the game flow — prefer login / lobby / support / game. Dead `pages/index*` were removed with brand cleanup.
 
 ### Routes
 
@@ -66,7 +66,8 @@ Use these rules to pick the layer before naming files.
 | A new screen / URL | `src/router/routes.ts` (+ guard meta in `index.ts` if needed) + new `src/pages/FooPage.vue` |
 | Page-specific UI / interaction | owning `src/pages/*Page.vue` |
 | Reusable across pages | `src/components/` (only when reuse is real; avoid premature extraction) |
-| Global shell / theme toggle | `src/App.vue` (`q-header` Dark toggle + `theme.error` banner; syncs `auth` → `theme`) |
+| Global shell / brand logo / theme toggle | `src/App.vue` (`q-header` brand logo left + Dark toggle + `theme.error` banner; Game leave via logo; syncs `auth` → `theme`) |
+| Brand asset / title / favicon | `src/assets/brand/logo.png`; `package.json` `productName`; `public/favicon.ico` + `index.html` |
 | Theme / Dark preference | `boot/theme.ts`, `stores/theme.ts`, `quasar.config.ts` (`Dark` plugin); guest `localStorage`; registered `GET`/`POST` `/api/theme` (restore ≠ JWT-only) |
 | Theme / global styles | `src/css/quasar.variables.scss`, `src/css/app.scss` (`.text-muted`) |
 | Copy / locale strings | `src/i18n/` (+ boot `src/boot/i18n.ts` if wiring changes) |
@@ -119,7 +120,7 @@ Do not invent room schemas, HTTP routes, or move payloads — note the server pa
 | Support (tickets / staff queue / admin roles) | `pages/Support*.vue` / `AdminUsersPage.vue` + `stores/support.ts` |
 | Game board (layout, unfinished pieces, continuous board-busy, finish/timeout UX, dual presence rings + seated top-row reserve, strip, turn select/`sendMove`, rejoin) | `pages/GamePage.vue` + `stores/game` `onStateChange` / `sendMove` / `rejoinGame(roomId)` |
 | Env / deploy | `.env.*`, `env.d.ts`, `boot/colyseus.ts`, `.github/workflows/deploy.yml` |
-| Theme / layout chrome | `App.vue` header + `stores/theme` + `boot/theme` + `css/*` (board CSS ≠ app Dark) |
+| Theme / layout / brand chrome | `App.vue` header (logo + theme + Game status/leave) + `stores/theme` + `boot/theme` + `assets/brand/` + `css/*` (board CSS ≠ app Dark) |
 | i18n copy | `src/i18n/`, boot `i18n` |
 
 Today: GamePage board + dual presence rings (outer turn from `turnUntil`/`turnBudgetSeconds`, inner reconnect) + unfinished pieces from synced `seats` (`touristId` + `pieces` (+ `finished`; empty until playing) + `connected` / `reconnectUntil` / `ready` / `finishPlace` / `timeExpired`) / `phase` / `maxSeats` / `countdownRemaining` / `currentTurnSessionId`; top opponents / spectator presence + seated strip (row / HUD ≤~420 → 2×2; no chip/`q-menu`) once own pieces exist; place + timeout + return-confirm modals; countdown overlay; ready affordance; on `isPlaying && isMyTurn && !isMySeatFinished && !isMySeatTimeExpired` select/hints → `sendMove`. Tourist reconnect via `localStorage` token. Room name `tourist`.
