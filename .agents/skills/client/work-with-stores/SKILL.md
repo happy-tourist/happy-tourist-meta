@@ -2,7 +2,7 @@
 name: work-with-stores
 description: >-
   Instructions for Pinia stores in the happy-tourist Vue 3 client:
-  setup vs options defineStore, auth vs game vs theme ownership, local page
+  setup vs options defineStore, auth vs game vs theme vs support ownership, local page
   state vs Pinia, Colyseus I/O in stores (budgets peeks∞ / finite steps,
   removed-task holes, grille trap/rescue/push/return, catapult reveal keys,
   D13 atomic `$patch` seats+revealing/broken, peek/end-turn), acceptHMRUpdate,
@@ -14,7 +14,7 @@ description: >-
 
 Use this skill when deciding where state should live or when changing Pinia stores in the **happy-tourist client** (`happy-tourist.github.io`).
 
-This app uses **Pinia 4** with **three domain stores** (`auth`, `theme`, `game`) plus Quasar’s Pinia entry. Pages use Composition API (`<script setup>`) and call `useAuthStore()` / `useThemeStore()` / `useGameStore()` directly — not Vuex `map*`.
+This app uses **Pinia 4** with **four domain stores** (`auth`, `theme`, `game`, `support`) plus Quasar’s Pinia entry. Pages use Composition API (`<script setup>`) and call `useAuthStore()` / `useThemeStore()` / `useGameStore()` / `useSupportStore()` directly — not Vuex `map*`.
 
 Skills for this client live under `.agents/skills/client/`. Runtime paths below are relative to this repo root.
 
@@ -23,13 +23,14 @@ Skills for this client live under `.agents/skills/client/`. Runtime paths below 
 ```
 src/stores/
   index.ts          # Quasar defineStore → createPinia() (app entry, not a domain store)
-  auth.ts           # setup store (Composition API defineStore)
+  auth.ts           # setup store (Composition API defineStore); exposes `role` / `isStaff` / `isAdmin` from userdata
   theme.ts          # setup store — Quasar Dark preference (guest local / registered HTTP)
   game.ts           # options store
+  support.ts        # setup store — support tickets + staff queue + admin users HTTP
   example-store.ts  # Quasar scaffold counter — unused by login/lobby/game
 ```
 
-Pinia is installed via Quasar store entry `src/stores/index.ts` (`createPinia()`). Domain stores import the Colyseus `client` from `@/boot/colyseus`. Prefer importing `use*Store` from `@/stores/auth` / `@/stores/theme` / `@/stores/game` in pages and router; keep Colyseus calls inside those stores.
+Pinia is installed via Quasar store entry `src/stores/index.ts` (`createPinia()`). Domain stores import the Colyseus `client` from `@/boot/colyseus`. Prefer importing `use*Store` from `@/stores/auth` / `@/stores/theme` / `@/stores/game` / `@/stores/support` in pages and router; keep Colyseus calls inside those stores.
 
 ### Store styles in this repo
 
@@ -38,11 +39,12 @@ Pinia is installed via Quasar store entry `src/stores/index.ts` (`createPinia()`
 | `auth` | **Setup** (`defineStore('auth', () => { … })`) | Refs + computed, `onChange` subscription, `whenReady` promise — fits Composition API |
 | `theme` | **Setup** (`defineStore('theme', () => { … })`) | Dark preference + `syncFromAuthUser` / `toggle`; registered GET restore + POST save |
 | `game` | **Options** (`defineStore('game', { state, getters, actions })`) | Clear room lifecycle, `this.*` mutations, private helpers `_enterRoom` / `_attachRoom` |
+| `support` | **Setup** (`defineStore('support', () => { … })`) | HTTP tickets/staff/admin via `client.http`; `error` + page `q-banner` |
 | `counter` (`example-store`) | Options | Scaffold only — do not extend for product features |
 
 **When to choose setup vs options**
 
-- Prefer **setup** when the store needs Vue composables heavily (`ref`/`computed`), long-lived subscriptions, or readiness promises (`auth`, `theme`).
+- Prefer **setup** when the store needs Vue composables heavily (`ref`/`computed`), long-lived subscriptions, readiness promises (`auth`, `theme`), or thin HTTP CRUD (`support`).
 - Prefer **options** when the domain is action-centric with shared mutable session state and imperative helpers (`game`).
 - Do not convert an existing store style without a concrete reason. Match the neighbor store’s style when extending the same domain.
 

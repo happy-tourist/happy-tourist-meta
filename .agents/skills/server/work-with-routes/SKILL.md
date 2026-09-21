@@ -3,8 +3,9 @@ name: work-with-routes
 description: >-
   Use when adding, changing, or reviewing HTTP routes on the happy-tourist
   Colyseus server: createRouter / createEndpoint in app.config.ts, Express
-  hook handlers (/health, /hi), auth /auth/* surface, or Colyseus room listing
-  /rooms/:roomName. Keep HTTP thin — game logic belongs in rooms.
+  hook handlers (/health, /hi), auth /auth/*, theme, support tickets, admin
+  roles, or Colyseus room listing /rooms/:roomName. Keep HTTP thin — game
+  logic belongs in rooms.
 ---
 
 # Work With Routes
@@ -13,7 +14,8 @@ Use this skill when adding or changing **HTTP** handlers in `happy-tourist-serve
 
 This is a **realtime game server**, not a REST BFF. Prefer WebSocket room messages
 for gameplay. HTTP is for health, demo/smoke, auth (provided by Colyseus), thin
-profile preferences (e.g. UI theme), and lobby room listing.
+profile preferences (e.g. UI theme), support tickets / admin roles, and lobby
+room listing.
 
 Stack: Express **5** (via `defineServer({ express })`), `createRouter` /
 `createEndpoint` from `colyseus` / `@colyseus/tools`, TypeScript ESM (NodeNext).
@@ -99,6 +101,16 @@ For CORS / monitor details use `work-with-middleware` and `work-with-config`.
 | POST | `/api/auth/email` | `createEndpoint` | Body `{ email }`; change email + `emailVerified = false`; unique check; **no** auto-send; returns user/token |
 | POST | `/api/auth/confirm-email` | `createEndpoint` | Unauthenticated JSON `{ token }` → JWT → `emailVerified`; product SPA confirm path |
 | POST | `/api/auth/reset-password` | `createEndpoint` | Unauthenticated JSON `{ token, password }` → reset + one-time token; product SPA reset path |
+| POST | `/api/support/tickets` | `createEndpoint` | JWT any; `{ topic, body }` create + first message; helpers in `src/lib/support.ts` |
+| GET | `/api/support/tickets` | `createEndpoint` | JWT; own list |
+| GET | `/api/support/tickets/:id` | `createEndpoint` | JWT; detail + messages (owner or staff) |
+| POST | `/api/support/tickets/:id/messages` | `createEndpoint` | JWT; author/staff reply; closed rejects |
+| POST | `/api/support/tickets/:id/close` | `createEndpoint` | JWT; author close |
+| GET | `/api/support/staff/tickets` | `createEndpoint` | JWT moderator\|admin; all tickets (capped ~50) |
+| POST | `/api/support/tickets/:id/take` | `createEndpoint` | JWT staff; take into `in_progress` |
+| POST | `/api/support/tickets/:id/status` | `createEndpoint` | JWT staff; `{ status }` |
+| GET | `/api/admin/users` | `createEndpoint` | JWT admin; user list |
+| POST | `/api/admin/users/:id/role` | `createEndpoint` | JWT admin; `{ role }`; **POST** (not PATCH) |
 | GET | `/health` | `express` hook | `{ status, uptime }` — deploy / monitor |
 | GET | `/hi` | `express` hook | Plain text smoke |
 | * | `/auth/*` | `@colyseus/auth` | Present when `database: db` is set (register/login/forgot; built-in HTML not product UX) |

@@ -3,8 +3,9 @@ name: work-with-forms
 description: >-
   Use when creating, changing, reviewing, or debugging Vue 3 forms in the
   happy-tourist client — Quasar q-form + q-input :rules, LoginPage register /
-  login toggle, ForgotPasswordPage / ResetPasswordPage, anonymous guest /
-  Google one-click buttons, auth store submit, or q-banner errors.
+  login toggle, ForgotPasswordPage / ResetPasswordPage, SupportPage create
+  ticket (topic + body), anonymous guest / Google one-click buttons, auth or
+  support store submit, or q-banner errors.
 ---
 
 # Work With Forms
@@ -20,6 +21,7 @@ This package validates with Quasar `q-form` + `q-input` `:rules` and `<script se
 | Login | `src/pages/LoginPage.vue` | Email/password register or login → `auth`; guest + Google via separate buttons |
 | Forgot | `src/pages/ForgotPasswordPage.vue` | Email → `auth.forgotPassword`; `email_not_found` → RU not-found |
 | Reset | `src/pages/ResetPasswordPage.vue` | New password (min 6) → `auth.resetPassword(token, password)`; public route |
+| Support create | `src/pages/SupportPage.vue` | Topic `q-select` + body textarea → `support.createTicket`; rate-limit codes → `support.errors.*` |
 
 Shared pieces:
 

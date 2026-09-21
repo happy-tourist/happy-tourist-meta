@@ -6,7 +6,8 @@ description: >-
   callbacks (no auto onSendEmailConfirmation), smtp.bz mailer, emailVerified,
   POST /api/auth/send-email-confirmation + /api/auth/email + /api/auth/confirm-email
   + /api/auth/reset-password (SPA JSON), CLIENT_APP_URL mail links, AUTH_SALT /
-  JWT_SECRET / SESSION_SECRET / GOOGLE_CLIENT_*, users schema defaults,
+  JWT_SECRET / SESSION_SECRET / GOOGLE_CLIENT_*, users schema defaults + `htRole`
+  (public `role` via onParseToken/onGenerateToken), BOOTSTRAP_ADMIN_IDS,
   MyRoom.onAuth JWT.verify, register/login/anonymous/Google → JWT → room join,
   or auth userdata in onJoin for this Colyseus tourist server.
 ---
@@ -62,12 +63,14 @@ guards. Do not put game rules in `/auth/*` handlers.
 | Mailer | `src/lib/mailer.ts` | `sendEmail(to, subject, html)` via smtp.bz only (`SMTP_BZ_*`, `MAIL_FROM`); host **`connect.smtp.bz`**; `secure` when port is **465 or 9465**; no Resend / `MAIL_PROVIDER`; `setSendEmailImpl` for tests |
 | Auth HTML | `html/` | Legacy Colyseus cwd templates may remain; confirm mail HTML is built inline; forgot rewrites `[LINK]` to SPA; product confirm/reset UX is **SPA + JSON** — do not treat API HTML pages as product |
 | DB init | `src/db/index.ts` | `GameDatabase` + `schemas: { users }` |
-| Users schema | `src/db/schema.ts` | Extends `colyseus_users`: `displayName`, `rating`, `gamesPlayed`, `gamesWon`, nullable `theme`, `emailVerified` (default `false`) |
+| Users schema | `src/db/schema.ts` | Extends `colyseus_users`: `displayName`, `rating`, `gamesPlayed`, `gamesWon`, nullable `theme`, `emailVerified` (default `false`), `htRole` (SQL `ht_role`, default `user`; **not** JS `role`) |
+| Role → userdata | `src/config/auth.ts` | `onParseToken` / `onGenerateToken` map `htRole` → public `role` (never leak `htRole` / passwordHash) |
+| Bootstrap admins | `src/lib/support.ts` + `.env` | `BOOTSTRAP_ADMIN_IDS` → idempotent `bootstrapAdminIds()` at express boot |
 | Room gate | `src/rooms/MyRoom.ts` | `static onAuth(token)` → `JWT.verify(token)` → userdata to `onJoin` (**soft** verify — no `emailVerified` gate) |
-| Secrets | `.env.example` / `.env.development` / `.env.production` | Auth + Google + mail (`SMTP_BZ_*`, `MAIL_FROM`) + `AUTH_BACKEND_URL` / `CLIENT_APP_URL` |
+| Secrets | `.env.example` / `.env.development` / `.env.production` | Auth + Google + mail (`SMTP_BZ_*`, `MAIL_FROM`) + `AUTH_BACKEND_URL` / `CLIENT_APP_URL` + `BOOTSTRAP_ADMIN_IDS` |
 | HTTP auth | `/auth/*` (auto) | register / login / anonymous / OAuth + built-in forgot; product confirm/reset via `/api/auth/*` JSON |
 | CORS | `app.config.ts` `express` hook | Credentials + `Authorization` allowed; must stay first |
-| Tests | `test/` | Room JWT connect + `zz-authEmail.test.ts` (mock mailer + JSON confirm/reset + SPA link host asserts); `keepLatestRequestListener` after multi-suite boot |
+| Tests | `test/` | Room JWT connect + `zz-authEmail.test.ts` + `support.test.ts` (SC-ROLE-* / SC-SUP-*; mock mailer); `keepLatestRequestListener` after multi-suite boot |
 
 Prefer extending `users` with `.default(...)` on required custom columns so
 built-in `/auth/register` and `/auth/login` do not fail on NOT NULL.

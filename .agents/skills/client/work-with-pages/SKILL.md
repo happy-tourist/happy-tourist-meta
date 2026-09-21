@@ -3,8 +3,9 @@ name: work-with-pages
 description: >-
   Use when creating or changing Vue page views under src/pages/*Page.vue, routes in
   src/router/routes.ts, router guards in src/router/index.ts, App.vue shell wiring,
-  hash-mode deep links, meta.guest / meta.requiresAuth, or navigation between login,
-  lobby (create maxSeats + grilleDensity + catapultDensity), and game (top opponents presence, seated
+  hash-mode deep links, meta.guest / meta.requiresAuth / requiresStaff / requiresAdmin,
+  or navigation between login, lobby (create maxSeats + grilleDensity + catapultDensity;
+  Support link), support/admin pages, and game (top opponents presence, seated
   strip HUD row/2×2, budgets/end-turn icon on avatar, return strip icon no modal, push icons,
   nearest-center finish, grille trap/rescue + catapult land→overlay→fling + deferred grille drops + board-busy lock) in this Quasar Vue 3 client.
 ---
@@ -33,7 +34,7 @@ When the task is only about creating or wiring a page:
 2. Register a route in `src/router/routes.ts` with `path`, `name`, lazy `component`, and `meta` when needed.
 3. Do **not** enable filename-based routing — `quasar.config.ts` keeps `filenameBasedRouting: false`; routes stay manual.
 4. Keep the global shell in `App.vue` — `q-layout` → shared `q-header` → `q-page-container` → theme `q-banner` + `<router-view />`. Theme toggle is always in the header. On **Game** route only, the same header also owns icon-only leave (left) + centered match status; leave confirm + `leaveGame` orchestration live in `App.vue` — not a page-local game header. Login/Lobby keep theme-only chrome. Do not duplicate the theme toggle per page.
-5. Prefer: `pages` → `stores` / `boot` / `components`. Keep Colyseus I/O in Pinia (`auth`, `theme`, `game`), not scattered across new pages.
+5. Prefer: `pages` → `stores` / `boot` / `components`. Keep Colyseus I/O in Pinia (`auth`, `theme`, `game`, `support`), not scattered across new pages.
 6. Wrap page content in Quasar `q-page` (match nearby pages).
 
 If the route path or page name is unclear, ask the user before editing.
@@ -49,12 +50,16 @@ From `src/router/routes.ts` (hash mode via `createWebHashHistory` when `vueRoute
 | `/forgot-password` | `forgot-password` | `ForgotPasswordPage` | `meta.guest`; request reset mail |
 | `/confirm-email` | `confirm-email` | `ConfirmEmailPage` | **public** (no `guest` — logged-in confirm must run); auto JSON on mount → lobby |
 | `/reset-password` | `reset-password` | `ResetPasswordPage` | **public**; SPA form → JSON → login |
-| `/lobby` | `lobby` | `LobbyPage` | `meta.requiresAuth` |
+| `/lobby` | `lobby` | `LobbyPage` | `meta.requiresAuth`; Support link in header |
 | `/account` | `account` | `AccountPage` | `meta.requiresAuth`; cabinet (registered only — anonymous → lobby) |
+| `/support` | `support` | `SupportPage` | `meta.requiresAuth`; create + own list |
+| `/support/staff` | `support-staff` | `SupportStaffPage` | `meta.requiresAuth` + `requiresStaff` |
+| `/support/:id` | `support-ticket` | `SupportTicketPage` | `meta.requiresAuth`; thread |
+| `/admin/users` | `admin-users` | `AdminUsersPage` | `meta.requiresAuth` + `requiresAdmin` |
 | `/game/:roomId` | `game` | `GamePage` | `meta.requiresAuth`; param `roomId` |
 | `/:catchAll(.*)*` | — | — | redirect → `/lobby`; keep last |
 
-Deep links on GitHub Pages use the hash form: `/#/lobby`, `/#/account`, `/#/forgot-password`, `/#/confirm-email`, `/#/reset-password`, `/#/game/<roomId>`, `/#/login`.
+Deep links on GitHub Pages use the hash form: `/#/lobby`, `/#/account`, `/#/support`, `/#/support/staff`, `/#/support/<id>`, `/#/admin/users`, `/#/forgot-password`, `/#/confirm-email`, `/#/reset-password`, `/#/game/<roomId>`, `/#/login`.
 
 ## Page Component
 
@@ -68,6 +73,10 @@ src/pages/
 |-- ResetPasswordPage.vue
 |-- AccountPage.vue
 |-- LobbyPage.vue
+|-- SupportPage.vue
+|-- SupportTicketPage.vue
+|-- SupportStaffPage.vue
+|-- AdminUsersPage.vue
 `-- GamePage.vue
 ```
 
@@ -105,7 +114,11 @@ Examples:
 - `ConfirmEmailPage` — public; auto `auth.confirmEmail` on mount → RU success → lobby (no Confirm button).
 - `ResetPasswordPage` — public; form → `auth.resetPassword` → RU success → login.
 - `AccountPage` — cabinet: confirm send + change email via store; anonymous redirect to lobby on mount.
-- `LobbyPage` — room list / create (maxSeats + `grilleDensity` + `catapultDensity` few/medium/many each, default medium) / join via `useGameStore()`; navigates to `game` with `roomId`; account link for non-anonymous.
+- `LobbyPage` — room list / create (maxSeats + `grilleDensity` + `catapultDensity` few/medium/many each, default medium) / join via `useGameStore()`; navigates to `game` with `roomId`; account link for non-anonymous; **Support** link for any JWT (incl. anonymous).
+- `SupportPage` — create ticket + own list via `useSupportStore()`; guest banner (no email notify).
+- `SupportTicketPage` — public thread; author reply/close; staff take/awaiting/close; closed read-only + CTA new ticket.
+- `SupportStaffPage` — all-tickets queue (`requiresStaff`).
+- `AdminUsersPage` — list users + change role (`requiresAdmin`); moderator has no role UI.
 - `GamePage` — board in scroll region; unfinished pieces + finish travel from last board cell + fade + return travel from nearest center; holes for `removedTaskKeys` (not landable; piece may stand); grille overlays from `holdingGrilleKeys` (`grille.png` drop/rise, **`GRILLE_ANIM_MS = 1000`**; **defer new drops** while catapult hop queue busy — `pendingGrilleDropKeys`, flush on idle — SC-BOARD-29/30); catapult sequential overlays from `revealingCatapultKeys` / `brokenCatapultKeys` (`catapult.png` / `catapult-broken.png`, **`CATAPULT_ANIM_MS = 1000`**, broken 300+300 hold, land→overlay→fling for every viewer, D13 atomic mirror, `isBoardBusy` incl. pending grille); trapped pieces visible (no move/peek); rescue affordance **top-center** + `sendRescue`; push icons **top-center** over targets of selected free pusher + `sendPush`; **top** presence row (seated opponents / spectator all occupied); sticky bottom `.game-hud` **only when seated** (own + strip — wide row N,E,W,S / HUD ≤~420 → 2×2; **no** chip/`q-menu`); finish flag on strip; return → **green `undo` icon** over finished tourist when `canReturn` → same red `.tile--target` ring + `sendReturnFromFinish` (dim finished only if `!canReturn`; slot body finished → noop; **no** confirm modal); chrome grille on strip when trapped; finish 2×2 click → nearest legal center (Chebyshev); all-jail warning modal (`allJailWarning`); dual rings + 72px avatar + place/ready top-left + say top-right + end-turn `skip_next` **right-center** (`sendEndTurn` / `canSendEndTurn`; no dock/dialog; own-slot gap so icon does not cover budgets); say: top markers bubbles **down**, own bottom **up**; budgets **beside** own avatar; peek eye **top-center** + Correct/Wrong modal; keep-focus after non-finishing move/push; push→center travel+fade like move finish; +N budget fall ≈ 2 s; solo peeks∞ + dual timer-vs-steps end modals; ready/countdown UX; syncs via `useGameStore()`; `rejoinGame(roomId)` on mount / soft-fail / browser reopen. **No** page-local leave/status/roomId chrome — that lives in `App.vue` on Game route.
 
 Do not put a second app shell (global layout host) inside a page — `App.vue` already mounts `router-view`.
@@ -178,10 +191,18 @@ Router.beforeEach(async (to) => {
   if (to.meta.guest && auth.isAuthenticated) {
     return '/lobby';
   }
+
+  if (to.meta.requiresAdmin && !auth.isAdmin) {
+    return '/lobby';
+  }
+
+  if (to.meta.requiresStaff && !auth.isStaff) {
+    return '/lobby';
+  }
 });
 ```
 
-Do not remove `auth.whenReady()` or the `guest` / `requiresAuth` redirects unless the user explicitly asks.
+Do not remove `auth.whenReady()` or the `guest` / `requiresAuth` redirects unless the user explicitly asks. Staff/admin meta gates nav only — server still enforces on HTTP.
 
 ## Navigation
 
@@ -216,7 +237,9 @@ If an old path changes, keep a redirect in `routes.ts`:
 | Auth | `LoginPage` / `ForgotPasswordPage` / `ConfirmEmailPage` / `ResetPasswordPage` / `AccountPage` | `stores/auth`; guest / public / requiresAuth; soft verify modal in App |
 | Theme (chrome Dark) | `App.vue` header | `stores/theme` + `boot/theme` |
 | Game leave + match status | `App.vue` header (Game route only) | `stores/game` status / `leaveGame`; confirm dialog in App |
-| Lobby / rooms | `LobbyPage` | `stores/game.subscribeLobby`, create `{ maxSeats, grilleDensity, catapultDensity }` / join; `meta.requiresAuth` |
+| Lobby / rooms | `LobbyPage` | `stores/game.subscribeLobby`, create `{ maxSeats, grilleDensity, catapultDensity }` / join; Support link; `meta.requiresAuth` |
+| Support | `SupportPage` / `SupportTicketPage` / `SupportStaffPage` | `stores/support` HTTP; `requiresAuth`; staff uses `requiresStaff` + `auth.isStaff` |
+| Roles / admin | `AdminUsersPage` | `stores/support` admin HTTP; `requiresAdmin` + `auth.isAdmin` (server enforces) |
 | Game session | `GamePage` | `stores/game` `rejoinGame`/`sendMove`/`sendRescue`/`sendPush`/`sendReturnFromFinish`/`sendPeek`/`sendPeekAnswer`/`sendEndTurn`/`sendSay`; top presence + seated sticky `.game-hud` (own + strip row/2×2; no chip/`q-menu`); unfinished pieces + holes + grille overlays (`GRILLE_ANIM_MS=1000`; defer drop during catapult hops) + catapult land→overlay→fling (`CATAPULT_ANIM_MS=1000`, spectator parity, D13, board-busy lock) + trap/rescue/push + return strip icon (no modal) + all-jail modal + budgets beside avatar / end-turn icon on avatar + peek + finish nearest-center / timeout UX + dual rings + say top↓ / own↑; route param `roomId` (reconnect only — **not** shown in chrome); `meta.requiresAuth` |
 
 Room name `tourist` + live lobby align with `../happy-tourist-server`; Game mirrors seats/`finishPlace`/`timeExpired`/piece `finished`/`trapped`/`currentTurnSessionId`/`turnUntil`/`turnBudgetSeconds`/`removedTaskKeys`/`holdingGrilleKeys`/`revealingCatapultKeys`/`brokenCatapultKeys`, listens private `budgets`/`peekOpen`/`allJailWarning`, and renders unfinished pieces (after materialize) + holes + grille/catapult overlays + rescue/push/return-icon chrome + own counters (beside avatar) / end-turn icon on avatar + peek chrome + finish/timeout + top + seated-bottom presence rings + strip + local move chrome (eligible seats; move/push do not end turn; trapped locked) + ephemeral say bubbles (top↓ / own↑).

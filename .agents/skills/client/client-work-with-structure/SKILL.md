@@ -32,7 +32,7 @@ may also host copies later).
 4. Respect **allowed dependency direction** (see below). Never invert layers.
 5. Import `.vue` / `.ts` by direct path. No per-feature `index.ts` barrels required.
 6. Keep `App.vue` as the shared shell: `q-layout` → shared `q-header` (theme toggle always; on **Game** also icon-only leave + centered match status + leave confirm dialog) → `q-page-container` → theme `q-banner` + `<router-view />`. Lobby logout and page banners stay **inside each page**; do **not** reintroduce a page-local Game leave/status header; do not duplicate the theme toggle per page.
-7. Keep Colyseus auth/room/theme I/O inside Pinia stores (`auth`, `theme`, `game`). Prefer `import { client } from '@/boot/colyseus'` over `$colyseus` in script.
+7. Keep Colyseus auth/room/theme/support I/O inside Pinia stores (`auth`, `theme`, `game`, `support`). Prefer `import { client } from '@/boot/colyseus'` over `$colyseus` in script.
 8. Use Quasar auto-imported components (`q-page`, `q-btn`, …). Do not manually register Quasar UI components.
 9. Prefer Composition API + `<script setup lang="ts">`. Do not introduce Options API pages.
 
@@ -42,7 +42,7 @@ may also host copies later).
 |-------|------|------|
 | Pages | `src/pages/*Page.vue` | Route-level screens; compose stores + Quasar + optional components |
 | Components | `src/components/` | Reusable widgets (mostly Quasar scaffold leftovers today) |
-| Stores | `src/stores/` | Pinia: `auth`, `theme`, `game` (+ unused scaffold `example-store`) |
+| Stores | `src/stores/` | Pinia: `auth`, `theme`, `game`, `support` (+ unused scaffold `example-store`) |
 | Boot | `src/boot/` | Quasar boot: `theme`, `i18n`, `colyseus` (registered in `quasar.config.ts`; `framework.plugins: ['Dark']`) |
 | Router | `src/router/` | `routes.ts` + guards in `index.ts` (`filenameBasedRouting: false`) |
 | i18n | `src/i18n/` | Locale message trees (`en-US`) |
@@ -81,7 +81,7 @@ Also normal:
 | `components` → `pages` | Widgets stay page-agnostic |
 | `stores` → `pages` / `components` | Data layer must not import UI |
 | `boot` → `pages` / `components` | Boot is app setup only |
-| Scattering `client.*` across many components | Keep Colyseus I/O in `stores/auth`, `stores/theme`, `stores/game` |
+| Scattering `client.*` across many components | Keep Colyseus I/O in `stores/auth`, `stores/theme`, `stores/game`, `stores/support` |
 | Adding `blocks/` or `dialogs/` registry “like B2B” | This app has no those layers |
 
 ## Where New UI Belongs

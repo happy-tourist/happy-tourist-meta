@@ -2,9 +2,10 @@
 name: work-with-database
 description: >-
   Use when adding, changing, reviewing, or debugging GameDatabase, Drizzle user
-  schema, colyseus_users extensions, DATABASE_URL / game.db paths, or profile
-  fields (displayName, rating, gamesPlayed, gamesWon, theme, emailVerified) in
-  happy-tourist-server so built-in /auth/register and /auth/login keep working.
+  schema, colyseus_users extensions, DATABASE_URL / game.db paths, profile
+  fields (displayName, rating, gamesPlayed, gamesWon, theme, emailVerified,
+  htRole), or support_tickets / support_messages tables in happy-tourist-server
+  so built-in /auth/register and /auth/login keep working.
 ---
 
 # Work With Database
@@ -37,8 +38,13 @@ Driver: **better-sqlite3**. ORM surface: **drizzle-orm** via Colyseus `tables.sq
 | `gamesWon` | `games_won` | `integer().notNull().default(0)` |
 | `theme` | `theme` | nullable `text` — `light` \| `dark` \| unset (`null`); **no** NOT NULL / no default required |
 | `emailVerified` | `email_verified` | `integer({ mode: "boolean" }).notNull().default(false)`; Google + legacy non-anonymous backfill → `true`; change-email resets to `false`; in userdata |
+| `htRole` | `ht_role` | `text().notNull().default("user")` — product role `user` \| `moderator` \| `admin`. **Do not** name the JS field `role` (GameDatabase auto-relates `role` → `colyseus_roles`). Public API / JWT userdata expose it as `role`. Bootstrap via `BOOTSTRAP_ADMIN_IDS` → `bootstrapAdminIds()`. |
 
-These are **profile** fields (display name, rating, games played/won, UI theme, email verify flag) for auth users — not room/board state. `theme` is written by thin `POST /api/theme` and read by `GET /api/theme` for registered users only; it also lands in JWT userdata on subsequent login (client restore must not rely on JWT alone after reload). `emailVerified` is updated by confirm callback / Google path / change-email endpoint (see `server-work-with-auth`).
+These are **profile** fields (display name, rating, games played/won, UI theme, email verify flag, product role) for auth users — not room/board state. `theme` is written by thin `POST /api/theme` and read by `GET /api/theme` for registered users only; it also lands in JWT userdata on subsequent login (client restore must not rely on JWT alone after reload). `emailVerified` is updated by confirm callback / Google path / change-email endpoint (see `server-work-with-auth`). Role is checked on each support/admin HTTP request from DB (client gating is advisory).
+
+### Support tables (custom, not SchemaSet)
+
+`support_tickets` / `support_messages` are declared in `src/db/schema.ts` and created at boot by `ensureSupportTables()` in `src/lib/support.ts` (raw `CREATE TABLE IF NOT EXISTS`) — they are **not** registered in `GameDatabase` `schemas: { users }`. Logic lives in `support.ts`; HTTP stays thin in `app.config.ts`.
 
 ## Relation To Auth
 
@@ -83,6 +89,7 @@ export const users = tables.sqlite.users("colyseus_users", {
   emailVerified: integer("email_verified", { mode: "boolean" })
     .notNull()
     .default(false),
+  htRole: text("ht_role").notNull().default("user"),
   // newField: integer("new_field").notNull().default(0),
 });
 ```
@@ -93,11 +100,13 @@ export const users = tables.sqlite.users("colyseus_users", {
 - Give every custom NOT NULL column a `.default(...)`.
 - Keep `GameDatabase` wiring in `src/db/index.ts` (`DATABASE_URL` ?? `./game.db`).
 - Treat profile stats (rating, games played/won) as DB fields updated from authoritative server code (e.g. room end), not from trusted client payloads alone.
+- Use `htRole` / `ht_role` for product roles; expose as `role` in userdata/API only.
 - Preserve prod path awareness: often `/var/www/happy-tourist-server/game.db`.
 
 ## Don't
 
 - Add custom NOT NULL columns **without** `.default(...)` — breaks built-in auth.
+- Name a users column/property `role` — conflicts with Colyseus `colyseus_roles` relation.
 - Put board / match state in the users table — that belongs in `@colyseus/schema` room state.
 - Commit `game.db`, secrets, or production `.env` with real credentials.
 - Expect rsync deploy to create or replace `game.db` (it is excluded as `game.db*`).

@@ -4,11 +4,11 @@ description: >-
   Use when adding, changing, reviewing, or debugging Colyseus server config:
   env loading (.env.${NODE_ENV}), secrets (AUTH_SALT / JWT_SECRET /
   SESSION_SECRET / GOOGLE_CLIENT_* / SMTP_BZ_* / MAIL_FROM /
-  AUTH_BACKEND_URL / CLIENT_APP_URL), DATABASE_URL / PORT / NODE_ENV,
-  src/app.config.ts defineServer wiring, src/config/auth.ts OAuth + email
-  flows (getRuntimeAuth / configureAuthEmailFlows), CORS (ALLOWED_ORIGIN,
-  credentials), /health /hi, or non-prod monitor / playground. Not for
-  APP_NAME brand merge (not a BFF).
+  AUTH_BACKEND_URL / CLIENT_APP_URL / BOOTSTRAP_ADMIN_IDS), DATABASE_URL /
+  PORT / NODE_ENV, src/app.config.ts defineServer wiring (incl. support/admin
+  routes + bootstrap), src/config/auth.ts OAuth + email flows (getRuntimeAuth /
+  configureAuthEmailFlows), CORS (ALLOWED_ORIGIN, credentials), /health /hi,
+  or non-prod monitor / playground. Not for APP_NAME brand merge (not a BFF).
 ---
 
 # Work With Config
@@ -82,7 +82,8 @@ From `.env.example`:
 | `SMTP_BZ_HOST` / `SMTP_BZ_PORT` / `SMTP_BZ_USER` / `SMTP_BZ_PASS` | smtp.bz transport (`src/lib/mailer.ts`); host **`connect.smtp.bz`** (ports 2525/587 STARTTLS or 465/9465 SSL; mailer `secure` when port is 465 or 9465) |
 | `MAIL_FROM` | From header for outbound mail |
 | `AUTH_BACKEND_URL` | Public API origin → `auth.backend_url` (Google OAuth / API — **not** mail link base) |
-| `CLIENT_APP_URL` | Client origin; mail links → `/#/confirm-email` and `/#/reset-password`; SPA confirm → lobby |
+| `CLIENT_APP_URL` | Client origin; mail links → `/#/confirm-email` and `/#/reset-password`; support status mail → `/#/support/<id>`; SPA confirm → lobby |
+| `BOOTSTRAP_ADMIN_IDS` | Comma-separated `colyseus_users.id`; on startup idempotent `ht_role='admin'` via `bootstrapAdminIds()` (env wins demotion) |
 | `DATABASE_URL` | SQLite path (local `./game.db`; prod often under `/var/www/happy-tourist-server/game.db`) |
 | `NODE_ENV` | `development` / `production` — picks env file, CORS origin, monitor/playground |
 | `PORT` | Listen port (default `2567` via `@colyseus/tools` `listen`) |
@@ -94,8 +95,8 @@ Generate secrets locally with e.g. `openssl rand -base64 32`. Keep the same
 
 | Belongs in **env** | Belongs in **`app.config.ts`** |
 | --- | --- |
-| Secrets (`AUTH_SALT`, `JWT_SECRET`, `SESSION_SECRET`, `GOOGLE_CLIENT_*`, `SMTP_BZ_*`, `MAIL_FROM`) | `defineServer` shape: `database`, `rooms`, `routes`, `express`; auth email configure + thin `/api/auth/*` |
-| Contour (`NODE_ENV`, `PORT`, `DATABASE_URL`, `AUTH_BACKEND_URL`, `CLIENT_APP_URL`) | CORS middleware order and headers |
+| Secrets (`AUTH_SALT`, `JWT_SECRET`, `SESSION_SECRET`, `GOOGLE_CLIENT_*`, `SMTP_BZ_*`, `MAIL_FROM`) | `defineServer` shape: `database`, `rooms`, `routes`, `express`; auth email configure + thin `/api/auth/*` + `/api/support/*` + `/api/admin/*` |
+| Contour (`NODE_ENV`, `PORT`, `DATABASE_URL`, `AUTH_BACKEND_URL`, `CLIENT_APP_URL`, `BOOTSTRAP_ADMIN_IDS`) | CORS middleware order and headers; support table ensure + bootstrap admins + auto-close interval |
 | Anything that must change without a code change | `/health`, `/hi`, non-prod `monitor()` / `playground()` |
 | | Room name → room class mapping; `createEndpoint` paths |
 

@@ -27,27 +27,31 @@ Composition is flat under `src/`. Search and assign ownership top-down.
 | Layer | Path | Role |
 |-------|------|------|
 | Routes | `src/router/routes.ts` + `index.ts` | hash routes + guards |
-| Pages | `src/pages/*Page.vue` | LoginPage, LobbyPage, GamePage |
+| Pages | `src/pages/*Page.vue` | LoginPage, LobbyPage, SupportPage, SupportTicketPage, SupportStaffPage, AdminUsersPage, GamePage |
 | Components | `src/components/` | mostly scaffold; prefer pages→stores |
 | Boot | `src/boot/` | theme, i18n, colyseus |
-| Stores | `src/stores/` | auth, theme, game, example-store |
+| Stores | `src/stores/` | auth, theme, game, support, example-store |
 | CSS | `src/css/` | app.scss, quasar.variables.scss |
 | i18n | `src/i18n/` | en-US |
 | Env/CI | `.env.*`, `.github/workflows/deploy.yml` | VITE_*, GitHub Pages |
 
-Allowed dependency direction: `pages` → `stores` / `boot` / `components`. Keep **Colyseus I/O inside Pinia stores** (`auth`, `theme`, `game`) — do not scatter `client.*` across many components. Prefer importing `client` from `@/boot/colyseus` over `$colyseus`.
+Allowed dependency direction: `pages` → `stores` / `boot` / `components`. Keep **Colyseus I/O inside Pinia stores** (`auth`, `theme`, `game`, `support`) — do not scatter `client.*` across many components. Prefer importing `client` from `@/boot/colyseus` over `$colyseus`.
 
-Scaffold leftovers (`EssentialLink.vue`, `example-store.ts`, unused `pages/index*`) are not part of the game flow — prefer login / lobby / game.
+Scaffold leftovers (`EssentialLink.vue`, `example-store.ts`, unused `pages/index*`) are not part of the game flow — prefer login / lobby / support / game.
 
 ### Routes
 
-Router mode: hash (`/#/lobby`, `/#/game/...`). Guards in `src/router/index.ts` await `auth.whenReady()`, then enforce `meta.requiresAuth` / `meta.guest`.
+Router mode: hash (`/#/lobby`, `/#/support`, `/#/game/...`). Guards in `src/router/index.ts` await `auth.whenReady()`, then enforce `meta.requiresAuth` / `meta.guest` / `meta.requiresStaff` / `meta.requiresAdmin`.
 
 | Path | Name | Page / meta |
 |------|------|-------------|
 | `/` → `/lobby` | — | redirect |
 | `/login` | `login` | `LoginPage`; `meta.guest` |
 | `/lobby` | `lobby` | `LobbyPage`; `meta.requiresAuth` |
+| `/support` | `support` | `SupportPage`; `meta.requiresAuth` |
+| `/support/staff` | `support-staff` | `SupportStaffPage`; `requiresAuth` + `requiresStaff` |
+| `/support/:id` | `support-ticket` | `SupportTicketPage`; `meta.requiresAuth` |
+| `/admin/users` | `admin-users` | `AdminUsersPage`; `requiresAuth` + `requiresAdmin` |
 | `/game/:roomId` | `game` | `GamePage`; `meta.requiresAuth` |
 | `/:catchAll(.*)*` | — | redirect to `/lobby` |
 
@@ -73,8 +77,9 @@ Shared mutable session and realtime I/O belong in Pinia, not ad-hoc page-only `c
 
 | Concern | Store surface (typical) |
 |---------|-------------------------|
-| Auth session | `stores/auth.ts`: `register` / `login` / `loginAnonymously` / `loginWithGoogle` / `logout` / `whenReady`; `isAuthenticated`, `displayName`; optional `user.theme`; sync via `client.auth.onChange` |
+| Auth session | `stores/auth.ts`: `register` / `login` / `loginAnonymously` / `loginWithGoogle` / `logout` / `whenReady`; `isAuthenticated`, `displayName`, `role` / `isStaff` / `isAdmin`; optional `user.theme`; sync via `client.auth.onChange` |
 | UI theme (chrome Dark) | `stores/theme.ts`: `syncFromAuthUser` / `toggle`; guest `localStorage` (`ht-theme`); registered `client.http.get('/api/theme')` restore (≠ JWT-only; **no** `auth.user` replace after GET) + `post` on toggle; `App.vue` stable `watch([() => auth.ready, () => auth.user?.id, () => auth.user?.anonymous], …)` (SC-THEME-10) |
+| Support tickets / staff / admin | `stores/support.ts`: HTTP `/api/support/*` + `/api/admin/*` via `client.http`; pages `Support*` / `AdminUsersPage` |
 | Lobby room list | `stores/game.ts` `subscribeLobby` / `unsubscribeLobby` → LobbyRoom `rooms` / `+` / `-` |
 | Enter / leave room | `createGame` / `joinGame` / `leaveGame` (`TOURIST_ROOM` / `LOBBY_ROOM`) |
 | Room attach | `_attachRoom` `onStateChange` / `onLeave`; getter `isInRoom` |
@@ -98,16 +103,18 @@ Do not invent room schemas, HTTP routes, or move payloads — note the server pa
 
 - Login / register / guest / Google → `pages/LoginPage.vue` + `stores/auth.ts`.
 - Lobby create / join / list → `pages/LobbyPage.vue` + `stores/game.ts`.
+- Support create / list / thread / staff / admin roles → `pages/Support*.vue` / `AdminUsersPage.vue` + `stores/support.ts` (+ `auth.role` gating).
 - Board interaction / presence / `rejoinGame` → `pages/GamePage.vue` + `stores/game.ts`.
-- Locale messages → `src/i18n/` (default `en-US`).
+- Locale messages → `src/i18n/` (default `en-US`; support keys under `support.*`).
 - Deploy / Pages 404 fallback → `.github/workflows/deploy.yml` (`quasar build -m spa`, `index.html` → `404.html`).
 
 ## Domain Hotspots
 
 | Domain | Start here |
 |--------|------------|
-| Auth (email/password, anonymous, Google, logout) | `pages/LoginPage.vue` + `stores/auth.ts`; router guards in `router/index.ts` |
-| Lobby (list / create / join; quiet resubscribe) | `pages/LobbyPage.vue` + `stores/game` `subscribeLobby` / `createGame` / `joinGame` |
+| Auth (email/password, anonymous, Google, logout, role nav) | `pages/LoginPage.vue` + `stores/auth.ts`; router guards in `router/index.ts` |
+| Lobby (list / create / join; quiet resubscribe; Support link) | `pages/LobbyPage.vue` + `stores/game` `subscribeLobby` / `createGame` / `joinGame` |
+| Support (tickets / staff queue / admin roles) | `pages/Support*.vue` / `AdminUsersPage.vue` + `stores/support.ts` |
 | Game board (layout, unfinished pieces, finish/timeout UX, dual presence rings, strip, turn select/`sendMove`, rejoin) | `pages/GamePage.vue` + `stores/game` `onStateChange` / `sendMove` / `rejoinGame(roomId)` |
 | Env / deploy | `.env.*`, `env.d.ts`, `boot/colyseus.ts`, `.github/workflows/deploy.yml` |
 | Theme / layout chrome | `App.vue` header + `stores/theme` + `boot/theme` + `css/*` (board CSS ≠ app Dark) |
@@ -133,7 +140,7 @@ Today: GamePage board + dual presence rings (outer turn from `turnUntil`/`turnBu
 3. Walk ownership:
    - route → page → store / boot / component imports;
    - Pinia usage from the page;
-   - Colyseus calls only inside `stores/auth`, `stores/theme`, or `stores/game` (flag page-level `client.*` as a smell to relocate);
+   - Colyseus calls only inside `stores/auth`, `stores/theme`, `stores/game`, or `stores/support` (flag page-level `client.*` as a smell to relocate);
    - server sibling when protocol/schema/room listing must change.
 
 4. Apply decision guidance above to classify each hit as edit vs add, and note related store/boot/env/server touch points.

@@ -13,9 +13,11 @@ description: >-
   already-current→solo no re-grant) + turn deadlines (setTurnBudgetsForTests) +
   trap presentation budgets (setTrapPresentationBudgetsForTests),
   center finish / finishPlace (SC-FINISH), preset say (SC-SAY), schema sync
-  assertions, GET /rooms listing, or preference HTTP (GET/POST /api/theme).
-  Core workflow: test plan (mocks/verify) → write test/*.test.ts → run npm test
-  from server package root and fix failures. Do not invent Jest/babel patterns.
+  assertions, GET /rooms listing, preference HTTP (GET/POST /api/theme), or
+  support tickets + roles (test/support.test.ts — SC-SUP-* / SC-ROLE-*; mock
+  mailer; BOOTSTRAP_ADMIN_IDS). Core workflow: test plan (mocks/verify) → write
+  test/*.test.ts → run npm test from server package root and fix failures. Do
+  not invent Jest/babel patterns.
 trigger: slash
 ---
 
@@ -65,6 +67,7 @@ tests; fix failures before claiming done.
 | HTTP helpers (`/health`, `/rooms/:name`) | `test/http.test.ts` or next to the feature under test |
 | Preference HTTP (`GET`/`POST /api/theme`) | `test/theme.test.ts` (auth reject + persist/login + GET after POST same JWT + cross-device older JWT) |
 | Auth email flows (confirm / forgot / change-email / cooldown) | `test/zz-authEmail.test.ts` — mock `setSendEmailImpl`; `clearConfirmSendCooldownForTests`; `keepLatestRequestListener` after boot |
+| Support tickets + roles (SC-SUP-* / SC-ROLE-*) | `test/support.test.ts` — mock mailer; `ensureSupportTables` / `bootstrapAdminIds` / `setUserRoleForTests` / `runAutoClose`; `keepLatestRequestListener` after boot |
 
 Mocha picks up `test/**.test.ts` via the npm script. Mirror room names under
 `test/` as rooms grow; keep relative imports to `../src/...`.

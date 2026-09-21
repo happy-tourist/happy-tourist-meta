@@ -4,8 +4,8 @@ description: >-
   Use when changing server env vars, PM2, VPS deploy, GitHub Actions rsync, or
   DATABASE_URL for happy-tourist-server — AUTH_SALT / JWT_SECRET / SESSION_SECRET /
   GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET, SMTP_BZ_* / MAIL_FROM /
-  AUTH_BACKEND_URL / CLIENT_APP_URL, .env.development / .env.production,
-  ecosystem.config.cjs, or .github/workflows/deploy.yml.
+  AUTH_BACKEND_URL / CLIENT_APP_URL / BOOTSTRAP_ADMIN_IDS, .env.development /
+  .env.production, ecosystem.config.cjs, or .github/workflows/deploy.yml.
 ---
 
 # Work With Env And Deploy
@@ -42,7 +42,8 @@ Deploy target: VPS under `/var/www/happy-tourist-server`, Node 22, PM2. Trigger:
 | `SMTP_BZ_USER` / `SMTP_BZ_PASS` | smtp.bz credentials | same | same |
 | `MAIL_FROM` | From header (e.g. `Happy Tourist <noreply@happy-tourist.ru>`) | same | same |
 | `AUTH_BACKEND_URL` | Public API origin for confirm/reset links (`auth.backend_url`) | e.g. `http://localhost:2567` | `https://api.happy-tourist.ru` |
-| `CLIENT_APP_URL` | Client origin; mail SPA links `/#/confirm-email` + `/#/reset-password`; SPA confirm → `#/lobby` | e.g. `http://localhost:9000` | `https://happy-tourist.ru` |
+| `CLIENT_APP_URL` | Client origin; mail SPA links `/#/confirm-email` + `/#/reset-password`; support status → `/#/support/<id>`; SPA confirm → `#/lobby` | e.g. `http://localhost:9000` | `https://happy-tourist.ru` |
+| `BOOTSTRAP_ADMIN_IDS` | Comma-separated user ids promoted to admin on every start (idempotent) | empty or local ids | VPS `.env.production` (same DB as JWT userdata) |
 | `DATABASE_URL` | SQLite path for GameDatabase | `./game.db` | often `/var/www/happy-tourist-server/game.db` |
 | `NODE_ENV` | `development` / `production` (CORS, monitor/playground) | `development` | `production` (also set in PM2 `env`) |
 | `PORT` | Listen port | `2567` | `2567` (PM2 `env` + file) |

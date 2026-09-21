@@ -6,8 +6,10 @@ description: >-
   ConfirmEmailPage / ResetPasswordPage (SPA + JSON), AccountPage (confirm button
   + change email), session verify modal → cabinet, Pinia auth store,
   client.auth from @colyseus/sdk, colyseus-auth-token, whenReady, router
-  requiresAuth / guest guards, or logout in this Quasar Vue 3 tourist SPA.
-  No auto mail on register; confirm/reset UX is client SPA not API HTML.
+  requiresAuth / guest / requiresStaff / requiresAdmin guards, userdata
+  `role` / `isStaff` / `isAdmin` (nav only — server enforces), or logout in
+  this Quasar Vue 3 tourist SPA. No auto mail on register; confirm/reset UX
+  is client SPA not API HTML.
 ---
 
 # Work With Auth
@@ -23,15 +25,15 @@ Auth is **token-based Colyseus Auth** via `client.auth` from `@colyseus/sdk`. Th
 | Layer | Path | Role |
 |-------|------|------|
 | Boot | `src/boot/colyseus.ts` | `Client` singleton (`VITE_COLYSEUS_URL`); `$colyseus` on app |
-| Store | `src/stores/auth.ts` | Pinia setup store: register / login / loginAnonymously / loginWithGoogle / logout / forgotPassword / confirmEmail / resetPassword / sendEmailConfirmation / changeEmail / whenReady |
+| Store | `src/stores/auth.ts` | Pinia setup store: register / login / loginAnonymously / loginWithGoogle / logout / forgotPassword / confirmEmail / resetPassword / sendEmailConfirmation / changeEmail / whenReady; exposes `role` / `isStaff` / `isAdmin` from userdata |
 | Login | `src/pages/LoginPage.vue` | Email/password register↔login + anonymous guest + Google; link to forgot; **no** post-register «письмо уже ушло» |
 | Forgot | `src/pages/ForgotPasswordPage.vue` | Request reset email; `guest` route; success without «если существует»; `email_not_found` → RU not-found; back to Login |
 | Confirm | `src/pages/ConfirmEmailPage.vue` | Public hash route; **auto** `confirmEmail(token)` on mount (no Confirm button); success → lobby; RU errors |
 | Reset | `src/pages/ResetPasswordPage.vue` | Public hash route; password form → `resetPassword`; success → login; RU errors |
 | Cabinet | `src/pages/AccountPage.vue` | Current email; confirm button next to email if `!emailVerified`; change-email UI; success dialog after send (**RU**, mentions spam folder) |
 | App shell | `src/App.vue` | Session reminder modal → cabinet (once per `sessionStorage`; mark seen **when shown**); skip anonymous + auth-email public routes |
-| Router | `src/router/index.ts` | `beforeEach` awaits `whenReady()`; `requiresAuth` / `guest` |
-| Routes | `src/router/routes.ts` | `/login`, `/forgot-password` `guest`; `/confirm-email`, `/reset-password` **public** (no `guest` redirect — logged-in confirm must run); `/lobby`, `/account`, `/game/:roomId` `requiresAuth` |
+| Router | `src/router/index.ts` | `beforeEach` awaits `whenReady()`; `requiresAuth` / `guest` / `requiresStaff` / `requiresAdmin` (staff/admin → `/support` if denied; **nav only**) |
+| Routes | `src/router/routes.ts` | `/login`, `/forgot-password` `guest`; `/confirm-email`, `/reset-password` **public** (no `guest` redirect — logged-in confirm must run); `/lobby`, `/account`, `/support` (+ staff/ticket), `/admin/users`, `/game/:roomId` `requiresAuth` |
 | Token | SDK storage key `colyseus-auth-token` | Persisted by `@colyseus/sdk` Auth; synced via `onChange` |
 
 Prefer Colyseus I/O in the Pinia auth store, not scattered `client.auth.*` / `client.http.*` calls in components.
@@ -49,6 +51,8 @@ App boot → Client(VITE_COLYSEUS_URL)
         │
         ├─ meta.requiresAuth && !isAuthenticated → /login
         ├─ meta.guest && isAuthenticated → /lobby
+        ├─ meta.requiresAdmin && !isAdmin → /support
+        ├─ meta.requiresStaff && !isStaff → /support
         └─ else → proceed  (confirm-email / reset-password have neither meta)
         │
         ▼
@@ -101,13 +105,16 @@ File: `src/stores/auth.ts` (setup store).
 
 | State / computed | Meaning |
 |------------------|---------|
-| `user` | SDK userdata (`id`, `email`, `name`, `anonymous`, `emailVerified?`, optional `theme` `light`\|`dark`\|null, …) |
+| `user` | SDK userdata (`id`, `email`, `name`, `anonymous`, `emailVerified?`, optional `theme` `light`\|`dark`\|null, optional `role` `user`\|`moderator`\|`admin`, …) |
 | `token` | Auth token string or `null` |
 | `loading` / `error` | In-flight flag + last error message (may be stable code like `email_not_found` / `token_expired`) |
 | `ready` | First `onChange` completed (session restore settled) |
 | `isAuthenticated` | `Boolean(token && user)` |
 | `needsEmailVerification` | Registered (has email, not anonymous) and `emailVerified !== true` |
 | `displayName` | `name` → `email` → `'Гость'` if anonymous → `'Игрок'` |
+| `role` | Product role from userdata (`user` \| `moderator` \| `admin`; default `user`) |
+| `isStaff` | `role === 'moderator' \|\| role === 'admin'` — staff support queue nav |
+| `isAdmin` | `role === 'admin'` — admin users page nav (SC-ROLE-08) |
 
 Actions (all set `loading`/`error`; rethrow after storing message):
 
@@ -220,6 +227,15 @@ Router.beforeEach(async (to) => {
   if (to.meta.guest && auth.isAuthenticated) {
     return '/lobby';
   }
+
+  // Client nav gating only — server still enforces (SC-ROLE-08).
+  if (to.meta.requiresAdmin && !auth.isAdmin) {
+    return '/support';
+  }
+
+  if (to.meta.requiresStaff && !auth.isStaff) {
+    return '/support';
+  }
 });
 ```
 
@@ -229,9 +245,11 @@ Route meta (`src/router/routes.ts`):
 |------|------|
 | `/login`, `/forgot-password` | `guest: true` |
 | `/confirm-email`, `/reset-password` | public (neither `guest` nor `requiresAuth`) |
-| `/lobby`, `/account`, `/game/:roomId` | `requiresAuth: true` |
+| `/lobby`, `/account`, `/support`, `/support/:id`, `/game/:roomId` | `requiresAuth: true` |
+| `/support/staff` | `requiresAuth` + `requiresStaff` |
+| `/admin/users` | `requiresAuth` + `requiresAdmin` |
 
-Router mode is **hash** (`/#/login`, `/#/confirm-email`, `/#/reset-password`, `/#/lobby`). Always await `whenReady()` before deciding auth redirects — otherwise a restored token looks logged-out on first paint.
+Router mode is **hash** (`/#/login`, `/#/confirm-email`, `/#/reset-password`, `/#/lobby`, `/#/support`). Always await `whenReady()` before deciding auth redirects — otherwise a restored token looks logged-out on first paint. Staff/admin meta gates **nav only** — HTTP still enforces on the server.
 
 ## Client Singleton
 

@@ -19,7 +19,7 @@ Stack: Vue 3 Composition API / `<script setup>`, Quasar 2, Pinia 4, TypeScript, 
 
 Sibling server: `../happy-tourist-server`. Coordinate room name, state schema, and message protocol with that package.
 
-There is **no** axios layer and **no** BFF. Live lobby uses `LobbyRoom` WebSocket messages; gameplay uses room WebSocket messages. HTTP `client.http` is used for registered theme preference (`GET`/`POST` `/api/theme` in `stores/theme`); lobby listing still prefers live LobbyRoom (`GET /rooms/tourist` remains unused fallback).
+There is **no** axios layer and **no** BFF. Live lobby uses `LobbyRoom` WebSocket messages; gameplay uses room WebSocket messages. HTTP `client.http` is used for registered theme preference (`GET`/`POST` `/api/theme` in `stores/theme`) and support/admin (`stores/support` → `/api/support/*`, `/api/admin/*`); lobby listing still prefers live LobbyRoom (`GET /rooms/tourist` remains unused fallback).
 
 ## Quick Reference
 
@@ -27,7 +27,7 @@ There is **no** axios layer and **no** BFF. Live lobby uses `LobbyRoom` WebSocke
 |-------|----------------|
 | Client singleton | `export const client = new Client(import.meta.env.VITE_COLYSEUS_URL)` in `src/boot/colyseus.ts` |
 | Prefer import | `import { client } from '@/boot/colyseus'` (also `$colyseus` on `globalProperties`) |
-| Where I/O lives | Pinia stores only: `stores/auth.ts`, `stores/theme.ts` (preference HTTP), `stores/game.ts` |
+| Where I/O lives | Pinia stores only: `stores/auth.ts`, `stores/theme.ts` (preference HTTP), `stores/game.ts`, `stores/support.ts` (tickets/staff/admin HTTP) |
 | Pages | Call store actions; do not call `client.*` from pages/components |
 | Live lobby list | `subscribeLobby` → `joinOrCreate(LOBBY_ROOM, { filter: { name: TOURIST_ROOM } })` + `rooms` / `+` / `-` |
 | HTTP fallback | `refreshRooms` → `client.http.get('/rooms/tourist')` — unused by LobbyPage; **not** `getAvailableRooms` |
