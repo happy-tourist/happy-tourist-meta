@@ -66,8 +66,8 @@ Use these rules to pick the layer before naming files.
 | A new screen / URL | `src/router/routes.ts` (+ guard meta in `index.ts` if needed) + new `src/pages/FooPage.vue` |
 | Page-specific UI / interaction | owning `src/pages/*Page.vue` |
 | Reusable across pages | `src/components/` (only when reuse is real; avoid premature extraction) |
-| Global shell / brand logo / theme toggle | `src/App.vue` (`q-header` brand logo left + Dark toggle + `theme.error` banner; Game leave via logo; syncs `auth` → `theme`) |
-| Brand asset / title / favicon | `src/assets/brand/logo.png`; `package.json` `productName`; `public/favicon.ico` + `index.html` |
+| Global shell / brand logo / theme toggle | `src/App.vue` (`q-header` always-button brand logo ≥60px left + Dark toggle + `theme.error` banner; Game leave via logo; auth/other → lobby, lobby noop; syncs `auth` → `theme`) |
+| Brand asset / title / favicon | `src/assets/brand/logo.png`; `package.json` `productName` = `Happy Tourist`; `public/favicon.ico` + `index.html` (no PNG favicon set) |
 | Theme / Dark preference | `boot/theme.ts`, `stores/theme.ts`, `quasar.config.ts` (`Dark` plugin); guest `localStorage`; registered `GET`/`POST` `/api/theme` (restore ≠ JWT-only) |
 | Theme / global styles | `src/css/quasar.variables.scss`, `src/css/app.scss` (`.text-muted`) |
 | Copy / locale strings | `src/i18n/` (+ boot `src/boot/i18n.ts` if wiring changes) |

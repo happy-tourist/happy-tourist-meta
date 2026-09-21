@@ -4,8 +4,8 @@ description: >-
   Use when placing or moving UI in the happy-tourist Vue 3 client: pages
   (*Page.vue), components, Pinia stores, Quasar boot files, dependency
   direction between layers, or deciding whether new UI belongs in pages vs
-  components vs stores vs App shell (brand logo left; Game leave via logo + status;
-  theme; no page «В лобби»). No blocks/
+  components vs stores vs App shell (always-button brand logo ≥60px; Game leave via logo + status;
+  auth→lobby; theme; no page «В лобби»). No blocks/
   or dialogs/ registry layers.
 ---
 
@@ -32,7 +32,7 @@ may also host copies later).
 3. Place UI by layer role (route page vs reusable widget vs store-owned I/O).
 4. Respect **allowed dependency direction** (see below). Never invert layers.
 5. Import `.vue` / `.ts` by direct path. No per-feature `index.ts` barrels required.
-6. Keep `App.vue` as the shared shell: `q-layout` → shared `q-header` (brand logo ~30px left always; theme toggle always; on **Game** also centered match status; leave = logo click + confirm dialog) → `q-page-container` → theme `q-banner` + `<router-view />`. Logo modes: auth decorative / lobby noop / Game leave / other auth → lobby. Lobby logout and page banners stay **inside each page**; do **not** reintroduce Material `logout` leave, page-level «В лобби», or a page-local Game leave/status header; do not duplicate the theme toggle per page.
+6. Keep `App.vue` as the shared shell: `q-layout` → shared `q-header` (brand logo ≥60px left always as the **same** interactive button; theme toggle always; on **Game** also centered match status; leave = logo click + confirm dialog) → `q-page-container` → theme `q-banner` + `<router-view />`. Logo click modes: auth → lobby / lobby noop / Game leave / other authenticated → lobby (never swap to bare decorative `img`). Lobby logout and page banners stay **inside each page**; do **not** reintroduce Material `logout` leave, page-level «В лобби», or a page-local Game leave/status header; do not duplicate the theme toggle per page.
 7. Keep Colyseus auth/room/theme/support I/O inside Pinia stores (`auth`, `theme`, `game`, `support`). Prefer `import { client } from '@/boot/colyseus'` over `$colyseus` in script.
 8. Use Quasar auto-imported components (`q-page`, `q-btn`, …). Do not manually register Quasar UI components.
 9. Prefer Composition API + `<script setup lang="ts">`. Do not introduce Options API pages.
@@ -66,7 +66,7 @@ pages       →  stores / boot / components / router (params)
 components  →  other components (keep lean; prefer props over store)
 stores      →  boot/colyseus (client); theme store also uses boot/theme helpers
 boot        →  env / SDK / i18n / early Dark apply only
-App.vue     →  layout + shared header (brand logo; theme; Game status; leave via logo) + banner + auth→theme sync + game leave
+App.vue     →  layout + shared header (always-button brand logo ≥60px; theme; Game status; leave via logo; auth→lobby / lobby noop) + banner + auth→theme sync + game leave
 ```
 
 Also normal:
@@ -192,7 +192,7 @@ Registered in `quasar.config.ts` boot array: `theme`, `i18n`, `colyseus` (+ `fra
 
 **Game** — `GamePage` shows tourist board (scroll region) + top presence (opponents / spectator all) + sticky seated `.game-hud` (own + strip row/2×2; dual rings; **no** chip/`q-menu`) + grille overlays from `holdingGrilleKeys` (`GRILLE_ANIM_MS=1000`; defer drop while catapult queue busy) + catapult sequential overlays from `revealingCatapultKeys` / `brokenCatapultKeys` (`CATAPULT_ANIM_MS=1000`, land→overlay→fling, D13 atomic mirror, board-busy incl. pending grille) + push icons + return strip icon (no confirm modal) when seated; on `isMyTurn` local select/hints and `game.sendMove` / `sendRescue` / `sendPush` / `sendReturnFromFinish`; seated+online own marker may `game.sendSay` (preset bubbles from `sayEvents`); `rejoinGame(roomId)` on mount / soft-fail gated by store `consentedLeaving` (reconnect token → `joinById`).
 
-**App shell** — `App.vue` hosts `q-layout` → shared `q-header` (brand logo left; theme toggle; on Game centered status; leave via logo click) → leave confirm dialog → `router-view`; stable `watch([() => auth.ready, () => auth.user?.id, () => auth.user?.anonymous], …)` → `theme.syncFromAuthUser` (GET restore for registered; do not replace `auth.user` after GET); shows `theme.error` banner; Game leave → `leaveGame` → lobby.
+**App shell** — `App.vue` hosts `q-layout` → shared `q-header` (always-button brand logo ≥60px left; theme toggle; on Game centered status; leave via logo click; auth/other → lobby; lobby noop) → leave confirm dialog → `router-view`; stable `watch([() => auth.ready, () => auth.user?.id, () => auth.user?.anonymous], …)` → `theme.syncFromAuthUser` (GET restore for registered; do not replace `auth.user` after GET); shows `theme.error` banner; Game leave → `leaveGame` → lobby.
 
 **Boot** — `theme.ts` applies early Dark (`readStoredTheme` / `clearStoredTheme`); `colyseus.ts` exports singleton `client`; stores import them.
 
@@ -233,7 +233,7 @@ Registered in `quasar.config.ts` boot array: `theme`, `i18n`, `colyseus` (+ `fra
 | Game session | `GamePage` | `stores/game` room attach + seats / grilles / catapults / top + seated-HUD presence / say / strip + rescue/push + return strip icon (no modal); soft-drop gated by `consentedLeaving` |
 | Game leave + match status | `App.vue` header (logo leave on Game; status on Game) | `stores/game` `leaveGame` + status / phase getters |
 | Brand / title / favicon | `App.vue` + `package.json` / `index.html` / `public/favicon.ico` | `assets/brand/logo.png`; `productName` Happy Tourist; single favicon |
-| Shell | `App.vue` | layout + brand logo + theme header/banner + Game leave/status + `router-view` |
+| Shell | `App.vue` | layout + always-button brand logo ≥60px + theme header/banner + Game leave/status + `router-view` |
 
 Routes (from `src/router/routes.ts`):
 
@@ -259,6 +259,7 @@ Synced board encoding stays client-local (`LAYOUT`); authority for seating/turn/
 | Importing a page from a component | Invert: page imports the component |
 | Duplicating theme toggle on every page | Keep shared toggle in `App.vue` |
 | Reintroducing page-local Game leave/status or Material `logout` leave | Keep leave via brand logo + status in `App.vue` on Game (`work-with-pages`) |
+| Swapping logo button ↔ bare `img` / decorative auth | Keep one always-button control (≥60px); auth/other → lobby, lobby noop (`work-with-pages`) |
 | Adding page «В лобби» buttons | Use App brand logo (`auth.backToLobby` aria-only) |
 | Using removed scaffold `pages/index*` / Quasar logo for new routes | Add `*Page.vue` + `routes.ts` entry |
 | Reintroducing Vuex or axios for Colyseus | Pinia + `client` / `client.http` |
@@ -281,4 +282,4 @@ For structure-only placement tasks, confirm:
 - [ ] Dependency direction respected
 - [ ] Colyseus I/O stays in stores (`auth` / `theme` / `game`)
 - [ ] Route registered in `routes.ts` with correct meta
-- [ ] Shared brand logo + theme chrome stay in `App.vue`; Game leave via logo + status stay in App; no page «В лобби»; other route chrome stays in pages
+- [ ] Shared always-button brand logo ≥60px + theme chrome stay in `App.vue`; Game leave via logo + status stay in App; auth/other → lobby / lobby noop; no page «В лобби»; other route chrome stays in pages

@@ -30,7 +30,7 @@ On the game screen the primary control that returns the user to the lobby SHALL 
 
 ### Requirement: Exit control only while on Game
 
-The shared application header MUST apply leave-to-lobby semantics (confirmation when required, then consented leave and navigation to the lobby) to the brand logo **only** while the user is on the Game screen of a tourist room. The Material Icons `logout` leave control MUST NOT appear in the shared header. On Lobby and other non-Game screens brand-logo click behavior is specified in `ui/branding` (navigate or no-op), not as a consented leave. Theme toggle availability MUST remain unchanged (`ui/theme`).
+The shared application header MUST apply leave-to-lobby semantics (confirmation when required, then consented leave and navigation to the lobby) to the brand logo **only** while the user is on the Game screen of a tourist room. The Material Icons `logout` leave control MUST NOT appear in the shared header. On Lobby, auth, and other non-Game screens brand-logo click behavior is specified in `ui/branding` (navigate toward lobby, lobby no-op, or auth→lobby with possible guard bounce), not as a consented leave. The brand logo remains an interactive control on those screens for layout stability (`ui/branding` SC-BRAND-09). Theme toggle availability MUST remain unchanged (`ui/theme`).
 
 #### Scenario [SC-LEAVE-08]: No exit control on Lobby
 

@@ -25,7 +25,7 @@ Coordinate schema / protocol (room name, state shape, seat connectivity, `move` 
 | Store | `src/stores/game.ts` | `TOURIST_ROOM`, create/join/rejoin/leave, token persist, `_attachRoom` listeners |
 | Lobby | `src/pages/LobbyPage.vue` | `createGame` / `joinGame` → navigate to `game` with `roomId` |
 | Game | `src/pages/GamePage.vue` | Board + bottom HUD presence; `rejoinGame(roomId)` on mount / soft-fail |
-| Leave UX | `src/App.vue` (Game route) | Brand-logo leave + confirm dialog → `leaveGame` → lobby |
+| Leave UX | `src/App.vue` (Game route) | Always-button brand logo: on Game = leave + confirm → `leaveGame` → lobby (non-Game nav/`noop` is `work-with-pages`) |
 | Boot | `src/boot/colyseus.ts` | Shared `Client` (`VITE_COLYSEUS_URL`) |
 | Route | `/game/:roomId` | Hash mode; `meta.requiresAuth` |
 

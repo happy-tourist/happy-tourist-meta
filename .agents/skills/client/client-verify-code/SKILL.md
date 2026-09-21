@@ -263,7 +263,7 @@ Apply always; sibling skills win when they exist and conflict on a detail.
   default slot without `show-value` (SC-PRESENCE-12); board `--gap`/`--radius` 2;
   local selection / hints when `isMyTurn` and eligible; travel + return-from-nearest-center
   animation; finish 2×2 → nearest legal center; submit only via `game.sendMove`.
-  Brand logo + match status in App header; Game leave via logo (not Material `logout`, not page-local).
+  Brand logo (always-button ≥60px, no decorative/bare-`img` swap) + match status in App header; Game leave via logo; auth/other → lobby, lobby noop (not Material `logout`, not page-local «В лобби»).
   Return: confirm modal → same red `.tile--target` as move; `GRILLE_ANIM_MS = 1000`
   on board + strip chrome.
 - Mirror `currentTurnSessionId` / `turnUntil` / `turnBudgetSeconds` / seat `timeExpired`;

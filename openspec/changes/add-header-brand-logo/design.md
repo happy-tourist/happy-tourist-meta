@@ -1,14 +1,16 @@
 ## Context
 
-См. proposal.md — Why. Сейчас shared header в client (`App.vue`): слева Material `logout` только на Game (`onExitClick` → confirm / `leaveGame` → lobby); справа account (registered) + theme. Page-level «В лобби» — Account и Support. Title из `package.json` `productName` = `happy-tourist-client`; `index.html` ссылается на scaffold PNG favicons + `favicon.ico`. Ассеты продукта уже положены: `src/assets/brand/logo.png`, `public/favicon.ico`. Server не затрагивается.
+См. proposal.md — Why. Первая реализация: shared header в `App.vue` с logo слева; на Game — leave/confirm; Account/Support без page «В лобби»; title/favicon продукта. Follow-up: `v-if` button vs bare `img` давал скачок позиции; auth был decorative; высота ~30px мало для прямоугольного `logo.png` (~741×337). Server не затрагивается.
 
 ## Goals / Non-Goals
 
 **Goals:**
 
-- Один brand-control слева во всех экранах с shared header
+- Один brand-control слева во всех экранах с shared header — **один и тот же interactive DOM** на всех маршрутах
 - На Game — reuse существующего leave/confirm path без нового server контракта
-- Title + favicon продукта; удаление Quasar scaffold brand junk
+- На auth — клик ведёт в lobby (существующие guards могут вернуть гостя на login)
+- Высота логотипа ≥ 60px; актуальный прямоугольный product `logo.png`
+- Title + favicon продукта; удаление Quasar scaffold brand junk (уже сделано)
 
 **Non-Goals:**
 
@@ -28,37 +30,41 @@
 
 | Route group | Behavior |
 |-------------|----------|
-| `login`, `forgot-password`, `confirm-email`, `reset-password` | decorative (`img` / non-button), no navigation |
-| `lobby` | noop (ignore click) |
+| `login`, `forgot-password`, `confirm-email`, `reset-password` | `router.push({ name: 'lobby' })` (guest без сессии может отскочить `requiresAuth` → login) |
+| `lobby` | noop (ignore click; тот же button-control) |
 | `game` | existing `onExitClick` / confirm / `onLeave` |
 | остальные authenticated | `router.push({ name: 'lobby' })` |
 
-Accessible name на Game: существующий `game.leave` («Выход из игры»). На кликабельных non-Game — aria вроде «В лобби» / brand home (reuse `auth.backToLobby` или короткий brand key).
+**Стабильный chrome:** всегда один и тот же interactive control (не чередовать bare `img` и `button`) — иначе скачет позиция при смене маршрута.
+
+Accessible name на Game: существующий `game.leave` («Выход из игры»). На non-Game (включая auth и Lobby): `auth.backToLobby` / brand home.
 
 ### D3 — Убрать page «В лобби»
 
 - Удалить кнопки с `auth.backToLobby` на Account и Support.
-- Ключ i18n можно оставить, если используется для aria логотипа; иначе убрать мёртвый ключ в том же change.
+- Ключ i18n оставить для aria логотипа.
 
 ### D4 — Title и favicon
 
 - `package.json` `productName` → `Happy Tourist` (подставляется в `index.html` `<title>`).
 - `index.html`: оставить один `<link rel="icon" … href="favicon.ico">`; убрать четыре PNG `<link>`.
-- Удалить файлы: `public/icons/favicon-*.png`, папку `public/icons/` если пуста; `src/assets/quasar-logo-vertical.svg`; опционально мёртвый `src/pages/index/(index).vue` (единственный consumer Quasar logo).
+- Удалить файлы: `public/icons/favicon-*.png`, папку `public/icons/` если пуста; `src/assets/quasar-logo-vertical.svg`; мёртвые scaffold `src/pages/index*`.
 
 ### D5 — Размер логотипа
 
-- Высота ~28–32px в toolbar (визуально вровень с round dense buttons); `object-fit: contain`.
+- Высота **≥ 60px** (`height: 60px; width: auto; object-fit: contain`). Toolbar может вырасти выше дефолтных ~50px Quasar — ок для прямоугольного wordmark.
+- Product asset: актуальный прямоугольный `src/assets/brand/logo.png` (локально уже заменён пользователем — включить в apply/commit).
 
 ### Prerequisites
 
-- Ассеты уже на месте: `logo.png`, `favicon.ico` — не генерировать, только подключить / не затирать чужим scaffold.
+- Ассеты: `logo.png` (прямоугольный), `favicon.ico` — не генерировать, не затирать scaffold’ом.
 
 ## Risks / Trade-offs
 
-- [Узкий Game header] logo + status + account + theme → Mitigation: logo компактный image-only, status уже ужимался под leave.
-- [Клик на Lobby выглядит «битым»] → Mitigation: курсор default / не button-look; или лёгкий press без nav — prefer non-button styling when noop.
-- [Skills устареют] (`logout` left on Game) → Mitigation: пункт в tasks обновить `work-with-pages` / structure канон шапки.
+- [Узкий Game header] logo ~132px wide при 60px height + status + account + theme → Mitigation: image-only, status уже ужимался; при необходимости статус остаётся центрированным через `q-space`.
+- [Auth → lobby → login bounce для гостя] → Mitigation: принятый tradeoff; layout стабилен.
+- [Lobby noop выглядит «битым»] → Mitigation: тот же button; курсор pointer ок; клик просто ничего не меняет.
+- [Skills устареют] → Mitigation: tasks обновить `work-with-pages` / structure (auth → lobby, 60px, always-button).
 
 ## Migration Plan
 

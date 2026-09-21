@@ -6,8 +6,8 @@ description: >-
   hash-mode deep links, meta.guest / meta.requiresAuth / requiresStaff / requiresAdmin,
   or navigation between login, lobby (create maxSeats + grilleDensity + catapultDensity;
   Support link), support/admin pages (single ticket Close via canClose; form lazy-rules reset),
-  App brand logo (left; Game leave via logo / other auth → lobby; no page «В лобби»),
-  productName/favicon, and game (top opponents presence, seated
+  App brand logo (always-button ≥60px; Game leave / auth+other → lobby / lobby noop;
+  no page «В лобби»), productName/favicon, and game (top opponents presence, seated
   strip HUD row/2×2, budgets/end-turn icon on avatar, return strip icon no modal, push icons,
   nearest-center finish, grille trap/rescue + catapult land→overlay→fling + deferred grille drops + board-busy lock) in this Quasar Vue 3 client.
 ---
@@ -35,7 +35,7 @@ When the task is only about creating or wiring a page:
 1. Add the page as a single file `src/pages/<Name>Page.vue` (optional scoped `<style>` in the same file).
 2. Register a route in `src/router/routes.ts` with `path`, `name`, lazy `component`, and `meta` when needed.
 3. Do **not** enable filename-based routing — `quasar.config.ts` keeps `filenameBasedRouting: false`; routes stay manual.
-4. Keep the global shell in `App.vue` — `q-layout` → shared `q-header` → `q-page-container` → theme `q-banner` + `<router-view />`. Brand logo (~30px, `@/assets/brand/logo.png`) is always left in the header; theme toggle is always right. On **Game**, centered match status sits between logo and theme; leave is the logo click (`onExitClick` / confirm / `leaveGame`) — not a Material `logout` button and not a page-local game header. Auth screens: logo decorative; lobby: noop; other authenticated (account/support/admin): logo → lobby. Do **not** add page-level «В лобби» buttons (`auth.backToLobby` is aria-only for the logo). Do not duplicate the theme toggle per page.
+4. Keep the global shell in `App.vue` — `q-layout` → shared `q-header` → `q-page-container` → theme `q-banner` + `<router-view />`. Brand logo (≥60px height, `@/assets/brand/logo.png`) is always left as the **same** interactive `<button>` on every route (no bare `img` / decorative swap — SC-BRAND-09); theme toggle is always right. On **Game**, centered match status sits between logo and theme; leave is the logo click (`onExitClick` / confirm / `leaveGame`) — not a Material `logout` button and not a page-local game header. Click modes: auth → lobby; lobby → noop; Game → leave; other authenticated → lobby. Do **not** add page-level «В лобби» buttons (`auth.backToLobby` is aria-only for the logo). Do not duplicate the theme toggle per page.
 5. Prefer: `pages` → `stores` / `boot` / `components`. Keep Colyseus I/O in Pinia (`auth`, `theme`, `game`, `support`), not scattered across new pages.
 6. Wrap page content in Quasar `q-page` (match nearby pages).
 
@@ -133,12 +133,11 @@ Every route renders inside:
 <q-layout view="hHh lpR fFf">
   <q-header bordered>
     <q-toolbar>
-      <!-- Brand logo left (~30px); clickable only for leave | toLobby -->
-      <button v-if="isBrandLogoClickable" type="button" class="brand-logo-control"
+      <!-- Brand logo left (≥60px); always same button (auth/other → lobby; lobby noop; Game leave) -->
+      <button type="button" class="brand-logo-control"
         :aria-label="brandLogoAria" @click="onBrandLogoClick">
         <img :src="brandLogoUrl" alt="" class="brand-logo" />
       </button>
-      <img v-else :src="brandLogoUrl" alt="" class="brand-logo" aria-hidden="true" />
       <q-space />
       <div v-if="isGameRoute" class="text-subtitle1 text-center">{{ statusLabel }}</div>
       <q-space />
@@ -153,7 +152,7 @@ Every route renders inside:
 </q-layout>
 ```
 
-Brand logo (`@/assets/brand/logo.png`, ~30px) is always left. Click modes (`brandLogoMode`): **Game** → `leave` (`onExitClick` / confirm / `leaveGame`); **auth** routes (`login` / `forgot-password` / `confirm-email` / `reset-password`) → decorative (non-button); **lobby** → noop (non-button); other authenticated → `toLobby` (`router.push({ name: 'lobby' })`). Aria: Game → `game.leave`; clickable non-Game → `auth.backToLobby` (key kept for aria; no page «В лобби» buttons on Account/Support). Shared theme toggle + `theme.error` banner live here (`useThemeStore`). Account nav + once-per-session email-verify reminder modal (registered, `needsEmailVerification`; mark `sessionStorage` seen **when shown**) also live in `App.vue` — CTA to `/account`; do not claim mail was already sent (`client-work-with-auth`). On **Game** (`route.name === 'game'`): centered status from `useGameStore` (same branches as former page `statusLabel` — SC-PRESENCE-23). Leave confirm when seated ∧ `playing` ∧ `finishPlace === 0` ∧ `!timeExpired`, else immediate `leaveGame` → lobby (`work-with-rooms`). Document title: `package.json` `productName` = `Happy Tourist` (`index.html` `<%= productName %>`); favicon: only `favicon.ico` in `index.html` / `public/` (no scaffold PNG icon set). Wire theme restore with a stable multi-source watch — `watch([() => auth.ready, () => auth.user?.id, () => auth.user?.anonymous], …)` → `syncFromAuthUser` (registered → `GET /api/theme`, guest → `localStorage`) — not JWT `user.theme` alone, and not `watch(() => […])` (new array each run). Do **not** replace `auth.user` after GET (theme lives in the theme store; SC-THEME-10). Do not duplicate a layout wrapper, per-page theme control, page «В лобби», or page-local leave/status header when adding pages.
+Brand logo (`@/assets/brand/logo.png`, height ≥60px, `width: auto; object-fit: contain`) is always left as one interactive control. Click modes (`brandLogoMode`): **Game** → `leave` (`onExitClick` / confirm / `leaveGame`); **auth** routes (`login` / `forgot-password` / `confirm-email` / `reset-password`) → `toLobby` (`router.push({ name: 'lobby' })`; guest may bounce via `requiresAuth`); **lobby** → `noop` (same button, click ignored); other authenticated → `toLobby`. Aria: Game → `game.leave`; non-Game → `auth.backToLobby` (key kept for aria; no page «В лобби» buttons on Account/Support). Shared theme toggle + `theme.error` banner live here (`useThemeStore`). Account nav + once-per-session email-verify reminder modal (registered, `needsEmailVerification`; mark `sessionStorage` seen **when shown**) also live in `App.vue` — CTA to `/account`; do not claim mail was already sent (`client-work-with-auth`). On **Game** (`route.name === 'game'`): centered status from `useGameStore` (same branches as former page `statusLabel` — SC-PRESENCE-23). Leave confirm when seated ∧ `playing` ∧ `finishPlace === 0` ∧ `!timeExpired`, else immediate `leaveGame` → lobby (`work-with-rooms`). Document title: `package.json` `productName` = `Happy Tourist` (`index.html` `<%= productName %>`); favicon: only `favicon.ico` in `index.html` / `public/` (no scaffold PNG icon set). Wire theme restore with a stable multi-source watch — `watch([() => auth.ready, () => auth.user?.id, () => auth.user?.anonymous], …)` → `syncFromAuthUser` (registered → `GET /api/theme`, guest → `localStorage`) — not JWT `user.theme` alone, and not `watch(() => […])` (new array each run). Do **not** replace `auth.user` after GET (theme lives in the theme store; SC-THEME-10). Do not duplicate a layout wrapper, per-page theme control, page «В лобби», or page-local leave/status header when adding pages.
 
 ## Router Patterns
 
@@ -242,7 +241,7 @@ If an old path changes, keep a redirect in `routes.ts`:
 |--------|------|------------------------|
 | Auth | `LoginPage` / `ForgotPasswordPage` / `ConfirmEmailPage` / `ResetPasswordPage` / `AccountPage` | `stores/auth`; guest / public / requiresAuth; soft verify modal in App |
 | Theme (chrome Dark) | `App.vue` header | `stores/theme` + `boot/theme` |
-| Brand + Game leave + match status | `App.vue` header (logo always; status on Game) | logo `leave`/`toLobby`/decorative/noop; `stores/game` status / `leaveGame`; confirm in App; `auth.backToLobby` aria-only |
+| Brand + Game leave + match status | `App.vue` header (always-button logo ≥60px; status on Game) | logo `leave`/`toLobby`/noop; `stores/game` status / `leaveGame`; confirm in App; `auth.backToLobby` aria-only |
 | Title / favicon | `package.json` + `index.html` + `public/favicon.ico` | `productName` = Happy Tourist; single `favicon.ico` link |
 | Lobby / rooms | `LobbyPage` | `stores/game.subscribeLobby`, create `{ maxSeats, grilleDensity, catapultDensity }` / join; Support link; `meta.requiresAuth` |
 | Support | `SupportPage` / `SupportTicketPage` / `SupportStaffPage` | `stores/support` HTTP; `requiresAuth`; staff uses `requiresStaff` + `auth.isStaff` |

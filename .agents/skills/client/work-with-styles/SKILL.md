@@ -3,16 +3,17 @@ name: work-with-styles
 description: >-
   Use when adding, changing, reviewing, or debugging Vue 3 / Quasar 2 styles in
   the happy-tourist client: Quasar Dark plugin + theme boot/store, App.vue
-  header toggle, guest localStorage vs registered GET/POST /api/theme (restore
-  ≠ JWT-only), muted chrome text, quasar.variables.scss tokens, app.scss, page
-  scoped CSS (especially GamePage board gap/radius 2 + `.tile--removed` holes
-  + grille overlay drop/rise via `--grille-anim-ms` / `GRILLE_ANIM_MS=1000`
-  + catapult reveal/broken-hold CSS via `--catapult-anim-ms` / `CATAPULT_ANIM_MS=1000`
-    (successful fade; broken uses intact/hold/vanish classes, not mid-fade swap)
-  + trapped piece chrome + top presence + sticky seated `.game-hud`
-  presence/ring/avatar + strip row/narrow 2×2 + chrome grille + budgets
-  beside avatar + end-turn icon right-center + peek/rescue/push top-center + say bubbles top↓/own↑),
-  Quasar utility classes, Material Icons / Roboto, or color props on Quasar
+  header toggle + always-button brand logo ≥60px CSS, guest localStorage vs
+  registered GET/POST /api/theme (restore ≠ JWT-only), muted chrome text,
+  quasar.variables.scss tokens, app.scss, page scoped CSS (especially GamePage
+  board gap/radius 2 + `.tile--removed` holes + grille overlay drop/rise via
+  `--grille-anim-ms` / `GRILLE_ANIM_MS=1000` + catapult reveal/broken-hold CSS
+  via `--catapult-anim-ms` / `CATAPULT_ANIM_MS=1000` (successful fade; broken
+  uses intact/hold/vanish classes, not mid-fade swap) + trapped piece chrome +
+  top presence + sticky seated `.game-hud` presence/ring/avatar + strip
+  row/narrow 2×2 + chrome grille + budgets beside avatar + end-turn icon
+  right-center + peek/rescue/push top-center + say bubbles top↓/own↑), Quasar
+  utility classes, Material Icons / Roboto, or color props on Quasar
   components.
 ---
 
@@ -38,7 +39,7 @@ boots `theme` before `i18n` / `colyseus`. Theme tokens live in
 |-------|------|----------|
 | Quasar Dark (runtime) | Chrome light / dark / device `auto` | `quasar.config.ts` plugin + `boot/theme.ts` + `stores/theme.ts` |
 | Shared header toggle | Explicit light ↔ dark on all pages | `App.vue` `q-header` |
-| Brand logo chrome | ~30px `logo.png` left; scoped `.brand-logo` / `.brand-logo-control` | `App.vue` + `src/assets/brand/logo.png` |
+| Brand logo chrome | ≥60px height `logo.png` left (always-button); scoped `.brand-logo` / `.brand-logo-control` | `App.vue` + `src/assets/brand/logo.png` |
 | Quasar theme Sass variables | Brand/palette tokens (`$primary`, `$negative`, …) | `src/css/quasar.variables.scss` |
 | Global app CSS | App-wide rules (e.g. `.text-muted` for dark-friendly chrome) | `src/css/app.scss` |
 | Quasar extras | Roboto font + Material Icons | `quasar.config.ts` → `extras` |

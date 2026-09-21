@@ -1,6 +1,6 @@
 ## Purpose
 
-Брендинг chrome клиента Happy Tourist: логотип в общей шапке как единый переход в лобби, document title и favicon вкладки, без размазанных page-level «В лобби» и без Quasar scaffold brand assets.
+Брендинг chrome клиента Happy Tourist: логотип в общей шапке как единый переход в лобби, стабильный interactive control без скачка layout, document title и favicon вкладки, без размазанных page-level «В лобби» и без Quasar scaffold brand assets.
 
 ## Traceability
 
@@ -9,11 +9,13 @@
 | SC-BRAND-01 | client UX (shared header logo) |
 | SC-BRAND-02 | client UX (navigate to lobby) |
 | SC-BRAND-03 | client UX (lobby noop) |
-| SC-BRAND-04 | client UX (auth decorative) |
+| SC-BRAND-04 | client UX (auth → lobby) |
 | SC-BRAND-05 | client UX (no page back-to-lobby) |
 | SC-BRAND-06 | client UX (document title) |
 | SC-BRAND-07 | client UX (favicon) |
 | SC-BRAND-08 | client UX (scaffold assets removed) |
+| SC-BRAND-09 | client UX (stable interactive control) |
+| SC-BRAND-10 | client UX (logo height ≥ 60px) |
 
 Related leave-on-Game: `game/leave`. Theme toggle: `ui/theme`.
 
@@ -30,9 +32,9 @@ The shared application header MUST show the Happy Tourist brand logo on the **le
 - **THEN** the Happy Tourist brand logo appears on the left
 - **AND** the theme toggle remains available on the right
 
-### Requirement: Logo navigates to lobby outside Game and auth
+### Requirement: Logo navigates to lobby outside Game
 
-When the user is authenticated on a non-Game, non-auth screen (for example Lobby, Account, Support, or staff/admin support surfaces) and activates the brand logo, the client SHALL take the user to the lobby screen if they are not already there. If the user is already on the Lobby screen, activating the logo MUST NOT navigate away and MUST NOT perform session logout.
+When the user activates the brand logo on a non-Game screen other than Lobby (including Account, Support, staff/admin support surfaces, and auth screens Login / forgot-password / confirm-email / reset-password), the client SHALL navigate toward the lobby screen. If the user is already on the Lobby screen, activating the logo MUST NOT navigate away and MUST NOT perform session logout. Existing route guards MAY redirect an unauthenticated guest away from lobby (for example back to login); that bounce MUST NOT be treated as a brand-logo failure.
 
 #### Scenario [SC-BRAND-02]: Logo opens lobby from Account or Support
 
@@ -47,16 +49,12 @@ When the user is authenticated on a non-Game, non-auth screen (for example Lobby
 - **THEN** the user remains on the Lobby screen
 - **AND** the session is not logged out
 
-### Requirement: Logo is decorative on auth screens
-
-On Login, forgot-password, confirm-email, and reset-password screens the brand logo MUST be visible but MUST NOT act as a navigation control (no navigation to lobby on activation). Guest redirects that would otherwise send the user to login MUST NOT be triggered by the logo.
-
-#### Scenario [SC-BRAND-04]: Auth screens show non-interactive logo
+#### Scenario [SC-BRAND-04]: Auth screens logo navigates toward lobby
 
 - **GIVEN** the user is on Login, forgot-password, confirm-email, or reset-password
-- **WHEN** the shared header with the brand logo is shown
-- **THEN** the logo is visible
-- **AND** activating it does not navigate to the lobby
+- **WHEN** the user activates the brand logo
+- **THEN** the client navigates toward the lobby screen
+- **AND** if the user is not authenticated, existing auth guards may redirect them away from lobby (for example back to login)
 
 ### Requirement: No page-level back-to-lobby controls
 
@@ -100,3 +98,25 @@ Unused Quasar scaffold brand assets that are not the product logo or product fav
 - **THEN** the Quasar vertical logo scaffold asset is absent
 - **AND** the scaffold PNG favicon size files are absent
 - **AND** the product header logo and product `.ico` favicon remain present
+
+### Requirement: Stable interactive brand control
+
+On every screen that uses the shared application header, the brand logo MUST be presented as the same kind of interactive control (not alternating between a non-interactive image-only presentation and a separate button presentation). Activating the control follows the navigate / no-op / leave rules of this capability and `game/leave`. The purpose is that the logo’s layout position MUST NOT jump when the user navigates between routes that previously used different presentation modes.
+
+#### Scenario [SC-BRAND-09]: Same interactive control on auth and Game
+
+- **GIVEN** the user can move between an auth screen and the Game screen (or other shared-header screens)
+- **WHEN** the shared header brand logo is shown on each of those screens
+- **THEN** the logo is an interactive control on each screen
+- **AND** its horizontal position in the header does not jump solely because the route changed between decorative and clickable presentation modes
+
+### Requirement: Logo height
+
+The brand logo image in the shared header MUST be displayed at a height of at least 60 CSS pixels, preserving aspect ratio (`object-fit` contain / equivalent). The shared header MAY grow taller than the default Quasar toolbar height to accommodate the logo.
+
+#### Scenario [SC-BRAND-10]: Logo at least 60px tall
+
+- **GIVEN** the shared application header with the brand logo is shown
+- **WHEN** the logo image size is observed
+- **THEN** the logo is rendered at least 60 CSS pixels tall
+- **AND** its aspect ratio is preserved
