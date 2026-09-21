@@ -34,11 +34,12 @@
 | SC-BOARD-24 | covered (client UX — land then broken 300+300 then vanish; piece stays) |
 | SC-BOARD-25 | covered (client UX — piece on catapult cell during overlay after land) |
 | SC-BOARD-26 | covered (client UX — chain: land→overlay→travel per hop) |
-| SC-BOARD-27 | covered (client UX — board non-interactive during full sequence) |
+| SC-BOARD-27 | covered (client GamePage continuous isBoardBusy + grille hold unlock) |
 | SC-BOARD-28 | covered (client UX — land arrives before overlay; all viewers) |
 | SC-BOARD-29 | covered (client UX — grille drop only on its hop after prior catapult hops) |
 | SC-BOARD-30 | covered (client UX — single sequential trap timeline; no early final grille) |
 | SC-BOARD-31 | covered (client UX — every hop animated; finish travel after last vanish to center) |
+| SC-BOARD-32 | covered (client strip under isInteractive; say remains) |
 
 Related: presence row layout — `game/presence` (opponents top / self bottom); turn budgets / multi peek / paced traps / deferred turn — `game/move`; finish travel after catapult — `game/finish`; trapped / leave clear — `game/pieces`.
 
@@ -328,10 +329,18 @@ When a paced land hop resolves a grille after zero or more prior catapult hops i
 
 ### Requirement: Board is non-interactive during board animations
 
-While any board presentation animation is running for the local client (piece land/move travel, rescue/push approach, grille drop/rise, catapult overlay including broken holds, deferred fling travel after catapult vanish, finish travel/disappear), the seated current player MUST NOT be able to click the board to select pieces, submit moves, peek, rescue, push, return-from-finish, or end-turn board targets. Non-board chrome (e.g. leave/status outside board) is out of this requirement’s scope unless already gated elsewhere. Turn chrome MAY still show the acting seat until the server advances after pipeline idle (`game/move`).
+While any board presentation animation is running for the local client (piece land/move travel, rescue/push approach, grille drop/rise including the pipeline settle into hold so there is no unlock flash before the grille drop, catapult overlay including broken holds, deferred fling travel after catapult vanish, finish travel/disappear), **and** during any gap between consecutive presentation steps of the same pipeline (for example after move travel ends and before catapult/grille presentation starts after a successful move), the seated current player MUST NOT be able to click the board to select pieces, submit moves, peek, rescue, push, return-from-finish, or end-turn board targets. After grille **drop has settled** into a static hold, the board/strip MUST unlock again so rescue (and other legal turn actions) remain possible while the holding grille stays visible. The same lock MUST apply to the personal tourist strip beside the own presence marker (select / return affordances) for the duration of the busy window above. Say send from the own presence avatar MUST remain available under existing `game/say` rules. Non-board chrome outside board/strip (e.g. leave/status in the app header) is out of this requirement’s scope unless already gated elsewhere. Turn chrome MAY still show the acting seat until the server advances after pipeline idle (`game/move`).
 
 #### Scenario [SC-BOARD-27]: Clicks blocked while board animates
 
-- **GIVEN** the local seated player’s turn and a board animation is in progress (including land-before-catapult, catapult overlay, pending fling travel, or grille drop in the trap pipeline)
+- **GIVEN** the local seated player’s turn and a board animation is in progress (including land-before-catapult, catapult overlay, pending fling travel, grille drop/rise or the brief window between move travel and the next trap presentation — not a settled static grille hold after drop)
 - **WHEN** the player attempts a board click that would otherwise submit or select
 - **THEN** that board interaction is ignored until the animation sequence finishes
+- **AND** after grille drop has settled into hold, rescue remains available while the grille is still shown
+
+#### Scenario [SC-BOARD-32]: Strip tourists locked while board is busy
+
+- **GIVEN** the local seated player’s turn and board presentation is busy per SC-BOARD-27
+- **WHEN** the player activates a personal strip tourist or return affordance
+- **THEN** that strip interaction is ignored until the board is no longer busy
+- **AND** the say send affordance on the own presence avatar remains usable per `game/say`

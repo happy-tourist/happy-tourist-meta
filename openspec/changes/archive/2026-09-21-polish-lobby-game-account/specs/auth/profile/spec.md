@@ -6,12 +6,12 @@
 
 | Scenario ID | Coverage |
 |-------------|----------|
-| SC-PROFILE-01 | pending |
-| SC-PROFILE-02 | pending |
-| SC-PROFILE-03 | pending |
-| SC-PROFILE-04 | pending |
-| SC-PROFILE-05 | pending |
-| SC-PROFILE-06 | pending |
+| SC-PROFILE-01 | covered (server mocha + client AccountPage) |
+| SC-PROFILE-02 | covered (server mocha + client logout after change) |
+| SC-PROFILE-03 | covered (client UX — hide change-password for Google) |
+| SC-PROFILE-04 | covered (server mocha — wrong current rejected) |
+| SC-PROFILE-05 | covered (server mocha + client empty name reject) |
+| SC-PROFILE-06 | covered-by-reuse (soft-verify; no hard-gate added) |
 
 ## ADDED Requirements
 

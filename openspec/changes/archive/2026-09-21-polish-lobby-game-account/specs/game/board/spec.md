@@ -2,8 +2,8 @@
 
 | Scenario ID | Coverage |
 |-------------|----------|
-| SC-BOARD-27 | pending (tighten continuous busy + strip) |
-| SC-BOARD-32 | pending |
+| SC-BOARD-27 | covered (client GamePage continuous isBoardBusy + grille hold unlock) |
+| SC-BOARD-32 | covered (client strip under isInteractive; say remains) |
 
 ## MODIFIED Requirements
 

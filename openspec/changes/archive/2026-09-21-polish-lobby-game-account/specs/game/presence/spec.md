@@ -2,7 +2,7 @@
 
 | Scenario ID | Coverage |
 |-------------|----------|
-| SC-PRESENCE-26 | pending |
+| SC-PRESENCE-26 | covered (client seated top presence min-height reserve) |
 
 ## ADDED Requirements
 

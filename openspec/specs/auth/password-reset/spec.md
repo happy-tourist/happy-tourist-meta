@@ -16,6 +16,7 @@
 | SC-RESET-06 | covered (server: reset email subject+body in Russian) |
 | SC-RESET-07 | covered (unknown email → explicit not-found UX) |
 | SC-RESET-08 | covered (reset link = client hash route; success → login) |
+| SC-RESET-09 | covered (server mocha + client ResetPasswordPage policy/meter) |
 
 ## Requirements
 
@@ -96,3 +97,14 @@ Opening a valid password-reset link MUST allow the user to set a new password th
 - **WHEN** the user signs in with email and P_new
 - **THEN** authentication succeeds
 - **AND** signing in with email and P_old fails
+
+### Requirement: Password policy on SPA reset
+
+Setting a new password via the SPA password-reset flow MUST enforce the same product password policy as email registration (`auth/login`): minimum length **8**; Latin lowercase; Latin uppercase; digit; symbol (any non Latin-letter non-digit character). The SPA MUST show the same advisory colored strength indication as register. Submit MUST be gated by the policy, not by a minimum strength score alone. After a successful reset, navigation to Login and authentication with the new password remain as in existing reset scenarios.
+
+#### Scenario [SC-RESET-09]: Reset rejects weak new password
+
+- **GIVEN** the user has a valid reset token and is on the SPA reset form
+- **WHEN** the user submits a new password that fails the shared password policy
+- **THEN** the password is not updated
+- **AND** the user sees clear Russian feedback that the password does not meet the policy

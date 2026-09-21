@@ -2,7 +2,7 @@
 
 | Scenario ID | Coverage |
 |-------------|----------|
-| SC-RESET-09 | pending |
+| SC-RESET-09 | covered (server mocha + client ResetPasswordPage policy/meter) |
 
 ## ADDED Requirements
 

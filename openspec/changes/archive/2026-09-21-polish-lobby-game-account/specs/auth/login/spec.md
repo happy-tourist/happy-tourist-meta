@@ -2,9 +2,9 @@
 
 | Scenario ID | Coverage |
 |-------------|----------|
-| SC-AUTH-08 | pending |
-| SC-AUTH-09 | pending |
-| SC-AUTH-10 | pending |
+| SC-AUTH-08 | covered (server mocha + client register policy/meter) |
+| SC-AUTH-09 | covered (client UX — advisory meter; policy gates submit) |
+| SC-AUTH-10 | covered (server mocha + client session displayName) |
 
 ## ADDED Requirements
 

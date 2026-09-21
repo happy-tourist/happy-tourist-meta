@@ -2,8 +2,8 @@
 
 | Scenario ID | Coverage |
 |-------------|----------|
-| SC-LOBBY-19 | pending |
-| SC-LOBBY-20 | pending |
+| SC-LOBBY-19 | covered (client LobbyPage join busy-lock) |
+| SC-LOBBY-20 | covered (client game store clear rooms on leave/resubscribe) |
 
 ## ADDED Requirements
 
