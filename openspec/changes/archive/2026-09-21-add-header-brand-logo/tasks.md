@@ -4,9 +4,9 @@
 
 - [x] 1.1 Прочитать `design.md` (D1–D3, D5), `specs/ui/branding/spec.md` (SC-BRAND-01…05), `specs/game/leave/spec.md` (SC-LEAVE-01, SC-LEAVE-08), skills `.agents/skills/client/work-with-pages/SKILL.md`, `client-work-with-structure/SKILL.md`, `work-with-rooms/SKILL.md` и текущие `../happy-tourist.github.io/src/App.vue`, `AccountPage.vue`, `SupportPage.vue` — зафиксировать точки врезки
 
-- [x] 1.2 Убедиться, что `../happy-tourist.github.io/src/assets/brand/logo.png` на месте; в shared header слева показать logo (~28–32px); убрать Material `logout` leave-кнопку (SC-BRAND-01, SC-LEAVE-01)
+- [x] 1.2 Убедиться, что `../happy-tourist.github.io/src/assets/brand/logo.png` на месте; в shared header слева показать logo (высота ≥ 60px, `width: auto`); убрать Material `logout` leave-кнопку (SC-BRAND-01, SC-BRAND-10, SC-LEAVE-01)
 
-- [x] 1.3 Клик по logo: auth-экраны — decorative; lobby — noop; game — существующий `onExitClick`/confirm/`leaveGame`; остальные authenticated — navigate lobby; aria: на Game — `game.leave`, иначе home/lobby (SC-BRAND-02…04, SC-LEAVE-08)
+- [x] 1.3 Клик по logo: всегда один interactive control; auth → lobby; lobby — noop; game — существующий `onExitClick`/confirm/`leaveGame`; остальные authenticated — navigate lobby; aria: на Game — `game.leave`, иначе `auth.backToLobby` (SC-BRAND-02…04, SC-BRAND-09, SC-LEAVE-08)
 
 - [x] 1.4 Удалить page-level кнопки «В лобби» (`auth.backToLobby`) с Account и Support; при мёртвом ключе i18n — убрать или reuse для aria (SC-BRAND-05)
 
