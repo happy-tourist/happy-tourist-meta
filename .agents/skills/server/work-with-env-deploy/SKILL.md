@@ -42,7 +42,7 @@ Deploy target: VPS under `/var/www/happy-tourist-server`, Node 22, PM2. Trigger:
 | `SMTP_BZ_USER` / `SMTP_BZ_PASS` | smtp.bz credentials | same | same |
 | `MAIL_FROM` | From header (e.g. `Happy Tourist <noreply@happy-tourist.ru>`) | same | same |
 | `AUTH_BACKEND_URL` | Public API origin for confirm/reset links (`auth.backend_url`) | e.g. `http://localhost:2567` | `https://api.happy-tourist.ru` |
-| `CLIENT_APP_URL` | Client origin; mail SPA links `/#/confirm-email` + `/#/reset-password`; support status → `/#/support/<id>`; SPA confirm → `#/lobby` | e.g. `http://localhost:9000` | `https://happy-tourist.ru` |
+| `CLIENT_APP_URL` | Client origin; mail SPA links `/#/confirm-email` + `/#/reset-password`; support create-ack/status → `/#/support/<id>`; SPA confirm → `#/lobby` | e.g. `http://localhost:9000` | `https://happy-tourist.ru` |
 | `BOOTSTRAP_ADMIN_IDS` | Comma-separated user ids promoted to admin on every start (idempotent) | empty or local ids | VPS `.env.production` (same DB as JWT userdata) |
 | `DATABASE_URL` | SQLite path for GameDatabase | `./game.db` | often `/var/www/happy-tourist-server/game.db` |
 | `NODE_ENV` | `development` / `production` (CORS, monitor/playground) | `development` | `production` (also set in PM2 `env`) |

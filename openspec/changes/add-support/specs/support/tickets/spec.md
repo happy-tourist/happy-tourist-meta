@@ -1,31 +1,36 @@
 ## Purpose
 
-Обращения в поддержку по HTTP: создание (тема + текст), список и тред автора, статусы, ответы staff и автора, лимиты, автозакрытие без ответа, письма автору при смене статуса (не гостю). Ссылка из лобби. Без Colyseus realtime.
+Обращения в поддержку по HTTP: создание, список и тред, статусы, лимиты, автозакрытие, письма автору при создании и смене статуса (не гостю), staff-очередь с фильтрами, UX формы/треда/guest-warn. Ссылка из лобби. Без Colyseus realtime.
 
 ## Traceability
 
 | Scenario ID | Coverage |
 |-------------|----------|
-| SC-SUP-01 | pending (server: create ticket topic+body) |
-| SC-SUP-02 | pending (server: reject missing topic or empty body) |
-| SC-SUP-03 | pending (server: anonymous create allowed) |
-| SC-SUP-04 | pending (client: guest warning no email notify) |
-| SC-SUP-05 | pending (server: author list own tickets) |
-| SC-SUP-06 | pending (server: ticket detail + public thread) |
-| SC-SUP-07 | pending (server: author message when open) |
-| SC-SUP-08 | pending (server: status under_review → in_progress) |
-| SC-SUP-09 | pending (server: staff sets awaiting_response) |
-| SC-SUP-10 | pending (server: mail on status change if email) |
-| SC-SUP-11 | pending (server: no mail for anonymous) |
-| SC-SUP-12 | pending (server: auto-close awaiting after 3d) |
-| SC-SUP-13 | pending (server: auto-close mail distinct copy) |
-| SC-SUP-14 | pending (server: author may close) |
-| SC-SUP-15 | pending (server: closed thread rejects new messages) |
-| SC-SUP-16 | pending (server: rate limits create/open/msg) |
-| SC-SUP-17 | pending (server: staff list all tickets) |
-| SC-SUP-18 | pending (client: lobby header support link) |
-| SC-SUP-19 | pending (server: topics enum) |
-| SC-SUP-20 | pending (server: unauthenticated rejected) |
+| SC-SUP-01 | server: support.test.ts |
+| SC-SUP-02 | server: support.test.ts |
+| SC-SUP-03 | server: support.test.ts |
+| SC-SUP-04 | client: guest warning (mail + session) |
+| SC-SUP-05 | server: support.test.ts |
+| SC-SUP-06 | server: support.test.ts |
+| SC-SUP-07 | server: support.test.ts |
+| SC-SUP-08 | server: support.test.ts |
+| SC-SUP-09 | server: support.test.ts |
+| SC-SUP-10 | server: support.test.ts |
+| SC-SUP-11 | server: support.test.ts |
+| SC-SUP-12 | server: support.test.ts |
+| SC-SUP-13 | server: support.test.ts |
+| SC-SUP-14 | server: support.test.ts |
+| SC-SUP-15 | server: support.test.ts |
+| SC-SUP-16 | server: support.test.ts |
+| SC-SUP-17 | server: support.test.ts |
+| SC-SUP-18 | client: lobby support link |
+| SC-SUP-19 | server: support.test.ts |
+| SC-SUP-20 | server: support.test.ts |
+| SC-SUP-21 | server: support.test.ts |
+| SC-SUP-22 | server: support.test.ts |
+| SC-SUP-23 | client: SupportStaffPage filters |
+| SC-SUP-24 | client: SupportPage / SupportTicketPage resetValidation |
+| SC-SUP-25 | client: SupportTicketPage thread spacing |
 
 ## ADDED Requirements
 
@@ -65,19 +70,19 @@ Any user with a valid JWT (registered or anonymous) MUST be able to create a sup
 - **WHEN** a create-ticket request is made
 - **THEN** the system rejects the request
 
-### Requirement: Guest is warned that status email will not be sent
+### Requirement: Guest is warned about email and session loss
 
-When an anonymous user opens the support create flow, the client MUST show a clear Russian warning that the ticket will be reviewed but the team cannot notify them of status changes because they are a guest.
+When an anonymous user opens the support create flow, the client MUST show a clear Russian warning that: (1) the ticket will be reviewed but email status notifications are unavailable for guests; (2) if they lose the current session (new guest sign-in), they may not see replies or ticket history.
 
-#### Scenario [SC-SUP-04]: Guest sees no-notify warning
+#### Scenario [SC-SUP-04]: Guest sees no-notify and session warning
 
 - **GIVEN** the user is authenticated as anonymous
 - **WHEN** the user opens the support create UI
-- **THEN** the UI shows a Russian warning that the request will be considered but email status notifications are unavailable for guests
+- **THEN** the UI shows a Russian warning covering unavailable email notifications and the risk of losing access to the ticket if the guest session is lost
 
 ### Requirement: Author has a ticket list and a public thread page
 
-The author MUST see a list of their own tickets and MUST open a ticket detail that shows the public message thread (author and staff messages only; no private staff notes).
+The author MUST see a list of their own tickets and MUST open a ticket detail that shows the public message thread (author and staff messages only; no private staff notes). On the ticket detail UI, consecutive messages MUST be visually separated so the thread is readable (not edge-to-edge glued text blocks).
 
 #### Scenario [SC-SUP-05]: Author lists own tickets
 
@@ -92,6 +97,12 @@ The author MUST see a list of their own tickets and MUST open a ticket detail th
 - **WHEN** the author opens the ticket detail
 - **THEN** the public thread shows those messages in order
 - **AND** there are no staff-only private notes in the product
+
+#### Scenario [SC-SUP-25]: Thread messages are visually spaced
+
+- **GIVEN** a ticket detail with two or more messages
+- **WHEN** the author or staff views the thread
+- **THEN** messages are shown with visible separation between entries
 
 ### Requirement: Author and staff may post messages while the ticket is open
 
@@ -122,9 +133,9 @@ Staff (moderator or admin) MUST be able to move a ticket from `under_review` to 
 - **WHEN** the staff marks the ticket as awaiting the user's response
 - **THEN** the status becomes `awaiting_response`
 
-### Requirement: Status change emails the author when an email exists
+### Requirement: Emails to the author on create and on status change
 
-When a ticket status changes, if the author is a registered user with an email address, the system MUST send a Russian email describing the new status (including manual close and auto-close). Anonymous authors MUST NOT receive email. Staff MUST NOT receive ticket emails in this change.
+When a ticket is successfully created, if the author is a registered (non-anonymous) user with an email address, the system MUST send a Russian acknowledgment email stating the request was received (with a link to the ticket). When a ticket status changes, if the author has an email, the system MUST send a Russian email describing the new status (including manual close and auto-close). Anonymous authors MUST NOT receive email. Staff MUST NOT receive ticket emails in this change. Create-ack copy MUST be distinct from auto-close copy.
 
 #### Scenario [SC-SUP-10]: Registered author receives status email
 
@@ -144,6 +155,13 @@ When a ticket status changes, if the author is a registered user with an email a
 - **AND** a ticket auto-closed after no reply in `awaiting_response`
 - **WHEN** the auto-close notification is sent
 - **THEN** the email states in Russian that the ticket was closed automatically because no reply was received within three days
+
+#### Scenario [SC-SUP-21]: Registered author receives create acknowledgment email
+
+- **GIVEN** a registered user with an email
+- **WHEN** the user successfully creates a support ticket
+- **THEN** an email is sent acknowledging receipt of the request in Russian
+- **AND** the email includes a link to the ticket detail
 
 ### Requirement: Awaiting response auto-closes after three days without author reply
 
@@ -184,16 +202,31 @@ The system MUST enforce: at most **5** ticket creates per user per calendar day;
 - **WHEN** the user attempts to create another ticket
 - **THEN** the system rejects the create request
 
-### Requirement: Staff can list all tickets including history
+### Requirement: Staff can list tickets with topic and status filters
 
-Moderator and admin MUST be able to list all tickets (open and closed) for moderation history, not only the open queue.
+Moderator and admin MUST be able to list tickets for moderation. The staff list MUST support filtering by topic (all topics or one of the allowed topics) and by status group: `open` (any status except `closed`), `closed`, or `all`. Default when unspecified: topic = all, status group = `open`. Listing with status group `all` MUST include open and closed tickets (history).
 
-#### Scenario [SC-SUP-17]: Staff lists all tickets
+#### Scenario [SC-SUP-17]: Staff lists tickets across statuses when requested
 
 - **GIVEN** tickets from multiple authors in various statuses
 - **AND** the actor is moderator or admin
-- **WHEN** the staff requests the staff ticket list
+- **WHEN** the staff requests the staff ticket list with status group `all`
 - **THEN** the response includes those tickets across statuses
+
+#### Scenario [SC-SUP-22]: Staff list filters by topic and open status by default
+
+- **GIVEN** open and closed tickets with different topics
+- **AND** the actor is moderator or admin
+- **WHEN** the staff requests the staff ticket list without filters (defaults)
+- **THEN** the response includes only non-closed tickets
+- **AND** tickets of every topic may appear
+
+#### Scenario [SC-SUP-23]: Staff UI exposes topic and status filters
+
+- **GIVEN** a staff user on the staff ticket queue UI
+- **WHEN** the queue is shown
+- **THEN** controls allow choosing topic (default all) and status group open|closed|all (default open)
+- **AND** changing filters refreshes the listed tickets accordingly
 
 ### Requirement: Lobby header exposes Support for authenticated users
 
@@ -205,3 +238,14 @@ While the user is on the lobby experience with a valid session, the lobby header
 - **WHEN** the lobby header is shown
 - **THEN** a Support navigation control is available
 - **AND** activating it opens the support section
+
+### Requirement: Support forms clear validation after successful submit
+
+After a successful create or reply submit, the client MUST clear the message field and MUST NOT leave the empty field in an error/validation-failed visual state (empty after success is expected).
+
+#### Scenario [SC-SUP-24]: Create or reply does not show empty-field error after success
+
+- **GIVEN** an authenticated user on the support create or ticket reply form
+- **WHEN** the user successfully submits a non-empty message
+- **THEN** the message field is cleared
+- **AND** the form does not show a validation error for the empty field solely because of that clear

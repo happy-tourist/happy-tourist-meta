@@ -1,25 +1,26 @@
 ## Why
 
-Игрокам (включая гостей) нужен канал связи с командой: баг, предложение, отзыв, вопрос — без сокета и вне игровых комнат. Сейчас в продукте нет support/тикетов и ролей staff; письма smtp.bz уже есть для auth и могут уведомлять автора о смене статуса.
+Игрокам (включая гостей) нужен канал связи с командой: баг, предложение, отзыв, вопрос — без сокета и вне игровых комнат. После первой поставки support: в admin-списке мешают anonymous-гости; при создании тикета нет ack-письма; staff-очередь без фильтров; мелкие UX-дефекты формы и треда.
 
 ## What Changes
 
 - Раздел поддержки: создание обращения (тема + текст), список своих, страница треда с ответами.
-- Статусы: на рассмотрении, в работе, ожидает ответа (уточнение от staff — ждём пользователя), закрыто; автозакрытие через 3 суток без ответа в «ожидает ответа».
-- Staff (модератор / админ): очередь всех обращений, взять в работу, ответить в публичном треде; только админ назначает роли.
-- Первый админ — id из env (идемпотентно); письма автору при смене статуса (гость — предупреждение без писем).
-- Ссылка «Поддержка» в хедере лобби; HTTP only (без Colyseus room).
+- Статусы: на рассмотрении, в работе, ожидает ответа, закрыто; автозакрытие через 3 суток в «ожидает ответа».
+- Staff: очередь с фильтрами тема/статус; взять в работу, ответить; только админ назначает роли.
+- Первый админ — id из env; письма автору при **создании** (ack) и при смене статуса; гость — предупреждение (нет писем + потеря сессии).
+- Admin users: только не-гости (email/Google); бейдж «почта не подтверждена».
+- Ссылка «Поддержка» в хедере лобби; HTTP only.
 
 ## Capabilities
 
 ### New Capabilities
 
-- `support/tickets`: обращения, тред, статусы, лимиты, письма автору, UI автора и staff-очереди.
-- `support/roles`: роли `user` / `moderator` / `admin`, bootstrap admin из env, список пользователей и смена ролей (только admin).
+- `support/tickets`: обращения, тред, статусы, лимиты, письма автору (create + status), UI автора и staff-очереди с фильтрами.
+- `support/roles`: роли `user` / `moderator` / `admin`, bootstrap admin из env, список пользователей (без anonymous) и смена ролей (только admin).
 
 ### Modified Capabilities
 
-- (нет — auth/login и lobby/rooms требования не меняются на уровне spec; навигация в лобби — часть `support/tickets`)
+- (нет отдельных main-capability вне этого change до sync)
 
 ## Scope
 
@@ -27,11 +28,12 @@
 - **Пакеты:** client + server (+ meta AGENTS/skills при необходимости)
 - **Кто:** любой с JWT, в т.ч. anonymous-гость; полностью без сессии — нет
 - **Темы:** проблема, предложение, отзыв, вопрос, другое
-- **HTTP:** REST support API поверх существующего JWT middleware; комнаты Colyseus не затрагиваются
-- **Почта:** существующий smtp.bz → письма только автору с email при смене статуса (включая закрытие и автозакрытие)
-- **Роли:** поле роли на пользователе; `BOOTSTRAP_ADMIN_IDS`; UI назначения — только admin
-- **UX:** форма + мои обращения + деталь; staff — все обращения + admin users; закрытый тред read-only; новое = новое обращение
-- **Навигация:** пункт «Поддержка» в хедере лобби
+- **HTTP:** REST support API + JWT; комнаты Colyseus не затрагиваются
+- **Почта:** smtp.bz → автору с email при **создании** (получили) и при **смене статуса**; anonymous — без писем
+- **Роли / admin list:** `BOOTSTRAP_ADMIN_IDS`; admin UI — только зарегистрированные (не anonymous), вкл. Google; индикация неподтверждённой почты
+- **Staff queue:** фильтр по теме (default все) и статусу open|closed|all (default open = не closed)
+- **UX polish:** сброс валидации формы после успешной отправки; отступ между сообщениями в треде; усиленное guest-предупреждение
+- **Навигация:** «Поддержка» в хедере лобби
 
 ## Out of scope
 
@@ -39,22 +41,24 @@
 - Письма staff при новом тикете или ответе автора
 - Внутренние (staff-only) заметки
 - Тема «жалоба на игрока»
-- Обращения без JWT (полностью неавторизованный посетитель)
-- Contact email в форме для гостя (только предупреждение)
+- Обращения без JWT
+- Contact email в форме для гостя
 - Переоткрытие закрытого обращения
-- Отдельный CMS / внешний helpdesk (Zendesk и т.п.)
-- Встроенный Colyseus `db.moderation` / `colyseus_roles` как канон ролей
+- Отдельный CMS / внешний helpdesk
+- Colyseus `db.moderation` / `colyseus_roles` как канон ролей
+- **Purge / TTL-удаление anonymous-строк из БД** (гости просто не в admin list)
 - Правила игры, lobby listing sync, board
 
 ## Impact
 
-- Client: страницы support + admin users; HTTP через Pinia; i18n RU; ссылка из лобби.
-- Server: таблицы тикетов/сообщений; поле роли; HTTP endpoints; reuse `sendEmail`; bootstrap env; lazy/periodic автозакрытие.
-- Ops: `BOOTSTRAP_ADMIN_IDS` в server env (prod/local — свой id из той же БД).
-- Meta: при необходимости обновить AGENTS (новый домен support).
+- Client: support + staff filters + admin users (без гостей, бейдж verify); i18n; UX формы/треда.
+- Server: create ack email; admin list filter; staff list query filters; тесты.
+- Ops: `BOOTSTRAP_ADMIN_IDS` без изменений смысла.
+- Meta: при необходимости точечно skills/AGENTS.
 
 ## References
 
-- Explore 2026-09-21: D1 anonymous-гость; D2 warn без mail; D3 roles; D4 awaiting = ответ пользователя; D5 rate limits; D6 mail on close; D7 env bootstrap id; no staff mail; closed = read-only; staff sees all; guest display «Гость»
-- Sibling AGENTS: client/server — «no admin API» до этого change
-- Почта: `openspec/specs/auth/email-verification`, `auth/password-reset` (паттерн smtp.bz + RU)
+- Explore 2026-09-21 (v1): anonymous-гость; warn; roles; awaiting; limits; mail on status; env bootstrap; no staff mail; closed read-only
+- Explore polish 2026-09-21: D1 admin = non-anonymous + unverified badge (no guest purge); D2 mail on create ack; staff filters; form resetValidation; thread spacing; guest warn session loss
+- Sibling AGENTS: client/server Support domain
+- Почта: `openspec/specs/auth/email-verification`, `auth/password-reset`

@@ -39,7 +39,7 @@ Pinia is installed via Quasar store entry `src/stores/index.ts` (`createPinia()`
 | `auth` | **Setup** (`defineStore('auth', () => { … })`) | Refs + computed, `onChange` subscription, `whenReady` promise — fits Composition API |
 | `theme` | **Setup** (`defineStore('theme', () => { … })`) | Dark preference + `syncFromAuthUser` / `toggle`; registered GET restore + POST save |
 | `game` | **Options** (`defineStore('game', { state, getters, actions })`) | Clear room lifecycle, `this.*` mutations, private helpers `_enterRoom` / `_attachRoom` |
-| `support` | **Setup** (`defineStore('support', () => { … })`) | HTTP tickets/staff/admin via `client.http`; `error` + page `q-banner` |
+| `support` | **Setup** (`defineStore('support', () => { … })`) | HTTP tickets/staff/admin via `client.http`; staff list passes `topic`/`status` query; admin users expect `emailVerified`; `error` + page `q-banner` |
 | `counter` (`example-store`) | Options | Scaffold only — do not extend for product features |
 
 **When to choose setup vs options**

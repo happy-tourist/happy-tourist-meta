@@ -6,7 +6,8 @@ description: >-
   user-facing copy in pages/components — incl. lobby grilleDensity +
   catapultDensity labels, game rescue / returnAffordance / pushAffordance /
   all-jail modals (no touristChipAria; no returnConfirm*), and support
-  topics/statuses/guest warning / rate-limit errors / roles (RU under en-US).
+  topics/statuses/guest warning / staff filters / emailUnverified /
+  rate-limit errors / roles (RU under en-US).
 ---
 
 # Work With Localization
@@ -131,7 +132,12 @@ export default {
   },
   support: {
     title: 'Поддержка',
-    guestWarning: '…', // anonymous: no status-mail notify
+    guestWarning: '…', // anonymous: no mail notify + session-loss risk
+    filterTopic: '…',
+    filterTopicAll: '…',
+    filterStatus: '…',
+    filterStatuses: { open: '…', closed: '…', all: '…' },
+    emailUnverified: '…', // AdminUsersPage badge
     topics: { problem: '…', suggestion: '…', /* … */ },
     statuses: { under_review: '…', in_progress: '…', awaiting_response: '…', closed: '…' },
     roles: { user: 'Игрок', moderator: 'Модератор', admin: 'Админ' },

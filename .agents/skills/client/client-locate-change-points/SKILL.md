@@ -79,7 +79,7 @@ Shared mutable session and realtime I/O belong in Pinia, not ad-hoc page-only `c
 |---------|-------------------------|
 | Auth session | `stores/auth.ts`: `register` / `login` / `loginAnonymously` / `loginWithGoogle` / `logout` / `whenReady`; `isAuthenticated`, `displayName`, `role` / `isStaff` / `isAdmin`; optional `user.theme`; sync via `client.auth.onChange` |
 | UI theme (chrome Dark) | `stores/theme.ts`: `syncFromAuthUser` / `toggle`; guest `localStorage` (`ht-theme`); registered `client.http.get('/api/theme')` restore (≠ JWT-only; **no** `auth.user` replace after GET) + `post` on toggle; `App.vue` stable `watch([() => auth.ready, () => auth.user?.id, () => auth.user?.anonymous], …)` (SC-THEME-10) |
-| Support tickets / staff / admin | `stores/support.ts`: HTTP `/api/support/*` + `/api/admin/*` via `client.http`; pages `Support*` / `AdminUsersPage` |
+| Support tickets / staff / admin | `stores/support.ts`: HTTP `/api/support/*` + `/api/admin/*` via `client.http` (staff `topic`/`status` query; admin `emailVerified`); pages `Support*` / `AdminUsersPage` |
 | Lobby room list | `stores/game.ts` `subscribeLobby` / `unsubscribeLobby` → LobbyRoom `rooms` / `+` / `-` |
 | Enter / leave room | `createGame` / `joinGame` / `leaveGame` (`TOURIST_ROOM` / `LOBBY_ROOM`) |
 | Room attach | `_attachRoom` `onStateChange` / `onLeave`; getter `isInRoom` |

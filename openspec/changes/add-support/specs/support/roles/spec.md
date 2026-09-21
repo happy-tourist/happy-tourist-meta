@@ -1,19 +1,20 @@
 ## Purpose
 
-Роли пользователей для поддержки: `user` (по умолчанию), `moderator`, `admin`. Первый admin через env id; только admin назначает роли через список пользователей. Moderator обрабатывает тикеты, но не назначает admin.
+Роли пользователей для поддержки: `user` (по умолчанию), `moderator`, `admin`. Первый admin через env id; только admin назначает роли через список пользователей (без anonymous-гостей; с индикацией неподтверждённой почты). Moderator обрабатывает тикеты, но не назначает роли.
 
 ## Traceability
 
 | Scenario ID | Coverage |
 |-------------|----------|
-| SC-ROLE-01 | pending (server: default role user) |
-| SC-ROLE-02 | pending (server: BOOTSTRAP_ADMIN_IDS idempotent) |
-| SC-ROLE-03 | pending (server: moderator cannot set admin) |
-| SC-ROLE-04 | pending (server: admin can set moderator/admin/user) |
-| SC-ROLE-05 | pending (server: non-admin cannot change roles) |
-| SC-ROLE-06 | pending (server: staff endpoints require moderator+) |
-| SC-ROLE-07 | pending (server: admin user list) |
-| SC-ROLE-08 | pending (client: admin users UI gated) |
+| SC-ROLE-01 | server: support.test.ts |
+| SC-ROLE-02 | server: support.test.ts |
+| SC-ROLE-03 | server: support.test.ts |
+| SC-ROLE-04 | server: support.test.ts |
+| SC-ROLE-05 | server: support.test.ts |
+| SC-ROLE-06 | server: support.test.ts |
+| SC-ROLE-07 | server: support.test.ts |
+| SC-ROLE-08 | client: admin users UI gated |
+| SC-ROLE-09 | client: AdminUsersPage unverified badge |
 
 ## ADDED Requirements
 
@@ -71,15 +72,17 @@ Endpoints that list all tickets, take tickets into work, or post as staff MUST r
 - **WHEN** the actor calls a staff-only support action (list all / take into work / staff status change)
 - **THEN** the system rejects the request
 
-### Requirement: Admin can list users to assign roles
+### Requirement: Admin lists non-anonymous users for role assignment
 
-An admin MUST be able to retrieve a user list suitable for assigning roles (at least identity and current role). The client MUST expose this admin-only users UI; moderators MUST NOT get role-assignment UI.
+An admin MUST be able to retrieve a user list suitable for assigning roles. The list MUST include registered users (email and/or Google — not anonymous guests) with at least identity, current role, and email-verification flag. Anonymous guest accounts MUST NOT appear in this list. The client MUST expose this admin-only users UI; moderators MUST NOT get role-assignment UI. For each listed user with unverified email, the client MUST show a clear indicator (badge/tag) that the email is not confirmed.
 
-#### Scenario [SC-ROLE-07]: Admin receives user list
+#### Scenario [SC-ROLE-07]: Admin receives non-anonymous user list with verification flag
 
 - **GIVEN** an actor with role `admin`
+- **AND** the database contains both anonymous guests and registered users
 - **WHEN** the actor requests the admin user list
-- **THEN** the response includes users with their roles
+- **THEN** the response includes registered users with their roles and email-verification status
+- **AND** does not include anonymous guest users
 
 #### Scenario [SC-ROLE-08]: Role assignment UI is admin-only
 
@@ -87,3 +90,10 @@ An admin MUST be able to retrieve a user list suitable for assigning roles (at l
 - **WHEN** the actor uses the client support/staff area
 - **THEN** the role-assignment users screen is not available as an admin capability
 - **AND** staff ticket tools remain available
+
+#### Scenario [SC-ROLE-09]: Unverified email is indicated in admin users UI
+
+- **GIVEN** an admin viewing the users list
+- **AND** a listed user has an unverified email
+- **WHEN** that row is shown
+- **THEN** the UI shows a badge or tag indicating the email is not confirmed

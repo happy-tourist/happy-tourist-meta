@@ -101,15 +101,15 @@ For CORS / monitor details use `work-with-middleware` and `work-with-config`.
 | POST | `/api/auth/email` | `createEndpoint` | Body `{ email }`; change email + `emailVerified = false`; unique check; **no** auto-send; returns user/token |
 | POST | `/api/auth/confirm-email` | `createEndpoint` | Unauthenticated JSON `{ token }` → JWT → `emailVerified`; product SPA confirm path |
 | POST | `/api/auth/reset-password` | `createEndpoint` | Unauthenticated JSON `{ token, password }` → reset + one-time token; product SPA reset path |
-| POST | `/api/support/tickets` | `createEndpoint` | JWT any; `{ topic, body }` create + first message; helpers in `src/lib/support.ts` |
+| POST | `/api/support/tickets` | `createEndpoint` | JWT any; `{ topic, body }` create + first message; create-ack mail (non-anonymous; distinct from status/auto-close); helpers in `src/lib/support.ts` |
 | GET | `/api/support/tickets` | `createEndpoint` | JWT; own list |
 | GET | `/api/support/tickets/:id` | `createEndpoint` | JWT; detail + messages (owner or staff) |
-| POST | `/api/support/tickets/:id/messages` | `createEndpoint` | JWT; author/staff reply; closed rejects |
+| POST | `/api/support/tickets/:id/messages` | `createEndpoint` | JWT; author/staff reply; closed rejects; author from `awaiting_response` → `in_progress` with `notify: false` (D4 — no status mail on self-reply bump) |
 | POST | `/api/support/tickets/:id/close` | `createEndpoint` | JWT; author close |
-| GET | `/api/support/staff/tickets` | `createEndpoint` | JWT moderator\|admin; all tickets (capped ~50) |
+| GET | `/api/support/staff/tickets` | `createEndpoint` | JWT moderator\|admin; query `topic` (optional), `status`=`open`\|`closed`\|`all` (default `open`); cap ~50 **after** filter |
 | POST | `/api/support/tickets/:id/take` | `createEndpoint` | JWT staff; take into `in_progress` |
 | POST | `/api/support/tickets/:id/status` | `createEndpoint` | JWT staff; `{ status }` |
-| GET | `/api/admin/users` | `createEndpoint` | JWT admin; user list |
+| GET | `/api/admin/users` | `createEndpoint` | JWT admin; **exclude** anonymous; include `emailVerified` (+ id/email/role/displayName) |
 | POST | `/api/admin/users/:id/role` | `createEndpoint` | JWT admin; `{ role }`; **POST** (not PATCH) |
 | GET | `/health` | `express` hook | `{ status, uptime }` — deploy / monitor |
 | GET | `/hi` | `express` hook | Plain text smoke |

@@ -21,7 +21,8 @@ This package validates with Quasar `q-form` + `q-input` `:rules` and `<script se
 | Login | `src/pages/LoginPage.vue` | Email/password register or login → `auth`; guest + Google via separate buttons |
 | Forgot | `src/pages/ForgotPasswordPage.vue` | Email → `auth.forgotPassword`; `email_not_found` → RU not-found |
 | Reset | `src/pages/ResetPasswordPage.vue` | New password (min 6) → `auth.resetPassword(token, password)`; public route |
-| Support create | `src/pages/SupportPage.vue` | Topic `q-select` + body textarea → `support.createTicket`; rate-limit codes → `support.errors.*` |
+| Support create | `src/pages/SupportPage.vue` | Topic `q-select` + body textarea → `support.createTicket`; on success clear + `resetValidation`; rate-limit codes → `support.errors.*` |
+| Support reply | `src/pages/SupportTicketPage.vue` | Body textarea → `support.postMessage`; on success clear + `resetValidation` |
 
 Shared pieces:
 

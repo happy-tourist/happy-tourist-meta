@@ -2,132 +2,108 @@
 
 См. `proposal.md` и delta specs `support/tickets`, `support/roles`.
 
-Сейчас: JWT auth (registered + anonymous), HTTP `createEndpoint` + `auth.middleware()`, smtp.bz `sendEmail`, SQLite `colyseus_users` без `role`, нет support-таблиц и admin UI. AGENTS: «no separate admin API».
+v1 уже в runtime: JWT support HTTP, `ht_role`, таблицы тикетов/сообщений, staff/admin API, mail on status change, client pages. Этот revision — polish по feedback после первого прогона.
 
-Пакеты: **server** (`../happy-tourist-server`) + **client** (`../happy-tourist.github.io`). Meta: при необходимости AGENTS Business Entities.
-
-Чеклист реализации — `tasks.md` (не дублировать здесь).
+Пакеты: **server** (`../happy-tourist-server`) + **client** (`../happy-tourist.github.io`). Чеклист — `tasks.md` (новые пункты секции 4+).
 
 ## Goals / Non-Goals
 
 **Goals:**
 
-- HTTP CRUD тикетов + публичный тред; статусы; лимиты; автозакрытие 3 суток в `awaiting_response`.
-- Письма автору при смене статуса через существующий mailer (не anonymous).
-- Роли `user` | `moderator` | `admin`; `BOOTSTRAP_ADMIN_IDS`; admin users UI.
-- Client: support pages + staff queue + admin users; ссылка в хедере лобби.
-- Без Colyseus room/WS для support.
+- HTTP CRUD тикетов + тред; статусы; лимиты; автозакрытие 3 суток.
+- Письма автору: **ack при create** + при смене статуса (не anonymous).
+- Роли + bootstrap; admin list **без anonymous**; бейдж неподтверждённой почты.
+- Staff queue filters (topic + status open/closed/all).
+- Client UX: guest warn (mail + session); form `resetValidation`; thread spacing.
+- Без Colyseus room для support.
 
 **Non-Goals:**
 
-- Staff email notify; private notes; reopen; unauthenticated tickets; Colyseus `db.moderation` roles.
+- Staff email notify; private notes; reopen; unauthenticated tickets; guest DB purge/TTL; Colyseus moderation roles.
 
 ## Decisions
 
 ### D1: Transport = HTTP only
 
-- Все операции через `client.http` + server `createEndpoint` + `auth.middleware()`.
-- Не создавать Colyseus room для support (нагрузка рядом с `tourist`/`lobby` не нужна).
-- Refresh: load on navigate; optional manual refresh. Realtime — out of scope.
+- `client.http` + `createEndpoint` + `auth.middleware()`.
+- Refresh on navigate; optional manual refresh. Realtime out of scope.
 
 ### D2: Data model (SQLite / Drizzle)
 
-- Extend `colyseus_users` with `role` text NOT NULL default `user` (`user` | `moderator` | `admin`) — same pattern as other custom columns with `.default(...)`.
-- New tables (имена apply могут уточнить, смысл фиксирован):
-  - `support_tickets`: id, authorUserId, topic, status, createdAt, updatedAt, awaitingSince (nullable; set when entering `awaiting_response`, clear otherwise).
-  - `support_messages`: id, ticketId, authorUserId, body, createdAt, authorKind (`user` | `staff`).
-- Topics: `problem` | `suggestion` | `feedback` | `question` | `other`.
-- Statuses: `under_review` | `in_progress` | `awaiting_response` | `closed`.
+- `htRole` / `ht_role` on users (not JS name `role`).
+- `support_tickets`, `support_messages` as shipped.
+- Topics / statuses unchanged.
 
-### D3: HTTP surface (contract sketch)
+### D3: HTTP surface
 
-Author (any JWT):
+Author: create / list own / detail / message / close.
 
-- `POST /api/support/tickets` `{ topic, body }` → create + first message
-- `GET /api/support/tickets` → own list
-- `GET /api/support/tickets/:id` → detail + messages (owner or staff)
-- `POST /api/support/tickets/:id/messages` `{ body }` → author reply (open only); if was `awaiting_response` → `in_progress`
-- `POST /api/support/tickets/:id/close` → author close
+Staff:
 
-Staff (moderator|admin):
+- `GET /api/support/staff/tickets` — query filters: `topic` (optional enum | omit=all), `status` (`open` | `closed` | `all`; default **`open`** = not `closed`). Keep response cap (~50) **after** filter.
+- take / status / messages as shipped (closed terminal — no reopen).
 
-- `GET /api/support/staff/tickets` → all tickets (filter query optional)
-- `POST /api/support/tickets/:id/take` → `under_review` → `in_progress`
-- `POST /api/support/tickets/:id/status` `{ status }` → staff status changes (`awaiting_response` | `closed` | … with validation)
-- `POST /api/support/tickets/:id/messages` as staff (same path; role decides authorKind) **или** отдельный staff message endpoint — apply выбирает один стиль, поведение: staff message + optional status
+Admin:
 
-Admin only:
+- `GET /api/admin/users` — **exclude** `anonymous === true`; include `emailVerified` (and existing id/email/role/displayName). Google / email-registered included.
+- `POST /api/admin/users/:id/role` `{ role }`.
 
-- `GET /api/admin/users` → list id, email, anonymous, role, displayName
-- `POST /api/admin/users/:id/role` `{ role }` (POST, not PATCH — same style as other support mutations; SDK/test harness)
+### D4: Email — status change **and** create ack
 
-Reject unauthenticated; reject staff/admin actions for insufficient role (`403`).
-
-### D4: Email on status change
-
-- Reuse `src/lib/mailer.ts` `sendEmail`.
-- Trigger when status changes (take, awaiting, close manual, auto-close, author close).
-- Skip if author `anonymous` or no email.
-- RU subjects/bodies; auto-close: отдельный смысл («не получен ответ в течение 3 суток»).
-- Link: `{CLIENT_APP_URL}/#/support/<id>` (hash router).
-- No staff notification emails.
+- Reuse `sendEmail`.
+- **Create ack:** after successful ticket create, if author non-anonymous with email → RU mail «обращение получено» + link `#/support/<id>`. Distinct copy from status-change / auto-close.
+- **Status change:** take, awaiting, close manual, auto-close, author close (unchanged).
+- Skip anonymous / no email. No staff notification emails.
 
 ### D5: Auto-close
 
-- Clock: 3 × 24h from `awaitingSince` without author message after that timestamp.
-- Implementation: lazy evaluate on GET list/detail + `setInterval` ~1h on server boot (no external cron).
-- On auto-close: set `closed`, send mail if eligible (D4).
+- 3 × 24h from `awaitingSince`; lazy + ~1h interval (unchanged).
 
 ### D6: Rate limits
 
-- 5 creates / user / UTC day; max 3 non-`closed` tickets; 30 messages / hour / ticket / user.
-- Enforce server-side; client may mirror hints.
+- 5 creates/day; ≤3 open; 30 msg/hour/ticket (unchanged).
 
 ### D7: Roles + bootstrap
 
-- Env `BOOTSTRAP_ADMIN_IDS` comma-separated user ids (same DB as runtime).
-- On listen/startup: for each id, `UPDATE … SET role='admin'` idempotent (env wins demotion).
-- Document in `.env.example`.
-- JWT userdata SHOULD expose `role` for client gating (extend userdata / profile read path used today); client MUST NOT trust role alone for security — server enforces.
+- `BOOTSTRAP_ADMIN_IDS`; userdata `role` (unchanged).
 
 ### D8: Client structure
 
-- Routes (`requiresAuth`): support list/create, support detail, staff tickets (moderator+), admin users (admin only).
-- Pages under `src/pages/` (e.g. SupportPage, SupportTicketPage, SupportStaffPage, AdminUsersPage — exact names in apply).
-- Pinia store for support HTTP (не размазывать `client.http` по UI) — follow `work-with-stores` / `colyseus-client`.
-- Lobby header: Support link (authenticated, incl. anonymous) — LobbyPage / App header as fits existing layout; explore: «в хедере лобби».
-- Guest create: banner warning no email notify.
-- Closed: UI read-only; CTA to create new.
-- i18n RU for topics/statuses/warnings/errors; `q-form` rules; errors via store + `q-banner`.
-- Display name for anonymous in thread: «Гость».
+- Existing Support* / AdminUsers pages + store.
+- Guest banner: no email **and** without the same session may not see replies / history (i18n RU).
+- Staff page: topic filter (default all) + status filter (default open).
+- Admin page: list from filtered API; badge/chip when `emailVerified === false`.
+- Forms create/reply: after successful submit clear fields + `q-form.resetValidation()` (no red empty state).
+- Ticket thread: visible spacing between messages / author line and body (Quasar spacing utilities).
+- Closed read-only + CTA new ticket.
 
 ### D9: Auth vs guest
 
-- `requiresAuth` for support routes (same as lobby) — anonymous OK.
-- Unauthenticated → login redirect (existing guard).
+- `requiresAuth`; anonymous OK for support routes (unchanged).
 
 ### D10: Skills / AGENTS
 
-- Update sibling AGENTS Business Entities: Support + roles.
-- Prefer existing skills (`work-with-routes`, `work-with-database`, `client-work-with-structure`, `work-with-pages`, `work-with-forms`); new topic skill только если apply упрётся — не блокер proposal.
+- Already updated for v1; polish: mention staff query filters, create-ack mail, admin non-anonymous list if skills list endpoints.
+
+### D11: No guest purge (explore)
+
+- Anonymous rows may remain in SQLite; product fix = hide from admin list. TTL delete — out of scope.
 
 ## Risks / Trade-offs
 
 | Risk | Mitigation |
 |------|------------|
-| Bootstrap id from wrong DB (local vs prod) | Document: take JWT id on same env as env file |
-| Enumerate users via admin list | Admin-only; accepted |
-| Lazy auto-close delay if nobody opens ticket | Periodic interval backup |
-| Role only in DB, stale JWT | Refresh userdata on app load / after role change; server checks DB role on each request |
-| SQLite growth of messages | Fine for v1; pagination later if needed |
+| Create + status emails feel noisy | Distinct ack copy; only one mail on create |
+| Filtered staff list empties with cap | Cap after filter; defaults open + all topics |
+| Admin hides guests but tickets still from guests | Staff queue still shows guest tickets as «Гость» |
+| Unverified badge without server field | API already can expose `emailVerified` from users row |
 
 ## Migration Plan
 
-1. Server: schema + endpoints + bootstrap + tests → deploy with empty `BOOTSTRAP_ADMIN_IDS` then set owner id.
-2. Client: pages + store + lobby link.
-3. Ops: set `BOOTSTRAP_ADMIN_IDS` on VPS; restart PM2.
-4. Rollback: feature flags not required; revert deploys independently (client without API fails soft with banner).
+1. Deploy server (filters + create mail + admin filter) → client polish.
+2. No new env vars.
+3. Rollback: independent sibling deploys.
 
 ## Open Questions
 
-(нет — explore закрыт; apply defaults выше.)
+(нет — explore polish закрыт: D1 hide guests + unverified badge; D2 create ack; Google in admin list; no purge.)
