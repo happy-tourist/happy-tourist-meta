@@ -2,7 +2,7 @@
 
 ## Purpose
 
-UGC-наборы карточек-ответов и заданий: создание и правка verified-пользователями, коллекция и публичный каталог одобренных наборов, модерация (очередь, тред, почта), блокировка; задел под будущие peek-награды по сложности 1–3. Без привязки к tourist-room и без замены peek-stub в этом change.
+UGC-наборы карточек-ответов и заданий: создание/правка verified-пользователями, коллекция, публичный каталог после approve ответов, **раздельная** модерация answers/tasks, блокировка; задел difficulty 1–3 под будущие peek-награды. Без привязки к tourist-room и без замены peek-stub.
 
 ## Traceability
 
@@ -41,12 +41,19 @@ UGC-наборы карточек-ответов и заданий: создан
 | SC-PACK-31 | covered |
 | SC-PACK-32 | covered |
 | SC-PACK-33 | covered (unchanged; peek stub not touched) |
+| SC-PACK-34 | covered |
+| SC-PACK-35 | covered |
+| SC-PACK-36 | covered |
+| SC-PACK-37 | covered |
+| SC-PACK-39 | covered |
+| SC-PACK-40 | covered |
+| SC-PACK-41 | covered |
 
 ## ADDED Requirements
 
 ### Requirement: Verified registered user may create a pack
 
-A non-anonymous user with a valid JWT and verified email MUST be able to create a content pack with a non-empty title and a description (description MAY be empty only if the product form allows blank; title MUST be non-empty). On create the pack MUST enter the creator’s collection and MUST start as not publicly listed until approved. Anonymous guests and unverified email/password users MUST NOT create packs; the client MUST prompt them to sign in or confirm email instead.
+A non-anonymous user with a valid JWT and verified email MUST be able to create a content pack with a non-empty title and a description (description MAY be empty). On create the pack MUST enter the creator’s collection and MUST start as not publicly listed until answers are approved. After create the client MUST open the answers editing surface. Anonymous guests and unverified email/password users MUST NOT create packs; the client MUST prompt them to sign in or confirm email instead.
 
 #### Scenario [SC-PACK-01]: Verified user creates a pack into own collection
 
@@ -72,11 +79,11 @@ A non-anonymous user with a valid JWT and verified email MUST be able to create 
 
 ### Requirement: Pack holds answer cards and task sets
 
-A pack MUST contain answer cards and one or more task sets. Each answer card MUST have textual content and MAY have a textual description. Each task MUST have a textual question, a difficulty of exactly `1`, `2`, or `3`, and one or more answer slots that reference answer cards from the same pack. Task sets MUST be labeled by the contributing user’s display identity (author and, when applicable, co-author labels are display-only and MUST NOT grant extra permissions beyond collection membership).
+A pack MUST contain answer cards and may contain one or more task sets. Each answer card MUST have textual content and MAY have a textual description. Each task MUST have a textual question, a difficulty of exactly `1`, `2`, or `3`, and one or more answer slots that reference answer cards from the same pack. Task sets MUST be labeled by the contributing user’s display identity (author and, when applicable, co-author labels are display-only and MUST NOT grant extra permissions beyond collection membership). Creating or editing tasks MUST require that the pack already has at least one answer card in the editor’s draft. Any collection member who satisfies create/edit identity rules MUST be allowed to edit answer cards and tasks (no per-author ACL beyond collection + verify).
 
 #### Scenario [SC-PACK-04]: Answer card has content and description
 
-- **GIVEN** a verified user editing a pack in their collection
+- **GIVEN** a verified user editing answers for a pack in their collection
 - **WHEN** the user adds an answer card with non-empty content and an optional description
 - **THEN** the card is stored on that pack
 
@@ -88,33 +95,55 @@ A pack MUST contain answer cards and one or more task sets. Each answer card MUS
 
 #### Scenario [SC-PACK-06]: Invalid difficulty is rejected
 
-- **GIVEN** a verified user editing a pack
+- **GIVEN** a verified user editing tasks for a pack
 - **WHEN** the user submits a task with difficulty outside `1`|`2`|`3`
 - **THEN** the system rejects the write
 
-### Requirement: Answer-slot editing UX semantics
+#### Scenario [SC-PACK-34]: Tasks cannot be created without answer cards
 
-When composing a task, the editor MUST support adding an empty slot, removing a slot, filling the next empty slot by selecting an answer card in order, and clearing a filled slot by selecting that slot. Changing an answer card’s content that is referenced by task slots MUST clear those slot references (MUST NOT silently rewrite slot answers). Submit for moderation MUST be blocked while any task has an empty required slot or while fewer than the minimum answer cards or tasks exist.
+- **GIVEN** a verified user with a pack that has zero answer cards in draft
+- **WHEN** the user attempts to create a task or open task-set editing
+- **THEN** the system rejects or prevents the action until at least one answer card exists
+
+### Requirement: Answer-slot editing and separate submit rules
+
+When composing a task, the editor MUST support adding an empty slot, removing a slot (minimum one slot remains), filling the next empty slot by selecting an answer card tile, and clearing a filled slot by selecting that slot. Changing an answer card’s content that is referenced by task slots MUST clear those slot references. Deleting an answer card MUST NOT by itself block answers submit. Tasks submit MUST be rejected while any submitted task has an empty slot or while fewer than two tasks exist. Answers submit MUST be rejected while fewer than two answer cards exist.
 
 #### Scenario [SC-PACK-07]: Changing a referenced answer card clears dependent slots
 
 - **GIVEN** a task whose slots reference answer card A
 - **WHEN** the editor changes the content of answer card A
 - **THEN** those slots become empty
-- **AND** submit for moderation remains blocked until the slots are filled again
+- **AND** tasks submit remains blocked until the slots are filled again
+- **AND** answers submit is not blocked solely because those slots are empty
 
-#### Scenario [SC-PACK-08]: Submit requires minima and filled slots
+#### Scenario [SC-PACK-08]: Answers submit requires card minima only
 
-- **GIVEN** a pack with fewer than two answer cards, or fewer than two tasks, or any task with an empty slot
-- **WHEN** the user attempts to submit the pack for moderation
-- **THEN** the system rejects the submit
+- **GIVEN** a pack with fewer than two answer cards
+- **WHEN** the user attempts to submit answers for moderation
+- **THEN** the system rejects the answers submit
 
-#### Scenario [SC-PACK-09]: Submit succeeds at minima
+#### Scenario [SC-PACK-09]: Tasks submit requires task minima and filled slots
 
-- **GIVEN** a pack with at least two answer cards, at least two tasks, every task having at least one filled slot and valid difficulty, and the actor allowed to submit
-- **WHEN** the user submits for moderation
-- **THEN** the pack enters pending moderation
-- **AND** a moderation thread exists for that change author and staff
+- **GIVEN** a pack with fewer than two tasks, or any task with an empty slot
+- **WHEN** the user attempts to submit tasks for moderation
+- **THEN** the system rejects the tasks submit
+
+#### Scenario [SC-PACK-35]: Separate submits succeed at their minima
+
+- **GIVEN** a pack with at least two answer cards and an actor allowed to submit
+- **WHEN** the user submits answers for moderation
+- **THEN** an answers pending request and thread exist for that change author
+- **AND GIVEN** answers are no longer dirty and the pack has at least two tasks with filled slots and valid difficulty
+- **WHEN** the user submits tasks for moderation
+- **THEN** a distinct tasks pending request and thread exist
+
+#### Scenario [SC-PACK-36]: Dirty answers block task create and edit
+
+- **GIVEN** a verified editor whose answers draft has unsaved-for-moderation changes (new or modified cards or pack title/description vs last answers submit)
+- **WHEN** the editor attempts to create or edit tasks
+- **THEN** the system rejects or prevents the action
+- **AND** after a successful answers submit the editor MAY create and edit tasks again
 
 ### Requirement: Collection gates editing; anyone with session may collect approved packs
 
@@ -139,72 +168,79 @@ Only users who have the pack in their collection and who satisfy create/edit ide
 - **WHEN** a collection-add request is made
 - **THEN** the system rejects the request
 
-### Requirement: Public catalog shows only latest approved live content
+### Requirement: Public catalog shows live content after answers approval
 
-The public catalog and the public pack page MUST list and show only packs that have an approved live revision and are not blocked. Draft and pending content MUST NOT appear as the public live view. While a newer change is pending, the world MUST continue to see the last approved live revision.
+The public catalog and the public pack page MUST list and show only packs that have an approved live answers revision (and live tasks as required for answers approve), and are not blocked. Draft and pending content MUST NOT appear as the public live view. While newer answers or tasks changes are pending, the world MUST continue to see the last approved live snapshot.
 
 #### Scenario [SC-PACK-13]: Pending changes do not replace live public view
 
-- **GIVEN** pack P has an approved live revision and a pending change request
+- **GIVEN** pack P has an approved live snapshot and a pending answers or tasks request
 - **WHEN** any user opens the public catalog or public pack page for P
 - **THEN** they see the approved live content
 - **AND** they do not see the pending draft as live
 
 #### Scenario [SC-PACK-14]: Never-approved pack is absent from catalog
 
-- **GIVEN** a pack that has never been approved
+- **GIVEN** a pack that has never had answers approved
 - **WHEN** a user browses the public catalog
 - **THEN** that pack is not listed
 
-### Requirement: Moderation lock and single pending submit race
+#### Scenario [SC-PACK-37]: Catalog listing follows answers approval
 
-While a pack has an open pending moderation request, users other than that change’s author MUST NOT start a new edit session on the pack. The pending change’s author MUST be allowed to amend and resubmit within the same moderation thread until the request is approved, rejected (with thread continuing for fixes), or cancelled by staff. If two eligible editors race to submit, exactly one submit MUST succeed; the other MUST receive an error and that user’s work MUST remain as a personal draft while the pack stays in moderation.
+- **GIVEN** staff has approved tasks into live and then approved answers for pack P
+- **WHEN** a user browses the public catalog
+- **THEN** pack P is listed (unless blocked)
 
-#### Scenario [SC-PACK-15]: Non-author cannot start edit while pending
+### Requirement: Dual pending locks and races
 
-- **GIVEN** pack P is pending moderation under change author A
-- **WHEN** verified user B (with P in collection) attempts to start editing P
-- **THEN** the system rejects starting that edit
+A pack MAY have at most one pending request per type (`answers`, `tasks`). While the editor’s answers draft is **dirty** relative to the last successful answers submit (including before the first submit), no user MUST be allowed to create or edit **tasks** for that pack. After answers are submitted successfully, task create/edit MUST be allowed again even if answers remain pending. The answers pending author MUST be allowed to amend and resubmit answers (which re-dirties until the next submit). While tasks are writable and tasks are pending, the tasks pending author MUST be allowed to amend and resubmit tasks; other users MUST NOT win a competing tasks submit (race → error; personal draft retained). Answers submit MUST NOT require live or pending tasks.
 
-#### Scenario [SC-PACK-16]: Pending author may amend and resubmit
+#### Scenario [SC-PACK-15]: Dirty answers block task editing for everyone
 
-- **GIVEN** pack P is pending under author A
-- **WHEN** A updates the pending draft and submits again
-- **THEN** the same moderation thread remains the active request
-- **AND** the pack stays pending
+- **GIVEN** pack P has dirty answers (unsaved-for-moderation answer changes) for an eligible editor
+- **WHEN** any verified collection member attempts to create or edit tasks for P
+- **THEN** the system rejects the attempt
 
-#### Scenario [SC-PACK-17]: Losing submit keeps personal draft during moderation
+#### Scenario [SC-PACK-16]: Pending answers author may amend and resubmit answers
 
-- **GIVEN** two eligible editors both prepared changes and the first successfully submitted P into pending
-- **WHEN** the second attempts to submit
+- **GIVEN** pack P is answers-pending under author A
+- **WHEN** A updates the answers draft and submits answers again
+- **THEN** the same answers moderation thread remains active
+- **AND** answers stay pending
+- **AND** after that submit, answers are not dirty
+
+#### Scenario [SC-PACK-17]: Losing tasks submit keeps personal draft
+
+- **GIVEN** two eligible editors prepared tasks while answers were not dirty and the first successfully submitted tasks into pending
+- **WHEN** the second attempts to submit tasks
 - **THEN** the system rejects the second submit
-- **AND** the second user’s draft remains available until moderation ends (approve or staff cancel)
+- **AND** the second user’s draft remains available until that tasks request is approved or cancelled
 
-### Requirement: Staff moderation queue, decisions, and thread
+### Requirement: Staff moderation via answers hub
 
-Moderator and admin MUST be able to list packs awaiting moderation, open a read-only preview of the submitted content (full preview, not diff-only), approve, reject with a staff comment in the thread, or cancel the pending request (returning the pack to non-pending so others may edit again). The moderation thread MUST be visible only to the change author and to moderator|admin. After approval, accepted contributors MAY receive a co-author display label on relevant task sets; labels MUST NOT alone grant edit rights. A later improvement cycle MUST open a new moderation thread.
+Moderator and admin MUST see a queue only for packs that have an **answers** pending request (tasks-only pending MUST NOT appear alone). Opening an answers pending item MUST show answers preview and a nested list of task sets / tasks requests for that pack. Staff MUST approve **tasks** before approving **answers**. Approving answers MUST require live tasks already present and MUST publish the pack to the public catalog (unless blocked). Staff MAY reject with comment, cancel, or message on the relevant request thread. Threads remain visible only to that request’s change author and staff. After approval of a type, a later cycle of the same type MUST open a new thread. Non-staff MUST NOT perform staff actions.
 
-#### Scenario [SC-PACK-18]: Staff approves pending pack into catalog
+#### Scenario [SC-PACK-18]: Staff approves answers into catalog after live tasks
 
-- **GIVEN** a pending pack change and an actor with role moderator or admin
-- **WHEN** the actor approves the change
-- **THEN** the submitted content becomes the live approved revision
+- **GIVEN** pack P has answers pending, live tasks already approved, and a staff actor
+- **WHEN** the actor approves the answers request
+- **THEN** the submitted answers become the live answers revision
 - **AND** the pack appears in the public catalog (unless blocked)
-- **AND** the pack is no longer pending
+- **AND** answers are no longer pending
 
 #### Scenario [SC-PACK-19]: Staff rejects with comment
 
-- **GIVEN** a pending pack change and staff actor
+- **GIVEN** a pending answers or tasks request and staff actor
 - **WHEN** the actor rejects with a non-empty comment
-- **THEN** the change author can read the comment in the thread
-- **AND** the author may amend and resubmit on the same thread
+- **THEN** the change author can read the comment in that request’s thread
+- **AND** the author may amend and resubmit on the same thread when locks allow
 
 #### Scenario [SC-PACK-20]: Staff cancels pending
 
-- **GIVEN** a pending pack change and staff actor
-- **WHEN** the actor cancels the pending request
-- **THEN** the pack is no longer pending
-- **AND** other collection members may start editing again
+- **GIVEN** a pending answers or tasks request and staff actor
+- **WHEN** the actor cancels that request
+- **THEN** that request is no longer pending
+- **AND** locks for that type are released accordingly
 
 #### Scenario [SC-PACK-21]: Non-staff cannot approve or cancel
 
@@ -212,15 +248,36 @@ Moderator and admin MUST be able to list packs awaiting moderation, open a read-
 - **WHEN** the user attempts to approve, reject, cancel, or block a pack
 - **THEN** the system rejects the request
 
-#### Scenario [SC-PACK-22]: New improvement opens a new thread
+#### Scenario [SC-PACK-22]: New improvement opens a new thread per type
 
-- **GIVEN** an approved pack and an eligible editor who submits a new change after a prior approval
+- **GIVEN** an approved answers (or tasks) cycle and an eligible editor who submits a new change of the same type
 - **WHEN** moderation starts for that new change
-- **THEN** a new moderation thread is created (not a continuation of the old approved thread)
+- **THEN** a new moderation thread is created for that type (not a continuation of the old approved thread)
+
+#### Scenario [SC-PACK-30]: Staff queue lists only answers-pending packs
+
+- **GIVEN** pack A has answers pending and pack B has only tasks pending
+- **WHEN** staff opens the moderation queue
+- **THEN** pack A is listed
+- **AND** pack B is not listed solely for tasks-pending
+- **AND** a role `user` session MUST NOT access that queue
+
+#### Scenario [SC-PACK-39]: Staff must approve tasks before answers
+
+- **GIVEN** answers pending and tasks still pending (not live) for pack P
+- **WHEN** staff attempts to approve answers
+- **THEN** the system rejects answers approve until tasks are live
+- **AND** staff can approve the nested tasks request first
+
+#### Scenario [SC-PACK-40]: Tasks-only pending is invisible to staff
+
+- **GIVEN** pack P has tasks pending and no answers pending
+- **WHEN** staff opens the moderation queue
+- **THEN** pack P does not appear
 
 ### Requirement: Author and staff may exchange messages on an open thread
 
-While a moderation request is not cancelled and not finally closed by approval without further work, the change author and staff MUST be able to append messages to that thread (support-like chat). Other users MUST NOT read or write that thread.
+While a moderation request is not cancelled and not finally closed by approval without further work, the change author and staff MUST be able to append messages to that thread. Other users MUST NOT read or write that thread.
 
 #### Scenario [SC-PACK-23]: Change author posts a reply in the thread
 
@@ -253,14 +310,14 @@ Moderator and admin MUST be able to block a pack. A blocked pack MUST remain vis
 
 ### Requirement: Email notifications for moderation events
 
-When the change author is a non-anonymous user with an email, the system MUST send Russian email notifications (same mail channel as support) for: staff approve, staff reject, new staff message on the thread, and staff block of the pack. Anonymous authors MUST NOT receive email. Links in mail MUST open the client SPA hash route for the pack / moderation view.
+When the change author is a non-anonymous user with an email, the system MUST send Russian email notifications (same mail channel as support) for: staff approve, staff reject, new staff message on the thread, and staff block of the pack (per relevant request/pack). Anonymous authors MUST NOT receive email. Links in mail MUST open the client SPA hash route for the pack / moderation view.
 
 #### Scenario [SC-PACK-27]: Approve notifies the change author by email
 
-- **GIVEN** a pending change by a registered author with email
-- **WHEN** staff approves the change
+- **GIVEN** a pending answers or tasks change by a registered author with email
+- **WHEN** staff approves that change
 - **THEN** the author receives an email about the approval
-- **AND** the email links to the client SPA pack view
+- **AND** the email links to the client SPA pack / moderation view
 
 #### Scenario [SC-PACK-28]: Anonymous change author gets no email
 
@@ -268,22 +325,15 @@ When the change author is a non-anonymous user with an email, the system MUST se
 - **WHEN** a notifiable moderation event occurs
 - **THEN** no email is sent for that author
 
-### Requirement: Client surfaces for catalog, collection, editor, and staff queue
+### Requirement: Client surfaces — split editor, collection-first, autosave
 
-The client MUST expose: a public catalog of approved non-secret packs; a collection list for the current user; a pack view (read-only live content for the public; editor with fields when allowed); and a staff moderation queue for moderator|admin. Loading, empty, and error states MUST be visible (banner/error pattern consistent with the app). Create/edit entry points MUST show the auth/verify modal when the user is ineligible.
+The client MUST expose: a collection list as the primary entry from lobby into the packs section; a public catalog reachable from the collection; a live pack view; an **answers** editing page (pack title/description, single answer form, answers list with edit affordance, nested task-set list labeled by author/coauthor, answers submit); a **task-set** editing page nested under answers (single question form, slots, answer tiles, questions list, tasks submit) that is unavailable for create/edit while answers are dirty; and a staff answers-pending queue with nested tasks. Draft edits MUST autosave. Destructive deletes MUST ask for confirmation. The answers page MUST NOT show a badge prompting to submit answers after tasks submit. Loading, empty, and error states MUST be visible. Create/edit entry points MUST show the auth/verify modal when the user is ineligible.
 
 #### Scenario [SC-PACK-29]: Catalog lists approved packs
 
-- **GIVEN** at least one approved non-blocked pack exists
+- **GIVEN** at least one pack with approved answers (catalog-eligible) exists
 - **WHEN** an authenticated user opens the catalog
 - **THEN** those packs are listed for browsing
-
-#### Scenario [SC-PACK-30]: Staff queue lists pending packs
-
-- **GIVEN** at least one pending pack and a moderator or admin session
-- **WHEN** staff opens the moderation queue
-- **THEN** pending packs are listed
-- **AND** a role `user` session MUST NOT access that queue
 
 #### Scenario [SC-PACK-31]: Ineligible create shows auth or verify prompt
 
@@ -291,6 +341,13 @@ The client MUST expose: a public catalog of approved non-secret packs; a collect
 - **WHEN** the user attempts to create
 - **THEN** the client shows a prompt to sign in or confirm email
 - **AND** no pack is created
+
+#### Scenario [SC-PACK-41]: Lobby opens collection first
+
+- **GIVEN** an authenticated user on the lobby
+- **WHEN** the user opens the packs section navigation entry
+- **THEN** the collection page is shown first
+- **AND** the catalog remains reachable from the collection
 
 ### Requirement: Difficulty is stored for future peek rewards
 

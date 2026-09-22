@@ -29,7 +29,7 @@ Search and assign ownership top-down along the call path.
 | Entry | `src/index.ts` | `listen(app)` from `@colyseus/tools` |
 | Server def | `src/app.config.ts` | `defineServer`: database, rooms, routes, express (CORS, `/health`, `/hi`, support + content bootstrap, monitor/playground); side-effect import `./config/auth.js` |
 | OAuth config | `src/config/auth.ts` | `auth.oauth.addProvider('google', …)`; `htRole` → userdata `role`; leave built-in `onOAuthProviderCallback` alone (except verified wrap) |
-| Lib | `src/lib/mailer.ts`, `src/lib/support.ts`, `src/lib/content.ts` | smtp.bz mail; support tickets/roles/bootstrap/auto-close; content packs (ensure + HTTP helpers) |
+| Lib | `src/lib/mailer.ts`, `src/lib/support.ts`, `src/lib/content.ts` | smtp.bz mail; support tickets/roles/bootstrap/auto-close; content packs (ensure + dual answers\|tasks HTTP helpers) |
 | DB | `src/db/index.ts`, `src/db/schema.ts` | `GameDatabase`, `users` extension (`htRole`), support + `content_*` table decls |
 | Rooms | `src/rooms/MyRoom.ts` | `onAuth` / `onCreate` / `onJoin` / `onDrop` / `onReconnect` / `onLeave` / `onDispose` |
 | Schema | `src/rooms/schema/MyRoomState.ts` | `@colyseus/schema` sync state (`connected` / `reconnectUntil`) |
@@ -101,7 +101,7 @@ Use these rules to pick the layer before naming files.
 | Cabinet display-name / change-password HTTP | `POST /api/auth/display-name` + `POST /api/auth/change-password` in `src/app.config.ts` (`createEndpoint`); bumpTokenVersion on password change/reset |
 | Persisted profile fields (`displayName`, `rating`, `gamesPlayed`, `gamesWon`, nullable `theme`, `emailVerified`, `htRole`, …) | `src/db/schema.ts` users extension — **NOT NULL** custom columns need `.default(...)` so `/auth/register` / `/auth/login` do not fail; nullable prefs like `theme` do not; **do not** name JS field `role` |
 | Support tickets / messages | `src/db/schema.ts` decls + `src/lib/support.ts` (`ensureSupportTables`) — not SchemaSet auto-sync |
-| Content packs (live/draft/collection/moderation) | `src/db/schema.ts` `content_*` decls + `src/lib/content.ts` (`ensureContentTables`); create/edit/submit require non-anonymous + `emailVerified` from DB |
+| Content packs (live/draft/collection; dual answers\|tasks) | `src/db/schema.ts` `content_*` (moderation `type`, `last_answers_snapshot`, `live_tasks_revision_id`) + `src/lib/content.ts` (`ensureContentTables`, `submitAnswers`/`submitTasks`, dirty lock, staff answers hub); create/edit/submit require non-anonymous + `emailVerified` from DB |
 | GameDatabase wiring / schemas map | `src/db/index.ts` |
 | Secrets for auth (salt, JWT, session, Google client) | `.env.example` / `.env.development` / `.env.production` (`AUTH_SALT`, `JWT_SECRET`, `SESSION_SECRET`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`) |
 
@@ -124,7 +124,7 @@ Use these rules to pick the layer before naming files.
 | Auth email + password policy | `test/zz-authEmail.test.ts` |
 | Auth profile (displayName / change-password) | `test/zz-authProfile.test.ts` |
 | Support tickets + roles | `test/support.test.ts` |
-| Content packs (SC-PACK-*) | `test/zz-contentPacks.test.ts` — mock mailer; `ensureContentTables` / `setEmailVerifiedForTests` |
+| Content packs (SC-PACK-*) | `test/zz-contentPacks.test.ts` — mock mailer; `ensureContentTables` / `setEmailVerifiedForTests`; dual submit answers\|tasks, dirty lock, staff answers hub + approve order |
 | Multi-client join pressure | `loadtest/example.ts` (`joinOrCreate`; `--room` / `--numClients`) |
 
 ## Domain Hotspots

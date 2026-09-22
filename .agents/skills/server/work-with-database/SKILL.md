@@ -48,7 +48,7 @@ These are **profile** fields (display name, rating, games played/won, UI theme, 
 
 ### Content pack tables (custom, not SchemaSet)
 
-`content_packs`, `content_pack_revisions`, `content_user_drafts`, `content_answer_cards`, `content_task_sets`, `content_tasks`, `content_task_slots`, `content_pack_collections`, `content_moderation_requests`, `content_moderation_messages` — declared in `src/db/schema.ts`, created at boot by `ensureContentTables()` in `src/lib/content.ts` (same ensure-at-boot pattern as support). Live vs draft: public GETs return approved live revision only; pending drafts stay separate. Not SchemaSet / not room state.
+`content_packs`, `content_pack_revisions`, `content_user_drafts`, `content_answer_cards`, `content_task_sets`, `content_tasks`, `content_task_slots`, `content_pack_collections`, `content_moderation_requests`, `content_moderation_messages` — declared in `src/db/schema.ts`, created at boot by `ensureContentTables()` in `src/lib/content.ts` (same ensure-at-boot pattern as support). Dual moderation: request `type` `answers`|`tasks` (one pending per `(pack, type)`); drafts keep `last_answers_snapshot` for dirty lock; packs may have separate `live_tasks_revision_id`. Live vs draft: public GETs return approved live snapshot; pending drafts stay separate. Not SchemaSet / not room state.
 
 ## Relation To Auth
 

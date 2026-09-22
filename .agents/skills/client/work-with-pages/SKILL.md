@@ -5,8 +5,8 @@ description: >-
   src/router/routes.ts, router guards in src/router/index.ts, App.vue shell wiring,
   hash-mode deep links, meta.guest / meta.requiresAuth / requiresStaff / requiresAdmin,
   or navigation between login, lobby (create maxSeats + grilleDensity + catapultDensity;
-  Support + content packs links), support/content/admin pages (single ticket Close via canClose; form lazy-rules reset),
-  App brand logo (always-button ≥60px; Game leave / auth+other → lobby / lobby noop;
+  Support + «Наборы»→collection), support/content/admin pages (single ticket Close via canClose; form lazy-rules reset),
+  content answers + nested tasks + staff answers hub, App brand logo (always-button ≥60px; Game leave / auth+other → lobby / lobby noop;
   no page «В лобби»), productName/favicon, and game (top opponents presence, seated
   strip HUD row/2×2, budgets/end-turn icon on avatar, return strip icon no modal, push icons,
   nearest-center finish, grille trap/rescue + catapult land→overlay→fling + deferred grille drops + board-busy lock) in this Quasar Vue 3 client.
@@ -52,20 +52,21 @@ From `src/router/routes.ts` (hash mode via `createWebHashHistory` when `vueRoute
 | `/forgot-password` | `forgot-password` | `ForgotPasswordPage` | `meta.guest`; request reset mail |
 | `/confirm-email` | `confirm-email` | `ConfirmEmailPage` | **public** (no `guest` — logged-in confirm must run); auto JSON on mount → lobby |
 | `/reset-password` | `reset-password` | `ResetPasswordPage` | **public**; SPA form → JSON → login |
-| `/lobby` | `lobby` | `LobbyPage` | `meta.requiresAuth`; Support + content packs («Наборы») links |
+| `/lobby` | `lobby` | `LobbyPage` | `meta.requiresAuth`; Support + «Наборы» → `content-collection` |
 | `/account` | `account` | `AccountPage` | `meta.requiresAuth`; cabinet (registered only — anonymous → lobby) |
 | `/support` | `support` | `SupportPage` | `meta.requiresAuth`; create + own list |
 | `/support/staff` | `support-staff` | `SupportStaffPage` | `meta.requiresAuth` + `requiresStaff` |
 | `/support/:id` | `support-ticket` | `SupportTicketPage` | `meta.requiresAuth`; thread |
 | `/admin/users` | `admin-users` | `AdminUsersPage` | `meta.requiresAuth` + `requiresAdmin` |
-| `/content/packs` | `content-catalog` | `ContentCatalogPage` | `meta.requiresAuth`; approved live catalog |
-| `/content/collection` | `content-collection` | `ContentCollectionPage` | `meta.requiresAuth`; own collection |
-| `/content/packs/new` | `content-pack-new` | `ContentPackCreatePage` | `meta.requiresAuth`; create (verify modal if ineligible) |
+| `/content/packs` | `content-catalog` | `ContentCatalogPage` | `meta.requiresAuth`; approved live catalog (from collection) |
+| `/content/collection` | `content-collection` | `ContentCollectionPage` | `meta.requiresAuth`; own collection (lobby entry) |
+| `/content/packs/new` | `content-pack-new` | `ContentPackCreatePage` | `meta.requiresAuth`; create → answers; verify modal if ineligible |
 | `/content/packs/:id` | `content-pack` | `ContentPackPage` | `meta.requiresAuth`; live view |
-| `/content/packs/:id/edit` | `content-pack-edit` | `ContentPackEditorPage` | `meta.requiresAuth`; draft editor |
+| `/content/packs/:id/edit` | `content-pack-edit` | `ContentPackEditorPage` | `meta.requiresAuth`; answers page (title/cards + task-set list; autosave) |
+| `/content/packs/:id/tasks/:taskSetId` | `content-pack-tasks` | `ContentPackTasksPage` | `meta.requiresAuth`; nested task-set editor (gate if no cards / answers dirty) |
 | `/content/packs/:id/moderation` | `content-pack-moderation` | `ContentPackModerationPage` | `meta.requiresAuth`; author thread |
-| `/content/staff` | `content-staff` | `ContentStaffPage` | `meta.requiresAuth` + `requiresStaff` |
-| `/content/staff/requests/:id` | `content-staff-request` | `ContentStaffRequestPage` | `meta.requiresAuth` + `requiresStaff` |
+| `/content/staff` | `content-staff` | `ContentStaffPage` | `meta.requiresAuth` + `requiresStaff`; answers-pending queue |
+| `/content/staff/requests/:id` | `content-staff-request` | `ContentStaffRequestPage` | `meta.requiresAuth` + `requiresStaff`; answers hub + nested tasks |
 | `/game/:roomId` | `game` | `GamePage` | `meta.requiresAuth`; param `roomId` |
 | `/:catchAll(.*)*` | — | — | redirect → `/lobby`; keep last |
 
@@ -251,9 +252,9 @@ If an old path changes, keep a redirect in `routes.ts`:
 | Theme (chrome Dark) | `App.vue` header | `stores/theme` + `boot/theme` |
 | Brand + Game leave + match status | `App.vue` header (always-button logo ≥60px; status on Game) | logo `leave`/`toLobby`/noop; `stores/game` status / `leaveGame`; confirm in App; `auth.backToLobby` aria-only |
 | Title / favicon | `package.json` + `index.html` + `public/favicon.ico` | `productName` = Happy Tourist; single `favicon.ico` link |
-| Lobby / rooms | `LobbyPage` | `stores/game.subscribeLobby`, create `{ maxSeats, grilleDensity, catapultDensity }` / join; Support + content packs links; `meta.requiresAuth` |
+| Lobby / rooms | `LobbyPage` | `stores/game.subscribeLobby`, create `{ maxSeats, grilleDensity, catapultDensity }` / join; Support + «Наборы» → collection; `meta.requiresAuth` |
 | Support | `SupportPage` / `SupportTicketPage` / `SupportStaffPage` | `stores/support` HTTP; `requiresAuth`; staff uses `requiresStaff` + `auth.isStaff` |
-| Content packs | `ContentCatalogPage` / `ContentCollectionPage` / `ContentPackPage` / `ContentPackCreatePage` / `ContentPackEditorPage` / `ContentPackModerationPage` / `ContentStaffPage` / `ContentStaffRequestPage` | `stores/content` HTTP; `requiresAuth`; create/edit need verified non-anonymous (modal if not); staff uses `requiresStaff` |
+| Content packs | `ContentCatalogPage` / `ContentCollectionPage` / `ContentPackPage` / `ContentPackCreatePage` / `ContentPackEditorPage` (answers) / `ContentPackTasksPage` / `ContentPackModerationPage` / `ContentStaffPage` / `ContentStaffRequestPage` (answers hub) | `stores/content` HTTP; dual submit; dirty-answers lock tasks; `requiresAuth`; create/edit need verified non-anonymous (modal if not); staff `requiresStaff` |
 | Roles / admin | `AdminUsersPage` | `stores/support` admin HTTP; `requiresAdmin` + `auth.isAdmin` (server enforces) |
 | Game session | `GamePage` | `stores/game` `rejoinGame`/`sendMove`/`sendRescue`/`sendPush`/`sendReturnFromFinish`/`sendPeek`/`sendPeekAnswer`/`sendEndTurn`/`sendSay`; top presence + seated sticky `.game-hud` (own + strip row/2×2; no chip/`q-menu`); unfinished pieces + holes + grille overlays (`GRILLE_ANIM_MS=1000`; defer drop during catapult hops) + catapult land→overlay→fling (`CATAPULT_ANIM_MS=1000`, spectator parity, D13, board-busy lock) + trap/rescue/push + return strip icon (no modal) + all-jail modal + budgets beside avatar / end-turn icon on avatar + peek + finish nearest-center / timeout UX + dual rings + say top↓ / own↑; route param `roomId` (reconnect only — **not** shown in chrome); `meta.requiresAuth` |
 

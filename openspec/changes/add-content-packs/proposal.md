@@ -1,62 +1,57 @@
 ## Why
 
-Peek под коричневой клеткой сейчас — заглушка «Правильно / Неправильно». Чтобы наполнить игру учебным контентом (языки, математика и т.п.), нужен UGC-раздел **наборов карточек**: авторы создают карточки-ответы и задания, модераторы проверяют, одобренные наборы попадают в каталог и коллекции игроков. Без этого нельзя перейти к привязке набора к партии и реальным вопросам на поле.
+Peek под коричневой клеткой сейчас — заглушка «Правильно / Неправильно». Чтобы наполнить игру учебным контентом, нужен UGC-раздел **наборов карточек**. Базовый CRUD + одна модерация уже в runtime; монолитный редактор и единый submit мешают авторам: ответы и задания живут разным ритмом. Нужно разделить страницы и потоки модерации, сохранив каталог / коллекцию / роли.
 
 ## What Changes
 
-- Новый домен контента: набор (название, описание) с карточками-ответами и наборами заданий; сложность задания 1–3 (задел под будущую награду peek).
-- Создание / редактирование для пользователей с подтверждённой почтой; просмотр каталога и добавление в коллекцию — в т.ч. для гостя и без verify.
-- Отправка на модерацию (минимумы и целостность слотов); очередь moderator|admin; approve / reject+чат / cancel pending / блокировка набора.
-- Публичный каталог и страница набора показывают только последний approve; заблокированный набор виден везде как заблокированный.
+- Домен `content/packs`: наборы с карточками-ответами и наборами заданий; сложность 1–3; коллекция; каталог после approve ответов; block; почта staff-событий.
+- **BREAKING (относительно v1 runtime):** два типа moderation request — `answers` и `tasks`; submit и модерация раздельно; approve заданий → затем ответов → каталог.
+- Клиент: страница ответов (title/description, форма+список, nested список task set) и страница заданий (форма+слоты+тайлы ответов+список вопросов); автосейв; confirm перед delete; после create → answers; вход в раздел → коллекция, каталог оттуда.
+- Staff: очередь только когда есть **answers pending**; hub ответов со вложенными наборами заданий; tasks-only pending staff не видит.
+- Lock: пока в ответах есть **неотправленные** изменения (новые/изменённые cards или title/description) — создание и редактирование заданий запрещены; после submit answers задания снова доступны. Бейджа на странице ответов нет.
+- Удаление ответа не блокирует submit ответов; пустые слоты блокируют только submit заданий.
 
 ## Capabilities
 
 ### New Capabilities
 
-- `content/packs`: наборы карточек-ответов и заданий, коллекция, публичный каталог, авторство/подписи, submit-правила, модерация (очередь, тред, статусы, почта), блокировка; lock редактирования на время pending.
+- (нет — capability уже введена этим change)
 
 ### Modified Capabilities
 
-- (нет — gate create/edit по `emailVerified` описывается в `content/packs`; SC-EMAIL-03 про lobby/game не меняется)
+- `content/packs`: split editor UX; dual submit/moderation (`answers` / `tasks`); lock «dirty answers ⇒ no task edit»; staff hub через answers; collection-first nav; autosave; delete confirm
 
 ## Scope
 
-- **Capability ID:** `content/packs` (новый домен; согласован в explore)
+- **Capability ID:** `content/packs`
 - **Пакеты:** client + server (+ meta AGENTS/skills при необходимости)
-- **Кто создаёт/правит:** JWT, не anonymous, `emailVerified`; иначе модалка «войти / подтвердить почту»
-- **Кто смотрит каталог / добавляет в коллекцию:** любой с сессией, включая anonymous и unverified
-- **Сущности:** pack (title, description); answer cards (content + description); task set(ы) с подписью автора (+ соавтор); tasks (question, слоты → answer cards, difficulty 1–3)
-- **Жизненный цикл:** draft → pending → approved | rejected (+чат) | cancel pending (модератор); повторная доработка → новый тред; live-контент = последний approve
-- **Коллекция:** при создании pack — у автора в коллекции; edit доступен при наличии в коллекции; принятый вклад может дать подпись соавтора (без отдельных прав)
-- **Конкуренция:** нельзя начать чужой edit, пока pack на модерации; pending-автор может доотправлять; гонка submit → ошибка, личный draft до unlock
-- **Модерация:** полный read-only preview; тред автор-заявки ↔ staff; письма как у support (тот же канал)
-- **Блокировка:** moderator|admin; везде виден как заблокированный (не hard delete)
-- **HTTP + JWT:** REST (паттерн support); комнаты Colyseus / peek runtime **не** меняются в этом change
-- **Навигация:** раздел наборов в клиенте (каталог / мои / создание-редактирование / staff-очередь)
+- **Кто создаёт/правит:** JWT, не anonymous, `emailVerified`; иначе модалка login/verify
+- **Кто смотрит каталог / коллекцию:** любой с сессией (вкл. anonymous / unverified)
+- **Сущности:** pack (title, description на answers page); answer cards; task sets (подпись автора/соавтора); tasks (question, slots, difficulty 1–3)
+- **Жизненный цикл:** раздельные draft → pending → approved|rejected|cancelled по типу; live answers / live tasks мержатся в публичный snapshot; каталог после approve **answers** (и только если уже есть live tasks)
+- **Порядок автора:** cards (+ title/desc) → submit answers → создать/править tasks → submit tasks; без cards нельзя открыть tasks
+- **Порядок staff:** approve tasks → approve answers → catalog; вход только через answers pending hub
+- **Lock:** dirty answers (неотправленные изменения) ⇒ create/edit tasks запрещены; после submit answers — unlock; pending-автор своего типа может amend/resubmit; два pending могут сосуществовать
+- **Коллекция / co-author:** как раньше (коллекция gates edit; labels display-only; несколько авторов task set)
+- **HTTP + JWT:** REST; Colyseus / peek **не** меняются
+- **Навигация:** Lobby → коллекция; из коллекции → каталог / create / edit
 
 ## Out of scope
 
-- Привязка tourist-room к pack при create
-- Gate join по коллекции (продуктовое решение D2 — следующий этап)
-- Подстановка difficulty / заданий в peek вместо stub «Правильно / Неправильно»
-- Картинки / аудио / не-текст в карточках
-- Diff-only UI для модератора (пока полный preview)
-- Hard delete набора
-- Передача «владения»; набор ничей (есть автор/соавторы как подписи)
-- Отдельная модерация только task-set без ответов (submit = ответы + задания одним пакетом)
-- Colyseus realtime для каталога/модерации
-- Платежи / покупка наборов
+- Привязка tourist-room к pack; join gate по коллекции; peek runtime из pack
+- Картинки / медиа; diff-only staff UI; hard delete; передача владения
+- Отдельная staff-очередь «только tasks» без answers pending
+- Colyseus realtime для каталога/модерации; платежи
 
 ## Impact
 
-- Client: страницы каталога / набора / редактора / коллекции / staff-модерации; guards verify; i18n; письма — только отображение статусов.
-- Server: SQLite-таблицы контента + HTTP API + роль moderator|admin на staff-действиях; почта автору заявки; тесты.
-- Meta: при необходимости skills/AGENTS под домен content.
-- Игра / lobby / move / board: без изменений контракта в этом change.
+- Client: заменить монолитный editor на answers + nested task-set pages; dual submit UX; autosave; Dialog confirm; lobby → collection; staff hub; i18n; dirty-answers lock на tasks.
+- Server: request `type` answers|tasks; раздельные submit/approve/lock; staff list filter; тесты SC-PACK.
+- Meta: точечно AGENTS/skills под dual flow.
+- Игра / lobby / board: без контракта peek.
 
 ## References
 
-- Explore 2026-09-22: D1–D12 (ядро = answer cards; коллекция; verified create; чат модерации; live = approve; lock pending; draft гонки; block visible; difficulty 1–3 → будущая награда; cancel = модератор)
-- Sibling AGENTS: client/server (auth `emailVerified`, support roles/mail как аналог)
-- Peek stub / future hook: `openspec/specs/game/board` (не меняется здесь)
+- Explore 2026-09-22 (initial) + explore split editor 2026-09-22: dual types; minima; catalog after answers approve; title on answers; dirty-answers lock (no badge); staff only after answers pending
+- Runtime v1: `happy-tourist-server` `/api/content/*`, `happy-tourist.github.io` Content* pages
 - Карта путей: `docs/projects-map.md`

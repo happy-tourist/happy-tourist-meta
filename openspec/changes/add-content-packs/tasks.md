@@ -41,3 +41,35 @@
 - [x] 3.1 Прочитать `.agents/AGENTS.md`, sibling `AGENTS.md` client/server; skills `work-with-routes` / `work-with-pages` / `work-with-database` как точки документирования
 
 - [x] 3.2 Обновить Business Entities / HTTP surface hints под `content/packs` (без дублирования полного spec); при необходимости краткий указатель в meta `.agents/AGENTS.md`
+
+## 4. Server — dual submit / lock / staff hub
+
+- [x] 4.1 Прочитать обновлённые `proposal.md`, `design.md` (D2/D4/D5/D9/D13), `specs/content/packs/spec.md` (SC-PACK-07…09, 15…20, 34…37, 39…41); сверить текущий `lib/content.ts` + `zz-contentPacks.test.ts`
+
+- [x] 4.2 Добавить `type` (`answers`|`tasks`) на moderation requests + dirty/last-submitted answers snapshot; миграция/ensure; один pending на `(pack, type)`; verify schema boot и что login не ломается
+
+- [x] 4.3 Разделить submit: `submit/answers` (≥2 cards; не блокируется пустыми слотами; **без** требования live|pending tasks) и `submit/tasks` (≥2 tasks, filled slots, difficulty; reject без cards / при dirty answers); verify SC-PACK-08/09/35 mocha
+
+- [x] 4.4 Lock dirty-answers: deny create/edit tasks пока answers dirty; unlock после submit answers; tasks pending race + resubmit автора; verify SC-PACK-15/16/17/36
+
+- [x] 4.5 Staff list только answers-pending; hub preview answers + nested tasks; approve answers только при live tasks; approve tasks → answers → catalog; verify SC-PACK-18/30/37/39/40 и `npm test`
+
+- [x] 4.6 Обновить mail/thread на type-scoped requests; Traceability pending→covered для server SC; verify `npm test` зелёный
+
+## 5. Client — split editor + nav + autosave
+
+- [x] 5.1 Прочитать design D10/D13 и skills pages/stores/forms/localization; сверить Content* pages + `stores/content.ts`
+
+- [x] 5.2 Pinia: dual submit endpoints, pending flags per type, `answersDirty`; loading/error + q-banner; **без** badge state; verify typecheck на store
+
+- [x] 5.3 Answers page: title/description, одна форма + список cards (edit icon), nested task-set list (author/coauthor), submit answers; create → redirect answers; confirm delete; autosave draft; нет badge; verify SC-PACK-01/34/41 lint
+
+- [x] 5.4 Task-set nested page: форма вопроса, слоты +/− (min 1), тайлы ответов, список вопросов, submit tasks; gate без cards и при dirty answers (disable + i18n); verify SC-PACK-05/07/09/36 UX
+
+- [x] 5.5 Lobby → collection first; catalog link from collection; staff answers hub + nested tasks approve order; i18n RU; verify SC-PACK-30/41
+
+- [x] 5.6 `npm run lint` + `npm run typecheck` в client; Traceability client SC → covered; починить падения
+
+## 6. Meta — docs after dual flow
+
+- [x] 6.1 Обновить sibling AGENTS + skills (routes/pages/stores/database/tests) под dual answers/tasks; краткий указатель в meta `.agents/AGENTS.md`; verify тексты без полного dump spec

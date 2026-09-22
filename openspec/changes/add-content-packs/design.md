@@ -2,139 +2,158 @@
 
 См. `proposal.md` и delta `specs/content/packs/spec.md`.
 
-Сейчас в runtime: auth + `emailVerified`, роли `user`/`moderator`/`admin`, HTTP support (тикеты, тред, mail через smtp.bz), SQLite/Drizzle custom tables через ensure-at-boot. Peek на поле — stub (`game/board`). Контентных таблиц/API нет.
+В runtime уже есть v1: SQLite content tables, `/api/content/*`, единый `submitPack`, монолитный `ContentPackEditorPage`, staff queue, mail. Этот revision **перестраивает** submit/lock/UI на два потока (`answers` / `tasks`) без новых внешних сервисов.
 
-Пакеты: **server** (`../happy-tourist-server`) + **client** (`../happy-tourist.github.io`) + при необходимости meta (AGENTS/skills). Чеклист — `tasks.md`.
+Пакеты: **server** (`../happy-tourist-server`) + **client** (`../happy-tourist.github.io`) + meta AGENTS/skills. Чеклист — `tasks.md` §4+.
 
 ## Goals / Non-Goals
 
 **Goals:**
 
-- HTTP API + SQLite модель packs / answer cards / task sets / tasks / slots / collections / moderation requests+messages / block flag.
-- Client: каталог, коллекция, view/editor, staff queue + thread; modal verify/auth.
-- Модерация: pending lock, race на submit, mail автору заявки, cancel staff.
-- Difficulty 1–3 persist (задел); tourist room не трогать.
+- Dual moderation requests + раздельные submit/approve/thread.
+- Client: answers page + nested task-set pages; autosave; delete confirm; collection-first; staff answers hub.
+- Lock: неотправленные изменения answers ⇒ deny create/edit tasks; staff видит pack только при answers pending.
+- Сохранить identity gates, collection, block, mail, difficulty persist; tourist room не трогать.
 
 **Non-Goals:**
 
-- Room↔pack, join gate, peek runtime из pack.
-- Картинки/медиа; diff-only staff UI; hard delete.
-- Colyseus realtime для контента.
+- Room↔pack, peek runtime, media, hard delete, отдельная top-level staff tasks queue.
 
 ## Decisions
 
-### D1: Transport = HTTP + JWT (как support)
+### D1: Transport = HTTP + JWT (без изменений)
 
-- `createEndpoint` / `auth.middleware()`; Pinia store на client через `client.http`.
+- `createEndpoint` / `auth.middleware()`; Pinia `content` через `client.http`.
 - Нет Colyseus room для packs.
-- Alternative (room sync) — отвергнут: контент не realtime match state.
 
-### D2: Data model (SQLite, ensure-at-boot)
+### D2: Data model — добавить `type` на moderation request
 
-Таблицы (имена уточняются при apply, смысл фиксирован):
+Существующие `content_*` таблицы сохраняются. На `content_moderation_requests` (или аналог):
 
-| Сущность | Смысл |
-|----------|--------|
-| `content_packs` | id, title, description, created_by, live revision pointer / status flags, `blocked`, timestamps |
-| `content_pack_revisions` или draft blob | live approved snapshot vs pending draft автора заявки |
-| `content_answer_cards` | pack-scoped; content + description; stable ids для слотов |
-| `content_task_sets` | pack-scoped; author_user_id; optional coauthor labels |
-| `content_tasks` | task_set_id; question; difficulty 1\|2\|3; slot order |
-| `content_task_slots` | task_id; position; answer_card_id nullable |
-| `content_pack_collections` | user_id + pack_id |
-| `content_moderation_requests` | pack_id, change_author_id, status pending\|approved\|rejected\|cancelled, thread id |
-| `content_moderation_messages` | request_id, author_user_id, author_kind user\|staff, body, created_at |
+| Поле | Смысл |
+|------|--------|
+| `type` | `answers` \| `tasks` |
+| status / change_author / pack_id / thread | как v1, **по одному pending на (pack, type)** |
 
-- Паттерн: как `ensureSupportTables()` — не SchemaSet auto-sync для кастомных таблиц.
-- **Live vs pending:** публичные GET отдают только approved live snapshot; pending хранится отдельно (revision/draft), чтобы мир видел последний approve (SC-PACK-13).
-- Alternative (одна строка pack = текущий draft) — отвергнута: ломает «мир видит approve».
+- Live snapshot: approve **answers** обновляет live cards (+ pack title/description); approve **tasks** обновляет live task sets/tasks/slots.
+- Публичный GET / каталог: pack в каталоге только если есть live answers **и** хотя бы раз был approve answers при наличии live tasks (gate на approve answers).
+- Drafts: personal draft per (user, pack) может хранить обе части; submit берёт срез нужного типа.
+- Alternative (два отдельных pack entity) — отвергнуто.
 
-### D3: Identity gates
+### D3: Identity gates (без изменений по ролям)
 
 | Действие | Кто |
 |----------|-----|
-| Catalog list / pack public view | JWT (incl. anonymous); blocked packs всё ещё видны с флагом |
-| Add to collection | JWT (incl. anonymous, unverified) |
-| Create / edit / submit | JWT + not anonymous + `emailVerified` |
-| Staff queue / approve / reject / cancel / block / unblock | `moderator` \| `admin` (reuse `ht_role`) |
+| Catalog / live view / collection add|remove | JWT (incl. anonymous) для list/add; unauth 401 на mutate collection |
+| Create / edit / submit answers или tasks | non-anonymous + `emailVerified` + pack в коллекции |
+| Staff | `moderator` \| `admin` |
 
-- Client: при ineligible create/edit — модалка login / confirm email (ссылка в кабинет / confirm flow), не silent 403 only.
-- Server — источник истины на каждом mutating endpoint.
+### D4: Submit validation (раздельная)
 
-### D4: Submit validation
+**Answers submit:**
 
-- ≥2 answer cards, ≥2 tasks, каждый task ≥1 filled slot, difficulty ∈ {1,2,3}.
-- При изменении content referenced answer card — сервер (и editor UX) **очищает** слоты, ссылавшиеся на неё; submit 4xx пока есть пустые слоты.
-- Один активный `pending` request на pack; повторный submit от того же change author обновляет draft того же request.
+- ≥2 answer cards с non-empty content.
+- Удаление card / пустые слоты у tasks **не** блокируют answers submit.
+- Смена content referenced card → очистка зависимых слотов в drafts (как SC-PACK-07); это влияет на tasks submit, не на answers.
+- Answers submit **разрешён без** live/pending tasks (первый цикл: сначала answers, потом tasks).
 
-### D5: Lock + race
+**Tasks submit:**
 
-- `pending` ⇒ start-edit для других → 409/403.
-- Change author может PATCH draft + resubmit.
-- Второй submit от другого пользователя → ошибка; его draft сохранять per (user, pack) пока request не approved/cancelled.
-- Staff **cancel** снимает pending (D11 explore).
+- В draft уже есть ≥1 answer card и answers **не dirty** (см. D5).
+- ≥2 tasks; каждый ≥1 filled slot; difficulty ∈ {1,2,3}.
+- Reminder/badge на answers page **не** используются.
+
+### D5: Lock + race (dirty answers)
+
+- **Dirty answers:** title/description или набор cards отличается от последнего успешно submitted answers snapshot (или «пустой baseline» до первого submit). Любое добавление/изменение/удаление card или правки meta → dirty.
+- Пока answers dirty: **никто** не создаёт и не редактирует tasks (server 403/409 + client disable nested editor). Список task set на answers page может быть виден read-only.
+- После успешного **submit answers** dirty сбрасывается → create/edit tasks разрешены (даже если answers ещё pending).
+- Повторная правка answers снова ставит dirty и снова лочит tasks, пока не будет новый submit answers.
+- Pending-автор **answers** может править answers draft и resubmit.
+- Пока tasks unlocked и tasks pending: автор tasks может amend/resubmit; race второго submit → 409, личный draft сохраняется.
+- Два pending (answers + tasks) **могут** сосуществовать.
+- Staff **cancel** answers/tasks снимает pending своего типа; cancel answers не обязан сбрасывать dirty (dirty считается от last successful submit snapshot).
 
 ### D6: Moderation thread + mail
 
-- Сообщения только change author ↔ staff (как support thread visibility).
-- После approve: новый цикл = новый request + новый thread.
-- Reject: тот же thread; автор правит и resubmit.
-- Mail: reuse `sendEmail` / smtp.bz; события approve, reject, staff message, block; skip anonymous; SPA hash links (`CLIENT_APP_URL`).
+- Отдельный thread на каждый request (type-scoped).
+- Новый цикл после approve того же type → новый request + thread.
+- Mail: approve/reject/staff message/block — как v1; links на SPA answers/moderation routes.
 
 ### D7: Co-author labels
 
-- После approve вклада — подпись на task set (display). Права = только коллекция + verify gate. Нет отдельной ACL.
+- После approve **tasks** вклада — display label на task set. Прав нет.
 
 ### D8: Block
 
-- Flag `blocked` на pack; UI везде «заблокирован»; mutate edit/submit deny; catalog всё ещё показывает с бейджем. Unblock — staff only. Hard delete — out of scope.
+- Без изменений смысла: blocked виден везде; edit/submit deny; staff unblock.
 
-### D9: HTTP surface (черновой контракт)
+### D9: HTTP surface (revision)
 
-Префикс `/api/content/packs` (точные пути при apply; смысл):
+Префикс `/api/content/…` (точные пути при apply):
 
-**Public / user:** list catalog; get pack live; collection list/add/remove; create pack; get/put draft (if allowed); submit; get own moderation thread + post message.
+**User:** catalog; live GET; collection; create pack; draft get/put (cards / meta / task sets); `POST …/submit/answers`; `POST …/submit/tasks`; moderation get/post per type или per request id.
 
-**Staff:** list pending; get preview (submitted snapshot); approve; reject; cancel; post staff message; block; unblock.
+**Staff:** list pending **только packs с answers pending** (tasks-only не показывать); get answers hub (preview answers + nested task-set requests/live); approve/reject/cancel/message per request; block/unblock pack.
 
-Ошибки: 401/403/409 + тело для client banner.
+Ошибки: 401/403/409 + код для banner/i18n.
 
-### D10: Client structure
+### D10: Client structure (revision)
 
-- Pages: catalog, collection, pack view, pack editor, staff moderation list + detail/thread.
-- Store Pinia `content` (или `packs`) — весь HTTP I/O.
-- Router: `requiresAuth` для раздела; staff routes дополнительно по `role`.
-- i18n RU product copy; forms q-form + store error + q-banner.
-- Slot UX: +/− slots; click card fills next empty; click slot clears (SC-PACK-07 semantics mirrored locally, server enforces).
-- Nav entry from lobby/header (конкретная точка — apply + `work-with-pages`).
+```
+Lobby --> content-collection --> catalog | create | edit
+create --> answers page (title/desc, one card form, cards list,
+            task-set list by author/coauthor, submit answers;
+            task edit locked while answers dirty)
+              \--> task-set page (one question form, slots +/-,
+                   answer tiles, questions list, submit tasks)
+Staff --> answers-pending queue --> answers hub
+              \--> nested task sets (approve tasks first, then answers)
+```
+
+- Autosave: debounce PUT draft (разумный default ~500–1000ms).
+- Delete: Quasar Dialog confirm.
+- Slot UX: min 1 slot; +/−; click tile fills next empty; click slot clears.
+- Store Pinia `content` расширить dual submit / pending flags / `answersDirty`.
+- Нет badge «отправьте ответы» на answers page.
 
 ### D11: Skills / AGENTS
 
-- После кода: точечно client/server AGENTS Business Entities + skills routes/pages/database/auth email gate; meta index если появится `content`.
+- После кода: обновить hints routes/pages/stores/database/tests под dual flow.
 
-### D12: Prerequisites from explore (закрыты продуктом)
+### D12: No new npm deps
 
-Все D1–D12 explore закрыты в proposal/spec; технических внешних сервисов новых нет (mail/roles уже в проекте). Новые npm-зависимости не требуются.
+- Autoseve/Dialog/routes — существующий стек.
+
+### D13: Staff approve order + catalog gate
+
+- Approve **answers** разрешён только если у pack уже есть **live** tasks (после approve tasks в этом или прошлом цикле).
+- Approve **tasks** допускается, пока pack виден staff (т.е. answers уже pending в hub).
+- После approve answers → pack в публичном каталоге (если не blocked).
+- Повторные циклы: тот же порядок submit/approve.
+
+### D14: Prerequisites
+
+Все explore D* закрыты; новых внешних сервисов нет.
 
 ## Risks / Trade-offs
 
 | Risk | Mitigation |
 |------|------------|
-| Сложная модель live vs draft | Явные revision/snapshot таблицы; публичные GET только live |
-| Гонки edit / «зависший» pending | Staff cancel; 409 на race; один pending на pack |
-| Объём UI | Вертикальный HTTP+CRUD сначала; polish UX отдельными tasks |
-| Путаница с peek rewards | Spec SC-PACK-33; difficulty только persist |
-| Раздувание SQLite | Text-only; лимиты длины — разумные defaults при apply |
+| Answers pending без tasks долго | Staff видит hub; approve answers blocked until live tasks; author flow: submit answers → edit tasks |
+| Dirty lock непонятен | Client disable + краткий i18n «сначала отправьте ответы» (без badge) |
+| Сложнее lock API | `answersDirty` / last-submitted snapshot + D5 matrix в тестах |
+| Миграция v1 единых pending | При apply: существующие pending трактовать/мигрировать или cancel; пустой prod ок |
 
 ## Migration Plan
 
-- Deploy server (ensure tables) → client.
-- Пустой каталог до первых approve — ок.
-- Rollback: feature routes можно отключить; таблицы оставлять.
+- Deploy server (schema type + endpoints) → client.
+- Dev/stage: сбросить или cancel старые single-type pending.
+- Rollback: feature flag routes не обязателен; можно временно скрыть dual UI.
 
 ## Open Questions
 
-- Точные лимиты длины title/content/question (defaults при apply: ~120 / ~2k / ~2k) — не меняют поведение SC.
-- Нужен ли remove-from-collection в v1 UI — да, симметрично add (предположение; не ломает spec).
+- Точный debounce autosave (default 800ms) — не меняет SC.
+- Нужен ли явный author cancel своего pending — default нет (только staff cancel), как v1.
 
-Чеклист реализации — `tasks.md`.
+Чеклист — `tasks.md`.

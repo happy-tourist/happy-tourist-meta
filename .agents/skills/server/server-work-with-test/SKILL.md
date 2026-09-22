@@ -17,8 +17,8 @@ description: >-
   email/password-policy (`zz-authEmail`) + profile displayName/change-password
   (`zz-authProfile` SC-PROFILE-*), support tickets + roles
   (test/support.test.ts — SC-SUP-* / SC-ROLE-*; mock mailer; BOOTSTRAP_ADMIN_IDS),
-  or content packs (test/zz-contentPacks.test.ts — SC-PACK-*; mock mailer;
-  ensureContentTables / setEmailVerifiedForTests).
+  or content packs (test/zz-contentPacks.test.ts — SC-PACK-* dual answers|tasks;
+  dirty lock; staff answers hub; mock mailer; ensureContentTables / setEmailVerifiedForTests).
   Core workflow: test plan (mocks/verify) → write test/*.test.ts → run npm test
   from server package root and fix failures. Do not invent Jest/babel patterns.
 trigger: slash
@@ -72,7 +72,7 @@ tests; fix failures before claiming done.
 | Auth email flows (confirm / forgot / change-email / cooldown / password policy on register+reset) | `test/zz-authEmail.test.ts` — mock `setSendEmailImpl`; `clearConfirmSendCooldownForTests`; `keepLatestRequestListener` after boot; cover SC-AUTH-08 / SC-RESET-09 / SC-AUTH-10 where asserted |
 | Auth profile (displayName + change-password) | `test/zz-authProfile.test.ts` — SC-PROFILE-01/02/04/05; bumpTokenVersion; reject no-password credential |
 | Support tickets + roles (SC-SUP-* / SC-ROLE-*) | `test/support.test.ts` — mock mailer; `ensureSupportTables` / `bootstrapAdminIds` / `setUserRoleForTests` / `runAutoClose`; cover create-ack (SC-SUP-21), staff `topic`/`status` filters (SC-SUP-22), author self-reply **no** status mail, admin list excludes anonymous + `emailVerified`, role POST response includes `emailVerified` (SC-ROLE-09); `keepLatestRequestListener` after boot |
-| Content packs (SC-PACK-*) | `test/zz-contentPacks.test.ts` — mock mailer; `ensureContentTables` / `setEmailVerifiedForTests` / `setUserRoleForTests`; cover catalog/collection, create+verify gate, draft/submit minima + pending lock, moderation thread, staff approve/reject/cancel/block + mail links; `keepLatestRequestListener` after boot |
+| Content packs (SC-PACK-*) | `test/zz-contentPacks.test.ts` — mock mailer; `ensureContentTables` / `setEmailVerifiedForTests` / `setUserRoleForTests`; cover catalog/collection, create+verify gate, dual submit answers|tasks minima, dirty-answers lock, type-scoped pending race/resubmit, moderation thread, staff answers-pending hub + nested tasks approve order + block + mail links; `keepLatestRequestListener` after boot |
 
 Mocha picks up `test/**.test.ts` via the npm script. Mirror room names under
 `test/` as rooms grow; keep relative imports to `../src/...`.
