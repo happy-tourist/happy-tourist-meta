@@ -27,13 +27,13 @@ Search and assign ownership top-down along the call path.
 | Layer | Path | Role |
 |-------|------|------|
 | Entry | `src/index.ts` | `listen(app)` from `@colyseus/tools` |
-| Server def | `src/app.config.ts` | `defineServer`: database, rooms, routes, express (CORS, `/health`, `/hi`, support bootstrap, monitor/playground); side-effect import `./config/auth.js` |
+| Server def | `src/app.config.ts` | `defineServer`: database, rooms, routes, express (CORS, `/health`, `/hi`, support + content bootstrap, monitor/playground); side-effect import `./config/auth.js` |
 | OAuth config | `src/config/auth.ts` | `auth.oauth.addProvider('google', …)`; `htRole` → userdata `role`; leave built-in `onOAuthProviderCallback` alone (except verified wrap) |
-| Lib | `src/lib/mailer.ts`, `src/lib/support.ts` | smtp.bz mail; support tickets/roles/bootstrap/auto-close |
-| DB | `src/db/index.ts`, `src/db/schema.ts` | `GameDatabase`, `users` extension (`htRole`), support table decls |
+| Lib | `src/lib/mailer.ts`, `src/lib/support.ts`, `src/lib/content.ts` | smtp.bz mail; support tickets/roles/bootstrap/auto-close; content packs (ensure + HTTP helpers) |
+| DB | `src/db/index.ts`, `src/db/schema.ts` | `GameDatabase`, `users` extension (`htRole`), support + `content_*` table decls |
 | Rooms | `src/rooms/MyRoom.ts` | `onAuth` / `onCreate` / `onJoin` / `onDrop` / `onReconnect` / `onLeave` / `onDispose` |
 | Schema | `src/rooms/schema/MyRoomState.ts` | `@colyseus/schema` sync state (`connected` / `reconnectUntil`) |
-| Tests | `test/` | mocha + `@colyseus/testing` (incl. `support.test.ts`) |
+| Tests | `test/` | mocha + `@colyseus/testing` (incl. `support.test.ts`, `zz-contentPacks.test.ts`) |
 | Loadtest | `loadtest/example.ts` | `@colyseus/loadtest` |
 | Deploy | `ecosystem.config.cjs`, `.github/workflows/deploy.yml`, `.env.*` | PM2, GH Actions |
 
@@ -101,6 +101,7 @@ Use these rules to pick the layer before naming files.
 | Cabinet display-name / change-password HTTP | `POST /api/auth/display-name` + `POST /api/auth/change-password` in `src/app.config.ts` (`createEndpoint`); bumpTokenVersion on password change/reset |
 | Persisted profile fields (`displayName`, `rating`, `gamesPlayed`, `gamesWon`, nullable `theme`, `emailVerified`, `htRole`, …) | `src/db/schema.ts` users extension — **NOT NULL** custom columns need `.default(...)` so `/auth/register` / `/auth/login` do not fail; nullable prefs like `theme` do not; **do not** name JS field `role` |
 | Support tickets / messages | `src/db/schema.ts` decls + `src/lib/support.ts` (`ensureSupportTables`) — not SchemaSet auto-sync |
+| Content packs (live/draft/collection/moderation) | `src/db/schema.ts` `content_*` decls + `src/lib/content.ts` (`ensureContentTables`); create/edit/submit require non-anonymous + `emailVerified` from DB |
 | GameDatabase wiring / schemas map | `src/db/index.ts` |
 | Secrets for auth (salt, JWT, session, Google client) | `.env.example` / `.env.development` / `.env.production` (`AUTH_SALT`, `JWT_SECRET`, `SESSION_SECRET`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`) |
 
@@ -122,6 +123,8 @@ Use these rules to pick the layer before naming files.
 | Theme preference HTTP | `test/theme.test.ts` (`GET`/`POST /api/theme` auth + persist + reload GET) |
 | Auth email + password policy | `test/zz-authEmail.test.ts` |
 | Auth profile (displayName / change-password) | `test/zz-authProfile.test.ts` |
+| Support tickets + roles | `test/support.test.ts` |
+| Content packs (SC-PACK-*) | `test/zz-contentPacks.test.ts` — mock mailer; `ensureContentTables` / `setEmailVerifiedForTests` |
 | Multi-client join pressure | `loadtest/example.ts` (`joinOrCreate`; `--room` / `--numClients`) |
 
 ## Domain Hotspots
@@ -133,10 +136,11 @@ Use these rules to pick the layer before naming files.
 | Google OAuth provider | `src/config/auth.ts` + side-effect import from `app.config.ts`; `GOOGLE_CLIENT_*` in `.env.*` |
 | User profile columns | `src/db/schema.ts` + `src/db/index.ts` |
 | Support / roles HTTP | `src/lib/support.ts` + thin `createEndpoint` in `src/app.config.ts`; tests `test/support.test.ts` |
+| Content packs HTTP | `src/lib/content.ts` + thin `/api/content/*` in `src/app.config.ts`; tests `test/zz-contentPacks.test.ts` |
 | Game state sync | `src/rooms/schema/MyRoomState.ts` (`phase` / `maxSeats` / `countdownRemaining` + `seats` + connectivity/`ready` + `currentTurnSessionId`) |
 | Match flow / seating / reconnect / turn / move / start | `src/rooms/MyRoom.ts` lifecycle + `onMessage('move'|'ready'|'say')`; pure rules in `src/game/touristMove.ts`; align with client |
-| HTTP health / CORS / demo API / support bootstrap | `src/app.config.ts` express + routes |
-| Tests | `test/MyRoom.test.ts` (SC-PIECE + SC-START + SC-MOVE + SC-SAY), `test/touristMove.test.ts`, `test/theme.test.ts`, `test/support.test.ts`, … |
+| HTTP health / CORS / demo API / support + content bootstrap | `src/app.config.ts` express + routes |
+| Tests | `test/MyRoom.test.ts` (SC-PIECE + SC-START + SC-MOVE + SC-SAY), `test/touristMove.test.ts`, `test/theme.test.ts`, `test/support.test.ts`, `test/zz-contentPacks.test.ts`, … |
 | Loadtest | `loadtest/example.ts` |
 | Deploy / PM2 / CI | `ecosystem.config.cjs`, `.github/workflows/deploy.yml`, `.env.production` (on server only) |
 
@@ -180,7 +184,7 @@ Use these rules to pick the layer before naming files.
 | OAuth providers (Google) | `src/config/auth.ts` (`addProvider`); import from `app.config.ts` |
 | User columns / defaults | `src/db/schema.ts` |
 | Express / CORS / health | `express(app)` in `src/app.config.ts` |
-| Custom HTTP routes (`/api/hello`, `GET|POST /api/theme`, `/api/auth/*` send-confirm/email/confirm/reset/display-name/change-password, `/api/support/*`, `/api/admin/*`, …) | `routes` / `createEndpoint` in `src/app.config.ts` (+ helpers in `src/lib/support.ts` / `src/lib/passwordPolicy.ts`) |
+| Custom HTTP routes (`/api/hello`, `GET|POST /api/theme`, `/api/auth/*` send-confirm/email/confirm/reset/display-name/change-password, `/api/support/*`, `/api/content/*`, `/api/admin/*`, …) | `routes` / `createEndpoint` in `src/app.config.ts` (+ helpers in `src/lib/support.ts` / `src/lib/content.ts` / `src/lib/passwordPolicy.ts`) |
 | Env secrets / DB path | `.env.example`, `.env.development`, `.env.production` |
 | Tests | `test/**.test.ts` — boots `appConfig`, JWT, room name |
 | Loadtest | `loadtest/example.ts` |

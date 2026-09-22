@@ -52,15 +52,15 @@ Sibling client: `../happy-tourist.github.io` (room type `tourist`, board + piece
 | Layer | Path | Role |
 |-------|------|------|
 | Entry | `src/index.ts` | `listen(app)` only |
-| Server wiring | `src/app.config.ts` | `defineServer`: `database`, `rooms`, `routes`, `express`; import auth config; `configureAuthEmailFlows` after DB boot; thin `POST /api/auth/*` + `/api/support/*` + `/api/admin/*`; boot `ensureSupportTables` / `bootstrapAdminIds` / `startAutoCloseInterval` |
+| Server wiring | `src/app.config.ts` | `defineServer`: `database`, `rooms`, `routes`, `express`; import auth config; `configureAuthEmailFlows` after DB boot; thin `POST /api/auth/*` + `/api/support/*` + `/api/content/*` + `/api/admin/*`; boot `ensureSupportTables` / `ensureContentTables` / `bootstrapAdminIds` / `startAutoCloseInterval` |
 | Auth config | `src/config/` | `auth.ts` — `getRuntimeAuth` / Google `addProvider` / email hooks; wrap OAuth callback for `emailVerified`; map `htRole` → userdata `role` |
-| Mailer / support / password policy | `src/lib/` | `mailer.ts` — smtp.bz `sendEmail` (+ test setter); `support.ts` — tickets/messages/roles/bootstrap/auto-close + create-ack mail + staff list filters + `setTicketStatus(..., { notify })` (HTTP stays thin); `passwordPolicy.ts` — shared ≥8 + lower/upper/digit/symbol (register wrap / JSON reset / change-password) |
+| Mailer / support / content / password policy | `src/lib/` | `mailer.ts` — smtp.bz `sendEmail` (+ test setter); `support.ts` — tickets/messages/roles/bootstrap/auto-close + create-ack mail + staff list filters + `setTicketStatus(..., { notify })` (HTTP stays thin); `content.ts` — packs catalog/collection/draft/submit/moderation/staff + moderation mail; `passwordPolicy.ts` — shared ≥8 + lower/upper/digit/symbol (register wrap / JSON reset / change-password) |
 | Auth HTML | `html/` | Legacy Colyseus cwd templates; product confirm/reset UX is **SPA + JSON** (mail links via `CLIENT_APP_URL`) |
 | Database | `src/db/` | `GameDatabase` (`index.ts`) + Drizzle user schema (`schema.ts`; `htRole` + support table decls) |
 | Rooms | `src/rooms/` | Room handlers (`onCreate` / `onJoin` / `onDrop` / `onReconnect` / leave / dispose; `onMessage('move'|'ready'|'say')`) |
 | Schema | `src/rooms/schema/` | `@colyseus/schema` synced state (`phase` / `maxSeats` / `countdownRemaining` + legacy `started` + `seats` + `currentTurnSessionId`) |
 | Pure rules | `src/game/` | Authoritative move validate/apply (`touristMove.ts`) — no Colyseus I/O |
-| Tests | `test/` | mocha + `@colyseus/testing` (`*.test.ts`; auth email + theme + room + `support.test.ts`) |
+| Tests | `test/` | mocha + `@colyseus/testing` (`*.test.ts`; auth email + theme + room + `support.test.ts` + `zz-contentPacks.test.ts`) |
 | Loadtest | `loadtest/` | `@colyseus/loadtest` scripts |
 | Deploy | `ecosystem.config.cjs`, `.github/workflows/` | PM2 + CI rsync |
 
@@ -71,10 +71,10 @@ Env templates: `.env.example`, `.env.development`, `.env.production` (do not com
 | Layer | Owns | Does not own |
 |-------|------|--------------|
 | **`index.ts`** | Process listen | Room logic, HTTP handlers, schema |
-| **`app.config.ts`** | Wire `database`, register rooms, thin `routes` / `express` (CORS first, health, auth email + support/admin endpoints, `configureAuthEmailFlows`, support bootstrap); import `./config/auth.js` | Game rules, board mutation |
+| **`app.config.ts`** | Wire `database`, register rooms, thin `routes` / `express` (CORS first, health, auth email + support/content/admin endpoints, `configureAuthEmailFlows`, support + content table ensure); import `./config/auth.js` | Game rules, board mutation |
 | **`config/`** | OAuth + email confirm/forgot hooks (`getRuntimeAuth`, wrap OAuth for verified); userdata `role` mapping | Room gate, user schema, from-scratch OAuth callback |
-| **`lib/`** | Outbound mail (`mailer.ts` smtp.bz) + support helpers (`support.ts`) + password policy (`passwordPolicy.ts`) | Fat HTTP handlers, rooms |
-| **`db/`** | SQLite GameDatabase; extend `colyseus_users` with defaults (`htRole`); declare support tables | Room messages; inventing a second auth store |
+| **`lib/`** | Outbound mail (`mailer.ts` smtp.bz) + support helpers (`support.ts`) + content packs (`content.ts`) + password policy (`passwordPolicy.ts`) | Fat HTTP handlers, rooms |
+| **`db/`** | SQLite GameDatabase; extend `colyseus_users` with defaults (`htRole`); declare support + `content_*` tables | Room messages; inventing a second auth store |
 | **`rooms/`** | Auth gate (`onAuth`), seats, start phases/ready/countdown, reconnect grace, turn order (skip finished), `onMessage('move'|'ready'|'say')` + schema writes (move/ready/finish side-effects) / ephemeral broadcast (say) | Raw HTTP; client-trusted board; pure geometry tables (prefer `src/game/`) |
 | **`rooms/schema/`** | Sync fields (`phase` / `maxSeats` / `countdownRemaining` + `seats` → `touristId` + `pieces` (+ `finished`) + connectivity/`ready`/`finishPlace` + `currentTurnSessionId` + `nextFinishPlace`; legacy `started`) | Validation / rules / side effects |
 | **`game/`** | Pure tourist move rules (playable cells, Chebyshev, occupancy ignores finished) | Room lifecycle, schema `@type`, HTTP |
@@ -212,6 +212,7 @@ src/db/
 src/lib/
 ├── mailer.ts          # smtp.bz sendEmail (+ setSendEmailImpl for tests)
 ├── support.ts         # tickets / roles / bootstrap helpers
+├── content.ts         # content packs (ensureContentTables + HTTP helpers)
 └── passwordPolicy.ts  # shared product password policy (register / reset / change)
 
 html/           # legacy Colyseus cwd templates (not product SPA UX)

@@ -2,12 +2,12 @@
 name: work-with-stores
 description: >-
   Instructions for Pinia stores in the happy-tourist Vue 3 client:
-  setup vs options defineStore, auth vs game vs theme vs support ownership, local page
+  setup vs options defineStore, auth vs game vs theme vs support vs content ownership, local page
   state vs Pinia, Colyseus I/O in stores (budgets peeks∞ / finite steps,
   removed-task holes, grille trap/rescue/push/return, catapult reveal keys,
   D13 atomic `$patch` seats+revealing/broken, peek/end-turn), acceptHMRUpdate,
   and Quasar pinia entry. Use when adding, changing, reviewing, or debugging
-  Pinia stores, shared game/auth/theme/support state (incl. admin setUserRole merge /
+  Pinia stores, shared game/auth/theme/support/content state (incl. admin setUserRole merge /
   emailVerified), or page-to-store wiring.
 ---
 
@@ -15,7 +15,7 @@ description: >-
 
 Use this skill when deciding where state should live or when changing Pinia stores in the **happy-tourist client** (`happy-tourist.github.io`).
 
-This app uses **Pinia 4** with **four domain stores** (`auth`, `theme`, `game`, `support`) plus Quasar’s Pinia entry. Pages use Composition API (`<script setup>`) and call `useAuthStore()` / `useThemeStore()` / `useGameStore()` / `useSupportStore()` directly — not Vuex `map*`.
+This app uses **Pinia 4** with **five domain stores** (`auth`, `theme`, `game`, `support`, `content`) plus Quasar’s Pinia entry. Pages use Composition API (`<script setup>`) and call `useAuthStore()` / `useThemeStore()` / `useGameStore()` / `useSupportStore()` / `useContentStore()` directly — not Vuex `map*`.
 
 Skills for this client live under `.agents/skills/client/`. Runtime paths below are relative to this repo root.
 
@@ -28,10 +28,11 @@ src/stores/
   theme.ts          # setup store — Quasar Dark preference (guest local / registered HTTP)
   game.ts           # options store
   support.ts        # setup store — support tickets + staff queue + admin users HTTP
+  content.ts        # setup store — content packs catalog / collection / draft / moderation / staff HTTP
   example-store.ts  # Quasar scaffold counter — unused by login/lobby/game
 ```
 
-Pinia is installed via Quasar store entry `src/stores/index.ts` (`createPinia()`). Domain stores import the Colyseus `client` from `@/boot/colyseus`. Prefer importing `use*Store` from `@/stores/auth` / `@/stores/theme` / `@/stores/game` / `@/stores/support` in pages and router; keep Colyseus calls inside those stores.
+Pinia is installed via Quasar store entry `src/stores/index.ts` (`createPinia()`). Domain stores import the Colyseus `client` from `@/boot/colyseus`. Prefer importing `use*Store` from `@/stores/auth` / `@/stores/theme` / `@/stores/game` / `@/stores/support` / `@/stores/content` in pages and router; keep Colyseus calls inside those stores.
 
 ### Store styles in this repo
 
@@ -41,11 +42,12 @@ Pinia is installed via Quasar store entry `src/stores/index.ts` (`createPinia()`
 | `theme` | **Setup** (`defineStore('theme', () => { … })`) | Dark preference + `syncFromAuthUser` / `toggle`; registered GET restore + POST save |
 | `game` | **Options** (`defineStore('game', { state, getters, actions })`) | Clear room lifecycle, `this.*` mutations, private helpers `_enterRoom` / `_attachRoom` |
 | `support` | **Setup** (`defineStore('support', () => { … })`) | HTTP tickets/staff/admin via `client.http`; staff list passes `topic`/`status` query; admin list expects `emailVerified`; after `setUserRole` **merge** `{ …u, …updated }` so list-only fields survive if API omits them; `error` + page `q-banner` |
+| `content` | **Setup** (`defineStore('content', () => { … })`) | HTTP packs via `client.http` (catalog/collection/live/draft/submit/moderation/staff); `loading` / `error` + page `q-banner` |
 | `counter` (`example-store`) | Options | Scaffold only — do not extend for product features |
 
 **When to choose setup vs options**
 
-- Prefer **setup** when the store needs Vue composables heavily (`ref`/`computed`), long-lived subscriptions, readiness promises (`auth`, `theme`), or thin HTTP CRUD (`support`).
+- Prefer **setup** when the store needs Vue composables heavily (`ref`/`computed`), long-lived subscriptions, readiness promises (`auth`, `theme`), or thin HTTP CRUD (`support`, `content`).
 - Prefer **options** when the domain is action-centric with shared mutable session state and imperative helpers (`game`).
 - Do not convert an existing store style without a concrete reason. Match the neighbor store’s style when extending the same domain.
 
@@ -88,6 +90,7 @@ Use a store for shared domain data, realtime session, or anything the router/oth
 | **theme** | Quasar Dark `preference`, `error`; async `syncFromAuthUser` (GET restore + generation + `clearStoredTheme` when unset; **no** `auth.user` replace after GET), `toggle` (guest `localStorage` `ht-theme`; registered `get` ≠ JWT-only, `post` on toggle may patch `user.theme`) | `App.vue` header toggle + stable auth identity watch |
 | **game** | lobby `rooms`/`lobbyRoom`/`lobbyWanted`/`listing`; active `room`/`roomId`/`sessionId`; mirrored `seats` (`GameSeat`: `touristId` + `pieces[]` (+ `finished`/`trapped`) + connectivity + `ready` + `finishPlace` + `timeExpired`) / `phase` / `maxSeats` / `countdownRemaining` / legacy `started` / `currentTurnSessionId` / `turnUntil` / `turnBudgetSeconds` / `removedTaskKeys` / `holdingGrilleKeys` / `revealingCatapultKeys` / `brokenCatapultKeys`; private `steps`/`peeks`/`budgetsInfinite`/`peekedThisTurn`/`openPeek`/`allJailWarning` from `budgets`/`peekOpen`/`allJailWarning`; `consentedLeaving` (gate soft-drop during `leaveGame`); getters `mySeat`/`isSeated`/`isMyTurn`/`isPlaying`/`canSendReady`/`canSendEndTurn`/`unfinishedBoardPieces`/`isMySeatFinished`/`isMySeatTimeExpired`/`isSoloBudget`/`myFinishedStripSides`; helpers `isFinishedSeat`/`isFinishedPiece`/`isTimeExpiredSeat`/`isSoloBudgetSeconds`/`turnRemainingSeconds`; `sendMove` / `sendRescue` / `sendPush` / `sendReturnFromFinish` / `sendPeek` / `sendPeekAnswer` / `sendEndTurn`; `sendReady`; `sendSay` + ephemeral `sayEvents`; `status`, `error`; subscribe/unsubscribe / create(`maxSeats`+`grilleDensity`+`catapultDensity`)/join/`rejoinGame`/leave; tourist token in `localStorage` | `LobbyPage`, `GamePage`, `App.vue` (Game leave/status) |
 | **support** | tickets / messages / staff queue / `adminUsers` (`emailVerified?`); `loading` / `error`; create/list/get/reply/close/take/status + `listAdminUsers` / `setUserRole` (merge updated row into `adminUsers`) via `client.http` | `SupportPage`, `SupportTicketPage`, `SupportStaffPage`, `AdminUsersPage` |
+| **content** | catalog / collection / live / draft / submit / moderation thread + staff pending/preview/approve/reject/cancel/block; `loading` / `error` via `client.http`; map codes with `contentErrorI18nKey` | `ContentCatalogPage`, `ContentCollectionPage`, `ContentPackPage`, `ContentPackCreatePage`, `ContentPackEditorPage`, `ContentPackModerationPage`, `ContentStaffPage`, `ContentStaffRequestPage` |
 | **counter** | scaffold only | none in product flow — ignore unless cleaning scaffold |
 
 ### Auth vs theme vs game ownership
@@ -313,7 +316,7 @@ Dependency direction: `pages` → `stores` / `boot` / `components`. Keep Colyseu
 
 ## Adding A New Store Or Field
 
-1. Prefer extending `auth` or `game` over a third domain store unless the concern is clearly separate.
+1. Prefer extending an existing domain store (`auth` / `theme` / `game` / `support` / `content`) over a sixth store unless the concern is clearly separate.
 2. Pick setup vs options deliberately (see table above); add `acceptHMRUpdate`.
 3. Put defaults in setup `ref()` initial values or options `state()`.
 4. Add getters for derived flags (`isAuthenticated`, `isInRoom`) instead of recomputing in every page.
@@ -324,20 +327,21 @@ Dependency direction: `pages` → `stores` / `boot` / `components`. Keep Colyseu
 ## Do / Don't
 
 **Do**
-- Keep Colyseus Auth and room I/O inside `auth` / `game`.
+- Keep Colyseus Auth and room I/O inside `auth` / `game`; keep HTTP tickets/packs/admin inside `support` / `content`.
 - Use local `ref` for form drafts, layout constants, and page-only spinners.
 - Sync auth from `client.auth.onChange`; gate routes with `whenReady()`.
 - Map only needed room fields from `onStateChange` (incl. `currentTurnSessionId` / `removedTaskKeys` / `holdingGrilleKeys` / `revealingCatapultKeys` / `brokenCatapultKeys` / piece `trapped`); **D13:** `$patch` seats + removed/holding + revealing/broken together (never assign revealing after seats in separate ticks); keep `sendMove` / `sendRescue` / `sendPush` / `sendReturnFromFinish` / `sendPeek` / `sendEndTurn` / `sendSay` lockstep with server `onMessage`.
+- For content HTTP errors, store stable API codes and let pages resolve via `contentErrorI18nKey` → `content.errors.*`.
 - Add `acceptHMRUpdate` to every new store file.
 - Coordinate room name / state schema / messages with `../happy-tourist-server`.
 
 **Don't**
-- Call `client.auth.*`, `client.create` / `joinById`, or `room.send` from random components / GamePage (use `sendMove` / `sendRescue` / `sendPush` / `sendReturnFromFinish` / `sendPeek` / `sendPeekAnswer` / `sendEndTurn` / `sendSay`).
+- Call `client.auth.*`, `client.create` / `joinById`, `client.http` for packs/tickets, or `room.send` from random components / GamePage (use store actions / `sendMove` / `sendRescue` / `sendPush` / `sendReturnFromFinish` / `sendPeek` / `sendPeekAnswer` / `sendEndTurn` / `sendSay`).
 - Put tourist board tile geometry or selection/hints into Pinia without a cross-page need.
 - Assume `sendMove` / `sendPush` advances the turn — end-turn / auto / timeout do.
 - Put domain state in `stores/index.ts` or grow the unused `counter` scaffold.
 - Reintroduce legacy draughts `board` / `{ from, to }` as current product canon.
-- Mix auth session concerns into `game` or room lifecycle into `auth`.
+- Mix auth session concerns into `game` or room lifecycle into `auth`; do not fold content packs into `support`.
 - Forget HMR `acceptHMRUpdate` on new stores.
 - After theme GET, replace `auth.user` only to set `theme` — feeds the App
   restore watch and storms preference HTTP; keep applied theme in `theme`

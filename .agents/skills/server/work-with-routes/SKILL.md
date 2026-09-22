@@ -3,9 +3,9 @@ name: work-with-routes
 description: >-
   Use when adding, changing, or reviewing HTTP routes on the happy-tourist
   Colyseus server: createRouter / createEndpoint in app.config.ts, Express
-  hook handlers (/health, /hi), auth /auth/*, theme, support tickets, admin
-  roles, or Colyseus room listing /rooms/:roomName. Keep HTTP thin — game
-  logic belongs in rooms.
+  hook handlers (/health, /hi), auth /auth/*, theme, support tickets, content
+  packs (/api/content/*), admin roles, or Colyseus room listing /rooms/:roomName.
+  Keep HTTP thin — game logic belongs in rooms.
 ---
 
 # Work With Routes
@@ -14,8 +14,8 @@ Use this skill when adding or changing **HTTP** handlers in `happy-tourist-serve
 
 This is a **realtime game server**, not a REST BFF. Prefer WebSocket room messages
 for gameplay. HTTP is for health, demo/smoke, auth (provided by Colyseus), thin
-profile preferences (e.g. UI theme), support tickets / admin roles, and lobby
-room listing.
+profile preferences (e.g. UI theme), support tickets / content packs / admin roles,
+and lobby room listing.
 
 Stack: Express **5** (via `defineServer({ express })`), `createRouter` /
 `createEndpoint` from `colyseus` / `@colyseus/tools`, TypeScript ESM (NodeNext).
@@ -111,6 +111,17 @@ For CORS / monitor details use `work-with-middleware` and `work-with-config`.
 | GET | `/api/support/staff/tickets` | `createEndpoint` | JWT moderator\|admin; query `topic` (optional), `status`=`open`\|`closed`\|`all` (default `open`); cap ~50 **after** filter |
 | POST | `/api/support/tickets/:id/take` | `createEndpoint` | JWT staff; take into `in_progress` |
 | POST | `/api/support/tickets/:id/status` | `createEndpoint` | JWT staff; `{ status }` |
+| GET | `/api/content/packs` | `createEndpoint` | JWT; approved live catalog (blocked still listed); helpers in `src/lib/content.ts` |
+| POST | `/api/content/packs` | `createEndpoint` | JWT + non-anonymous + `emailVerified` (DB); create pack + draft into author collection |
+| GET | `/api/content/packs/:id` | `createEndpoint` | JWT; live approved snapshot |
+| GET\|POST | `/api/content/packs/:id/draft` | `createEndpoint` | JWT + verified editor; get/put draft (collection + pending lock) |
+| POST | `/api/content/packs/:id/submit` | `createEndpoint` | JWT + verified; submit for moderation |
+| GET\|POST | `/api/content/packs/:id/moderation` (+ `/messages`) | `createEndpoint` | JWT; change-author ↔ staff thread |
+| POST | `/api/content/packs/:id/block` \| `/unblock` | `createEndpoint` | JWT moderator\|admin |
+| GET | `/api/content/collection` | `createEndpoint` | JWT (incl. anonymous); own collection |
+| POST | `/api/content/collection` \| `/remove` | `createEndpoint` | JWT; add/remove pack |
+| GET | `/api/content/staff/pending` | `createEndpoint` | JWT moderator\|admin; pending queue |
+| GET\|POST | `/api/content/staff/requests/:id` (+ `/approve` `/reject` `/cancel` `/messages`) | `createEndpoint` | JWT staff; preview + actions |
 | GET | `/api/admin/users` | `createEndpoint` | JWT admin; **exclude** anonymous; include `emailVerified` (+ id/email/role/displayName) |
 | POST | `/api/admin/users/:id/role` | `createEndpoint` | JWT admin; `{ role }`; **POST** (not PATCH); response user includes `emailVerified` (same as list) |
 | GET | `/health` | `express` hook | `{ status, uptime }` — deploy / monitor |

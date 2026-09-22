@@ -4,8 +4,8 @@ description: >-
   Use when adding, changing, reviewing, or debugging GameDatabase, Drizzle user
   schema, colyseus_users extensions, DATABASE_URL / game.db paths, profile
   fields (displayName, rating, gamesPlayed, gamesWon, theme, emailVerified,
-  htRole), or support_tickets / support_messages tables in happy-tourist-server
-  so built-in /auth/register and /auth/login keep working.
+  htRole), support_tickets / support_messages, or content_* pack tables in
+  happy-tourist-server so built-in /auth/register and /auth/login keep working.
 ---
 
 # Work With Database
@@ -40,11 +40,15 @@ Driver: **better-sqlite3**. ORM surface: **drizzle-orm** via Colyseus `tables.sq
 | `emailVerified` | `email_verified` | `integer({ mode: "boolean" }).notNull().default(false)`; Google + legacy non-anonymous backfill → `true`; change-email resets to `false`; in userdata |
 | `htRole` | `ht_role` | `text().notNull().default("user")` — product role `user` \| `moderator` \| `admin`. **Do not** name the JS field `role` (GameDatabase auto-relates `role` → `colyseus_roles`). Public API / JWT userdata expose it as `role`. Bootstrap via `BOOTSTRAP_ADMIN_IDS` → `bootstrapAdminIds()`. |
 
-These are **profile** fields (display name, rating, games played/won, UI theme, email verify flag, product role) for auth users — not room/board state. `theme` is written by thin `POST /api/theme` and read by `GET /api/theme` for registered users only; it also lands in JWT userdata on subsequent login (client restore must not rely on JWT alone after reload). `emailVerified` is updated by confirm callback / Google path / change-email endpoint (see `server-work-with-auth`). Role is checked on each support/admin HTTP request from DB (client gating is advisory).
+These are **profile** fields (display name, rating, games played/won, UI theme, email verify flag, product role) for auth users — not room/board state. `theme` is written by thin `POST /api/theme` and read by `GET /api/theme` for registered users only; it also lands in JWT userdata on subsequent login (client restore must not rely on JWT alone after reload). `emailVerified` is updated by confirm callback / Google path / change-email endpoint (see `server-work-with-auth`). Role is checked on each support/admin/content-staff HTTP request from DB (client gating is advisory). Content pack **create/edit/submit** also re-reads `emailVerified` from DB (not JWT alone) via `requireVerifiedEditor` in `src/lib/content.ts`.
 
 ### Support tables (custom, not SchemaSet)
 
 `support_tickets` / `support_messages` are declared in `src/db/schema.ts` and created at boot by `ensureSupportTables()` in `src/lib/support.ts` (raw `CREATE TABLE IF NOT EXISTS`) — they are **not** registered in `GameDatabase` `schemas: { users }`. Logic lives in `support.ts`; HTTP stays thin in `app.config.ts`.
+
+### Content pack tables (custom, not SchemaSet)
+
+`content_packs`, `content_pack_revisions`, `content_user_drafts`, `content_answer_cards`, `content_task_sets`, `content_tasks`, `content_task_slots`, `content_pack_collections`, `content_moderation_requests`, `content_moderation_messages` — declared in `src/db/schema.ts`, created at boot by `ensureContentTables()` in `src/lib/content.ts` (same ensure-at-boot pattern as support). Live vs draft: public GETs return approved live revision only; pending drafts stay separate. Not SchemaSet / not room state.
 
 ## Relation To Auth
 

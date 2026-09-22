@@ -204,7 +204,7 @@ File: `src/pages/AccountPage.vue` (`requiresAuth`, `/account`).
 - Display-name form → `updateDisplayName` (trim, min 1).
 - Change-password form (policy + meter) only when `canChangePassword`; hide for Google / anonymous; success → `changePassword` → logout → login.
 - Show current email; if `emailVerified` — caption confirmed.
-- If registered and `!emailVerified` — confirm button **next to** the email → `sendEmailConfirmation` → dialog `auth.confirmSentDialog` («письмо отправлено, проверьте почту **и папку Спам**»). Soft-verify only — no hard-gate on lobby/game.
+- If registered and `!emailVerified` — confirm button **next to** the email → `sendEmailConfirmation` → dialog `auth.confirmSentDialog` («письмо отправлено, проверьте почту **и папку Спам**»). Soft-verify only — no hard-gate on lobby/game. **Exception:** content pack create/edit shows a login/verify modal when the user is anonymous or unverified (server still enforces).
 - Change-email form → `changeEmail` (server resets verified; **no** auto-send).
 - Logout action; navigation from App / lobby into cabinet.
 

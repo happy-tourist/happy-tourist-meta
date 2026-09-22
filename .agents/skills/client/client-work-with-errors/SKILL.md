@@ -2,7 +2,7 @@
 name: client-work-with-errors
 description: >-
   Use when adding, changing, reviewing, or debugging error handling in the
-  happy-tourist Vue 3 client — Pinia auth/theme/game/support `error` strings, try/catch/finally,
+  happy-tourist Vue 3 client — Pinia auth/theme/game/support/content `error` strings, try/catch/finally,
   Colyseus `room.onError`, q-banner display (pages + App theme banner), leave/rejoin edge
   cases, or page-level catch that relies on store state.
 ---
@@ -12,9 +12,9 @@ description: >-
 Use this skill when working with request / realtime errors in Vue 3 `<script setup>`
 pages, Pinia stores, and Colyseus client calls under this package (`happy-tourist.github.io`).
 
-Stack context: Vue 3 Composition API, Pinia (`auth` / `theme` / `support` setup stores, `game` options store),
+Stack context: Vue 3 Composition API, Pinia (`auth` / `theme` / `support` / `content` setup stores, `game` options store),
 vue-router (hash), Quasar, `@colyseus/sdk` via `src/boot/colyseus`. Language is TypeScript.
-Surface errors via store `error: string | null` and `q-banner` on pages (auth/game/support) or `App.vue` (theme).
+Surface errors via store `error: string | null` and `q-banner` on pages (auth/game/support/content) or `App.vue` (theme).
 
 There is **no** shared axios layer, **no** response interceptors, **no** Vuex
 `GLOBAL_ERROR_*`, **no** Qrator dialogs, and **no** `SHOW_DIALOG` error channel.
@@ -23,13 +23,13 @@ There is **no** shared axios layer, **no** response interceptors, **no** Vuex
 
 Error handling is **store-local**, not a second toast pipeline:
 
-- Auth, theme, game, and support I/O live in Pinia (`stores/auth`, `stores/theme`, `stores/game`, `stores/support`). Pages call store
+- Auth, theme, game, support, and content I/O live in Pinia (`stores/auth`, `stores/theme`, `stores/game`, `stores/support`, `stores/content`). Pages call store
   actions; they do **not** catch Colyseus/`client` errors for display themselves.
 - Failed actions set `error` to a string:
-  `e instanceof Error ? e.message : String(e)` (support may map API codes to stable keys under `support.errors.*`).
+  `e instanceof Error ? e.message : String(e)` (support may map API codes to `support.errors.*`; content maps codes via `mapContentError` / `contentErrorI18nKey` → `content.errors.*`).
 - Clear `error` at the start of a new attempt (`error = null` / `this.error = null`).
-- Loading / listing flags clear in `finally` (auth `loading`, game `listing`, support `loading`).
-- Pages bind `q-banner` to `auth.error`, `game.error`, or `support.error`.
+- Loading / listing flags clear in `finally` (auth `loading`, game `listing`, support/content `loading`).
+- Pages bind `q-banner` to `auth.error`, `game.error`, `support.error`, or `content.error` (prefer i18n when `contentErrorI18nKey` matches).
 - Theme save failures bind `q-banner` to `theme.error` in `App.vue` (shared shell).
 - Page `catch` blocks are empty (or only navigate) with a comment that the store
   already holds the message — do not duplicate toasts or dialogs.
@@ -152,6 +152,8 @@ Use store `sendMove` only (pages must not `room.send`). Early-return if `!this.r
 | `LoginPage` | `auth.error` | Inside the form; cleared on mode toggle |
 | `LobbyPage` | `game.error` | Above room list |
 | `GamePage` | `game.error` | Above the board |
+| `Support*` / `AdminUsersPage` | `support.error` | Map API codes via `support.errors.*` when keyed |
+| `Content*` | `content.error` | Prefer `contentErrorI18nKey(code)` → `$t('content.errors.*')` when known |
 
 Typical markup:
 

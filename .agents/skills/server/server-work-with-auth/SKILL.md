@@ -260,6 +260,7 @@ onJoin(client: Client, _options: any, auth: any) {
 - Do not skip `onAuth` for “open” lobbies without an explicit product decision.
 - Do not re-implement JWT parsing by hand; use `JWT` from `@colyseus/auth`.
 - Do **not** gate join on `emailVerified` (soft verify — play allowed unverified).
+- Content packs are different: create / draft / submit **do** require non-anonymous + `emailVerified` from DB (`requireVerifiedEditor` in `src/lib/content.ts`); room join stays soft.
 - Tests: `JWT.sign({ … })` then `colyseus.sdk.auth.token = token` before `connectTo`
   (see `test/MyRoom.test.ts`).
 
@@ -324,6 +325,7 @@ Coordinate userdata shape and register options with the client skill
 | Removing `database` from `defineServer` | Auth HTTP routes gone |
 | Skipping or weakening `onAuth` | Unauthenticated room joins |
 | Gating `onAuth` / rooms on `emailVerified` | Soft verify — play must stay open |
+| Skipping `emailVerified` on content pack create/edit/submit | Packs gate is hard (DB); soft verify applies to play only |
 | Inventing cookie / Redis / captcha / SMS auth | Wrong stack; client is JWT + `client.auth` |
 | Porting Pinia / Vue router guards to the server | Server has no Vue; gate is `onAuth` |
 | Trusting join `options` for user id over `auth` | Spoofable identity |

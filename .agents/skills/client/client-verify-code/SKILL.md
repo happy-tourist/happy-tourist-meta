@@ -70,7 +70,8 @@ it does **not** allow skipping skills from this list.
 
 If a new code skill appears under `.agents/skills/client/` (same kind: how to
 write app code), include it too. Prefer reading one extra skill over missing a
-rule.
+rule. Do **not** auto-include `work-with-test` here — it is test-writing only
+(see Always exclude).
 
 If a listed skill file is **missing**, do not invent a parallel rulebook — apply
 **Built-in: Client conventions** for that concern and continue.
@@ -84,6 +85,7 @@ Do **not** use these for client-verify-code (unless the user explicitly asks):
 | `client-locate-change-points` | planning where to edit |
 | `client-verify-code` | this orchestrator |
 | `client-align-code` | alignment / docs authorship |
+| `work-with-test` | test-writing / Vitest conventions (not used to audit prod code) |
 | `openspec` / opsx skills | change workflow / specs |
 | `commit` | commit messages |
 

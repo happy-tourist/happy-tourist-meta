@@ -76,8 +76,8 @@ server: C:/Users/You/work/happy-tourist-server
 | `client` | `../happy-tourist.github.io/` | Vue 3 + Quasar SPA (`happy-tourist-client`) |
 | `client.agents` | `../happy-tourist.github.io/AGENTS.md` | продукт / стек / домены client |
 | `client.src` | `../happy-tourist.github.io/src/` | исходники UI |
-| `client.pages` | `../happy-tourist.github.io/src/pages/` | route pages (Login/Lobby/Support/Admin/Game) |
-| `client.stores` | `../happy-tourist.github.io/src/stores/` | Pinia (`auth`, `theme`, `game`, `support`) |
+| `client.pages` | `../happy-tourist.github.io/src/pages/` | route pages (Login/Lobby/Support/Content*/Admin/Game) |
+| `client.stores` | `../happy-tourist.github.io/src/stores/` | Pinia (`auth`, `theme`, `game`, `support`, `content`) |
 | `client.lib` | `../happy-tourist.github.io/src/lib/` | Pure client helpers (`passwordPolicy`, `passwordStrength`) |
 | `client.assets` | `../happy-tourist.github.io/src/assets/` | Static assets (`brand/logo.png` always-button header ≥60px; `tourists/tourist{1–4}.png` pieces; `grilles/grille.png` holding overlay; `catapults/catapult.png` + `catapult-broken.png` reveal) |
 | `client.boot` | `../happy-tourist.github.io/src/boot/` | Quasar boot (`theme`, `colyseus`, `i18n`) |
@@ -85,11 +85,11 @@ server: C:/Users/You/work/happy-tourist-server
 | `server.agents` | `../happy-tourist-server/AGENTS.md` | продукт / стек / домены server |
 | `server.src` | `../happy-tourist-server/src/` | исходники сервера |
 | `server.config` | `../happy-tourist-server/src/config/` | OAuth providers (`auth.ts` / `addProvider`) |
-| `server.lib` | `../happy-tourist-server/src/lib/` | mailer + support tickets/roles + passwordPolicy helpers |
+| `server.lib` | `../happy-tourist-server/src/lib/` | mailer + support tickets/roles + content packs + passwordPolicy helpers |
 | `server.rooms` | `../happy-tourist-server/src/rooms/` | Room handlers |
 | `server.schema` | `../happy-tourist-server/src/rooms/schema/` | `@colyseus/schema` state |
 | `server.game` | `../happy-tourist-server/src/game/` | Pure authoritative rules (`touristMove.ts`) |
-| `server.db` | `../happy-tourist-server/src/db/` | GameDatabase / users + support schema |
+| `server.db` | `../happy-tourist-server/src/db/` | GameDatabase / users + support + content_* pack tables |
 | `server.tests` | `../happy-tourist-server/test/` | mocha + `@colyseus/testing` |
 | `server.loadtest` | `../happy-tourist-server/loadtest/` | `@colyseus/loadtest` scripts |
 

@@ -27,21 +27,21 @@ Composition is flat under `src/`. Search and assign ownership top-down.
 | Layer | Path | Role |
 |-------|------|------|
 | Routes | `src/router/routes.ts` + `index.ts` | hash routes + guards |
-| Pages | `src/pages/*Page.vue` | LoginPage, LobbyPage, SupportPage, SupportTicketPage, SupportStaffPage, AdminUsersPage, GamePage |
+| Pages | `src/pages/*Page.vue` | LoginPage, LobbyPage, Support*, Content*, AdminUsersPage, GamePage |
 | Components | `src/components/` | mostly scaffold; prefer pages→stores |
 | Boot | `src/boot/` | theme, i18n, colyseus |
-| Stores | `src/stores/` | auth, theme, game, support, example-store |
+| Stores | `src/stores/` | auth, theme, game, support, content, example-store |
 | CSS | `src/css/` | app.scss, quasar.variables.scss |
 | i18n | `src/i18n/` | en-US |
 | Env/CI | `.env.*`, `.github/workflows/deploy.yml` | VITE_*, GitHub Pages |
 
-Allowed dependency direction: `pages` → `stores` / `boot` / `components`. Keep **Colyseus I/O inside Pinia stores** (`auth`, `theme`, `game`, `support`) — do not scatter `client.*` across many components. Prefer importing `client` from `@/boot/colyseus` over `$colyseus`.
+Allowed dependency direction: `pages` → `stores` / `boot` / `components`. Keep **Colyseus I/O inside Pinia stores** (`auth`, `theme`, `game`, `support`, `content`) — do not scatter `client.*` across many components. Prefer importing `client` from `@/boot/colyseus` over `$colyseus`.
 
-Scaffold leftovers (`EssentialLink.vue`, `example-store.ts`) are not part of the game flow — prefer login / lobby / support / game. Dead `pages/index*` were removed with brand cleanup.
+Scaffold leftovers (`EssentialLink.vue`, `example-store.ts`) are not part of the game flow — prefer login / lobby / support / content / game. Dead `pages/index*` were removed with brand cleanup.
 
 ### Routes
 
-Router mode: hash (`/#/lobby`, `/#/support`, `/#/game/...`). Guards in `src/router/index.ts` await `auth.whenReady()`, then enforce `meta.requiresAuth` / `meta.guest` / `meta.requiresStaff` / `meta.requiresAdmin`.
+Router mode: hash (`/#/lobby`, `/#/support`, `/#/content/packs`, `/#/content/staff`, `/#/game/...`). Guards in `src/router/index.ts` await `auth.whenReady()`, then enforce `meta.requiresAuth` / `meta.guest` / `meta.requiresStaff` / `meta.requiresAdmin`.
 
 | Path | Name | Page / meta |
 |------|------|-------------|
@@ -52,6 +52,14 @@ Router mode: hash (`/#/lobby`, `/#/support`, `/#/game/...`). Guards in `src/rout
 | `/support/staff` | `support-staff` | `SupportStaffPage`; `requiresAuth` + `requiresStaff` |
 | `/support/:id` | `support-ticket` | `SupportTicketPage`; `meta.requiresAuth` |
 | `/admin/users` | `admin-users` | `AdminUsersPage`; `requiresAuth` + `requiresAdmin` |
+| `/content/packs` | `content-catalog` | `ContentCatalogPage`; `meta.requiresAuth` |
+| `/content/collection` | `content-collection` | `ContentCollectionPage`; `meta.requiresAuth` |
+| `/content/packs/new` | `content-pack-new` | `ContentPackCreatePage`; `meta.requiresAuth` |
+| `/content/packs/:id` | `content-pack` | `ContentPackPage`; `meta.requiresAuth` |
+| `/content/packs/:id/edit` | `content-pack-edit` | `ContentPackEditorPage`; `meta.requiresAuth` |
+| `/content/packs/:id/moderation` | `content-pack-moderation` | `ContentPackModerationPage`; `meta.requiresAuth` |
+| `/content/staff` | `content-staff` | `ContentStaffPage`; `requiresAuth` + `requiresStaff` |
+| `/content/staff/requests/:id` | `content-staff-request` | `ContentStaffRequestPage`; `requiresAuth` + `requiresStaff` |
 | `/game/:roomId` | `game` | `GamePage`; `meta.requiresAuth` |
 | `/:catchAll(.*)*` | — | redirect to `/lobby` |
 
@@ -81,6 +89,7 @@ Shared mutable session and realtime I/O belong in Pinia, not ad-hoc page-only `c
 | Auth session | `stores/auth.ts`: `register` / `login` / `loginAnonymously` / `loginWithGoogle` / `logout` / `whenReady`; `isAuthenticated`, `displayName`, `role` / `isStaff` / `isAdmin`; optional `user.theme`; sync via `client.auth.onChange` |
 | UI theme (chrome Dark) | `stores/theme.ts`: `syncFromAuthUser` / `toggle`; guest `localStorage` (`ht-theme`); registered `client.http.get('/api/theme')` restore (≠ JWT-only; **no** `auth.user` replace after GET) + `post` on toggle; `App.vue` stable `watch([() => auth.ready, () => auth.user?.id, () => auth.user?.anonymous], …)` (SC-THEME-10) |
 | Support tickets / staff / admin | `stores/support.ts`: HTTP `/api/support/*` + `/api/admin/*` via `client.http` (staff `topic`/`status` query; admin `emailVerified`); pages `Support*` / `AdminUsersPage` |
+| Content packs (catalog / collection / draft / moderation / staff) | `stores/content.ts`: HTTP `/api/content/*` via `client.http`; map API codes with `contentErrorI18nKey`; pages `Content*`; create/edit need verified non-anonymous (page modal; server enforces) |
 | Lobby room list | `stores/game.ts` `subscribeLobby` / `unsubscribeLobby` → LobbyRoom `rooms` / `+` / `-` |
 | Enter / leave room | `createGame` / `joinGame` / `leaveGame` (`TOURIST_ROOM` / `LOBBY_ROOM`) |
 | Room attach | `_attachRoom` `onStateChange` / `onLeave`; getter `isInRoom` |
@@ -107,8 +116,9 @@ Do not invent room schemas, HTTP routes, or move payloads — note the server pa
 - Cabinet displayName / change-password / email → `pages/AccountPage.vue` + `stores/auth` (`updateDisplayName` / `changePassword` / `canChangePassword`).
 - Lobby create / join / list (join busy-lock; clear stale rooms) → `pages/LobbyPage.vue` + `stores/game.ts`.
 - Support create / list / thread / staff / admin roles → `pages/Support*.vue` / `AdminUsersPage.vue` + `stores/support.ts` (+ `auth.role` gating).
+- Content packs catalog / collection / create / editor / moderation / staff → `pages/Content*.vue` + `stores/content.ts` (+ verify gate / `auth.isStaff`).
 - Board interaction / continuous board-busy / presence reserve / `rejoinGame` → `pages/GamePage.vue` + `stores/game.ts`.
-- Locale messages → `src/i18n/` (default `en-US`; auth policy/cabinet + support keys).
+- Locale messages → `src/i18n/` (default `en-US`; auth policy/cabinet + support + `content.*` keys).
 - Deploy / Pages 404 fallback → `.github/workflows/deploy.yml` (`quasar build -m spa`, `index.html` → `404.html`).
 
 ## Domain Hotspots
@@ -116,8 +126,9 @@ Do not invent room schemas, HTTP routes, or move payloads — note the server pa
 | Domain | Start here |
 |--------|------------|
 | Auth (email/password policy, anonymous, Google, cabinet profile, logout, role nav) | `pages/LoginPage.vue` / `AccountPage.vue` + `stores/auth.ts` + `lib/passwordPolicy.ts`; router guards in `router/index.ts` |
-| Lobby (list / create / join busy-lock; clear stale rooms; quiet resubscribe; Support link) | `pages/LobbyPage.vue` + `stores/game` `subscribeLobby` / `createGame` / `joinGame` |
+| Lobby (list / create / join busy-lock; clear stale rooms; quiet resubscribe; Support + content packs links) | `pages/LobbyPage.vue` + `stores/game` `subscribeLobby` / `createGame` / `joinGame` |
 | Support (tickets / staff queue / admin roles) | `pages/Support*.vue` / `AdminUsersPage.vue` + `stores/support.ts` |
+| Content packs (catalog / collection / draft / moderation / staff) | `pages/Content*.vue` + `stores/content.ts` |
 | Game board (layout, unfinished pieces, continuous board-busy, finish/timeout UX, dual presence rings + seated top-row reserve, strip, turn select/`sendMove`, rejoin) | `pages/GamePage.vue` + `stores/game` `onStateChange` / `sendMove` / `rejoinGame(roomId)` |
 | Env / deploy | `.env.*`, `env.d.ts`, `boot/colyseus.ts`, `.github/workflows/deploy.yml` |
 | Theme / layout / brand chrome | `App.vue` header (logo + theme + Game status/leave) + `stores/theme` + `boot/theme` + `assets/brand/` + `css/*` (board CSS ≠ app Dark) |
@@ -143,7 +154,7 @@ Today: GamePage board + dual presence rings (outer turn from `turnUntil`/`turnBu
 3. Walk ownership:
    - route → page → store / boot / component imports;
    - Pinia usage from the page;
-   - Colyseus calls only inside `stores/auth`, `stores/theme`, `stores/game`, or `stores/support` (flag page-level `client.*` as a smell to relocate);
+   - Colyseus calls only inside `stores/auth`, `stores/theme`, `stores/game`, `stores/support`, or `stores/content` (flag page-level `client.*` as a smell to relocate);
    - server sibling when protocol/schema/room listing must change.
 
 4. Apply decision guidance above to classify each hit as edit vs add, and note related store/boot/env/server touch points.
