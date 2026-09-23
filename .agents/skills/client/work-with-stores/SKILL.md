@@ -28,7 +28,7 @@ src/stores/
   theme.ts          # setup store — Quasar Dark preference (guest local / registered HTTP)
   game.ts           # options store
   support.ts        # setup store — support tickets + staff queue + admin users HTTP
-  content.ts        # setup store — packs catalog / collection / draft; dual submitAnswers/submitTasks; answersDirty + pending per type; staff hub HTTP
+  content.ts        # setup store — packs catalog / collection / draft; dual submitAnswers/submitTasks; answersDirty/tasksDirty + statuses/needsModeration + pending per type; D5′ lock; staff nested hub HTTP
   example-store.ts  # Quasar scaffold counter — unused by login/lobby/game
 ```
 
@@ -42,7 +42,7 @@ Pinia is installed via Quasar store entry `src/stores/index.ts` (`createPinia()`
 | `theme` | **Setup** (`defineStore('theme', () => { … })`) | Dark preference + `syncFromAuthUser` / `toggle`; registered GET restore + POST save |
 | `game` | **Options** (`defineStore('game', { state, getters, actions })`) | Clear room lifecycle, `this.*` mutations, private helpers `_enterRoom` / `_attachRoom` |
 | `support` | **Setup** (`defineStore('support', () => { … })`) | HTTP tickets/staff/admin via `client.http`; staff list passes `topic`/`status` query; admin list expects `emailVerified`; after `setUserRole` **merge** `{ …u, …updated }` so list-only fields survive if API omits them; `error` + page `q-banner` |
-| `content` | **Setup** (`defineStore('content', () => { … })`) | HTTP packs via `client.http` (catalog/collection/live/draft/`submitAnswers`/`submitTasks`/moderation/staff); `answersDirty` + pending per type (**no** badge state); `loading` / `error` + page `q-banner` |
+| `content` | **Setup** (`defineStore('content', () => { … })`) | HTTP packs via `client.http` (catalog/collection/live/draft/`submitAnswers`/`submitTasks`/moderation/staff); draft statuses + requestId; `answersDirty`/`tasksDirty` + per-set `needsModeration` + pending per type (**no** badge / no top save banner); D5′ pending-author lock; `loading` / `error` + page `q-banner` |
 | `counter` (`example-store`) | Options | Scaffold only — do not extend for product features |
 
 **When to choose setup vs options**
@@ -90,7 +90,7 @@ Use a store for shared domain data, realtime session, or anything the router/oth
 | **theme** | Quasar Dark `preference`, `error`; async `syncFromAuthUser` (GET restore + generation + `clearStoredTheme` when unset; **no** `auth.user` replace after GET), `toggle` (guest `localStorage` `ht-theme`; registered `get` ≠ JWT-only, `post` on toggle may patch `user.theme`) | `App.vue` header toggle + stable auth identity watch |
 | **game** | lobby `rooms`/`lobbyRoom`/`lobbyWanted`/`listing`; active `room`/`roomId`/`sessionId`; mirrored `seats` (`GameSeat`: `touristId` + `pieces[]` (+ `finished`/`trapped`) + connectivity + `ready` + `finishPlace` + `timeExpired`) / `phase` / `maxSeats` / `countdownRemaining` / legacy `started` / `currentTurnSessionId` / `turnUntil` / `turnBudgetSeconds` / `removedTaskKeys` / `holdingGrilleKeys` / `revealingCatapultKeys` / `brokenCatapultKeys`; private `steps`/`peeks`/`budgetsInfinite`/`peekedThisTurn`/`openPeek`/`allJailWarning` from `budgets`/`peekOpen`/`allJailWarning`; `consentedLeaving` (gate soft-drop during `leaveGame`); getters `mySeat`/`isSeated`/`isMyTurn`/`isPlaying`/`canSendReady`/`canSendEndTurn`/`unfinishedBoardPieces`/`isMySeatFinished`/`isMySeatTimeExpired`/`isSoloBudget`/`myFinishedStripSides`; helpers `isFinishedSeat`/`isFinishedPiece`/`isTimeExpiredSeat`/`isSoloBudgetSeconds`/`turnRemainingSeconds`; `sendMove` / `sendRescue` / `sendPush` / `sendReturnFromFinish` / `sendPeek` / `sendPeekAnswer` / `sendEndTurn`; `sendReady`; `sendSay` + ephemeral `sayEvents`; `status`, `error`; subscribe/unsubscribe / create(`maxSeats`+`grilleDensity`+`catapultDensity`)/join/`rejoinGame`/leave; tourist token in `localStorage` | `LobbyPage`, `GamePage`, `App.vue` (Game leave/status) |
 | **support** | tickets / messages / staff queue / `adminUsers` (`emailVerified?`); `loading` / `error`; create/list/get/reply/close/take/status + `listAdminUsers` / `setUserRole` (merge updated row into `adminUsers`) via `client.http` | `SupportPage`, `SupportTicketPage`, `SupportStaffPage`, `AdminUsersPage` |
-| **content** | catalog / collection / live / draft / `submitAnswers` / `submitTasks` / moderation thread + staff answers hub; `answersDirty` + pending flags per type; `loading` / `error` via `client.http`; map codes with `contentErrorI18nKey` | `ContentCatalogPage`, `ContentCollectionPage`, `ContentPackPage`, `ContentPackCreatePage`, `ContentPackEditorPage`, `ContentPackTasksPage`, `ContentPackModerationPage`, `ContentStaffPage`, `ContentStaffRequestPage` |
+| **content** | catalog / collection / live / draft / `submitAnswers` / `submitTasks` / moderation thread + staff hub (task-set list → nested); draft statuses + requestId; `answersDirty`/`tasksDirty` + `needsModeration` + pending per type; D5′ lock; `loading` / `error` via `client.http`; map codes with `contentErrorI18nKey` | `ContentCatalogPage`, `ContentCollectionPage`, `ContentPackPage`, `ContentPackCreatePage`, `ContentPackEditorPage`, `ContentPackTasksPage`, `ContentPackModerationPage`, `ContentStaffPage`, `ContentStaffRequestPage`, `ContentStaffTasksPage` |
 | **counter** | scaffold only | none in product flow — ignore unless cleaning scaffold |
 
 ### Auth vs theme vs game ownership
@@ -332,7 +332,7 @@ Dependency direction: `pages` → `stores` / `boot` / `components`. Keep Colyseu
 - Sync auth from `client.auth.onChange`; gate routes with `whenReady()`.
 - Map only needed room fields from `onStateChange` (incl. `currentTurnSessionId` / `removedTaskKeys` / `holdingGrilleKeys` / `revealingCatapultKeys` / `brokenCatapultKeys` / piece `trapped`); **D13:** `$patch` seats + removed/holding + revealing/broken together (never assign revealing after seats in separate ticks); keep `sendMove` / `sendRescue` / `sendPush` / `sendReturnFromFinish` / `sendPeek` / `sendEndTurn` / `sendSay` lockstep with server `onMessage`.
 - For content HTTP errors, store stable API codes and let pages resolve via `contentErrorI18nKey` → `content.errors.*`.
-- Call `submitAnswers` / `submitTasks` (and mirror draft flags `answersDirty` / pending per type); never invent a single `/submit` client path.
+- Call `submitAnswers` / `submitTasks` (and mirror draft flags `answersDirty`/`tasksDirty` / statuses / `needsModeration` / pending per type / D5′ lock); never invent a single `/submit` client path; pages: quiet autosave + submit disabled without dirty/minima.
 - Add `acceptHMRUpdate` to every new store file.
 - Coordinate room name / state schema / messages with `../happy-tourist-server`.
 

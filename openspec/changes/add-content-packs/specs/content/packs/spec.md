@@ -2,7 +2,7 @@
 
 ## Purpose
 
-UGC-наборы карточек-ответов и заданий: создание/правка verified-пользователями, коллекция, публичный каталог после approve ответов, **раздельная** модерация answers/tasks, блокировка; задел difficulty 1–3 под будущие peek-награды. Без привязки к tourist-room и без замены peek-stub.
+UGC-наборы (**набор карточек** + задания): создание/правка verified-пользователями, коллекция, публичный каталог после approve ответов, **раздельная** модерация answers/tasks, видимые статусы и треды на страницах редактора, блокировка; задел difficulty 1–3 под будущие peek-награды. Без привязки к tourist-room и без замены peek-stub.
 
 ## Traceability
 
@@ -48,12 +48,21 @@ UGC-наборы карточек-ответов и заданий: создан
 | SC-PACK-39 | covered |
 | SC-PACK-40 | covered |
 | SC-PACK-41 | covered |
+| SC-PACK-42 | covered |
+| SC-PACK-43 | covered |
+| SC-PACK-44 | covered |
+| SC-PACK-45 | covered |
+| SC-PACK-46 | covered |
+| SC-PACK-47 | covered |
+| SC-PACK-48 | covered |
+| SC-PACK-49 | covered |
+| SC-PACK-50 | covered |
 
 ## ADDED Requirements
 
 ### Requirement: Verified registered user may create a pack
 
-A non-anonymous user with a valid JWT and verified email MUST be able to create a content pack with a non-empty title and a description (description MAY be empty). On create the pack MUST enter the creator’s collection and MUST start as not publicly listed until answers are approved. After create the client MUST open the answers editing surface. Anonymous guests and unverified email/password users MUST NOT create packs; the client MUST prompt them to sign in or confirm email instead.
+A non-anonymous user with a valid JWT and verified email MUST be able to create a content pack with a non-empty title and a description (description MAY be empty). On create the pack MUST enter the creator’s collection and MUST start as not publicly listed until answers are approved. After create the client MUST open the **cards pack** editing surface («Набор карточек»). Anonymous guests and unverified email/password users MUST NOT create packs; the client MUST prompt them to sign in or confirm email instead.
 
 #### Scenario [SC-PACK-01]: Verified user creates a pack into own collection
 
@@ -193,7 +202,7 @@ The public catalog and the public pack page MUST list and show only packs that h
 
 ### Requirement: Dual pending locks and races
 
-A pack MAY have at most one pending request per type (`answers`, `tasks`). While the editor’s answers draft is **dirty** relative to the last successful answers submit (including before the first submit), no user MUST be allowed to create or edit **tasks** for that pack. After answers are submitted successfully, task create/edit MUST be allowed again even if answers remain pending. The answers pending author MUST be allowed to amend and resubmit answers (which re-dirties until the next submit). While tasks are writable and tasks are pending, the tasks pending author MUST be allowed to amend and resubmit tasks; other users MUST NOT win a competing tasks submit (race → error; personal draft retained). Answers submit MUST NOT require live or pending tasks.
+A pack MAY have at most one pending request per type (`answers`, `tasks`). While the editor’s answers draft is **dirty** relative to the last successful answers submit (including before the first submit), no user MUST be allowed to create or edit **tasks** for that pack. After answers are submitted successfully, task create/edit MUST be allowed again even if answers remain pending. While pack answers are **pending** under change author A, **only A** MUST be allowed to submit or resubmit answers; other users MUST NOT submit answers. While answers are pending under A, **other** users MUST NOT submit tasks; A MAY still submit tasks so staff can approve tasks before answers. While tasks are pending under change author T, only T MUST be allowed to submit or resubmit tasks; other users MUST NOT win a competing tasks submit (race → error; personal draft retained). Answers submit MUST NOT require live or pending tasks.
 
 #### Scenario [SC-PACK-15]: Dirty answers block task editing for everyone
 
@@ -211,14 +220,27 @@ A pack MAY have at most one pending request per type (`answers`, `tasks`). While
 
 #### Scenario [SC-PACK-17]: Losing tasks submit keeps personal draft
 
-- **GIVEN** two eligible editors prepared tasks while answers were not dirty and the first successfully submitted tasks into pending
+- **GIVEN** two eligible editors prepared tasks while answers were not dirty and no answers pending blocked them, and the first successfully submitted tasks into pending
 - **WHEN** the second attempts to submit tasks
 - **THEN** the system rejects the second submit
 - **AND** the second user’s draft remains available until that tasks request is approved or cancelled
 
+#### Scenario [SC-PACK-42]: Only answers pending author may resubmit answers
+
+- **GIVEN** pack P is answers-pending under author A and verified collection member B ≠ A
+- **WHEN** B attempts to submit answers
+- **THEN** the system rejects the submit
+
+#### Scenario [SC-PACK-43]: Other users cannot submit tasks while answers pending
+
+- **GIVEN** pack P is answers-pending under author A and verified collection member B ≠ A with a valid tasks draft
+- **WHEN** B attempts to submit tasks
+- **THEN** the system rejects the submit
+- **AND** A MAY still submit tasks while A’s answers remain pending
+
 ### Requirement: Staff moderation via answers hub
 
-Moderator and admin MUST see a queue only for packs that have an **answers** pending request (tasks-only pending MUST NOT appear alone). Opening an answers pending item MUST show answers preview and a nested list of task sets / tasks requests for that pack. Staff MUST approve **tasks** before approving **answers**. Approving answers MUST require live tasks already present and MUST publish the pack to the public catalog (unless blocked). Staff MAY reject with comment, cancel, or message on the relevant request thread. Threads remain visible only to that request’s change author and staff. After approval of a type, a later cycle of the same type MUST open a new thread. Non-staff MUST NOT perform staff actions.
+Moderator and admin MUST see a queue only for packs that have an **answers** pending request (tasks-only pending MUST NOT appear alone). Opening an answers pending item MUST show an answers/cards preview and a **list** of task sets with status marks (needs moderation / pending / approved / rejected as applicable) — NOT a fully expanded dump of all questions. Staff MUST open a nested tasks page to review questions/slots and to approve/reject/cancel **tasks**. Approve/reject/cancel **answers** and the answers thread MUST be available on the cards hub page. Staff MUST approve **tasks** before approving **answers**. Approving answers MUST require live tasks already present and MUST publish the pack to the public catalog (unless blocked). Staff MAY reject with comment, cancel, or message on the relevant request thread. Threads remain visible only to that request’s change author and staff. After approval of a type, a later cycle of the same type MUST open a new thread. Non-staff MUST NOT perform staff actions.
 
 #### Scenario [SC-PACK-18]: Staff approves answers into catalog after live tasks
 
@@ -267,7 +289,7 @@ Moderator and admin MUST see a queue only for packs that have an **answers** pen
 - **GIVEN** answers pending and tasks still pending (not live) for pack P
 - **WHEN** staff attempts to approve answers
 - **THEN** the system rejects answers approve until tasks are live
-- **AND** staff can approve the nested tasks request first
+- **AND** staff can approve the nested tasks request from the tasks page first
 
 #### Scenario [SC-PACK-40]: Tasks-only pending is invisible to staff
 
@@ -275,9 +297,18 @@ Moderator and admin MUST see a queue only for packs that have an **answers** pen
 - **WHEN** staff opens the moderation queue
 - **THEN** pack P does not appear
 
+#### Scenario [SC-PACK-44]: Staff hub lists task sets; tasks page for detail
+
+- **GIVEN** staff opens an answers-pending pack hub
+- **WHEN** the hub renders
+- **THEN** task sets appear as a navigable list with status marks
+- **AND** questions are not fully expanded on the hub
+- **WHEN** staff opens a task set / tasks entry
+- **THEN** the nested tasks page shows questions and tasks moderation actions
+
 ### Requirement: Author and staff may exchange messages on an open thread
 
-While a moderation request is not cancelled and not finally closed by approval without further work, the change author and staff MUST be able to append messages to that thread. Other users MUST NOT read or write that thread.
+While a moderation request is not cancelled and not finally closed by approval without further work, the change author and staff MUST be able to append messages to that thread. Other users MUST NOT read or write that thread. The **cards** editing page MUST show the answers-type thread (status + messages + reply when pending or rejected). The **tasks** editing page MUST show the tasks-type thread the same way. Reject comments MUST be visible to the change author on the corresponding page without requiring a separate obscure route.
 
 #### Scenario [SC-PACK-23]: Change author posts a reply in the thread
 
@@ -290,6 +321,13 @@ While a moderation request is not cancelled and not finally closed by approval w
 - **GIVEN** an open moderation thread for author A
 - **WHEN** another non-staff user requests the thread
 - **THEN** the system rejects or returns no thread content
+
+#### Scenario [SC-PACK-45]: Author sees reject status and comment on editor page
+
+- **GIVEN** staff rejected an answers (or tasks) request with a non-empty comment
+- **WHEN** change author A opens the corresponding cards (or tasks) editing page
+- **THEN** the page shows rejected / needs-revision status for that type
+- **AND** the reject comment is readable in that type’s thread on the page
 
 ### Requirement: Staff may block a pack for everyone
 
@@ -327,7 +365,7 @@ When the change author is a non-anonymous user with an email, the system MUST se
 
 ### Requirement: Client surfaces — split editor, collection-first, autosave
 
-The client MUST expose: a collection list as the primary entry from lobby into the packs section; a public catalog reachable from the collection; a live pack view; an **answers** editing page (pack title/description, single answer form, answers list with edit affordance, nested task-set list labeled by author/coauthor, answers submit); a **task-set** editing page nested under answers (single question form, slots, answer tiles, questions list, tasks submit) that is unavailable for create/edit while answers are dirty; and a staff answers-pending queue with nested tasks. Draft edits MUST autosave. Destructive deletes MUST ask for confirmation. The answers page MUST NOT show a badge prompting to submit answers after tasks submit. Loading, empty, and error states MUST be visible. Create/edit entry points MUST show the auth/verify modal when the user is ineligible.
+The client MUST expose: a collection list as the primary entry from lobby into the packs section; a public catalog reachable from the collection; a live pack view; a **cards pack** editing page titled as a card pack / «Набор карточек» (pack title/description, single card form, cards list with edit affordance, nested task-set list labeled by author/coauthor with per-set needs-moderation marks when applicable, answers submit, answers status label, answers thread); a **task-set** editing page nested under cards (single question form, slots, answer tiles, questions list, tasks submit, tasks status label, tasks thread) that is unavailable for create/edit while answers are dirty; and a staff answers-pending queue whose hub lists task sets and opens a nested tasks page. Draft edits MUST autosave **without** a top-of-page «saving» caption that shifts layout; save/submit affordances MAY show button loading instead. Destructive deletes MUST ask for confirmation. Answers submit MUST be disabled when answers are not dirty or minima fail; tasks submit MUST be disabled when tasks are not dirty or minima fail. Adding/saving a question MUST require at least one filled answer slot. Create task-set MUST show a hover/tooltip hint when blocked because answers were not yet submitted for moderation (or are dirty). Loading, empty, and error states MUST be visible. Create/edit entry points MUST show the auth/verify modal when the user is ineligible. The public catalog MUST NOT list unapproved packs; moderation statuses appear on editor pages, not as catalog badges.
 
 #### Scenario [SC-PACK-29]: Catalog lists approved packs
 
@@ -348,6 +386,41 @@ The client MUST expose: a collection list as the primary entry from lobby into t
 - **WHEN** the user opens the packs section navigation entry
 - **THEN** the collection page is shown first
 - **AND** the catalog remains reachable from the collection
+
+#### Scenario [SC-PACK-46]: Submit disabled when nothing to send
+
+- **GIVEN** an editor whose answers draft is not dirty relative to the last answers submit and already meets card minima
+- **WHEN** the cards page renders
+- **THEN** answers submit is disabled
+- **AND GIVEN** tasks are not dirty relative to the last tasks submit and meet task minima
+- **WHEN** the tasks page renders
+- **THEN** tasks submit is disabled
+
+#### Scenario [SC-PACK-47]: Question requires a selected answer slot
+
+- **GIVEN** a user composing a new question with empty slots
+- **WHEN** the user attempts to add/save the question
+- **THEN** the client prevents the action until at least one slot references an answer card
+
+#### Scenario [SC-PACK-48]: Changed task sets show needs-moderation mark
+
+- **GIVEN** the editor changed task set S since the last successful tasks submit and has not submitted tasks again
+- **WHEN** the user returns to the cards page task-set list (including after reload)
+- **THEN** set S shows a needs-moderation mark
+- **AND** unchanged sets do not show that mark solely for S’s edits
+
+#### Scenario [SC-PACK-49]: Status labels on cards and tasks pages
+
+- **GIVEN** answers (or tasks) are pending, rejected, or approved for the editor’s pack
+- **WHEN** the editor opens the cards (or tasks) page
+- **THEN** the page shows the corresponding status label for that type (pending / rejected needs revision / approved as applicable)
+
+#### Scenario [SC-PACK-50]: Quiet autosave without top saving caption
+
+- **GIVEN** the editor changes a card field that triggers autosave
+- **WHEN** the draft saves
+- **THEN** the UI does not insert a top-of-page saving caption that shifts layout
+- **AND** button loading MAY indicate in-flight save/submit
 
 ### Requirement: Difficulty is stored for future peek rewards
 

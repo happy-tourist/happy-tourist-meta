@@ -73,3 +73,29 @@
 ## 6. Meta — docs after dual flow
 
 - [x] 6.1 Обновить sibling AGENTS + skills (routes/pages/stores/database/tests) под dual answers/tasks; краткий указатель в meta `.agents/AGENTS.md`; verify тексты без полного dump spec
+
+## 7. Server — status / tasksDirty / pending locks
+
+- [x] 7.1 Прочитать обновлённые `proposal.md`, `design.md` (D5′/D15–D20), `specs/content/packs/spec.md` (SC-PACK-42…50); сверить `lib/content.ts` + `zz-contentPacks.test.ts`
+
+- [x] 7.2 Last tasks snapshot + pack `tasksDirty` + per-task-set `needsModeration` flags в draft GET (F5-safe); verify schema/ensure и login не ломаются
+
+- [x] 7.3 Draft GET: статусы answers/tasks (`pending`|`rejected`|`approved`|none) + requestId для открытого треда; verify payload
+
+- [x] 7.4 Enforce: только answers-pending author → submit/answers; другие не submit/tasks при answers pending; author A MAY submit/tasks; verify SC-PACK-42/43 mocha
+
+- [x] 7.5 Staff preview: task-set list marks без полного expand; nested tasks route data; Traceability 42–44 → covered; `npm test` зелёный
+
+## 8. Client — cards UX, threads, staff nested
+
+- [x] 8.1 Убрать top «Сохранение…»; loading на кнопках; submit disabled без dirty/minima; tooltip create task set; add question требует filled slot; i18n «Набор карточек»; verify SC-PACK-46/47/50 lint
+
+- [x] 8.2 Статусы answers/tasks на страницах карточек и заданий; embedded threads + reply; reject comment виден; per-set needs-moderation marks; verify SC-PACK-45/48/49
+
+- [x] 8.3 Staff hub = list task sets → nested tasks page; approve/reject answers на hub, tasks на nested; verify SC-PACK-44
+
+- [x] 8.4 Lock UI: чужой не сабмитит answers/tasks при чужом answers pending; `npm run lint` + `typecheck`; Traceability client SC → covered
+
+## 9. Meta — hints after UX polish
+
+- [x] 9.1 Обновить sibling AGENTS + skills (pages/stores/routes/localization) под «Набор карточек», статусы, threads, staff nested; verify без полного dump spec

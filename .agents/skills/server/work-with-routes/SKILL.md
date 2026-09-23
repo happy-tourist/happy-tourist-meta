@@ -4,7 +4,7 @@ description: >-
   Use when adding, changing, or reviewing HTTP routes on the happy-tourist
   Colyseus server: createRouter / createEndpoint in app.config.ts, Express
   hook handlers (/health, /hi), auth /auth/*, theme, support tickets, content
-  packs (/api/content/* dual submit answers|tasks + staff answers hub), admin roles, or Colyseus room listing /rooms/:roomName.
+  packs (/api/content/* dual submit answers|tasks + draft statuses/tasksDirty/needsModeration + D5′ lock + staff nested hub), admin roles, or Colyseus room listing /rooms/:roomName.
   Keep HTTP thin — game logic belongs in rooms.
 ---
 
@@ -114,16 +114,18 @@ For CORS / monitor details use `work-with-middleware` and `work-with-config`.
 | GET | `/api/content/packs` | `createEndpoint` | JWT; approved live catalog (blocked still listed); helpers in `src/lib/content.ts` |
 | POST | `/api/content/packs` | `createEndpoint` | JWT + non-anonymous + `emailVerified` (DB); create pack + draft into author collection |
 | GET | `/api/content/packs/:id` | `createEndpoint` | JWT; live approved snapshot |
-| GET\|POST | `/api/content/packs/:id/draft` | `createEndpoint` | JWT + verified editor; get/put draft (collection + dirty-answers / pending lock) |
-| POST | `/api/content/packs/:id/submit/answers` | `createEndpoint` | JWT + verified; answers submit (≥2 cards; one pending per `(pack, type)`) |
-| POST | `/api/content/packs/:id/submit/tasks` | `createEndpoint` | JWT + verified; tasks submit (≥2 tasks, filled slots; deny if answers dirty) |
-| GET\|POST | `/api/content/packs/:id/moderation` (+ `/messages`) | `createEndpoint` | JWT; type-scoped change-author ↔ staff thread |
+| GET\|POST | `/api/content/packs/:id/draft` | `createEndpoint` | JWT + verified editor; get/put draft (statuses + `tasksDirty` / `needsModeration` + requestId; dirty-answers / D5′ pending lock) |
+| POST | `/api/content/packs/:id/submit/answers` | `createEndpoint` | JWT + verified; answers submit (≥2 cards; one pending per `(pack, type)`; only pending author may resubmit) |
+| POST | `/api/content/packs/:id/submit/tasks` | `createEndpoint` | JWT + verified; tasks submit (≥2 tasks, filled slots; deny if answers dirty; non-authors denied while answers pending) |
+| GET\|POST | `/api/content/packs/:id/moderation` (+ `/messages`) | `createEndpoint` | JWT; type-scoped change-author ↔ staff thread (reject comment on reject) |
 | POST | `/api/content/packs/:id/block` \| `/unblock` | `createEndpoint` | JWT moderator\|admin |
 | GET | `/api/content/collection` | `createEndpoint` | JWT (incl. anonymous); own collection |
 | POST | `/api/content/collection` \| `/remove` | `createEndpoint` | JWT; add/remove pack |
 | GET | `/api/content/staff/pending` | `createEndpoint` | JWT moderator\|admin; **answers-pending** packs only |
-| GET\|POST | `/api/content/staff/requests/:id` (+ `/approve` `/reject` `/cancel` `/messages`) | `createEndpoint` | JWT staff; answers hub + nested tasks; approve answers needs live tasks |
+| GET\|POST | `/api/content/staff/requests/:id` (+ `/approve` `/reject` `/cancel` `/messages`) | `createEndpoint` | JWT staff; answers hub (task-set list marks) → nested tasks; approve answers needs live tasks |
 | GET | `/api/admin/users` | `createEndpoint` | JWT admin; **exclude** anonymous; include `emailVerified` (+ id/email/role/displayName) |
+
+**Content moderation mail (D20):** links from `src/lib/content.ts` (`editorThreadLink`) go to embedded-thread pages — answers → `#/content/packs/:id/edit`, tasks → `#/content/packs/:id/tasks/:taskSetId` (fallback `#/…/edit`) — **not** bare `#/content/packs/:id/moderation`.
 | POST | `/api/admin/users/:id/role` | `createEndpoint` | JWT admin; `{ role }`; **POST** (not PATCH); response user includes `emailVerified` (same as list) |
 | GET | `/health` | `express` hook | `{ status, uptime }` — deploy / monitor |
 | GET | `/hi` | `express` hook | Plain text smoke |
@@ -190,6 +192,7 @@ Do **not** create `src/app/routes/routes.js`-style BFF trees, mappers, or Soap/a
 | Putting CORS after routes | Keep CORS first in `express` |
 | Expecting listing for a room key the client does not use | Keep registration as `tourist` (+ live `lobby`) |
 | Fat handlers with DB game stats “because HTTP is easy” | Prefer room lifecycle / dedicated thin endpoint only if product asks |
+| Content moderation mail → bare `#/content/packs/:id/moderation` | D20: `editorThreadLink` → `#/…/edit` (answers) or `#/…/tasks/:taskSetId` (tasks) |
 
 ## Checklist for a new or changed route
 
