@@ -53,16 +53,17 @@ Router mode: hash (`/#/lobby`, `/#/support`, `/#/content/packs`, `/#/content/sta
 | `/support/:id` | `support-ticket` | `SupportTicketPage`; `meta.requiresAuth` |
 | `/admin/users` | `admin-users` | `AdminUsersPage`; `requiresAuth` + `requiresAdmin` |
 | `/content/packs` | `content-catalog` | `ContentCatalogPage`; `meta.requiresAuth` |
-| `/content/collection` | `content-collection` | `ContentCollectionPage`; lobby «Наборы» entry; Edit + trash + click isolation (no row `:to`; hide Edit if `blocked`); `meta.requiresAuth` |
+| `/content/collection` | `content-collection` | `ContentCollectionPage`; Edit unpublished creator/staff; add-task-set on published; trash + click isolation (no row `:to`; hide Edit if `blocked`); `meta.requiresAuth` |
 | `/content/my-moderation` | `content-my-moderation` | `ContentMyModerationPage`; author «На модерации»; `meta.requiresAuth` |
-| `/content/packs/new` | `content-pack-new` | `ContentPackCreatePage`; → answers; `meta.requiresAuth` |
-| `/content/packs/:id` | `content-pack` | `ContentPackPage`; live Edit when `inCollection` (+ pending-author; hide if `blocked`/foreign pending); `meta.requiresAuth` |
-| `/content/packs/:id/edit` | `content-pack-edit` | `ContentPackEditorPage` («Набор карточек» + three-phase + hasLive delete confirm + cascade save); `meta.requiresAuth` |
-| `/content/packs/:id/tasks/:taskSetId` | `content-pack-tasks` | `ContentPackTasksPage`; yellow cascade gaps + task-row slots + subtitle=`taskSetStatusMarks.*`; `meta.requiresAuth` |
+| `/content/packs/new` | `content-pack-new` | `ContentPackCreatePage`; → working-copy editor; `meta.requiresAuth` |
+| `/content/packs/:id` | `content-pack` | `ContentPackPage`; staff Edit+lock; non-staff add-task-set; `meta.requiresAuth` |
+| `/content/packs/:id/edit` | `content-pack-edit` | `ContentPackEditorPage` (creator working copy / staff save+lock); `meta.requiresAuth` |
+| `/content/packs/:id/add-task-set` | `content-pack-add-task-set` | `ContentPackAddTaskSetPage`; post-publish add-only; `meta.requiresAuth` |
+| `/content/packs/:id/tasks/:taskSetId` | `content-pack-tasks` | `ContentPackTasksPage`; nested unpublished/staff; `meta.requiresAuth` |
 | `/content/packs/:id/moderation` | `content-pack-moderation` | `ContentPackModerationPage`; `meta.requiresAuth` |
-| `/content/staff` | `content-staff` | `ContentStaffPage`; answers + tasks-only + rejected queue (approve-from-rejected); `requiresAuth` + `requiresStaff` |
-| `/content/staff/requests/:id` | `content-staff-request` | `ContentStaffRequestPage`; same hub layout; hide answers actions when `tasksOnly` / `answersActionsAvailable === false` |
-| `/content/staff/requests/:id/tasks` | `content-staff-request-tasks` | `ContentStaffTasksPage`; nested → hub after approve (queue if tasks-only) |
+| `/content/staff` | `content-staff` | `ContentStaffPage`; pending\|needs_revision queue; `requiresAuth` + `requiresStaff` |
+| `/content/staff/requests/:id` | `content-staff-request` | `ContentStaffRequestPage`; Approve / needs-revision; no block UI |
+| `/content/staff/requests/:id/tasks` | `content-staff-request-tasks` | `ContentStaffTasksPage`; redirect → hub |
 | `/game/:roomId` | `game` | `GamePage`; `meta.requiresAuth` |
 | `/:catchAll(.*)*` | — | redirect to `/lobby` |
 
@@ -91,8 +92,8 @@ Shared mutable session and realtime I/O belong in Pinia, not ad-hoc page-only `c
 |---------|-------------------------|
 | Auth session | `stores/auth.ts`: `register` / `login` / `loginAnonymously` / `loginWithGoogle` / `logout` / `whenReady`; `isAuthenticated`, `displayName`, `role` / `isStaff` / `isAdmin`; optional `user.theme`; sync via `client.auth.onChange` |
 | UI theme (chrome Dark) | `stores/theme.ts`: `syncFromAuthUser` / `toggle`; guest `localStorage` (`ht-theme`); registered `client.http.get('/api/theme')` restore (≠ JWT-only; **no** `auth.user` replace after GET) + `post` on toggle; `App.vue` stable `watch([() => auth.ready, () => auth.user?.id, () => auth.user?.anonymous], …)` (SC-THEME-10) |
-| Support tickets / staff / admin | `stores/support.ts`: HTTP `/api/support/*` + `/api/admin/*` via `client.http` (staff `topic`/`status` query; admin `emailVerified`); pages `Support*` / `AdminUsersPage` |
-| Content packs (live Edit in-collection + trash/click isolation; hide Edit if `blocked`; staff unpublish/republish; «Набор карточек» + nested tasks; dual submit; my-moderation; three-phase marks; cascade/hasLive + `cascade-gap-outline` / task-row slots / slot chips; stale-draft `draftStale`+rebase; D1′/D5′ on open=pending\|rejected; author delete unpublished; staff reject-stays + approve-from-rejected / hub `tasksOnly` / no block UI) | `stores/content.ts`: HTTP `/api/content/*` via `client.http` (`listMyModeration`, `submitAnswers`/`submitTasks`, `unpublishPack`/`republishPack`/`unpublishLiveTaskSet`/`rebaseDraft`, `deleteUnpublishedPack`/`deleteTaskSet`; `cascadeGapTaskIds`/`draftStale`); live `inCollection` + `unpublishedByStaff`/`hasLastLive` + open author ids; `answersDirty`/`tasksDirty` + statuses/`needsModeration` + three-phase + `published`/`approved` labels; map API codes with `contentErrorI18nKey` (incl. `not_approvable`/`pack_unpublished`); pages `Content*` (incl. `ContentMyModerationPage`; catalog/collection nav → my-moderation); create/edit need verified non-anonymous (page modal; server enforces) |
+| Support tickets / staff / admin | `stores/support.ts`: HTTP `/api/support/*` + `/api/admin/*` via `client.http` (`change_pack`+`packId`; staff `topic`/`status` query; admin `emailVerified`); pages `Support*` / `AdminUsersPage` |
+| Content packs (working copy + unified `submitPack` + add-task-set + staff lock/save + cascade yellow + needs_revision / trash/`inCollection` / no block UI) | `stores/content.ts`: HTTP `/api/content/*` via `client.http` (`listMyModeration`, `submitPack`, add-task-set, `acquireEditLock`/`staffSavePack`, `needsRevisionRequest`/`cancelRequest`, `deleteUnpublishedPack`/`deleteTaskSet`; `cascadeGapTaskIds`); live `inCollection`; map API codes with `contentErrorI18nKey`; pages `Content*` (incl. `ContentPackAddTaskSetPage`); create/edit need verified non-anonymous |
 | Lobby room list | `stores/game.ts` `subscribeLobby` / `unsubscribeLobby` → LobbyRoom `rooms` / `+` / `-` |
 | Enter / leave room | `createGame` / `joinGame` / `leaveGame` (`TOURIST_ROOM` / `LOBBY_ROOM`) |
 | Room attach | `_attachRoom` `onStateChange` / `onLeave`; getter `isInRoom` |
@@ -118,11 +119,11 @@ Do not invent room schemas, HTTP routes, or move payloads — note the server pa
 - Forgot / confirm / reset SPA → `pages/ForgotPasswordPage.vue` / `ConfirmEmailPage.vue` / `ResetPasswordPage.vue` + `stores/auth`.
 - Cabinet displayName / change-password / email → `pages/AccountPage.vue` + `stores/auth` (`updateDisplayName` / `changePassword` / `canChangePassword`).
 - Lobby create / join / list (join busy-lock; clear stale rooms) → `pages/LobbyPage.vue` + `stores/game.ts`.
-- Support create / list / thread / staff / admin roles → `pages/Support*.vue` / `AdminUsersPage.vue` + `stores/support.ts` (+ `auth.role` gating).
-- Content packs collection (Edit + trash + click isolation; hide Edit if `blocked`; staff unpublish/republish; hide Edit for non-staff after staff-unpublish) / catalog / create / author «На модерации» / live (`inCollection` Edit; hide if blocked/foreign pending; slot chips) / «Набор карточек» editor (three-phase marks; hasLive delete confirm; cascade save + `cascade-gap-outline`; stale-draft banner+pull; staff task-set unpublish when ≥2 live; author delete unpublished) / task-set (D1′ + cascade outline + task-row slots + subtitle=`taskSetStatusMarks.*` incl. published/approved + delete set) / moderation / staff hub (reject-stays; approve-from-rejected; slot chips; no block UI; redirect after approve) → `pages/Content*.vue` + `stores/content.ts` (+ verify gate / `auth.isStaff`).
+- Support create / list / thread / staff / admin roles → `pages/Support*.vue` / `AdminUsersPage.vue` + `stores/support.ts` (+ `auth.role` gating; `change_pack` + catalog pack select).
+- Content packs collection (Edit unpublished creator/staff; add-task-set on published; trash/click isolation) / catalog / create / author «На модерации» / live (staff Edit+lock; non-staff add-task-set) / working-copy editor (`submitPack` / staff save) / add-task-set page / nested tasks / moderation / staff hub (Approve / needs-revision; no block UI) → `pages/Content*.vue` + `stores/content.ts` (+ verify gate / `auth.isStaff`).
 - Board interaction / continuous board-busy / presence reserve / `rejoinGame` → `pages/GamePage.vue` + `stores/game.ts`.
-- Locale messages → `src/i18n/` (default `en-US`; auth policy/cabinet + support + `content.*` keys incl. `myModeration*` / `taskSetStatusMarks.*` (aliases `statusCycle*`; `published`/`approved`) / `unpublishedByStaff` / `draftStale*` / `unpublish*` / `republish*` / `deleteCardConfirm*` by hasLive / trash remove confirm / delete / `errors.pack_unpublished`).
-- Unit tests (Vitest) → `vitest.config.ts` + `test/setup.ts` + colocated `src/**/__tests__/*` (incl. `Content*PublishUx.test.ts`, `content.publishUx.test.ts`); see meta `work-with-test`.
+- Locale messages → `src/i18n/` (default `en-US`; auth policy/cabinet + support incl. `change_pack` + `content.*` keys incl. `addTaskSet*` / `statuses.needs_revision` / `deleteCardConfirm*` by hasLive / trash remove / `errors.*`).
+- Unit tests (Vitest) → `vitest.config.ts` + `test/setup.ts` + colocated `src/**/__tests__/*` (incl. `Content*Acl.test.ts`, `content.simplifyAcl.test.ts`, `SupportChangePack.test.ts`, `support.changePack.test.ts`); see meta `work-with-test`.
 - Deploy / Pages 404 fallback → `.github/workflows/deploy.yml` (`quasar build -m spa`, `index.html` → `404.html`).
 
 ## Domain Hotspots
@@ -131,8 +132,8 @@ Do not invent room schemas, HTTP routes, or move payloads — note the server pa
 |--------|------------|
 | Auth (email/password policy, anonymous, Google, cabinet profile, logout, role nav) | `pages/LoginPage.vue` / `AccountPage.vue` + `stores/auth.ts` + `lib/passwordPolicy.ts`; router guards in `router/index.ts` |
 | Lobby (list / create / join busy-lock; clear stale rooms; quiet resubscribe; Support + «Наборы»→collection) | `pages/LobbyPage.vue` + `stores/game` `subscribeLobby` / `createGame` / `joinGame` |
-| Support (tickets / staff queue / admin roles) | `pages/Support*.vue` / `AdminUsersPage.vue` + `stores/support.ts` |
-| Content packs (live Edit in-collection; trash/click isolation; hide Edit if `blocked`; staff unpublish/republish; my-moderation; three-phase marks; cascade outline / slot chips / draftStale+rebase; D1′/D5′; author delete unpublished; staff reject-stays + approve-from-rejected + hub `tasksOnly` / no block UI) | `pages/Content*.vue` + `stores/content.ts` |
+| Support (tickets / `change_pack` / staff queue / admin roles) | `pages/Support*.vue` / `AdminUsersPage.vue` + `stores/support.ts` |
+| Content packs (working copy; add-task-set; staff lock/save; cascade yellow; needs_revision; trash/`inCollection`; no block UI) | `pages/Content*.vue` + `stores/content.ts` |
 | Game board (layout, unfinished pieces, continuous board-busy, finish/timeout UX, dual presence rings + seated top-row reserve, strip, turn select/`sendMove`, rejoin) | `pages/GamePage.vue` + `stores/game` `onStateChange` / `sendMove` / `rejoinGame(roomId)` |
 | Env / deploy | `.env.*`, `env.d.ts`, `boot/colyseus.ts`, `.github/workflows/deploy.yml` |
 | Theme / layout / brand chrome | `App.vue` header (logo + theme + Game status/leave) + `stores/theme` + `boot/theme` + `assets/brand/` + `css/*` (board CSS ≠ app Dark) |

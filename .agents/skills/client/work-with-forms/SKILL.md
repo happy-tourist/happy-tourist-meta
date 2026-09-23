@@ -6,7 +6,7 @@ description: >-
   login toggle, ForgotPasswordPage / ResetPasswordPage / AccountPage
   (displayName + change-password), shared password policy + PasswordStrengthMeter
   (register/reset/change; login unchanged), SupportPage create ticket (topic +
-  body), anonymous guest / Google one-click buttons, auth or support store
+  body; `change_pack` requires catalog pack select + packId), anonymous guest / Google one-click buttons, auth or support store
   submit, or q-banner errors.
 ---
 
@@ -24,7 +24,7 @@ This package validates with Quasar `q-form` + `q-input` `:rules` and `<script se
 | Forgot | `src/pages/ForgotPasswordPage.vue` | Email → `auth.forgotPassword`; `email_not_found` → RU not-found |
 | Reset | `src/pages/ResetPasswordPage.vue` | New password (shared policy + meter) → `auth.resetPassword(token, password)`; public route |
 | Cabinet | `src/pages/AccountPage.vue` | displayName + change-password (if `canChangePassword`) + email confirm/change; logout |
-| Support create | `src/pages/SupportPage.vue` | Topic `q-select` + body textarea → `support.createTicket`; on success clear → `await nextTick()` → `resetValidation`; `lazy-rules` on inputs; rate-limit codes → `support.errors.*` |
+| Support create | `src/pages/SupportPage.vue` | Topic `q-select` + body textarea → `support.createTicket`; `change_pack` adds catalog pack select (title/description) and requires `packId`; on success clear → `await nextTick()` → `resetValidation`; `lazy-rules` on inputs; rate-limit codes → `support.errors.*` |
 | Support reply | `src/pages/SupportTicketPage.vue` | Body textarea → `support.postMessage`; on success clear → `await nextTick()` → `resetValidation`; `lazy-rules` on body |
 
 Shared pieces:

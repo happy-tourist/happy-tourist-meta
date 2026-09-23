@@ -4,15 +4,13 @@ Use with the [core test skill](SKILL.md) when the unit under test depends on a
 Pinia store, or when the store itself is the SUT.
 
 Product store conventions: meta skill `work-with-stores`. Domains: `auth`,
-`theme`, `game`, `support`, `content` (HTTP packs via `client.http`; dual submit;
-my-moderation; three-phase marks; cascadeGap* / `markCascadeGaps` /
-`restoreCascadeGapsIfNeeded` / hasLive confirm; publish UX —
-`draftStale`/`rebaseDraft`/`unpublishPack`/`republishPack`/`unpublishLiveTaskSet`
-(SC-PACK-85…96; pages `Content*PublishUx.test.ts`, store
-`content.publishUx.test.ts`); D1′/D5′ on open=pending|rejected;
-author delete unpublished; staff pending|rejected + `tasksOnly`/`answersActionsAvailable`
-/ approve-from-rejected (`not_approvable`) — spy `client.http`, do not hit live
-server; cascade helpers: meta `work-with-stores/content.md`).
+`theme`, `game`, `support` (`change_pack`+`packId`; pages
+`SupportChangePack.test.ts`, store `support.changePack.test.ts`), `content`
+(HTTP packs via `client.http`; working copy / `submitPack` / add-task-set /
+staff lock+save / needs_revision; cascadeGap* / hasLive confirm; simplify ACL
+SC-PACK-100…114 — pages `Content*Acl.test.ts`, store
+`content.simplifyAcl.test.ts`; spy `client.http`, do not hit live server;
+cascade helpers: meta `work-with-stores/content.md`).
 
 ## Testing a page / component that uses a store
 
