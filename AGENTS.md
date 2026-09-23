@@ -51,7 +51,7 @@
 
 Типичные команды:
 
-- Client (`happy-tourist.github.io`): `npm install` / `npm run dev` / `npm run lint` / `npm run typecheck` / `npm run build`
+- Client (`happy-tourist.github.io`): `npm install` / `npm run dev` / `npm run lint` / `npm run typecheck` / `npm test` / `npm run build`
 - Server (`happy-tourist-server`): `npm install` / `npm run dev` / `npm test` / `npm run build` / `npm run loadtest`
 
 ## Kilo Code: lazy loading nested skills

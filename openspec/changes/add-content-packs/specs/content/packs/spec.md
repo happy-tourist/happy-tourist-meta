@@ -57,6 +57,16 @@ UGC-наборы (**набор карточек** + задания): созда�
 | SC-PACK-48 | covered |
 | SC-PACK-49 | covered |
 | SC-PACK-50 | covered |
+| SC-PACK-51 | covered |
+| SC-PACK-52 | covered |
+| SC-PACK-53 | covered |
+| SC-PACK-54 | covered |
+| SC-PACK-55 | covered |
+| SC-PACK-56 | covered |
+| SC-PACK-57 | covered |
+| SC-PACK-58 | covered |
+| SC-PACK-59 | covered |
+| SC-PACK-60 | covered |
 
 ## ADDED Requirements
 
@@ -147,16 +157,16 @@ When composing a task, the editor MUST support adding an empty slot, removing a 
 - **WHEN** the user submits tasks for moderation
 - **THEN** a distinct tasks pending request and thread exist
 
-#### Scenario [SC-PACK-36]: Dirty answers block task create and edit
+#### Scenario [SC-PACK-36]: Dirty answers without pending block task create and edit
 
-- **GIVEN** a verified editor whose answers draft has unsaved-for-moderation changes (new or modified cards or pack title/description vs last answers submit)
+- **GIVEN** a verified editor whose answers draft is dirty relative to the last answers submit and the pack has **no** answers-pending request
 - **WHEN** the editor attempts to create or edit tasks
 - **THEN** the system rejects or prevents the action
-- **AND** after a successful answers submit the editor MAY create and edit tasks again
+- **AND** after a successful answers submit the editor MAY create and edit tasks again while answers stay pending
 
 ### Requirement: Collection gates editing; anyone with session may collect approved packs
 
-Only users who have the pack in their collection and who satisfy create/edit identity rules (non-anonymous, verified email) MUST be able to enter edit mode and submit changes. Any authenticated user (including anonymous and unverified) MUST be able to view an approved non-blocked pack in the public catalog and add it to their collection. Unauthenticated callers MUST be rejected for collection mutations.
+Only users who have the pack in their collection and who satisfy create/edit identity rules (non-anonymous, verified email) MUST be able to enter edit mode and submit changes. The client MUST expose the primary **Edit** affordance from the user’s collection list, not from the public live pack page. Any authenticated user (including anonymous and unverified) MUST be able to view an approved non-blocked pack in the public catalog and add it to their collection. Removing a pack from the user’s own collection MUST ask for confirmation before the mutation. Unauthenticated callers MUST be rejected for collection mutations.
 
 #### Scenario [SC-PACK-10]: User without collection cannot edit
 
@@ -176,6 +186,20 @@ Only users who have the pack in their collection and who satisfy create/edit ide
 - **GIVEN** no auth session
 - **WHEN** a collection-add request is made
 - **THEN** the system rejects the request
+
+#### Scenario [SC-PACK-53]: Edit affordance is collection-only
+
+- **GIVEN** an authenticated verified user viewing an approved pack’s public live page without using the collection edit entry
+- **WHEN** the live pack page renders
+- **THEN** the page MUST NOT show a primary Edit control that navigates into the editor
+- **AND** Edit remains available from that user’s collection list when the pack is in the collection
+
+#### Scenario [SC-PACK-54]: Remove from collection asks for confirmation
+
+- **GIVEN** an authenticated user with pack P in their collection
+- **WHEN** the user chooses remove-from-collection
+- **THEN** the client asks for confirmation before calling the remove API
+- **AND** cancelling the dialog leaves P in the collection
 
 ### Requirement: Public catalog shows live content after answers approval
 
@@ -202,12 +226,24 @@ The public catalog and the public pack page MUST list and show only packs that h
 
 ### Requirement: Dual pending locks and races
 
-A pack MAY have at most one pending request per type (`answers`, `tasks`). While the editor’s answers draft is **dirty** relative to the last successful answers submit (including before the first submit), no user MUST be allowed to create or edit **tasks** for that pack. After answers are submitted successfully, task create/edit MUST be allowed again even if answers remain pending. While pack answers are **pending** under change author A, **only A** MUST be allowed to submit or resubmit answers; other users MUST NOT submit answers. While answers are pending under A, **other** users MUST NOT submit tasks; A MAY still submit tasks so staff can approve tasks before answers. While tasks are pending under change author T, only T MUST be allowed to submit or resubmit tasks; other users MUST NOT win a competing tasks submit (race → error; personal draft retained). Answers submit MUST NOT require live or pending tasks.
+A pack MAY have at most one pending request per type (`answers`, `tasks`). While the editor’s answers draft is **dirty** relative to the last successful answers submit and there is **no** answers-pending request, no user MUST be allowed to create or edit **tasks**. While pack answers are **pending** under change author A, **only A** MUST be allowed to submit or resubmit answers; other users MUST NOT submit answers. While answers are pending under A, **A MAY** create and edit tasks even if A’s answers draft is dirty again; **other** users MUST NOT create, edit, or submit tasks. A MAY still submit tasks so staff can approve tasks before answers. While tasks are pending under change author T, only T MUST be allowed to submit or resubmit tasks; other users MUST NOT win a competing tasks submit (race → error; personal draft retained). Answers submit MUST NOT require live or pending tasks.
 
-#### Scenario [SC-PACK-15]: Dirty answers block task editing for everyone
+#### Scenario [SC-PACK-15]: Dirty answers without pending block task editing for everyone
 
-- **GIVEN** pack P has dirty answers (unsaved-for-moderation answer changes) for an eligible editor
+- **GIVEN** pack P has dirty answers and no answers-pending request
 - **WHEN** any verified collection member attempts to create or edit tasks for P
+- **THEN** the system rejects the attempt
+
+#### Scenario [SC-PACK-57]: Answers-pending author may edit tasks while answers dirty
+
+- **GIVEN** pack P is answers-pending under author A and A’s answers draft is dirty again
+- **WHEN** A creates or edits tasks for P
+- **THEN** the system allows the write
+
+#### Scenario [SC-PACK-58]: Non-author cannot edit tasks while answers pending
+
+- **GIVEN** pack P is answers-pending under author A and verified collection member B ≠ A
+- **WHEN** B attempts to create or edit tasks for P
 - **THEN** the system rejects the attempt
 
 #### Scenario [SC-PACK-16]: Pending answers author may amend and resubmit answers
@@ -301,10 +337,25 @@ Moderator and admin MUST see a queue only for packs that have an **answers** pen
 
 - **GIVEN** staff opens an answers-pending pack hub
 - **WHEN** the hub renders
-- **THEN** task sets appear as a navigable list with status marks
+- **THEN** task sets that still need staff tasks work appear as a navigable list with status marks
 - **AND** questions are not fully expanded on the hub
-- **WHEN** staff opens a task set / tasks entry
+- **AND** the hub MUST NOT show a redundant separate control whose only job is to open the same tasks page as a list row
+- **WHEN** staff opens a listed task set / tasks entry while tasks are still pending
 - **THEN** the nested tasks page shows questions and tasks moderation actions
+
+#### Scenario [SC-PACK-51]: After approving tasks staff returns to answers hub
+
+- **GIVEN** staff is on the nested tasks page with tasks pending and approves tasks
+- **WHEN** the approve succeeds
+- **THEN** the client navigates to the answers hub for that pack
+- **AND** the client MUST NOT leave staff on an empty tasks page that errors with a not-public / not-published pack message
+
+#### Scenario [SC-PACK-52]: Moderated task sets leave the staff list
+
+- **GIVEN** staff hub for an answers-pending pack whose tasks are already approved (live tasks, no tasks pending)
+- **WHEN** the hub renders the nested task-set list
+- **THEN** fully moderated task sets are omitted from that actionable list (or the list is empty with a clear live-tasks hint)
+- **AND** staff continue answers moderation on the hub
 
 ### Requirement: Author and staff may exchange messages on an open thread
 
@@ -329,13 +380,13 @@ While a moderation request is not cancelled and not finally closed by approval w
 - **THEN** the page shows rejected / needs-revision status for that type
 - **AND** the reject comment is readable in that type’s thread on the page
 
-### Requirement: Staff may block a pack for everyone
+### Requirement: Staff may block a pack for everyone (server retains; UI deferred)
 
-Moderator and admin MUST be able to block a pack. A blocked pack MUST remain visible in catalog and collections with a clear blocked state and MUST NOT be editable or submittable. Unblock MUST be restricted to moderator|admin. Hard delete is out of scope.
+Moderator and admin MUST remain authorized on the server to block/unblock a pack. A blocked pack MUST remain visible in catalog and collections with a clear blocked state and MUST NOT be editable or submittable. Unblock MUST be restricted to moderator|admin. In this revision the **client MUST NOT** expose block/unblock buttons or entry points (staff discoverability deferred). Staff/public hard delete of a **published** pack remains out of scope.
 
 #### Scenario [SC-PACK-25]: Blocked pack shows as blocked everywhere
 
-- **GIVEN** an approved pack that staff blocks
+- **GIVEN** an approved pack that staff blocks via an authorized server call
 - **WHEN** any user views the catalog, collection, or pack page
 - **THEN** the pack is shown as blocked
 - **AND** edit and submit are rejected
@@ -345,6 +396,12 @@ Moderator and admin MUST be able to block a pack. A blocked pack MUST remain vis
 - **GIVEN** a blocked pack and a role `user` actor
 - **WHEN** the actor attempts to unblock
 - **THEN** the system rejects the attempt
+
+#### Scenario [SC-PACK-59]: Client hides block and unblock controls
+
+- **GIVEN** a staff session on content staff pages
+- **WHEN** the staff UI renders
+- **THEN** block and unblock affordances are not shown
 
 ### Requirement: Email notifications for moderation events
 
@@ -365,7 +422,7 @@ When the change author is a non-anonymous user with an email, the system MUST se
 
 ### Requirement: Client surfaces — split editor, collection-first, autosave
 
-The client MUST expose: a collection list as the primary entry from lobby into the packs section; a public catalog reachable from the collection; a live pack view; a **cards pack** editing page titled as a card pack / «Набор карточек» (pack title/description, single card form, cards list with edit affordance, nested task-set list labeled by author/coauthor with per-set needs-moderation marks when applicable, answers submit, answers status label, answers thread); a **task-set** editing page nested under cards (single question form, slots, answer tiles, questions list, tasks submit, tasks status label, tasks thread) that is unavailable for create/edit while answers are dirty; and a staff answers-pending queue whose hub lists task sets and opens a nested tasks page. Draft edits MUST autosave **without** a top-of-page «saving» caption that shifts layout; save/submit affordances MAY show button loading instead. Destructive deletes MUST ask for confirmation. Answers submit MUST be disabled when answers are not dirty or minima fail; tasks submit MUST be disabled when tasks are not dirty or minima fail. Adding/saving a question MUST require at least one filled answer slot. Create task-set MUST show a hover/tooltip hint when blocked because answers were not yet submitted for moderation (or are dirty). Loading, empty, and error states MUST be visible. Create/edit entry points MUST show the auth/verify modal when the user is ineligible. The public catalog MUST NOT list unapproved packs; moderation statuses appear on editor pages, not as catalog badges.
+The client MUST expose: a collection list as the primary entry from lobby into the packs section (with Edit and confirmed remove-from-collection); a public catalog reachable from the collection; a live pack view **without** a primary Edit control; a **cards pack** editing page titled as a card pack / «Набор карточек» (pack title/description, single card form, cards list with edit affordance, nested task-set list labeled by author/coauthor with per-set needs-moderation marks when applicable, answers submit, answers status label, answers thread, and author delete-pack when unpublished); a **task-set** editing page nested under cards (single question form, slots, answer tiles, questions list, tasks submit, tasks status label, tasks thread, and author delete-task-set when the pack is unpublished) that follows D1′ dirty/pending rules; and a staff answers-pending queue whose hub lists only actionable task sets and opens a nested tasks page while tasks pending, then returns to the hub after tasks approve. Draft edits MUST autosave **without** a top-of-page «saving» caption that shifts layout; save/submit affordances MAY show button loading instead. Destructive deletes MUST ask for confirmation. Answers submit MUST be disabled when answers are not dirty or minima fail; tasks submit MUST be disabled when tasks are not dirty or minima fail. Adding/saving a question MUST require at least one filled answer slot. Create task-set MUST show a hover/tooltip hint when blocked. Loading, empty, and error states MUST be visible. Create/edit entry points MUST show the auth/verify modal when the user is ineligible. The public catalog MUST NOT list unapproved packs; moderation statuses appear on editor pages, not as catalog badges. Staff block/unblock controls MUST NOT be shown.
 
 #### Scenario [SC-PACK-29]: Catalog lists approved packs
 
@@ -409,6 +466,13 @@ The client MUST expose: a collection list as the primary entry from lobby into t
 - **THEN** set S shows a needs-moderation mark
 - **AND** unchanged sets do not show that mark solely for S’s edits
 
+#### Scenario [SC-PACK-60]: Needs-moderation marks clear after tasks approval without further edits
+
+- **GIVEN** author A submitted tasks, staff approved tasks, and A did not edit tasks after that submit
+- **WHEN** A opens the cards page task-set list (including after reload)
+- **THEN** those task sets MUST NOT show a needs-moderation mark
+- **AND** the tasks status MAY show approved
+
 #### Scenario [SC-PACK-49]: Status labels on cards and tasks pages
 
 - **GIVEN** answers (or tasks) are pending, rejected, or approved for the editor’s pack
@@ -438,3 +502,22 @@ Task difficulty values `1`, `2`, and `3` MUST be persisted with each task as the
 - **WHEN** a player opens a peek in a tourist room
 - **THEN** peek still uses the existing stub correct/incorrect controls from `game/board`
 - **AND** pack tasks are not required to answer the peek
+
+### Requirement: Author may delete unpublished pack or task set
+
+While a pack is **unpublished** (no approved live answers / not in the public catalog), the pack’s **creator** (`createdBy`) MUST be able to: (1) hard-delete the entire pack («набор карточек»), which MUST remove drafts, revisions, collection memberships, and moderation requests/messages (**cascade** pending staff items); (2) delete one task set («набор заданий») from the author’s draft and from any unpublished live-tasks snapshot, even if staff already approved those tasks. Other users MUST NOT perform these deletes. Deleting a published pack (live answers in catalog) remains out of scope for authors and staff in this revision. Destructive deletes MUST ask for confirmation in the client.
+
+#### Scenario [SC-PACK-55]: Creator deletes unpublished pack with cascade
+
+- **GIVEN** pack P has no live answers revision, was created by user A, and has an answers-pending and/or tasks-pending request
+- **WHEN** A confirms delete of the pack
+- **THEN** P is removed from storage and from all collections
+- **AND** those pending requests no longer appear in the staff queue
+
+#### Scenario [SC-PACK-56]: Creator deletes a task set including approved liveTasks while unpublished
+
+- **GIVEN** pack P is unpublished, created by A, has live tasks already approved, and draft task set S
+- **WHEN** A confirms delete of task set S
+- **THEN** S is absent from A’s draft
+- **AND** S is absent from the pack’s live-tasks content
+- **AND** a non-creator MUST NOT be able to delete S

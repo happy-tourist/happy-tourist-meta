@@ -4,7 +4,9 @@ Use with the [core test skill](SKILL.md) when the unit under test depends on a
 Pinia store, or when the store itself is the SUT.
 
 Product store conventions: meta skill `work-with-stores`. Domains: `auth`,
-`theme`, `game`, `support`.
+`theme`, `game`, `support`, `content` (HTTP packs via `client.http`; dual submit;
+D1′/D5′ locks; author delete unpublished — spy `client.http`, do not hit live
+server).
 
 ## Testing a page / component that uses a store
 

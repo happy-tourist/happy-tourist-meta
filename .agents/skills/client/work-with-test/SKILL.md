@@ -3,10 +3,11 @@ name: work-with-test
 description: >-
   Use when planning or writing Vue 3 / Quasar unit tests for the happy-tourist
   client (pages, components, Pinia stores, lib helpers): Vitest +
-  @vue/test-utils, q-form rules, auth/theme/game/support stores, Colyseus
+  @vue/test-utils, q-form rules, auth/theme/game/support/content stores, Colyseus
   client.auth / client.http / room I/O spies, store error + q-banner, vue-i18n /
-  router. Core workflow in SKILL.md; topic details in forms.md, stores.md,
-  colyseus.md, errors.md, plugins.md, composables.md, provide-inject.md.
+  router. Harness live (`vitest.config.ts`, `test/setup.ts`, `npm test`). Core
+  in SKILL.md; topics: forms.md, stores.md, colyseus.md, errors.md, plugins.md,
+  composables.md, provide-inject.md.
 trigger: slash
 ---
 
@@ -39,38 +40,38 @@ area (do not load every file at once):
 | Topic | File |
 |-------|------|
 | Form validation / Quasar `q-form` + `:rules` | [forms.md](forms.md) |
-| Pinia stores (`auth` / `theme` / `game` / `support`) | [stores.md](stores.md) |
+| Pinia stores (`auth` / `theme` / `game` / `support` / `content`) | [stores.md](stores.md) |
 | Colyseus `client.auth` / `client.http` / room I/O | [colyseus.md](colyseus.md) |
 | Store `error` + `q-banner` / loading flags | [errors.md](errors.md) |
 | i18n (`$t` / `useI18n`), router, Quasar stubs | [plugins.md](plugins.md) |
 | Lib helpers / pure functions (`passwordPolicy`, …) | [composables.md](composables.md) |
 | provide / inject | [provide-inject.md](provide-inject.md) |
 
-## Bootstrap (first tests in the repo)
+## Bootstrap (harness already in client)
 
-The client currently has **no** Vitest harness. When adding the **first** test
-file, set up the runner in the client package root before writing assertions:
+Vitest harness lives in **happy-tourist.github.io**:
 
-1. Dev deps: `vitest`, `@vue/test-utils`, `jsdom`, `@vitejs/plugin-vue` (and
-   types if needed). Prefer Vitest matching the Vite major used by
-   `@quasar/app-vite`.
-2. Add scripts: `"test": "vitest run"`, `"test:watch": "vitest"`.
-3. Add `vitest.config.ts` with `environment: 'jsdom'`, Vue plugin, alias
-   `@` → `src`, and `setupFiles: ['./test/setup.ts']` (or
-   `src/test-utils/setup.ts`).
-4. Global setup: create Pinia once if tests mount with a real store; stub
-   `vue-i18n` so `$t` / `useI18n` return the key (or a stable fixture); do
-   **not** boot a live Colyseus client — mock `@/boot/colyseus` →
-   [colyseus.md](colyseus.md), [plugins.md](plugins.md).
-5. Optional small helper `wait` / use `flushPromises` + `nextTick` after mount,
-   events, and async work (see Component Mounting).
+- Dev deps: `vitest` (^3.2, not 5 — setupFiles runner), `@vue/test-utils`,
+  `jsdom`, `@vitejs/plugin-vue`
+- Scripts: `"test": "vitest run"`, `"test:watch": "vitest"`
+- Config: `vitest.config.ts` (`environment: 'jsdom'`, Vue plugin, `@` → `src`,
+  `setupFiles: ['./test/setup.ts']`)
+- Global setup (`test/setup.ts`): fresh Pinia per test; `$t` / `useI18n`
+  return the key; mocked `@/boot/colyseus` (no live Client) →
+  [colyseus.md](colyseus.md), [plugins.md](plugins.md)
 
-Do **not** add Jest, mocha, babel-jest, or Cypress for unit tests. Server stays
-on mocha; client stays on Vitest.
+Do **not** re-bootstrap unless the harness is missing or broken. Do **not** add
+Jest, mocha, babel-jest, or Cypress. Server stays on mocha; client stays on
+Vitest. Optional `wait` / `flushPromises` + `nextTick` after mount — see
+Component Mounting.
 
 Agent **runs** `npm test` from the client package root after writing or changing
 tests; fix failures before claiming done. Also run `npm run typecheck` /
 `lint:check` when the change touches production code.
+
+OpenSpec: new client changes with UI/store/auth scenarios **must** include
+vitest task items + `npm test` (see `openspec/config.yaml` rules.tasks) — not
+lint/typecheck alone. Map each executable scenario to an `SC-…` ID in Traceability.
 
 ## Workflow
 

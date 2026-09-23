@@ -5,7 +5,7 @@ description: >-
   (*Page.vue), components, Pinia stores, Quasar boot files, dependency
   direction between layers, or deciding whether new UI belongs in pages vs
   components vs stores vs App shell (always-button brand logo ≥60px; Game leave via logo + status;
-  auth→lobby; theme; no page «В лобби»; content packs «Набор карточек» + nested tasks + dual submit / statuses / threads / staff nested). No blocks/
+  auth→lobby; theme; no page «В лобби»; content packs collection-only Edit + confirm remove / author delete unpublished / D1′ / staff redirect / no block UI). No blocks/
   or dialogs/ registry layers.
 ---
 
@@ -232,7 +232,7 @@ Registered in `quasar.config.ts` boot array: `theme`, `i18n`, `colyseus` (+ `fra
 | Lobby / rooms | `LobbyPage` | `stores/game.subscribeLobby` / create `{ maxSeats, grilleDensity, catapultDensity }` / join |
 | Game session | `GamePage` | `stores/game` room attach + seats / grilles / catapults / top + seated-HUD presence / say / strip + rescue/push + return strip icon (no modal); soft-drop gated by `consentedLeaving` |
 | Game leave + match status | `App.vue` header (logo leave on Game; status on Game) | `stores/game` `leaveGame` + status / phase getters |
-| Content packs | `ContentCatalogPage` / `ContentCollectionPage` / `ContentPackPage` / `ContentPackCreatePage` / `ContentPackEditorPage` («Набор карточек») / `ContentPackTasksPage` / `ContentPackModerationPage` / `ContentStaffPage` / `ContentStaffRequestPage` (task-set list hub) / `ContentStaffTasksPage` (nested tasks) | `stores/content` HTTP (`client.http`); dual submit + `answersDirty`/`tasksDirty` + statuses/threads + D5′ lock; quiet autosave; lobby «Наборы» → `content-collection` |
+| Content packs | `ContentCatalogPage` / `ContentCollectionPage` (Edit + confirm remove) / `ContentPackPage` (no Edit) / `ContentPackCreatePage` / `ContentPackEditorPage` («Набор карточек» + author delete) / `ContentPackTasksPage` (D1′ + delete set) / `ContentPackModerationPage` / `ContentStaffPage` / `ContentStaffRequestPage` / `ContentStaffTasksPage` (redirect hub after approve; no block UI) | `stores/content` HTTP (`client.http`); dual submit + D1′/D5′ locks; lobby «Наборы» → `content-collection` |
 | Support | `SupportPage` / `SupportTicketPage` / `SupportStaffPage` | `stores/support` |
 | Brand / title / favicon | `App.vue` + `package.json` / `index.html` / `public/favicon.ico` | `assets/brand/logo.png`; `productName` Happy Tourist; single favicon |
 | Shell | `App.vue` | layout + always-button brand logo ≥60px + theme header/banner + Game leave/status + `router-view` |

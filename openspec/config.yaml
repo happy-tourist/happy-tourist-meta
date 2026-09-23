@@ -73,10 +73,11 @@ context: |
   Client skills: .agents/skills/client/ в happy-tourist-meta.
 
   Проект: happy-tourist-client — Vue 3 `<script setup>`, Quasar 2, Pinia 4, vue-router 5 hash,
-  vue-i18n 11, @colyseus/sdk 0.18, TypeScript.
+  vue-i18n 11, @colyseus/sdk 0.18, TypeScript, Vitest + @vue/test-utils (unit).
   Архитектура: src/pages/*Page → stores / boot / components; Colyseus I/O в Pinia (auth, game).
   Pages: LoginPage, LobbyPage, GamePage; guards requiresAuth / guest.
   Env: VITE_COLYSEUS_URL, VITE_API_URL; deploy GitHub Pages.
+  Тесты: skill `.agents/skills/client/work-with-test`; harness уже в client (`vitest.config.ts`, `test/setup.ts`).
 
   --- Server (projects-map ключ server → ../happy-tourist-server/) ---
   Runtime: ../happy-tourist-server/ (AGENTS.md — продукт/стек/домены; project-map.md → happy-tourist-meta).
@@ -149,7 +150,7 @@ rules:
     - 'Неизвестный домен — согласовать ID в proposal, не выдумывать feature-папку'
     - 'Сценарии в формате GIVEN / WHEN / THEN'
     - 'Delta-specs: ADDED / MODIFIED / REMOVED'
-    - 'Каждому исполняемому тесту — ровно один сценарий `#### Scenario [SC-…]: …` с тем же ID в тесте (server mocha; client — если тест добавлен)'
+    - 'Каждому исполняемому тесту — ровно один сценарий `#### Scenario [SC-…]: …` с тем же ID в тесте (server mocha; client vitest)'
     - 'В начале spec — таблица трассировки ID → файл/тест (или pending)'
     - 'Можно: room protocol (move from/to), synced state fields, auth outcomes, lobby listing, HTTP status'
     - 'Нельзя: имена Vue-компонентов, Pinia action names, Room method names, CSS-классы'
@@ -178,8 +179,9 @@ rules:
     - 'Дробить по пакетам (client / server) и слоям; не повторять архитектурные решения — ссылка на design.md'
     - 'Изучение перед работой (skills, proposal/design/spec фрагменты, аналоги): пунктом в том же ##-блоке, где нужно; НЕ выносить всё чтение в первый «Контекст»-блок'
     - 'В каждом блоке — только релевантное к шагам блока чтение; общие артефакты change можно кратко упомянуть в первом рабочем блоке'
-    - 'Отдельные пункты на тесты где применимо (server: npm test; client: lint/typecheck по tasks)'
-    - 'НЕ добавлять пункты ручной проверки / manual smoke / «ручной сценарий» — coverage SC в specs Traceability + автотесты/lint; ручной прогон вне tasks (verify/ops)'
+    - 'Отдельные пункты на тесты где применимо (server: mocha + npm test; client: vitest + npm test по SC из Traceability, плюс lint/typecheck)'
+    - 'Client с UI/store/auth сценариями в Scope — обязательно пункты vitest (skill work-with-test); lint/typecheck alone недостаточно'
+    - 'НЕ добавлять пункты ручной проверки / manual smoke / «ручной сценарий» — coverage SC в specs Traceability + автотесты (mocha/vitest) + lint; ручной прогон вне tasks (verify/ops)'
     - 'Client skills при apply: из .agents/skills/client/ (locate/align/verify + topic skills)'
     - 'Server skills при apply: из .agents/skills/server/ (locate/align/verify + topic skills)'
     - 'Cross-package: сначала server contract (room/schema/messages/auth), затем client stores/UI — или явно согласовать порядок'
@@ -207,7 +209,8 @@ rules:
     - 'CRITICAL (client): Colyseus I/O размазан по components в обход Pinia auth/game вопреки design'
     - 'CRITICAL (client): protected route без requiresAuth / guest meta или без whenReady() вопреки design'
     - 'WARNING (client): ошибки не через store error + q-banner где применимо'
-    - 'WARNING (client): нет lint/typecheck прогона из tasks (пользователь) или явного skip'
+    - 'WARNING (client): нет vitest-тестов на новые/изменённые UI/store/auth сценарии из tasks (SC-ID)'
+    - 'WARNING (client): нет lint/typecheck/npm test прогона из tasks или явного skip'
     # --- Server ---
     - 'CRITICAL (server): room join без JWT onAuth вопреки design'
     - 'CRITICAL (server): client board state принимается как truth вместо authoritative room rules'

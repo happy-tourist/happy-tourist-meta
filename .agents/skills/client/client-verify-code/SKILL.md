@@ -135,10 +135,11 @@ to verify-and-fix / “make sure it passes”, run:
 Prefer `npm run lint` and `npm run typecheck` for touched areas. Run
 `npm run build` / `quasar build` when the user asks for build parity or deploy
 confidence. For interactive smoke, you may start `quasar dev` when needed;
-prefer finite gate commands (lint/typecheck/build). Do not treat passing
-lint/typecheck/build as a substitute for skill checks.
+prefer finite gate commands (lint/typecheck/`npm test`/build). Do not treat passing
+lint/typecheck/build as a substitute for skill checks or missing vitest coverage
+from OpenSpec tasks.
 
-Report failed lint/typecheck/build output under **Violations** (tooling) with
+Report failed lint/typecheck/`npm test`/build output under **Violations** (tooling) with
 the command and a short failure summary. Do not invent eslint rules beyond the
 project config and skill text.
 

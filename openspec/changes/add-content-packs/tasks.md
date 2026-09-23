@@ -99,3 +99,27 @@
 ## 9. Meta — hints after UX polish
 
 - [x] 9.1 Обновить sibling AGENTS + skills (pages/stores/routes/localization) под «Набор карточек», статусы, threads, staff nested; verify без полного dump spec
+
+## 10. Server — marks fix, D1′ lock, author delete
+
+- [x] 10.1 Прочитать обновлённые `proposal.md`, `design.md` (D1′/D21–D26), `specs/content/packs/spec.md` (SC-PACK-51…60); сверить `lib/content.ts` + `zz-contentPacks.test.ts`
+
+- [x] 10.2 Fix sticky needsModeration after approve (rewrite snapshots on detach and/or stable ids in `copyRevision`); verify SC-PACK-60; login не ломается
+
+- [x] 10.3 D1′: dirty without pending → block tasks for all; answers-pending author A MAY create/edit tasks while dirty; others blocked; verify SC-PACK-15/36/57/58 mocha
+
+- [x] 10.4 Author delete unpublished pack (createdBy only) + cascade moderation/collections; delete task set syncs draft + liveTasks; reject non-creator / published; verify SC-PACK-55/56; `npm test`
+
+## 11. Client — staff nav, collection gates, delete UX, hide block
+
+- [x] 11.1 Staff: после approve tasks → answers hub; list без промодерированных sets; убрать «Открыть задания»; нет `pack_not_public` dead-end; verify SC-PACK-51/52/44
+
+- [x] 11.2 Убрать Edit с live pack page; Edit только из коллекции; remove-from-collection с confirm; verify SC-PACK-53/54
+
+- [x] 11.3 D1′ UI lock на tasks; author delete pack / task set (unpublished) с confirm; скрыть block/unblock; verify SC-PACK-57/58/55/56/59
+
+- [x] 11.4 `npm run lint` + `typecheck`; Traceability SC-PACK-51…60 → covered
+
+## 12. Meta — hints after follow-up
+
+- [x] 12.1 Обновить sibling AGENTS + skills (pages/stores/routes/localization/database) под collection-only edit, confirm remove, author delete unpublished, D1′, staff redirect, no block UI; verify без полного dump spec

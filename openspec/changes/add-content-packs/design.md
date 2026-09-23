@@ -2,7 +2,7 @@
 
 См. `proposal.md` и delta `specs/content/packs/spec.md`.
 
-Dual answers/tasks (D1–D14) уже в runtime. Этот revision — **UX + visibility** модерации и редактора поверх того же HTTP/SQLite стека. Чеклист — `tasks.md` §7+.
+Секции 1–9 (dual flow + UX polish) уже в runtime. Этот revision — **follow-up**: staff navigation, marks/snapshot bug, collection gates, D1′ lock, hide block UI, author delete unpublished. Чеклист — `tasks.md` §10+.
 
 Пакеты: **server** (`../happy-tourist-server`) + **client** (`../happy-tourist.github.io`) + meta AGENTS/skills.
 
@@ -10,102 +10,100 @@ Dual answers/tasks (D1–D14) уже в runtime. Этот revision — **UX + vi
 
 **Goals:**
 
-- Статусы и треды очевидны автору на страницах карточек и заданий.
-- Staff hub зеркалит author: список task set → nested tasks page; approve на обеих.
-- Тихий autosave; submit только когда есть что слать; per-set «нужна модерация».
-- Пока answers pending у A — только A доотправляет answers; другие не сабмитят tasks; A может сабмитить tasks.
+- Staff не видит мёртвую tasks-страницу после approve; список без «уже промодерировано».
+- Метки needsModeration согласованы со статусом «одобрено».
+- Edit только из коллекции; remove из коллекции с confirm.
+- Pending-author A может править задания при dirty answers; чужие — нет.
+- Автор удаляет неопубликованный пак или task set (в т.ч. approved liveTasks).
+- Block buttons убраны с UI.
 
 **Non-Goals:**
 
-- Новый transport / deps; partial tasks submit; смена catalog gate / approve order.
+- Staff delete / block anytime / publish-pack wipe; partial submit; новый transport.
 
 ## Decisions
 
-### D1–D14: Dual flow (уже реализовано)
+### D1–D20: Prior (реализовано)
 
-См. предыдущую версию design: type-scoped requests, dirty answers lock, staff answers hub, approve tasks→answers, mail. Ниже — только **добавления/правки**.
+Dual flow, statuses/threads, tasksDirty/marks, staff nested, quiet autosave — см. предыдущие revision. Ниже — **добавления/правки**.
 
-### D5′: Pending answers — кто сабмитит (revision)
+### D5′′ / D1′: Dirty answers + кто правит tasks
 
-- Пока pack **answers-pending** под автором A:
-  - **Только A** может `submit/answers` (amend/resubmit).
-  - **Другие** collection members MUST NOT `submit/tasks` (и UI disabled): tasks опираются на ответы, чужой tasks pending при чужих answers pending запрещён.
-  - **A** MAY `submit/tasks` при своём answers pending (чтобы staff мог approve tasks→answers).
-- Пока **tasks-pending** под автором T: только T может `submit/tasks` (как раньше `pack_pending_other`).
-- Dirty answers lock на create/edit tasks — без изменений.
+- Пока answers **dirty** и **нет** answers-pending: create/edit tasks запрещены всем (сначала submit answers).
+- Пока answers **pending** под автором A (в т.ч. если A снова сделал answers dirty): **A MAY** create/edit tasks; **другие** MUST NOT.
+- Submit tasks по-прежнему: чужие при answers pending запрещены; A MAY submit tasks.
+- UI/i18n отражают исключение для A.
 
-### D15: Tasks dirty + per-set marks (server)
+### D21: Sticky needsModeration after approve (bugfix)
 
-- Хранить last successful **tasks** submit snapshot (симметрия answers).
-- `tasksDirty` pack-level: draft tasks отличаются от snapshot.
-- Per task-set flag `needsModeration` (или эквивалент в draft GET): set изменился относительно snapshot и ещё не включён в успешный tasks submit.
-- `POST submit/tasks` по-прежнему отправляет **весь** список task sets пака; после успеха snapshot обновляется → все per-set marks сбрасываются.
-- Draft GET / put возвращают flags + переживают F5.
+Корневая причина: `detachAuthorDraftIfPinned` → `copyRevision` **перегенерирует id**, а `last_*_snapshot` остаётся со старыми id → все marks dirty.
 
-### D16: Request status on draft GET
+Варианты фикса (достаточно одного):
 
-Draft (и при необходимости staff preview) отдаёт для каждого типа:
+- При detach после approve: переписать `last_tasks_snapshot` / `last_answers_snapshot` из **нового** draft payload; и/или
+- `copyRevision` сохраняет стабильные entity id где возможно.
 
-| Поле | Смысл |
-|------|--------|
-| status | `none` \| `pending` \| `rejected` \| `approved` (последний завершённый цикл или открытый rejected/pending) |
-| requestId | если есть открытый pending/rejected thread |
-| changeAuthorId / is*Author | для lock UI |
+После фикса: статус «одобрено» и marks «нужна модерация» не противоречат без реальных правок.
 
-Клиент показывает подписи: на модерации / отклонено (нужна доработка) / одобрено — на страницах карточек и заданий. Каталог не показывает draft-статусы.
-
-### D17: Threads embedded on editor pages
-
-- Внизу **набора карточек**: тред **answers** (+ reply при pending|rejected).
-- Внизу **заданий**: тред **tasks**.
-- Отдельный route `/moderation` может остаться deep-link из mail; основной UX — embedded.
-- Reject comment MUST быть виден в треде на соответствующей странице (SC-PACK-19).
-
-### D18: Client UX polish
-
-- Убрать caption «Сохранение…»; не менять layout при quiet autosave.
-- `:loading` на кнопках add/save/submit (и staff actions).
-- Submit answers disabled если `!answersDirty` или <2 cards; submit tasks если `!tasksDirty` или minima не выполнены.
-- Добавление/сохранение вопроса disabled без ≥1 filled slot.
-- Create task set: `q-tooltip` когда disabled из‑за dirty answers / нет cards («сначала отправьте карточки на модерацию»).
-- i18n title страницы: **«Набор карточек»** (не «набор ответов»); title/description pack остаются на этой странице.
-
-### D19: Staff UI = author shape
+### D22: Staff after approve tasks
 
 ```
-Staff queue --> cards hub (answers preview + task-set LIST with status marks)
-                  \--> staff tasks page (preview questions/slots;
-                       approve/reject/cancel tasks + tasks thread)
-Cards hub: approve/reject/cancel answers + answers thread
+approve tasks --> redirect --> answers hub
+hub task-set list: omit sets that are fully moderated
+                   (no pending tasks work left for that set / pack tasks approved)
+nested tasks page: do not reload via getLivePack when pack not public
+                   (use liveTasks / pending preview; no pack_not_public dead-end)
 ```
 
-- Не разворачивать все задания на hub.
-- Approve order без изменений (D13).
+- Убрать redundant «Открыть задания» (навигация = клик по строке списка, пока строка есть).
 
-### D20: Mail links
+### D23: Collection-only edit affordance
 
-- Письма ведут на страницу карточек или заданий (hash) с видимым тредом/статусом, не только на голый `/moderation`.
+- Кнопка Edit на public/live pack page — **убрать**.
+- Edit остаётся в «Моей коллекции» (+ deep-link в editor для уже имеющих коллекцию).
+- Server `not_in_collection` без изменений.
 
-### D11′ / D14: Docs + prerequisites
+### D24: Remove from collection + confirm
 
-- Обновить skills/AGENTS hints под статусы, threads, staff nested page, «Набор карточек».
-- Explore D*/Q* закрыты; новых внешних сервисов нет.
+- Иконка/действие «убрать из коллекции» остаётся; перед вызовом API — confirm dialog.
+- Это **не** удаление пака.
+
+### D25: Hide block UI
+
+- Убрать кнопки block/unblock со staff pages в этом раунде.
+- Server endpoints MAY остаться; новых surface для block anytime не делать.
+- Staff/public delete опубликованного — later.
+
+### D26: Author delete unpublished (D5′=A, D6, D7)
+
+**Неопубликованный** = нет live answers / не в каталоге (`liveRevisionId` null).
+
+Только `createdBy`:
+
+1. **Удалить пак** («набор карточек»): hard wipe pack + drafts + revisions + collections rows + moderation requests/messages (**cascade** pending).
+2. **Удалить task set**: убрать set из draft **и** из `liveTasksRevisionId` content, даже если tasks уже staff-approved. Ключ публикации — answers, не tasks.
+
+Опубликованный пак: author delete out of scope (этот раунд).
+
+### D11′′: Docs
+
+- Skills/AGENTS: collection-only edit, confirm remove, author delete unpublished, D1′, staff redirect, no block buttons.
 
 ## Risks / Trade-offs
 
 | Risk | Mitigation |
 |------|------------|
-| Чужой не может слать tasks при answers pending | Documented; A still submits tasks; i18n hint |
-| Per-set marks vs pack submit | Marks UX-only; submit snapshot clears all |
-| Rejected без pending id | D16 status `rejected` + requestId для треда |
+| copyRevision id remap | D21 snapshot rewrite / stable ids + tests |
+| Author deletes set after tasks approve | D7: sync liveTasks; answers still gate catalog |
+| Hide block while SC-PACK-25 exists | D25: server capability retained; UI deferred; document in spec |
 
 ## Migration Plan
 
-- Server schema snapshot/flags → client UI → mail link tweak.
-- Dev: существующие drafts без tasks snapshot = dirty until first tasks submit или empty baseline.
+- Server fix approve/detach + delete endpoints → client UX → hide block → docs.
+- Dev DB: existing false-dirty drafts очищаются после следующего approve или ручного resubmit.
 
 ## Open Questions
 
-- Нет (закрыты explore 2026-09-23).
+- Нет (explore follow-up закрыт: D1′, D2′, D5′=A, D6, D7, cascade).
 
-Чеклист — `tasks.md` §7+.
+Чеклист — `tasks.md` §10+.

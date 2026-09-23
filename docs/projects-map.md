@@ -78,9 +78,10 @@ server: C:/Users/You/work/happy-tourist-server
 | `client.src` | `../happy-tourist.github.io/src/` | исходники UI |
 | `client.pages` | `../happy-tourist.github.io/src/pages/` | route pages (Login/Lobby/Support/Content*/Admin/Game) |
 | `client.stores` | `../happy-tourist.github.io/src/stores/` | Pinia (`auth`, `theme`, `game`, `support`, `content`) |
-| `client.lib` | `../happy-tourist.github.io/src/lib/` | Pure client helpers (`passwordPolicy`, `passwordStrength`) |
+| `client.lib` | `../happy-tourist.github.io/src/lib/` | Pure client helpers (`passwordPolicy`, `passwordStrength`; colocated `__tests__`) |
 | `client.assets` | `../happy-tourist.github.io/src/assets/` | Static assets (`brand/logo.png` always-button header ≥60px; `tourists/tourist{1–4}.png` pieces; `grilles/grille.png` holding overlay; `catapults/catapult.png` + `catapult-broken.png` reveal) |
 | `client.boot` | `../happy-tourist.github.io/src/boot/` | Quasar boot (`theme`, `colyseus`, `i18n`) |
+| `client.tests` | `../happy-tourist.github.io/test/` | Vitest setup (`setup.ts`); config at `{client}/vitest.config.ts`; unit specs often under `src/**/__tests__/` |
 | `server` | `../happy-tourist-server/` | Colyseus backend |
 | `server.agents` | `../happy-tourist-server/AGENTS.md` | продукт / стек / домены server |
 | `server.src` | `../happy-tourist-server/src/` | исходники сервера |
@@ -95,7 +96,7 @@ server: C:/Users/You/work/happy-tourist-server
 
 Команды из каталогов пакетов (ключ `client` / `server`):
 
-- Client: `npm install`, `npm run dev`, `npm run lint`, `npm run typecheck`, `npm run build`
+- Client: `npm install`, `npm run dev`, `npm run lint`, `npm run typecheck`, `npm test`, `npm run build`
 - Server: `npm install`, `npm run dev`, `npm test`, `npm run build`, `npm run loadtest`
 
 Команды `npm` запускает **агент** из каталога sibling-репо (client или server). Не ждать подтверждения пользователя; при падении — починить до завершения задачи.
