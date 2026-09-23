@@ -113,7 +113,7 @@ For CORS / monitor details use `work-with-middleware` and `work-with-config`.
 | POST | `/api/support/tickets/:id/status` | `createEndpoint` | JWT staff; `{ status }` |
 | GET | `/api/content/packs` | `createEndpoint` | JWT; approved live catalog (blocked still listed); helpers in `src/lib/content.ts` |
 | POST | `/api/content/packs` | `createEndpoint` | JWT + non-anonymous + `emailVerified` (DB); create pack + draft into author collection |
-| GET | `/api/content/packs/:id` | `createEndpoint` | JWT; live approved snapshot |
+| GET | `/api/content/packs/:id` | `createEndpoint` | JWT; live approved snapshot + `inCollection` + `pendingAnswersAuthorId` / `pendingTasksAuthorId` |
 | GET\|POST | `/api/content/packs/:id/draft` | `createEndpoint` | JWT + verified editor; get/put draft (statuses + `tasksDirty` / `needsModeration` + requestId; **D1′**/D5′ locks) |
 | POST | `/api/content/packs/:id/submit/answers` | `createEndpoint` | JWT + verified; answers submit (≥2 cards; one pending per `(pack, type)`; only pending author may resubmit) |
 | POST | `/api/content/packs/:id/submit/tasks` | `createEndpoint` | JWT + verified; tasks submit (≥2 tasks, filled slots; **D1′**/D5′ deny rules) |

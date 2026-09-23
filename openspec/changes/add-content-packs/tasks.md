@@ -123,3 +123,23 @@
 ## 12. Meta — hints after follow-up
 
 - [x] 12.1 Обновить sibling AGENTS + skills (pages/stores/routes/localization/database) под collection-only edit, confirm remove, author delete unpublished, D1′, staff redirect, no block UI; verify без полного dump spec
+
+## 13. Server — live `inCollection` + pending hints for Edit UI
+
+- [x] 13.1 Прочитать обновлённые `proposal.md`, `design.md` (D27–D30), `specs/content/packs/spec.md` (SC-PACK-53/61…66); сверить `getLivePack` + `zz-contentPacks.test.ts`
+
+- [x] 13.2 `GET` live pack: `inCollection` для caller; pending authorship hints (`pendingAnswersAuthorId` / `pendingTasksAuthorId` или эквивалент) для D27; verify SC-PACK-64; login не ломается
+
+- [x] 13.3 Mocha: SC-PACK-61…64 server-facing (payload / membership); Traceability server SC → covered where applicable; `npm test`
+
+## 14. Client — collection click/trash, live Edit, collect state
+
+- [x] 14.1 Коллекция: иконка `delete` + confirm; изоляция клика Edit/trash от row `:to`; Edit при `hasLive` → editor (SC-PACK-65/66); verify вручную / lint
+
+- [x] 14.2 Live page: Edit по D27 (in collection + pending-author exception); collect button из `inCollection` (не ephemeral `added`); gate login/verify при Edit; verify SC-PACK-53/61…64
+
+- [x] 14.3 `npm run lint` + `typecheck`; Traceability SC-PACK-53/61…66 → covered; починить падения
+
+## 15. Meta — hints after affordance polish
+
+- [x] 15.1 Обновить sibling AGENTS + skills (pages/stores/routes/localization) под live Edit in-collection, trash icon, `inCollection`, click isolation; verify без полного dump spec

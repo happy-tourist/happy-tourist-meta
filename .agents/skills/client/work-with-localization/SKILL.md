@@ -10,8 +10,9 @@ description: >-
   warning / staff filters / emailUnverified / rate-limit errors / roles (RU
   under en-US), and content packs `content.*` («Набор карточек»; answers/tasks
   dual submit; statuses/threads; quiet autosave; D1′/D5′ locks; collection
-  confirm remove + author delete unpublished; staff nested redirect / no block
-  UI; `content.errors.*` — RU under en-US).
+  trash remove confirm + author delete unpublished; live Edit/`inCollection`
+  copy if any; staff nested redirect / no block UI; `content.errors.*` — RU
+  under en-US).
 ---
 
 # Work With Localization

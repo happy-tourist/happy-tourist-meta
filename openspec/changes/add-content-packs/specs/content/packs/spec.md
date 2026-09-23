@@ -67,6 +67,12 @@ UGC-наборы (**набор карточек** + задания): созда�
 | SC-PACK-58 | covered |
 | SC-PACK-59 | covered |
 | SC-PACK-60 | covered |
+| SC-PACK-61 | covered |
+| SC-PACK-62 | covered |
+| SC-PACK-63 | covered |
+| SC-PACK-64 | covered |
+| SC-PACK-65 | covered |
+| SC-PACK-66 | covered |
 
 ## ADDED Requirements
 
@@ -166,7 +172,9 @@ When composing a task, the editor MUST support adding an empty slot, removing a 
 
 ### Requirement: Collection gates editing; anyone with session may collect approved packs
 
-Only users who have the pack in their collection and who satisfy create/edit identity rules (non-anonymous, verified email) MUST be able to enter edit mode and submit changes. The client MUST expose the primary **Edit** affordance from the user’s collection list, not from the public live pack page. Any authenticated user (including anonymous and unverified) MUST be able to view an approved non-blocked pack in the public catalog and add it to their collection. Removing a pack from the user’s own collection MUST ask for confirmation before the mutation. Unauthenticated callers MUST be rejected for collection mutations.
+Only users who have the pack in their collection and who satisfy create/edit identity rules (non-anonymous, verified email) MUST be able to enter edit mode and submit changes. The client MUST expose **Edit** from the user’s collection list **and** from the live pack page when that pack is in the user’s collection, subject to pending rules below. Any authenticated user (including anonymous and unverified) MUST be able to view an approved non-blocked pack in the public catalog and add it to their collection. The live pack response MUST report whether the caller already has the pack in their collection so the client can show an accurate collect state. Removing a pack from the user’s own collection MUST use a clear trash/delete affordance and MUST ask for confirmation before the mutation. Unauthenticated callers MUST be rejected for collection mutations.
+
+While the pack has a pending `answers` or `tasks` moderation request authored by user A, the live (and collection) **Edit** control MUST be shown to A and MUST be hidden from other collection members. When there is no pending request of either type, any collection member who passes identity gates MAY see Edit. Ineligible users (anonymous / unverified) who somehow reach Edit MUST still get the auth/verify prompt and MUST NOT mutate.
 
 #### Scenario [SC-PACK-10]: User without collection cannot edit
 
@@ -187,12 +195,12 @@ Only users who have the pack in their collection and who satisfy create/edit ide
 - **WHEN** a collection-add request is made
 - **THEN** the system rejects the request
 
-#### Scenario [SC-PACK-53]: Edit affordance is collection-only
+#### Scenario [SC-PACK-53]: Live Edit when pack is in collection and idle
 
-- **GIVEN** an authenticated verified user viewing an approved pack’s public live page without using the collection edit entry
-- **WHEN** the live pack page renders
-- **THEN** the page MUST NOT show a primary Edit control that navigates into the editor
-- **AND** Edit remains available from that user’s collection list when the pack is in the collection
+- **GIVEN** an authenticated user who has approved pack P in their collection and P has no pending answers or tasks request
+- **WHEN** the live pack page for P renders
+- **THEN** the page shows a primary Edit control that navigates into the editor
+- **AND** Edit remains available from that user’s collection list
 
 #### Scenario [SC-PACK-54]: Remove from collection asks for confirmation
 
@@ -200,6 +208,49 @@ Only users who have the pack in their collection and who satisfy create/edit ide
 - **WHEN** the user chooses remove-from-collection
 - **THEN** the client asks for confirmation before calling the remove API
 - **AND** cancelling the dialog leaves P in the collection
+
+#### Scenario [SC-PACK-61]: Live Edit hidden when not in collection
+
+- **GIVEN** an authenticated verified user viewing live pack P that is **not** in their collection
+- **WHEN** the live pack page renders
+- **THEN** the page MUST NOT show a primary Edit control
+
+#### Scenario [SC-PACK-62]: Live Edit hidden for non-author while pending
+
+- **GIVEN** pack P is in user B’s collection and has a pending answers or tasks request authored by user A (A ≠ B)
+- **WHEN** B opens the live pack page for P
+- **THEN** Edit is hidden for B
+
+#### Scenario [SC-PACK-63]: Pending author still sees Live Edit
+
+- **GIVEN** pack P is in author A’s collection and has a pending answers or tasks request authored by A
+- **WHEN** A opens the live pack page for P
+- **THEN** Edit is shown so A MAY continue editing / resubmit
+
+#### Scenario [SC-PACK-64]: Collect button reflects membership
+
+- **GIVEN** an authenticated user who already has pack P in their collection
+- **WHEN** the live pack page for P loads
+- **THEN** the collect control shows an in-collection state and MUST NOT present a fresh “add” as if P were absent
+- **AND** the live pack payload includes `inCollection: true` for that caller
+
+#### Scenario [SC-PACK-65]: Collection trash icon and row click isolation
+
+- **GIVEN** an authenticated user on the collection list with pack P
+- **WHEN** the list renders
+- **THEN** remove-from-collection uses a trash/delete icon (not a minus-only glyph)
+- **AND WHEN** the user activates remove
+- **THEN** confirmation is required before the API call
+- **AND WHEN** the user clicks the row (not the action icons)
+- **THEN** they navigate to the live view if P has live content (else editor)
+- **AND** activating Edit or trash MUST NOT navigate via the row link instead of the intended action
+
+#### Scenario [SC-PACK-66]: Collection Edit reaches editor when pack has live
+
+- **GIVEN** an authenticated eligible user with pack P in their collection and P has live content
+- **WHEN** the user activates Edit on the collection list row
+- **THEN** the client opens the pack editor
+- **AND** MUST NOT leave the user on the live view without editor fields due to competing row navigation
 
 ### Requirement: Public catalog shows live content after answers approval
 
@@ -422,7 +473,7 @@ When the change author is a non-anonymous user with an email, the system MUST se
 
 ### Requirement: Client surfaces — split editor, collection-first, autosave
 
-The client MUST expose: a collection list as the primary entry from lobby into the packs section (with Edit and confirmed remove-from-collection); a public catalog reachable from the collection; a live pack view **without** a primary Edit control; a **cards pack** editing page titled as a card pack / «Набор карточек» (pack title/description, single card form, cards list with edit affordance, nested task-set list labeled by author/coauthor with per-set needs-moderation marks when applicable, answers submit, answers status label, answers thread, and author delete-pack when unpublished); a **task-set** editing page nested under cards (single question form, slots, answer tiles, questions list, tasks submit, tasks status label, tasks thread, and author delete-task-set when the pack is unpublished) that follows D1′ dirty/pending rules; and a staff answers-pending queue whose hub lists only actionable task sets and opens a nested tasks page while tasks pending, then returns to the hub after tasks approve. Draft edits MUST autosave **without** a top-of-page «saving» caption that shifts layout; save/submit affordances MAY show button loading instead. Destructive deletes MUST ask for confirmation. Answers submit MUST be disabled when answers are not dirty or minima fail; tasks submit MUST be disabled when tasks are not dirty or minima fail. Adding/saving a question MUST require at least one filled answer slot. Create task-set MUST show a hover/tooltip hint when blocked. Loading, empty, and error states MUST be visible. Create/edit entry points MUST show the auth/verify modal when the user is ineligible. The public catalog MUST NOT list unapproved packs; moderation statuses appear on editor pages, not as catalog badges. Staff block/unblock controls MUST NOT be shown.
+The client MUST expose: a collection list as the primary entry from lobby into the packs section (with Edit, trash remove-from-collection + confirm, and row→live/editor without stealing action clicks); a public catalog reachable from the collection; a live pack view with collect state from `inCollection` and with **Edit** when the pack is in the user’s collection subject to pending-author rules (SC-PACK-53/61–63); a **cards pack** editing page titled as a card pack / «Набор карточек» (pack title/description, single card form, cards list with edit affordance, nested task-set list labeled by author/coauthor with per-set needs-moderation marks when applicable, answers submit, answers status label, answers thread, and author delete-pack when unpublished); a **task-set** editing page nested under cards (single question form, slots, answer tiles, questions list, tasks submit, tasks status label, tasks thread, and author delete-task-set when the pack is unpublished) that follows D1′ dirty/pending rules; and a staff answers-pending queue whose hub lists only actionable task sets and opens a nested tasks page while tasks pending, then returns to the hub after tasks approve. Draft edits MUST autosave **without** a top-of-page «saving» caption that shifts layout; save/submit affordances MAY show button loading instead. Destructive deletes MUST ask for confirmation. Answers submit MUST be disabled when answers are not dirty or minima fail; tasks submit MUST be disabled when tasks are not dirty or minima fail. Adding/saving a question MUST require at least one filled answer slot. Create task-set MUST show a hover/tooltip hint when blocked. Loading, empty, and error states MUST be visible. Create/edit entry points MUST show the auth/verify modal when the user is ineligible. The public catalog MUST NOT list unapproved packs; moderation statuses appear on editor pages, not as catalog badges. Staff block/unblock controls MUST NOT be shown.
 
 #### Scenario [SC-PACK-29]: Catalog lists approved packs
 

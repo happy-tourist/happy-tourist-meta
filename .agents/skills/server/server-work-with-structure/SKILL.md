@@ -54,7 +54,7 @@ Sibling client: `../happy-tourist.github.io` (room type `tourist`, board + piece
 | Entry | `src/index.ts` | `listen(app)` only |
 | Server wiring | `src/app.config.ts` | `defineServer`: `database`, `rooms`, `routes`, `express`; import auth config; `configureAuthEmailFlows` after DB boot; thin `POST /api/auth/*` + `/api/support/*` + `/api/content/*` + `/api/admin/*`; boot `ensureSupportTables` / `ensureContentTables` / `bootstrapAdminIds` / `startAutoCloseInterval` |
 | Auth config | `src/config/` | `auth.ts` — `getRuntimeAuth` / Google `addProvider` / email hooks; wrap OAuth callback for `emailVerified`; map `htRole` → userdata `role` |
-| Mailer / support / content / password policy | `src/lib/` | `mailer.ts` — smtp.bz `sendEmail` (+ test setter); `support.ts` — tickets/messages/roles/bootstrap/auto-close + create-ack mail + staff list filters + `setTicketStatus(..., { notify })` (HTTP stays thin); `content.ts` — packs catalog/collection/draft (statuses/`tasksDirty`/`needsModeration`); dual `submitAnswers`/`submitTasks`; **D1′**/D5′ locks; author `deleteUnpublishedPack`/`deleteTaskSet`; snapshot rewrite after approve; type-scoped threads; staff answers hub → nested tasks; moderation mail deep-links D20 → `#/…/edit` or `#/…/tasks/:setId` (not bare `/moderation`); `passwordPolicy.ts` — shared ≥8 + lower/upper/digit/symbol (register wrap / JSON reset / change-password) |
+| Mailer / support / content / password policy | `src/lib/` | `mailer.ts` — smtp.bz `sendEmail` (+ test setter); `support.ts` — tickets/messages/roles/bootstrap/auto-close + create-ack mail + staff list filters + `setTicketStatus(..., { notify })` (HTTP stays thin); `content.ts` — packs catalog/collection/draft (statuses/`tasksDirty`/`needsModeration`); live GET `inCollection` + pending author ids; dual `submitAnswers`/`submitTasks`; **D1′**/D5′ locks; author `deleteUnpublishedPack`/`deleteTaskSet`; snapshot rewrite after approve; type-scoped threads; staff answers hub → nested tasks; moderation mail deep-links D20 → `#/…/edit` or `#/…/tasks/:setId` (not bare `/moderation`); `passwordPolicy.ts` — shared ≥8 + lower/upper/digit/symbol (register wrap / JSON reset / change-password) |
 | Auth HTML | `html/` | Legacy Colyseus cwd templates; product confirm/reset UX is **SPA + JSON** (mail links via `CLIENT_APP_URL`) |
 | Database | `src/db/` | `GameDatabase` (`index.ts`) + Drizzle user schema (`schema.ts`; `htRole` + support table decls) |
 | Rooms | `src/rooms/` | Room handlers (`onCreate` / `onJoin` / `onDrop` / `onReconnect` / leave / dispose; `onMessage('move'|'ready'|'say')`) |
@@ -212,7 +212,7 @@ src/db/
 src/lib/
 ├── mailer.ts          # smtp.bz sendEmail (+ setSendEmailImpl for tests)
 ├── support.ts         # tickets / roles / bootstrap helpers
-├── content.ts         # content packs (ensureContentTables + dual answers|tasks + D1′/author delete/staff nested HTTP helpers)
+├── content.ts         # content packs (ensureContentTables + dual answers|tasks + live inCollection/pending ids + D1′/author delete/staff nested HTTP helpers)
 └── passwordPolicy.ts  # shared product password policy (register / reset / change)
 
 html/           # legacy Colyseus cwd templates (not product SPA UX)

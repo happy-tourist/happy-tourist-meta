@@ -6,7 +6,7 @@ description: >-
   hash-mode deep links, meta.guest / meta.requiresAuth / requiresStaff / requiresAdmin,
   or navigation between login, lobby (create maxSeats + grilleDensity + catapultDensity;
   Support + «Наборы»→collection), support/content/admin pages (single ticket Close via canClose; form lazy-rules reset),
-  content «Набор карточек» + collection-only Edit + confirm remove + author delete unpublished + D1′ lock + staff redirect / no block UI, App brand logo (always-button ≥60px; Game leave / auth+other → lobby / lobby noop;
+  content «Набор карточек» + live Edit when `inCollection` (+ pending-author exception; hide if `blocked`/foreign pending) + collection trash/`delete` + click isolation (no row `:to`) + author delete unpublished + D1′ lock + staff redirect / no block UI, App brand logo (always-button ≥60px; Game leave / auth+other → lobby / lobby noop;
   no page «В лобби»), productName/favicon, and game (top opponents presence, seated
   strip HUD row/2×2, budgets/end-turn icon on avatar, return strip icon no modal, push icons,
   nearest-center finish, grille trap/rescue + catapult land→overlay→fling + deferred grille drops + board-busy lock) in this Quasar Vue 3 client.
@@ -59,9 +59,9 @@ From `src/router/routes.ts` (hash mode via `createWebHashHistory` when `vueRoute
 | `/support/:id` | `support-ticket` | `SupportTicketPage` | `meta.requiresAuth`; thread |
 | `/admin/users` | `admin-users` | `AdminUsersPage` | `meta.requiresAuth` + `requiresAdmin` |
 | `/content/packs` | `content-catalog` | `ContentCatalogPage` | `meta.requiresAuth`; approved live catalog (from collection) |
-| `/content/collection` | `content-collection` | `ContentCollectionPage` | `meta.requiresAuth`; own collection (lobby entry; Edit + confirm remove) |
+| `/content/collection` | `content-collection` | `ContentCollectionPage` | `meta.requiresAuth`; own collection (lobby entry; Edit + trash/`delete` + confirm; **no** row `:to` — `@click` navigate + `@click.stop` on side icons; hide Edit if `blocked`; row→live/`hasLive` else editor) |
 | `/content/packs/new` | `content-pack-new` | `ContentPackCreatePage` | `meta.requiresAuth`; create → answers; verify modal if ineligible |
-| `/content/packs/:id` | `content-pack` | `ContentPackPage` | `meta.requiresAuth`; live view (**no** primary Edit) |
+| `/content/packs/:id` | `content-pack` | `ContentPackPage` | `meta.requiresAuth`; live view (Edit when `inCollection` + pending-author exception; hide if `blocked`/foreign pending; collect from `inCollection`; verify gate on Edit) |
 | `/content/packs/:id/edit` | `content-pack-edit` | `ContentPackEditorPage` | `meta.requiresAuth`; «Набор карточек» (statuses/thread; quiet autosave; author delete unpublished) |
 | `/content/packs/:id/tasks/:taskSetId` | `content-pack-tasks` | `ContentPackTasksPage` | `meta.requiresAuth`; nested task-set (D1′/D5′ locks; author delete set) |
 | `/content/packs/:id/moderation` | `content-pack-moderation` | `ContentPackModerationPage` | `meta.requiresAuth`; author thread (also embedded on edit/tasks; reject comment visible) |
@@ -255,7 +255,7 @@ If an old path changes, keep a redirect in `routes.ts`:
 | Title / favicon | `package.json` + `index.html` + `public/favicon.ico` | `productName` = Happy Tourist; single `favicon.ico` link |
 | Lobby / rooms | `LobbyPage` | `stores/game.subscribeLobby`, create `{ maxSeats, grilleDensity, catapultDensity }` / join; Support + «Наборы» → collection; `meta.requiresAuth` |
 | Support | `SupportPage` / `SupportTicketPage` / `SupportStaffPage` | `stores/support` HTTP; `requiresAuth`; staff uses `requiresStaff` + `auth.isStaff` |
-| Content packs | `ContentCatalogPage` / `ContentCollectionPage` (Edit + confirm remove) / `ContentPackPage` (no Edit) / `ContentPackCreatePage` / `ContentPackEditorPage` («Набор карточек» + author delete unpublished) / `ContentPackTasksPage` (D1′ lock + delete set) / `ContentPackModerationPage` / `ContentStaffPage` / `ContentStaffRequestPage` (actionable task-set list; no block UI) / `ContentStaffTasksPage` (redirect hub after approve) | `stores/content` HTTP; dual submit; D1′/D5′ locks; collection-only Edit; staff redirect; `requiresAuth`; create/edit need verified non-anonymous; staff `requiresStaff` |
+| Content packs | `ContentCatalogPage` / `ContentCollectionPage` (Edit + trash + confirm; no row `:to`; hide Edit if `blocked`) / `ContentPackPage` (live Edit when `inCollection` + pending-author; hide if `blocked`/foreign pending; collect from `inCollection`; verify gate) / `ContentPackCreatePage` / `ContentPackEditorPage` («Набор карточек» + author delete unpublished) / `ContentPackTasksPage` (D1′ lock + delete set) / `ContentPackModerationPage` / `ContentStaffPage` / `ContentStaffRequestPage` (actionable task-set list; no block UI) / `ContentStaffTasksPage` (redirect hub after approve) | `stores/content` HTTP; dual submit; D1′/D5′ locks; live `inCollection` + pending author ids; staff redirect; `requiresAuth`; create/edit need verified non-anonymous; staff `requiresStaff` |
 | Roles / admin | `AdminUsersPage` | `stores/support` admin HTTP; `requiresAdmin` + `auth.isAdmin` (server enforces) |
 | Game session | `GamePage` | `stores/game` `rejoinGame`/`sendMove`/`sendRescue`/`sendPush`/`sendReturnFromFinish`/`sendPeek`/`sendPeekAnswer`/`sendEndTurn`/`sendSay`; top presence + seated sticky `.game-hud` (own + strip row/2×2; no chip/`q-menu`); unfinished pieces + holes + grille overlays (`GRILLE_ANIM_MS=1000`; defer drop during catapult hops) + catapult land→overlay→fling (`CATAPULT_ANIM_MS=1000`, spectator parity, D13, board-busy lock) + trap/rescue/push + return strip icon (no modal) + all-jail modal + budgets beside avatar / end-turn icon on avatar + peek + finish nearest-center / timeout UX + dual rings + say top↓ / own↑; route param `roomId` (reconnect only — **not** shown in chrome); `meta.requiresAuth` |
 

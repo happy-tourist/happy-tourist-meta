@@ -1,16 +1,14 @@
 ## Why
 
-После UX-polish модерации всплыли дыры: staff после approve tasks остаётся на пустой странице с «набор не опубликован»; ложные метки «нужна модерация»; Edit доступен вне своей коллекции; dirty-answers глушит задания даже у автора pending; нет удаления неопубликованного автором; кнопки block на hub путают. Нужен follow-up polish + узкий author-delete без смены домена.
+После follow-up §10–12 остались UX-дыры на коллекции и live-просмотре: иконка «убрать» выглядит как прочерк и клик уводит в набор; Edit из списка у опубликованного пака открывает view без полей; на live нет Edit даже когда пак уже в коллекции; кнопка «В коллекцию» не отражает фактическое членство. Нужен узкий polish affordances без смены домена.
 
 ## What Changes
 
-- Staff: после approve tasks → redirect на answers hub; из списка task set убрать уже промодерированные; не держать пустую nested-страницу / `pack_not_public`; убрать лишнюю кнопку «Открыть задания».
-- Починить sticky `needsModeration` после approve (`copyRevision`/snapshot).
-- Edit только из «Моей коллекции» (не на live/каталоге).
-- Убрать из коллекции — с подтверждением.
-- D1′: при dirty answers, если answers **pending** у A — **A MAY** create/edit tasks; остальные по-прежнему нет. Без pending + dirty — lock для всех.
-- Убрать кнопки block/unblock с UI (API можно оставить; block anytime / staff delete — позже).
-- Автор (`createdBy`) на **неопубликованном** паке: удалить весь пак (wipe + cascade заявок) или один task set (в т.ч. из liveTasks, даже если tasks уже approved).
+- Коллекция: строка → live view; Edit и корзина — отдельные иконки с изоляцией клика; remove = **корзина** (`delete`) + confirm.
+- Edit из списка всегда ведёт в editor (не проигрывает гонку `:to` → view).
+- Live pack page: **Редактировать**, если пак в коллекции пользователя; скрывать Edit при чужом pending (`answers` или `tasks`); **автор заявки** по-прежнему видит Edit (докидывать/ресабмит).
+- Live/API: честный `inCollection` — кнопка «В коллекции» / disabled, а не вечный «В коллекцию».
+- Eligibility (login/verify) — при входе в editor, как create.
 
 ## Capabilities
 
@@ -20,31 +18,31 @@
 
 ### Modified Capabilities
 
-- `content/packs`: staff post-approve navigation; marks fix; collection-only edit; confirm remove; pending-author task edit under dirty answers; hide block UI; author delete unpublished pack / task set
+- `content/packs`: collection list click isolation + trash icon; live Edit when in collection (pending-author exception); `inCollection` on live GET / collect button state
 
 ## Scope
 
 - **Capability ID:** `content/packs`
 - **Пакеты:** client + server (+ meta AGENTS/skills при необходимости)
-- Сохранить dual submit, catalog after answers approve, staff answers-only queue, approve order tasks→answers
-- Server: snapshot/id coherence после approve; delete unpublished + cascade; D1′ lock; staff preview list filter
-- Client: staff redirect/list; edit gate; confirm remove; delete UX; hide block buttons
+- Сохранить dual submit, D1′ locks, staff flow, author delete unpublished, no block UI
+- Server: `getLivePack` (+ при необходимости) флаги `inCollection` и pending authorship для UI
+- Client: ContentCollectionPage, ContentPackPage, store/i18n; починить гонку Edit vs row `:to`
 
 ## Out of scope
 
-- Room↔pack, peek runtime, media, transfer ownership
-- Staff/public hard delete опубликованного; block anytime UI; отдельный «block tasks»
-- Partial tasks submit; смена порядка approve
-- Отдельная staff-очередь «только tasks»
+- Room↔pack, peek, media, transfer ownership
+- Staff/public hard delete опубликованного; block anytime UI
+- Смена порядка approve / partial submit
+- Скрывать Edit у **автора** pending (он MAY докидывать)
 
 ## Impact
 
-- Client: ContentPack* / ContentStaff* / ContentCollection*, Pinia content, i18n
-- Server: `lib/content.ts` approve/detach/delete + mocha SC-PACK
+- Client: ContentCollectionPage, ContentPackPage, Pinia content, i18n
+- Server: `lib/content.ts` live pack payload (+ mocha)
 - Meta: skills/AGENTS hints
 
 ## References
 
-- Explore 2026-09-23 (follow-up): D1′, D2′, D5′=A, D6, D7, cascade
-- Prior sections 1–9 implemented
+- Explore 2026-09-23 (UX affordances): D1 live-in-collection Edit, D2 trash, D3 pending-author keeps Edit; collect button bug
+- Prior sections 1–12 implemented
 - Карта путей: `docs/projects-map.md`

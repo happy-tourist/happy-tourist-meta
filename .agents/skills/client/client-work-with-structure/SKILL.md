@@ -5,7 +5,7 @@ description: >-
   (*Page.vue), components, Pinia stores, Quasar boot files, dependency
   direction between layers, or deciding whether new UI belongs in pages vs
   components vs stores vs App shell (always-button brand logo ≥60px; Game leave via logo + status;
-  auth→lobby; theme; no page «В лобби»; content packs collection-only Edit + confirm remove / author delete unpublished / D1′ / staff redirect / no block UI). No blocks/
+  auth→lobby; theme; no page «В лобби»; content packs live Edit in-collection + trash/click isolation (no row `:to`; hide Edit if `blocked`) / author delete unpublished / D1′ / staff redirect / no block UI). No blocks/
   or dialogs/ registry layers.
 ---
 
@@ -232,7 +232,7 @@ Registered in `quasar.config.ts` boot array: `theme`, `i18n`, `colyseus` (+ `fra
 | Lobby / rooms | `LobbyPage` | `stores/game.subscribeLobby` / create `{ maxSeats, grilleDensity, catapultDensity }` / join |
 | Game session | `GamePage` | `stores/game` room attach + seats / grilles / catapults / top + seated-HUD presence / say / strip + rescue/push + return strip icon (no modal); soft-drop gated by `consentedLeaving` |
 | Game leave + match status | `App.vue` header (logo leave on Game; status on Game) | `stores/game` `leaveGame` + status / phase getters |
-| Content packs | `ContentCatalogPage` / `ContentCollectionPage` (Edit + confirm remove) / `ContentPackPage` (no Edit) / `ContentPackCreatePage` / `ContentPackEditorPage` («Набор карточек» + author delete) / `ContentPackTasksPage` (D1′ + delete set) / `ContentPackModerationPage` / `ContentStaffPage` / `ContentStaffRequestPage` / `ContentStaffTasksPage` (redirect hub after approve; no block UI) | `stores/content` HTTP (`client.http`); dual submit + D1′/D5′ locks; lobby «Наборы» → `content-collection` |
+| Content packs | `ContentCatalogPage` / `ContentCollectionPage` (Edit + trash + confirm; no row `:to`; hide Edit if `blocked`) / `ContentPackPage` (live Edit when `inCollection` + pending-author; hide if `blocked`/foreign pending) / `ContentPackCreatePage` / `ContentPackEditorPage` («Набор карточек» + author delete) / `ContentPackTasksPage` (D1′ + delete set) / `ContentPackModerationPage` / `ContentStaffPage` / `ContentStaffRequestPage` / `ContentStaffTasksPage` (redirect hub after approve; no block UI) | `stores/content` HTTP (`client.http`); dual submit + D1′/D5′ locks; live `inCollection` + pending author ids; lobby «Наборы» → `content-collection` |
 | Support | `SupportPage` / `SupportTicketPage` / `SupportStaffPage` | `stores/support` |
 | Brand / title / favicon | `App.vue` + `package.json` / `index.html` / `public/favicon.ico` | `assets/brand/logo.png`; `productName` Happy Tourist; single favicon |
 | Shell | `App.vue` | layout + always-button brand logo ≥60px + theme header/banner + Game leave/status + `router-view` |
@@ -258,6 +258,8 @@ Synced board encoding stays client-local (`LAYOUT`); authority for seating/turn/
 | Naming a screen `*View.vue` | Use `*Page.vue` |
 | Adding `blocks/` or a dialogs registry | Keep UI in page/component |
 | Putting room/auth/theme/support/content SDK calls in the page body | Move to `stores/auth` / `stores/theme` / `stores/game` / `stores/support` / `stores/content` |
+| Collection list row with `:to` plus side Edit/trash | Quasar router-link races icons — use `@click` navigate + `@click.stop` on side actions (`work-with-pages`) |
+| Showing Edit on a `blocked` pack (collection or live) | Hide Edit when `blocked` (SC-PACK-25); collect may stay disabled |
 | Importing a page from a component | Invert: page imports the component |
 | Duplicating theme toggle on every page | Keep shared toggle in `App.vue` |
 | Reintroducing page-local Game leave/status or Material `logout` leave | Keep leave via brand logo + status in `App.vue` on Game (`work-with-pages`) |

@@ -2,7 +2,7 @@
 
 См. `proposal.md` и delta `specs/content/packs/spec.md`.
 
-Секции 1–9 (dual flow + UX polish) уже в runtime. Этот revision — **follow-up**: staff navigation, marks/snapshot bug, collection gates, D1′ lock, hide block UI, author delete unpublished. Чеклист — `tasks.md` §10+.
+Секции 1–12 (dual flow + staff/delete follow-up) уже в runtime. Этот revision — **UX affordances**: коллекция (клик/корзина/Edit), live Edit при членстве, `inCollection`, pending-author exception. Чеклист — `tasks.md` §13+.
 
 Пакеты: **server** (`../happy-tourist-server`) + **client** (`../happy-tourist.github.io`) + meta AGENTS/skills.
 
@@ -10,100 +10,71 @@
 
 **Goals:**
 
-- Staff не видит мёртвую tasks-страницу после approve; список без «уже промодерировано».
-- Метки needsModeration согласованы со статусом «одобрено».
-- Edit только из коллекции; remove из коллекции с confirm.
-- Pending-author A может править задания при dirty answers; чужие — нет.
-- Автор удаляет неопубликованный пак или task set (в т.ч. approved liveTasks).
-- Block buttons убраны с UI.
+- Список коллекции: явные actions без ложной навигации; корзина + confirm.
+- Live page: Edit когда пак в коллекции; скрыт при чужом pending; автор pending видит Edit.
+- Collect button отражает реальное членство (`inCollection`).
 
 **Non-Goals:**
 
-- Staff delete / block anytime / publish-pack wipe; partial submit; новый transport.
+- Менять серверные ACL edit/submit кроме payload для UI; block UI; wipe published.
 
 ## Decisions
 
-### D1–D20: Prior (реализовано)
+### D1–D26: Prior (реализовано)
 
-Dual flow, statuses/threads, tasksDirty/marks, staff nested, quiet autosave — см. предыдущие revision. Ниже — **добавления/правки**.
+Dual flow, D1′ locks, staff redirect, snapshot fix, author delete unpublished, hide block UI — см. предыдущие revision. **D23 (collection-only Edit, no live Edit) superseded by D27.**
 
-### D5′′ / D1′: Dirty answers + кто правит tasks
-
-- Пока answers **dirty** и **нет** answers-pending: create/edit tasks запрещены всем (сначала submit answers).
-- Пока answers **pending** под автором A (в т.ч. если A снова сделал answers dirty): **A MAY** create/edit tasks; **другие** MUST NOT.
-- Submit tasks по-прежнему: чужие при answers pending запрещены; A MAY submit tasks.
-- UI/i18n отражают исключение для A.
-
-### D21: Sticky needsModeration after approve (bugfix)
-
-Корневая причина: `detachAuthorDraftIfPinned` → `copyRevision` **перегенерирует id**, а `last_*_snapshot` остаётся со старыми id → все marks dirty.
-
-Варианты фикса (достаточно одного):
-
-- При detach после approve: переписать `last_tasks_snapshot` / `last_answers_snapshot` из **нового** draft payload; и/или
-- `copyRevision` сохраняет стабильные entity id где возможно.
-
-После фикса: статус «одобрено» и marks «нужна модерация» не противоречат без реальных правок.
-
-### D22: Staff after approve tasks
+### D27: Live Edit when in collection (replaces D23)
 
 ```
-approve tasks --> redirect --> answers hub
-hub task-set list: omit sets that are fully moderated
-                   (no pending tasks work left for that set / pack tasks approved)
-nested tasks page: do not reload via getLivePack when pack not public
-                   (use liveTasks / pending preview; no pack_not_public dead-end)
+live pack page
+  |
+  +-- NOT in collection --> no Edit (view + add-to-collection only)
+  |
+  +-- in collection
+        |
+        +-- any pending answers|tasks whose author != me --> hide Edit
+        |
+        +-- no pending OR I am author of pending --> show Edit
+              (gate login/verify on enter editor, like create)
 ```
 
-- Убрать redundant «Открыть задания» (навигация = клик по строке списка, пока строка есть).
+- Collection list **keeps** Edit icon (always → editor route).
+- Catalog / stranger live view: no Edit (not in collection).
 
-### D23: Collection-only edit affordance
+### D28: Collection list interaction
 
-- Кнопка Edit на public/live pack page — **убрать**.
-- Edit остаётся в «Моей коллекции» (+ deep-link в editor для уже имеющих коллекцию).
-- Server `not_in_collection` без изменений.
+- Row click → live view if `hasLive`, else editor (draft-only).
+- Side icons: Edit → `content-pack-edit`; trash → confirm remove-from-collection.
+- MUST stop propagation so icon clicks never fire row navigation.
+- Remove icon: Material **`delete`** (корзина), not `remove_circle_outline`.
 
-### D24: Remove from collection + confirm
+### D29: `inCollection` on live GET
 
-- Иконка/действие «убрать из коллекции» остаётся; перед вызовом API — confirm dialog.
-- Это **не** удаление пака.
+- `GET /api/content/packs/:id` includes `pack.inCollection: boolean` for the caller.
+- Optional (same response or adjacent): enough pending hints for D27 UI, e.g. `pendingAnswersAuthorId` / `pendingTasksAuthorId` (or boolean `canShowEdit` computed server-side). Prefer explicit flags the client can reason about.
+- Client: derive collect button from `inCollection` (not ephemeral local `added` reset on load).
+- After successful add → set true; after remove (from list) membership updates on next live visit via GET.
 
-### D25: Hide block UI
+### D30: Docs
 
-- Убрать кнопки block/unblock со staff pages в этом раунде.
-- Server endpoints MAY остаться; новых surface для block anytime не делать.
-- Staff/public delete опубликованного — later.
-
-### D26: Author delete unpublished (D5′=A, D6, D7)
-
-**Неопубликованный** = нет live answers / не в каталоге (`liveRevisionId` null).
-
-Только `createdBy`:
-
-1. **Удалить пак** («набор карточек»): hard wipe pack + drafts + revisions + collections rows + moderation requests/messages (**cascade** pending).
-2. **Удалить task set**: убрать set из draft **и** из `liveTasksRevisionId` content, даже если tasks уже staff-approved. Ключ публикации — answers, не tasks.
-
-Опубликованный пак: author delete out of scope (этот раунд).
-
-### D11′′: Docs
-
-- Skills/AGENTS: collection-only edit, confirm remove, author delete unpublished, D1′, staff redirect, no block buttons.
+- Skills/AGENTS: live Edit when in collection + pending-author exception; trash icon; `inCollection` on live; collection click isolation.
 
 ## Risks / Trade-offs
 
 | Risk | Mitigation |
 |------|------------|
-| copyRevision id remap | D21 snapshot rewrite / stable ids + tests |
-| Author deletes set after tasks approve | D7: sync liveTasks; answers still gate catalog |
-| Hide block while SC-PACK-25 exists | D25: server capability retained; UI deferred; document in spec |
+| Quasar `q-item` `:to` + child buttons | D28: `@click.stop` / separate non-link row body; verify Edit with `hasLive` |
+| Pending flags missing on live GET | D29: enrich payload; mocha SC-PACK-61… |
+| Users expect Edit while foreign pending | D27: hide; author path unchanged |
 
 ## Migration Plan
 
-- Server fix approve/detach + delete endpoints → client UX → hide block → docs.
-- Dev DB: existing false-dirty drafts очищаются после следующего approve или ручного resubmit.
+- Server enrich live GET → client collection + live pages → docs.
+- No DB migration.
 
 ## Open Questions
 
-- Нет (explore follow-up закрыт: D1′, D2′, D5′=A, D6, D7, cascade).
+- Нет (explore: D1 in-collection Edit, D2 trash, D3 pending author keeps Edit, row→live, collect button).
 
-Чеклист — `tasks.md` §10+.
+Чеклист — `tasks.md` §13+.
