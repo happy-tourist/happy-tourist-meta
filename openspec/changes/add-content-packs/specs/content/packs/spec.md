@@ -2,7 +2,7 @@
 
 ## Purpose
 
-UGC-наборы (**набор карточек** + задания): создание/правка verified-пользователями, коллекция, публичный каталог после approve ответов, **раздельная** модерация answers/tasks, видимые **трёхфазные** статусы и треды на страницах редактора, очередь staff (pending + нужна доработка) и авторский список «На модерации», блокировка; задел difficulty 1–3 под будущие peek-награды. Без привязки к tourist-room и без замены peek-stub.
+UGC-наборы (**набор карточек** + задания): создание/правка verified-пользователями, коллекция, публичный каталог после approve ответов, **раздельная** модерация answers/tasks, cascade слотов при смене/удалении ответа без ложного D1′-lock, жёлтая подсветка затронутых заданий/наборов, слоты на строке задания, статусы под заголовком = метки списка, очередь staff (pending + нужна доработка) и авторский список «На модерации», блокировка; задел difficulty 1–3 под будущие peek-награды. Без привязки к tourist-room и без замены peek-stub.
 
 ## Traceability
 
@@ -15,6 +15,13 @@ UGC-наборы (**набор карточек** + задания): созда�
 | SC-PACK-05 | covered |
 | SC-PACK-06 | covered |
 | SC-PACK-07 | covered |
+| SC-PACK-78 | covered |
+| SC-PACK-79 | covered |
+| SC-PACK-80 | covered |
+| SC-PACK-81 | covered |
+| SC-PACK-82 | covered |
+| SC-PACK-83 | covered |
+| SC-PACK-84 | covered |
 | SC-PACK-08 | covered |
 | SC-PACK-09 | covered |
 | SC-PACK-10 | covered |
@@ -140,15 +147,39 @@ A pack MUST contain answer cards and may contain one or more task sets. Each ans
 
 ### Requirement: Answer-slot editing and separate submit rules
 
-When composing a task, the editor MUST support adding an empty slot, removing a slot (minimum one slot remains), filling the next empty slot by selecting an answer card tile, and clearing a filled slot by selecting that slot. Changing an answer card’s content that is referenced by task slots MUST clear those slot references. Deleting an answer card MUST NOT by itself block answers submit. Tasks submit MUST be rejected while any submitted task has an empty slot or while fewer than two tasks exist. Answers submit MUST be rejected while fewer than two answer cards exist.
+When composing a task, the editor MUST support adding an empty slot, removing a slot (minimum one slot remains), filling the next empty slot by selecting an answer card tile, and clearing a filled slot by selecting that slot. Changing an answer card’s **content** that is referenced by task slots MUST clear those slot references. Changing only an answer card’s **description** MUST NOT clear slots. Deleting an answer card that is referenced MUST clear those slots; deleting an unreferenced card MUST NOT alter task structure. Persisting a draft that only applies such cascade clears MUST succeed and MUST NOT be rejected as a tasks edit under the dirty-answers lock. Deleting an answer card MUST NOT by itself block answers submit. Tasks submit MUST be rejected while any submitted task has an empty slot or while fewer than two tasks exist. Answers submit MUST be rejected while fewer than two answer cards exist.
 
 #### Scenario [SC-PACK-07]: Changing a referenced answer card clears dependent slots
 
 - **GIVEN** a task whose slots reference answer card A
 - **WHEN** the editor changes the content of answer card A
 - **THEN** those slots become empty
+- **AND** the draft save succeeds
+- **AND** answers become dirty and answers submit remains available when card minima are met
 - **AND** tasks submit remains blocked until the slots are filled again
 - **AND** answers submit is not blocked solely because those slots are empty
+
+#### Scenario [SC-PACK-78]: Cascade draft save is not rejected as tasks-edit under dirty answers
+
+- **GIVEN** a pack with no open answers request and tasks that reference answer card A
+- **WHEN** the editor changes A’s content or deletes A so that slots clear as a cascade
+- **THEN** the draft persist succeeds
+- **AND** the system does not return the dirty-answers tasks-lock error for that cascade-only change
+- **AND** answers submit is enabled when at least two answer cards remain
+
+#### Scenario [SC-PACK-79]: Description-only change does not clear slots
+
+- **GIVEN** a task whose slots reference answer card A
+- **WHEN** the editor changes only A’s description
+- **THEN** those slots stay filled
+- **AND** answers become dirty so answers submit is available when minima are met
+
+#### Scenario [SC-PACK-80]: Deleting an unused answer card leaves tasks unchanged
+
+- **GIVEN** answer card A is not referenced by any task slot
+- **WHEN** the editor deletes A
+- **THEN** task sets and slots are unchanged
+- **AND** answers become dirty when the deletion differs from the last answers submit
 
 #### Scenario [SC-PACK-08]: Answers submit requires card minima only
 
@@ -525,7 +556,35 @@ When the change author is a non-anonymous user with an email, the system MUST se
 
 ### Requirement: Client surfaces — split editor, collection-first, autosave
 
-The client MUST expose: a collection list as the primary entry from lobby into the packs section (with Edit, trash remove-from-collection + confirm, and row→live/editor without stealing action clicks); a public catalog reachable from the collection; a **«На модерации»** entry in the packs section that lists packs where the caller is the **change author** of an open (pending or rejected) answers and/or tasks request — one row per pack, click opens the cards editor; a live pack view with collect state from `inCollection` and with **Edit** when the pack is in the user’s collection subject to pending-author rules (SC-PACK-53/61–63); a **cards pack** editing page titled as a card pack / «Набор карточек» (pack title/description, single card form, cards list with edit affordance, nested task-set list labeled by author/coauthor with **three-phase** per-set marks when applicable, answers submit, answers three-phase status label, answers thread, and author delete-pack when unpublished); a **task-set** editing page nested under cards (single question form, slots, answer tiles, questions list, tasks submit, tasks three-phase status label, tasks thread, and author delete-task-set when the pack is unpublished) that follows D1′ dirty/pending rules; and a staff moderation queue that lists open (pending or rejected) answers and tasks-only packs, whose hub shows answers/cards context first then a task-set list and opens a nested tasks page, hiding answers approve when tasks-only. Draft edits MUST autosave **without** a top-of-page «saving» caption that shifts layout; save/submit affordances MAY show button loading instead. Destructive deletes MUST ask for confirmation. Answers submit MUST be disabled when answers are not dirty or minima fail; tasks submit MUST be disabled when answers are dirty, when tasks are not dirty, or when minima fail. Adding/saving a question MUST require at least one filled answer slot. Create task-set MUST show a hover/tooltip hint when blocked. Loading, empty, and error states MUST be visible. Create/edit entry points MUST show the auth/verify modal when the user is ineligible. The public catalog MUST NOT list unapproved packs; moderation statuses appear on editor pages and the author «На модерации» list, not as catalog badges. Staff block/unblock controls MUST NOT be shown.
+The client MUST expose: a collection list as the primary entry from lobby into the packs section (with Edit, trash remove-from-collection + confirm, and row→live/editor without stealing action clicks); a public catalog reachable from the collection; a **«На модерации»** entry in the packs section that lists packs where the caller is the **change author** of an open (pending or rejected) answers and/or tasks request — one row per pack, click opens the cards editor; a live pack view with collect state from `inCollection` and with **Edit** when the pack is in the user’s collection subject to pending-author rules (SC-PACK-53/61–63); a **cards pack** editing page titled as a card pack / «Набор карточек» (pack title/description, single card form, cards list with edit affordance and delete confirm copy that says the card is removed from the **published** pack when the pack is in the catalog / has live, otherwise from the **draft**, nested task-set list labeled by author/coauthor with **three-phase** per-set marks when applicable and **yellow** set highlight while any task in that set still needs edits after an answers cascade, answers submit, answers three-phase status label under the page title matching list-mark vocabulary, answers thread, and author delete-pack when unpublished); a **task-set** editing page nested under cards (single question form, slots, answer tiles, **questions list where each task row shows its answer slots**, yellow highlight on a task row while it still needs edits after cascade, tasks submit, tasks three-phase status label under the page title matching list-mark vocabulary, tasks thread, and author delete-task-set when the pack is unpublished) that follows D1′ dirty/pending rules; and a staff moderation queue that lists open (pending or rejected) answers and tasks-only packs, whose hub shows answers/cards context first then a task-set list and opens a nested tasks page, hiding answers approve when tasks-only. Draft edits MUST autosave **without** a top-of-page «saving» caption that shifts layout; save/submit affordances MAY show button loading instead. Destructive deletes MUST ask for confirmation. Answers submit MUST be disabled when answers are not dirty or minima fail; tasks submit MUST be disabled when answers are dirty, when tasks are not dirty, or when minima fail. Adding/saving a question MUST require at least one filled answer slot. Create task-set MUST show a hover/tooltip hint when blocked. Loading, empty, and error states MUST be visible. Create/edit entry points MUST show the auth/verify modal when the user is ineligible. The public catalog MUST NOT list unapproved packs; moderation statuses appear on editor pages and the author «На модерации» list, not as catalog badges. Staff block/unblock controls MUST NOT be shown.
+
+#### Scenario [SC-PACK-81]: Yellow highlight on task and task set after cascade
+
+- **GIVEN** cascade from an answers content change or delete emptied slots on task T in set S
+- **WHEN** the editor views the task-set list and the tasks list for S
+- **THEN** set S and task T are highlighted (yellow/warning) while those cascade gaps remain
+- **AND** individual slot chips are not required to use that yellow highlight
+
+#### Scenario [SC-PACK-82]: Delete-card confirm mentions published vs draft
+
+- **GIVEN** pack P has a live/catalog revision
+- **WHEN** the editor confirms deleting an answer card
+- **THEN** the confirm copy states the card will be removed from the published pack
+- **AND GIVEN** pack P has no live revision
+- **WHEN** the editor confirms deleting an answer card
+- **THEN** the confirm copy states the card will be removed from the draft
+
+#### Scenario [SC-PACK-83]: Page subtitle statuses match list mark vocabulary
+
+- **GIVEN** answers or tasks are in a three-phase state (awaiting submit, pending, or needs revision)
+- **WHEN** the corresponding editor page renders
+- **THEN** the status under the page title uses the same phase labels as the list/row marks
+
+#### Scenario [SC-PACK-84]: Task list rows show answer slots
+
+- **GIVEN** a task-set page with one or more tasks that have slots
+- **WHEN** the tasks list renders
+- **THEN** each task row shows its answer slots (filled content and/or empty)
 
 #### Scenario [SC-PACK-75]: Author opens own packs from «На модерации»
 

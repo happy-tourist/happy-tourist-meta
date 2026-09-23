@@ -6,7 +6,8 @@ description: >-
   state vs Pinia, Colyseus I/O in stores (budgets peeks∞ / finite steps,
   removed-task holes, grille trap/rescue/push/return, catapult reveal keys,
   D13 atomic `$patch` seats+revealing/broken, peek/end-turn), acceptHMRUpdate,
-  and Quasar pinia entry. Use when adding, changing, reviewing, or debugging
+  and Quasar pinia entry. Core in SKILL.md; content-pack cascade/dual-submit
+  details in content.md. Use when adding, changing, reviewing, or debugging
   Pinia stores, shared game/auth/theme/support/content state (incl. admin setUserRole merge /
   emailVerified), or page-to-store wiring.
 ---
@@ -28,11 +29,20 @@ src/stores/
   theme.ts          # setup store — Quasar Dark preference (guest local / registered HTTP)
   game.ts           # options store
   support.ts        # setup store — support tickets + staff queue + admin users HTTP
-  content.ts        # setup store — packs catalog / collection (trash confirm) / my-moderation / live (`inCollection` + pending author ids; patch on add/remove) / draft; dual submit; D1′/D5′; three-phase marks; author delete unpublished; staff pending|rejected + `tasksOnly`/`answersActionsAvailable` (approve-from-rejected); no block UI
+  content.ts        # setup store — packs HTTP; cascadeGap*; dual submit; D1′/D5′; see content.md
   example-store.ts  # Quasar scaffold counter — unused by login/lobby/game
 ```
 
 Pinia is installed via Quasar store entry `src/stores/index.ts` (`createPinia()`). Domain stores import the Colyseus `client` from `@/boot/colyseus`. Prefer importing `use*Store` from `@/stores/auth` / `@/stores/theme` / `@/stores/game` / `@/stores/support` / `@/stores/content` in pages and router; keep Colyseus calls inside those stores.
+
+## Specialized Topics
+
+Read the matching file in this folder when the change involves that area
+(do not load every file at once):
+
+| Topic | File |
+|-------|------|
+| Content packs (`content` store: dual submit, cascade yellow, D1′/D5′, staff hub) | [content.md](content.md) |
 
 ### Store styles in this repo
 
@@ -42,7 +52,7 @@ Pinia is installed via Quasar store entry `src/stores/index.ts` (`createPinia()`
 | `theme` | **Setup** (`defineStore('theme', () => { … })`) | Dark preference + `syncFromAuthUser` / `toggle`; registered GET restore + POST save |
 | `game` | **Options** (`defineStore('game', { state, getters, actions })`) | Clear room lifecycle, `this.*` mutations, private helpers `_enterRoom` / `_attachRoom` |
 | `support` | **Setup** (`defineStore('support', () => { … })`) | HTTP tickets/staff/admin via `client.http`; staff list passes `topic`/`status` query; admin list expects `emailVerified`; after `setUserRole` **merge** `{ …u, …updated }` so list-only fields survive if API omits them; `error` + page `q-banner` |
-| `content` | **Setup** (`defineStore('content', () => { … })`) | HTTP packs via `client.http` (catalog/collection trash-confirm/`GET /api/content/my-moderation`/`listMyModeration`/live `inCollection`+`pending*AuthorId` (**open**=pending\|rejected)/draft/`submitAnswers`/`submitTasks`/author delete unpublished/moderation/staff); patch `pack.inCollection` on collect/remove; draft statuses + requestId; `answersDirty`/`tasksDirty` + `needsModeration` + three-phase marks; **D1′**/D5′ on open (dirty without open → lock; open author A MAY edit tasks); staff pending\|rejected `tasksOnly`/`answersActionsAvailable` (approve-from-rejected; map `not_approvable`); hub omit moderated / post-approve → hub (queue if tasks-only); no block UI; `loading` / `error` + page `q-banner` |
+| `content` | **Setup** (`defineStore('content', () => { … })`) | HTTP packs via `client.http`; dual submit; cascade yellow (`cascadeGapTaskIds` / `markCascadeGaps` / `restoreCascadeGapsIfNeeded`); **D1′**/D5′; staff hub — details in [content.md](content.md) |
 | `counter` (`example-store`) | Options | Scaffold only — do not extend for product features |
 
 **When to choose setup vs options**
@@ -90,7 +100,7 @@ Use a store for shared domain data, realtime session, or anything the router/oth
 | **theme** | Quasar Dark `preference`, `error`; async `syncFromAuthUser` (GET restore + generation + `clearStoredTheme` when unset; **no** `auth.user` replace after GET), `toggle` (guest `localStorage` `ht-theme`; registered `get` ≠ JWT-only, `post` on toggle may patch `user.theme`) | `App.vue` header toggle + stable auth identity watch |
 | **game** | lobby `rooms`/`lobbyRoom`/`lobbyWanted`/`listing`; active `room`/`roomId`/`sessionId`; mirrored `seats` (`GameSeat`: `touristId` + `pieces[]` (+ `finished`/`trapped`) + connectivity + `ready` + `finishPlace` + `timeExpired`) / `phase` / `maxSeats` / `countdownRemaining` / legacy `started` / `currentTurnSessionId` / `turnUntil` / `turnBudgetSeconds` / `removedTaskKeys` / `holdingGrilleKeys` / `revealingCatapultKeys` / `brokenCatapultKeys`; private `steps`/`peeks`/`budgetsInfinite`/`peekedThisTurn`/`openPeek`/`allJailWarning` from `budgets`/`peekOpen`/`allJailWarning`; `consentedLeaving` (gate soft-drop during `leaveGame`); getters `mySeat`/`isSeated`/`isMyTurn`/`isPlaying`/`canSendReady`/`canSendEndTurn`/`unfinishedBoardPieces`/`isMySeatFinished`/`isMySeatTimeExpired`/`isSoloBudget`/`myFinishedStripSides`; helpers `isFinishedSeat`/`isFinishedPiece`/`isTimeExpiredSeat`/`isSoloBudgetSeconds`/`turnRemainingSeconds`; `sendMove` / `sendRescue` / `sendPush` / `sendReturnFromFinish` / `sendPeek` / `sendPeekAnswer` / `sendEndTurn`; `sendReady`; `sendSay` + ephemeral `sayEvents`; `status`, `error`; subscribe/unsubscribe / create(`maxSeats`+`grilleDensity`+`catapultDensity`)/join/`rejoinGame`/leave; tourist token in `localStorage` | `LobbyPage`, `GamePage`, `App.vue` (Game leave/status) |
 | **support** | tickets / messages / staff queue / `adminUsers` (`emailVerified?`); `loading` / `error`; create/list/get/reply/close/take/status + `listAdminUsers` / `setUserRole` (merge updated row into `adminUsers`) via `client.http` | `SupportPage`, `SupportTicketPage`, `SupportStaffPage`, `AdminUsersPage` |
-| **content** | catalog / collection (trash confirm) / my-moderation / live (`inCollection` + pending author ids; patch membership) / draft / `submitAnswers` / `submitTasks` / author delete unpublished / moderation + staff (pending\|rejected; approve-from-rejected; tasks-only hub; nested → hub or queue); three-phase marks; D1′/D5′; `loading` / `error` via `client.http`; map codes with `contentErrorI18nKey` | `ContentCatalogPage`, `ContentCollectionPage`, `ContentMyModerationPage`, `ContentPackPage`, `ContentPackCreatePage`, `ContentPackEditorPage`, `ContentPackTasksPage`, `ContentPackModerationPage`, `ContentStaffPage`, `ContentStaffRequestPage`, `ContentStaffTasksPage` |
+| **content** | catalog / collection / my-moderation / live / draft / dual submit / cascadeGap* / D1′/D5′ / staff — see [content.md](content.md) | `Content*` pages |
 | **counter** | scaffold only | none in product flow — ignore unless cleaning scaffold |
 
 ### Auth vs theme vs game ownership
@@ -332,7 +342,7 @@ Dependency direction: `pages` → `stores` / `boot` / `components`. Keep Colyseu
 - Sync auth from `client.auth.onChange`; gate routes with `whenReady()`.
 - Map only needed room fields from `onStateChange` (incl. `currentTurnSessionId` / `removedTaskKeys` / `holdingGrilleKeys` / `revealingCatapultKeys` / `brokenCatapultKeys` / piece `trapped`); **D13:** `$patch` seats + removed/holding + revealing/broken together (never assign revealing after seats in separate ticks); keep `sendMove` / `sendRescue` / `sendPush` / `sendReturnFromFinish` / `sendPeek` / `sendEndTurn` / `sendSay` lockstep with server `onMessage`.
 - For content HTTP errors, store stable API codes and let pages resolve via `contentErrorI18nKey` → `content.errors.*`.
-- Call `submitAnswers` / `submitTasks` (and mirror draft flags `answersDirty`/`tasksDirty` / statuses / `needsModeration` / three-phase marks / open per type / **D1′** + D5′ on open=pending\|rejected); never invent a single `/submit` client path; author «На модерации» via `listMyModeration` → `GET /api/content/my-moderation`; pages: quiet autosave + submit disabled without dirty/minima; live Edit from `inCollection` (+ open-author exception; hide if `blocked` or foreign open author); collection trash + click isolation (no row `:to`); collect from `inCollection`; patch `pack.inCollection` on add/remove; author delete unpublished with confirm; staff pending\|rejected/`tasksOnly`/`answersActionsAvailable` (approve-from-rejected; map `not_approvable`; hide answers approve when tasks-only; nested → hub or queue); no block UI.
+- Content packs: dual submit + cascade yellow + D1′/D5′ + staff hub — follow [content.md](content.md) (no client slot pre-clear; `taskSetStatusMarks.*` for subtitles).
 - Add `acceptHMRUpdate` to every new store file.
 - Coordinate room name / state schema / messages with `../happy-tourist-server`.
 
@@ -344,6 +354,7 @@ Dependency direction: `pages` → `stores` / `boot` / `components`. Keep Colyseu
 - Reintroduce legacy draughts `board` / `{ from, to }` as current product canon.
 - Mix auth session concerns into `game` or room lifecycle into `auth`; do not fold content packs into `support`.
 - Call deprecated `submitPack` from pages (compat alias → answers only); use `submitAnswers` / `submitTasks`.
+- Pre-clear task slots before cascade save, or skip `restoreCascadeGapsIfNeeded` on dirty draft reload — see [content.md](content.md).
 - Forget HMR `acceptHMRUpdate` on new stores.
 - After theme GET, replace `auth.user` only to set `theme` — feeds the App
   restore watch and storms preference HTTP; keep applied theme in `theme`

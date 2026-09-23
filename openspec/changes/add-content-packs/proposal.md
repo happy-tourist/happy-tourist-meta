@@ -1,14 +1,14 @@
 ## Why
 
-После tasks-only staff-очереди остаётся дыра для **автора**: нет раздела «что на модерации», в списке наборов заданий нет фаз статуса после submit, а **reject с комментарием** снимает заявку с модерации у staff, хотя идёт обсуждение («нужна доработка»). Нужен узкий revision: общая семантика статусов, очередь staff+author с rejected, approve из «нужна доработка» без обязательного resubmit.
+После author-moderation UX остаётся баг и дыры в редакторе карточек: удаление/смена текста ответа часто даёт `answers_dirty` на save (слоты чистятся клиентом → D1′ считает это правкой заданий), кнопка «Отправить ответы» остаётся недоступной, confirm говорит «из черновика» даже для каталога, а после cascade нет жёлтой подсветки затронутых заданий/наборов и статусы под заголовком расходятся со списком. Нужен узкий revision: cascade без ложного lock, copy confirm, highlight, слоты на строке задания, sync статусов.
 
 ## What Changes
 
-- Reject + комментарий: заявка **остаётся на модерации**; у staff и автора статус **«нужна доработка»** (не пропадает из очереди).
-- Cancel по-прежнему снимает с модерации; approve убирает из очередей.
-- Staff MAY **approve** ту же заявку и из «нужна доработка» (случайный reject / без доработки); approve берёт revision заявки, не несохранённый черновик после reject.
-- Автор: кнопка **«На модерации»** в разделе наборов → список **своих** открытых заявок (pending + нужна доработка) → клик **сразу в Edit** карточек (параллельно входу через коллекцию).
-- Метки/статусы в три фазы для **task sets** и **карточек/answers**: ожидает отправки · на модерации · нужна доработка.
+- Save draft после смены **content** / удаления карточки, которая реально сбрасывает слоты: **не** отклонять как «правка заданий при dirty answers»; answers dirty и **submit answers** доступны (≥2 cards).
+- Cascade слотов **только** если после delete/content сбросился ≥1 слот; смена **description** карточки — dirty answers без cascade; delete карточки вне слотов — задания не трогать.
+- Confirm delete: «из опубликованного набора» только если набор в каталоге (`hasLive`); иначе «из черновика».
+- После cascade: жёлтая подсветка **задания** и **набора**, пока есть что править (дыры); слоты на строке задания в списке заданий видны явно.
+- Статус под заголовком страниц answers/tasks **дублирует** фазы меток списка (ожидает отправки / на модерации / нужна доработка).
 - Mocha + Traceability; краткие AGENTS/skills hints.
 
 ## Capabilities
@@ -19,31 +19,30 @@
 
 ### Modified Capabilities
 
-- `content/packs`: reject keeps request in moderation with shared needs-revision status; staff queue includes rejected; author moderation list; three-phase status marks; approve from rejected without mandatory resubmit
+- `content/packs`: answer-card cascade save without false tasks-lock; description/unused-card no cascade; delete confirm by hasLive; yellow task/set highlight; task-row slot preview; page status sync with list marks
 
 ## Scope
 
 - **Capability ID:** `content/packs`
 - **Пакеты:** server + client (+ meta hints)
-- Сохранить dual submit, D1′ locks, tasks-only staff hub (D34–D36), live Edit / collection, no block UI
-- Server: `listPendingPacks` (+ rejected open), approve from rejected, author «my moderation» list API
-- Client: staff queue labels; author «На модерации» page; editor marks vocabulary (answers + task sets)
+- Сохранить dual submit, D1′ (настоящие правки заданий при dirty), reject-stays / my-moderation / three-phase (D37–D41), no block UI
+- Server: putDraft cascade vs `tasksChanging` / answers_dirty; SC-PACK-07+ mocha
+- Client: confirm copy; cascade UX + yellow; task list slots; subtitle = list marks
 
 ## Out of scope
 
-- Seed baselines / изменить D1′ dirty edit locks
-- Submit tasks при грязных answers
-- Room↔pack, peek, media, transfer ownership
-- Block/unblock UI (server retain)
+- Менять семантику D1′ для **ручного** edit tasks при dirty answers без open answers
+- Staff hub slot preview (author editor only)
+- Room↔pack, peek, media, block UI
 
 ## Impact
 
-- Server: `listPendingPacks`, `approveRequest`/`rejectRequest` semantics, author list endpoint, mocha SC-PACK-19/30/73…
-- Client: `ContentStaffPage`, author moderation page + nav, `ContentPackEditorPage` / tasks marks, store/i18n
+- Server: `putDraft` / slot clear side-effect vs lock; mocha SC-PACK-07/78…
+- Client: `ContentPackEditorPage`, `ContentPackTasksPage`, store/i18n
 - Meta: skills/AGENTS hints
 
 ## References
 
-- Explore 2026-09-23: D1–D6 (reject stays / author queue / three-phase marks / approve-from-rejected / own requests only / cards+tasks)
-- Prior sections 1–18 implemented (incl. tasks-only staff)
+- Explore 2026-09-23: D1–D3 / Q1–Q4 (cascade lock, confirm hasLive, highlight task+set, description dirty no cascade, slots on task row, status sync)
+- Prior sections 1–21 implemented
 - Карта путей: `docs/projects-map.md`

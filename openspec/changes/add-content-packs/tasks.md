@@ -185,3 +185,25 @@
 ## 21. Meta — hints after author moderation UX
 
 - [x] 21.1 Обновить sibling AGENTS + skills (pages/stores/routes/localization/tests) под author «На модерации», reject stays, approve-from-rejected, three-phase marks; verify без полного dump spec
+
+## 22. Server — cascade save without false D1′ lock
+
+- [x] 22.1 Прочитать `proposal.md`, `design.md` (D43–D49), `specs/content/packs/spec.md` (SC-PACK-07/78–80); сверить `putDraft` / `tasksStructuralKey` / `writeDraftPayload` / `zz-contentPacks.test.ts`
+
+- [x] 22.2 Cascade clear slots (content change / delete referenced card) MUST NOT 409 `answers_dirty`; description-only и unused delete без cascade; verify SC-PACK-07/78/79/80; login не ломается
+
+- [x] 22.3 Mocha: SC-PACK-07/78/79/80 (+ submit answers after cascade); Traceability → covered; `npm test`
+
+## 23. Client — confirm, highlight, slots, status sync
+
+- [x] 23.1 Confirm delete card: published copy iff `hasLive`, else draft; verify SC-PACK-82
+
+- [x] 23.2 Cascade UX: save succeeds; submit answers enabled; yellow on affected task + task-set while gaps remain; verify SC-PACK-07/78/81
+
+- [x] 23.3 Task list rows show answer slots; page subtitles use same three-phase vocabulary as list marks; verify SC-PACK-83/84
+
+- [x] 23.4 `npm run lint` + `typecheck`; Traceability client SC → covered; починить падения
+
+## 24. Meta — hints after cascade UX
+
+- [x] 24.1 Обновить sibling AGENTS + skills (pages/stores/localization/routes/tests) под cascade save, confirm hasLive, yellow task/set, task-row slots, status sync; verify без полного dump spec

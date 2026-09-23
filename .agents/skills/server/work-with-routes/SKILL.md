@@ -4,7 +4,7 @@ description: >-
   Use when adding, changing, or reviewing HTTP routes on the happy-tourist
   Colyseus server: createRouter / createEndpoint in app.config.ts, Express
   hook handlers (/health, /hi), auth /auth/*, theme, support tickets, content
-  packs (/api/content/* dual submit answers|tasks + D1′/D5′ locks + author delete unpublished + draft statuses/tasksDirty/needsModeration + three-phase marks + GET my-moderation + staff queue reject-stays + approve-from-rejected + tasks-only hub tasksOnly/answersActionsAvailable; block endpoints retained), admin roles, or Colyseus room listing /rooms/:roomName.
+  packs (/api/content/* dual submit answers|tasks + cascadeNormalize ≠ false `answers_dirty` + D1′/D5′ locks + author delete unpublished + draft statuses/tasksDirty/needsModeration + three-phase marks + GET my-moderation + staff queue reject-stays + approve-from-rejected + tasks-only hub tasksOnly/answersActionsAvailable; block endpoints retained), admin roles, or Colyseus room listing /rooms/:roomName.
   Keep HTTP thin — game logic belongs in rooms.
 ---
 
@@ -114,7 +114,7 @@ For CORS / monitor details use `work-with-middleware` and `work-with-config`.
 | GET | `/api/content/packs` | `createEndpoint` | JWT; approved live catalog (blocked still listed); helpers in `src/lib/content.ts` |
 | POST | `/api/content/packs` | `createEndpoint` | JWT + non-anonymous + `emailVerified` (DB); create pack + draft into author collection |
 | GET | `/api/content/packs/:id` | `createEndpoint` | JWT; live approved snapshot + `inCollection` + `pendingAnswersAuthorId` / `pendingTasksAuthorId` |
-| GET\|POST | `/api/content/packs/:id/draft` | `createEndpoint` | JWT + verified editor; get/put draft (statuses + `tasksDirty` / `needsModeration` + requestId; **D1′**/D5′ on **open** = pending\|rejected) |
+| GET\|POST | `/api/content/packs/:id/draft` | `createEndpoint` | JWT + verified editor; get/put draft (statuses + `tasksDirty` / `needsModeration` + requestId; **D1′**/D5′ on **open** = pending\|rejected; `putDraft` compares `tasksStructuralKey` **after** `cascadeNormalizeTasks` — slot clear from card content/delete ≠ `answers_dirty`; desc-only / unused delete = no cascade) |
 | POST | `/api/content/packs/:id/submit/answers` | `createEndpoint` | JWT + verified; answers submit (≥2 cards; one open per `(pack, type)`; open author resubmit; rejected→pending) |
 | POST | `/api/content/packs/:id/submit/tasks` | `createEndpoint` | JWT + verified; tasks submit (≥2 tasks, filled slots; **D1′**/D5′ deny while answers open under other) |
 | GET\|POST | `/api/content/packs/:id/moderation` (+ `/messages`) | `createEndpoint` | JWT; type-scoped change-author ↔ staff thread (reject comment on reject) |
@@ -196,6 +196,7 @@ Do **not** create `src/app/routes/routes.js`-style BFF trees, mappers, or Soap/a
 | Expecting listing for a room key the client does not use | Keep registration as `tourist` (+ live `lobby`) |
 | Fat handlers with DB game stats “because HTTP is easy” | Prefer room lifecycle / dedicated thin endpoint only if product asks |
 | Content moderation mail → bare `#/content/packs/:id/moderation` | D20: `editorThreadLink` → `#/…/edit` (answers) or `#/…/tasks/:taskSetId` (tasks) |
+| Treating cascade slot clears as `tasksChanging` under D1′ | `putDraft` must compare `tasksStructuralKey(cascadeNormalizeTasks(…))`; SC-PACK-07/78–80 |
 
 ## Checklist for a new or changed route
 
