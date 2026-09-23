@@ -161,3 +161,27 @@
 ## 18. Meta — hints after tasks-only staff
 
 - [x] 18.1 Обновить sibling AGENTS + skills (pages/stores/routes/localization/tests) под staff tasks-only queue/hub; verify без полного dump spec
+
+## 19. Server — reject stays, approve-from-rejected, author list
+
+- [x] 19.1 Прочитать `proposal.md`, `design.md` (D37–D42), `specs/content/packs/spec.md` (SC-PACK-19/20/30/73…); сверить `listPendingPacks` / `approveRequest` / `rejectRequest` / `zz-contentPacks.test.ts`
+
+- [x] 19.2 `listPendingPacks`: включать open `rejected` (нужна доработка) + pending; dedupe как D34; verify SC-PACK-19/30/73; login не ломается
+
+- [x] 19.3 `approveRequest` допускает `rejected` без нового submit (revision заявки); cancel снимает с очереди; mocha SC-PACK-74/20; Traceability → covered; `npm test`
+
+- [x] 19.4 HTTP list «мои на модерации» (changeAuthorId = caller, pending|rejected); Traceability SC-PACK-75/76 server-facing; `npm test`
+
+## 20. Client — author queue, three-phase marks, staff labels
+
+- [x] 20.1 Кнопка «На модерации» в разделе наборов + страница списка своих заявок → Edit карточек; empty state; verify SC-PACK-75/76
+
+- [x] 20.2 Staff queue: показывать rejected с меткой «нужна доработка»; approve доступен из rejected; verify SC-PACK-19/73/74 UX
+
+- [x] 20.3 Три фазы i18n/UI: task-set marks + answers/tasks page status (ожидает отправки / на модерации / нужна доработка); verify SC-PACK-48/49/77
+
+- [x] 20.4 `npm run lint` + `typecheck`; Traceability client SC → covered; починить падения
+
+## 21. Meta — hints after author moderation UX
+
+- [x] 21.1 Обновить sibling AGENTS + skills (pages/stores/routes/localization/tests) под author «На модерации», reject stays, approve-from-rejected, three-phase marks; verify без полного dump spec

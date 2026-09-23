@@ -2,7 +2,7 @@
 
 ## Purpose
 
-UGC-наборы (**набор карточек** + задания): создание/правка verified-пользователями, коллекция, публичный каталог после approve ответов, **раздельная** модерация answers/tasks, видимые статусы и треды на страницах редактора, блокировка; задел difficulty 1–3 под будущие peek-награды. Без привязки к tourist-room и без замены peek-stub.
+UGC-наборы (**набор карточек** + задания): создание/правка verified-пользователями, коллекция, публичный каталог после approve ответов, **раздельная** модерация answers/tasks, видимые **трёхфазные** статусы и треды на страницах редактора, очередь staff (pending + нужна доработка) и авторский список «На модерации», блокировка; задел difficulty 1–3 под будущие peek-награды. Без привязки к tourist-room и без замены peek-stub.
 
 ## Traceability
 
@@ -76,6 +76,11 @@ UGC-наборы (**набор карточек** + задания): созда�
 | SC-PACK-70 | covered |
 | SC-PACK-71 | covered |
 | SC-PACK-72 | covered |
+| SC-PACK-73 | covered |
+| SC-PACK-74 | covered |
+| SC-PACK-75 | covered |
+| SC-PACK-76 | covered |
+| SC-PACK-77 | covered |
 
 ## ADDED Requirements
 
@@ -330,7 +335,7 @@ A pack MAY have at most one pending request per type (`answers`, `tasks`). While
 
 ### Requirement: Staff moderation via answers hub
 
-Moderator and admin MUST see a single queue of packs that have an **answers** pending request and/or a **tasks-only** pending request (tasks pending with no answers pending MUST appear). When both answers and tasks are pending for the same pack, the queue MUST list the pack once via the answers request (nested tasks as today). Opening a queue item MUST show the same hub layout: an answers/cards preview of the **full pack context** first, then a **list** of task sets with status marks — NOT a fully expanded dump of all questions. For answers-pending, answers come from the answers request revision; for tasks-only, answers MUST come from the current live answers (read-only context). Staff MUST open a nested tasks page to review questions/slots and to approve/reject/cancel **tasks**. Approve/reject/cancel **answers** and the answers thread MUST be available on the hub only when an answers request is pending; for tasks-only they MUST NOT be shown or MUST be disabled. When answers are also pending, staff MUST approve **tasks** before approving **answers**. Approving answers MUST require live tasks already present and MUST publish the pack to the public catalog (unless blocked). For tasks-only, approving tasks MUST update live tasks without requiring an answers approve. Staff MAY reject with comment, cancel, or message on the relevant request thread. Threads remain visible only to that request’s change author and staff. After approval of a type, a later cycle of the same type MUST open a new thread. Non-staff MUST NOT perform staff actions.
+Moderator and admin MUST see a single queue of packs that have an **open** answers and/or tasks-only moderation request with status **pending** or **rejected** (needs revision). Tasks-only open requests (no open answers request) MUST appear. When both answers and tasks are open for the same pack, the queue MUST list the pack once via the answers request (nested tasks as today). Queue rows MUST show whether the open request is «на модерации» (pending) or «нужна доработка» (rejected). Opening a queue item MUST show the same hub layout: an answers/cards preview of the **full pack context** first, then a **list** of task sets with status marks — NOT a fully expanded dump of all questions. For answers-open, answers come from the answers request revision; for tasks-only, answers MUST come from the current live answers (read-only context). Staff MUST open a nested tasks page to review questions/slots and to approve/reject/cancel **tasks**. Approve/reject/cancel **answers** and the answers thread MUST be available on the hub only when an answers request is open (pending or rejected); for tasks-only they MUST NOT be shown or MUST be disabled. When answers are also open/pending, staff MUST approve **tasks** before approving **answers**. Approving answers MUST require live tasks already present and MUST publish the pack to the public catalog (unless blocked). For tasks-only, approving tasks MUST update live tasks without requiring an answers approve. Staff MAY reject with comment (request stays in the queue as needs-revision), cancel (leaves queue), approve from pending **or** rejected, or message on the relevant request thread. Threads remain visible only to that request’s change author and staff. After approval of a type, a later cycle of the same type MUST open a new thread. Non-staff MUST NOT perform staff actions.
 
 #### Scenario [SC-PACK-18]: Staff approves answers into catalog after live tasks
 
@@ -340,18 +345,21 @@ Moderator and admin MUST see a single queue of packs that have an **answers** pe
 - **AND** the pack appears in the public catalog (unless blocked)
 - **AND** answers are no longer pending
 
-#### Scenario [SC-PACK-19]: Staff rejects with comment
+#### Scenario [SC-PACK-19]: Staff rejects with comment — stays in moderation
 
 - **GIVEN** a pending answers or tasks request and staff actor
 - **WHEN** the actor rejects with a non-empty comment
 - **THEN** the change author can read the comment in that request’s thread
+- **AND** both staff and author see status «нужна доработка» / needs-revision for that type
+- **AND** the pack remains listed in the staff moderation queue
 - **AND** the author may amend and resubmit on the same thread when locks allow
 
-#### Scenario [SC-PACK-20]: Staff cancels pending
+#### Scenario [SC-PACK-20]: Staff cancels open request
 
-- **GIVEN** a pending answers or tasks request and staff actor
+- **GIVEN** a pending or rejected answers or tasks request and staff actor
 - **WHEN** the actor cancels that request
-- **THEN** that request is no longer pending
+- **THEN** that request is no longer open for moderation
+- **AND** the pack leaves the staff queue for that request
 - **AND** locks for that type are released accordingly
 
 #### Scenario [SC-PACK-21]: Non-staff cannot approve or cancel
@@ -366,13 +374,28 @@ Moderator and admin MUST see a single queue of packs that have an **answers** pe
 - **WHEN** moderation starts for that new change
 - **THEN** a new moderation thread is created for that type (not a continuation of the old approved thread)
 
-#### Scenario [SC-PACK-30]: Staff queue lists answers-pending and tasks-only packs
+#### Scenario [SC-PACK-30]: Staff queue lists open answers and tasks-only packs
 
 - **GIVEN** pack A has answers pending and pack B has only tasks pending
 - **WHEN** staff opens the moderation queue
 - **THEN** pack A is listed
 - **AND** pack B is listed for its tasks-only pending
-- **AND** a role `user` session MUST NOT access that queue
+- **AND** a role `user` session MUST NOT access that staff queue
+
+#### Scenario [SC-PACK-73]: Rejected request stays in staff queue
+
+- **GIVEN** pack P had a pending tasks (or answers) request that staff rejected with a comment
+- **WHEN** staff opens the moderation queue
+- **THEN** pack P is still listed
+- **AND** the row indicates needs-revision / «нужна доработка»
+
+#### Scenario [SC-PACK-74]: Staff may approve a rejected request without resubmit
+
+- **GIVEN** an answers or tasks request in rejected (needs-revision) status and staff actor
+- **WHEN** the actor approves that request without a new author submit
+- **THEN** the request’s submitted revision becomes live for that type (as on pending approve)
+- **AND** the request leaves the staff queue
+- **AND** post-reject draft edits that were not resubmitted MUST NOT become live
 
 #### Scenario [SC-PACK-39]: Staff must approve tasks before answers
 
@@ -452,12 +475,13 @@ While a moderation request is not cancelled and not finally closed by approval w
 - **WHEN** another non-staff user requests the thread
 - **THEN** the system rejects or returns no thread content
 
-#### Scenario [SC-PACK-45]: Author sees reject status and comment on editor page
+#### Scenario [SC-PACK-45]: Author sees needs-revision status and comment on editor page
 
 - **GIVEN** staff rejected an answers (or tasks) request with a non-empty comment
 - **WHEN** change author A opens the corresponding cards (or tasks) editing page
-- **THEN** the page shows rejected / needs-revision status for that type
+- **THEN** the page shows «нужна доработка» / needs-revision status for that type
 - **AND** the reject comment is readable in that type’s thread on the page
+- **AND** the pack remains reachable from the author’s «На модерации» list
 
 ### Requirement: Staff may block a pack for everyone (server retains; UI deferred)
 
@@ -501,7 +525,31 @@ When the change author is a non-anonymous user with an email, the system MUST se
 
 ### Requirement: Client surfaces — split editor, collection-first, autosave
 
-The client MUST expose: a collection list as the primary entry from lobby into the packs section (with Edit, trash remove-from-collection + confirm, and row→live/editor without stealing action clicks); a public catalog reachable from the collection; a live pack view with collect state from `inCollection` and with **Edit** when the pack is in the user’s collection subject to pending-author rules (SC-PACK-53/61–63); a **cards pack** editing page titled as a card pack / «Набор карточек» (pack title/description, single card form, cards list with edit affordance, nested task-set list labeled by author/coauthor with per-set needs-moderation marks when applicable, answers submit, answers status label, answers thread, and author delete-pack when unpublished); a **task-set** editing page nested under cards (single question form, slots, answer tiles, questions list, tasks submit, tasks status label, tasks thread, and author delete-task-set when the pack is unpublished) that follows D1′ dirty/pending rules; and a staff moderation queue that lists answers-pending and tasks-only-pending packs, whose hub shows answers/cards context first then a task-set list and opens a nested tasks page, hiding answers approve when tasks-only. Draft edits MUST autosave **without** a top-of-page «saving» caption that shifts layout; save/submit affordances MAY show button loading instead. Destructive deletes MUST ask for confirmation. Answers submit MUST be disabled when answers are not dirty or minima fail; tasks submit MUST be disabled when answers are dirty, when tasks are not dirty, or when minima fail. Adding/saving a question MUST require at least one filled answer slot. Create task-set MUST show a hover/tooltip hint when blocked. Loading, empty, and error states MUST be visible. Create/edit entry points MUST show the auth/verify modal when the user is ineligible. The public catalog MUST NOT list unapproved packs; moderation statuses appear on editor pages, not as catalog badges. Staff block/unblock controls MUST NOT be shown.
+The client MUST expose: a collection list as the primary entry from lobby into the packs section (with Edit, trash remove-from-collection + confirm, and row→live/editor without stealing action clicks); a public catalog reachable from the collection; a **«На модерации»** entry in the packs section that lists packs where the caller is the **change author** of an open (pending or rejected) answers and/or tasks request — one row per pack, click opens the cards editor; a live pack view with collect state from `inCollection` and with **Edit** when the pack is in the user’s collection subject to pending-author rules (SC-PACK-53/61–63); a **cards pack** editing page titled as a card pack / «Набор карточек» (pack title/description, single card form, cards list with edit affordance, nested task-set list labeled by author/coauthor with **three-phase** per-set marks when applicable, answers submit, answers three-phase status label, answers thread, and author delete-pack when unpublished); a **task-set** editing page nested under cards (single question form, slots, answer tiles, questions list, tasks submit, tasks three-phase status label, tasks thread, and author delete-task-set when the pack is unpublished) that follows D1′ dirty/pending rules; and a staff moderation queue that lists open (pending or rejected) answers and tasks-only packs, whose hub shows answers/cards context first then a task-set list and opens a nested tasks page, hiding answers approve when tasks-only. Draft edits MUST autosave **without** a top-of-page «saving» caption that shifts layout; save/submit affordances MAY show button loading instead. Destructive deletes MUST ask for confirmation. Answers submit MUST be disabled when answers are not dirty or minima fail; tasks submit MUST be disabled when answers are dirty, when tasks are not dirty, or when minima fail. Adding/saving a question MUST require at least one filled answer slot. Create task-set MUST show a hover/tooltip hint when blocked. Loading, empty, and error states MUST be visible. Create/edit entry points MUST show the auth/verify modal when the user is ineligible. The public catalog MUST NOT list unapproved packs; moderation statuses appear on editor pages and the author «На модерации» list, not as catalog badges. Staff block/unblock controls MUST NOT be shown.
+
+#### Scenario [SC-PACK-75]: Author opens own packs from «На модерации»
+
+- **GIVEN** user A is change author of an open pending or rejected answers or tasks request on pack P
+- **WHEN** A opens «На модерации» from the packs section
+- **THEN** pack P is listed
+- **AND** packs where A is not the change author of an open request are not listed solely for that reason
+- **AND** choosing P navigates to the cards editor for P
+
+#### Scenario [SC-PACK-76]: Author list drops pack after approve or cancel
+
+- **GIVEN** pack P appears on A’s «На модерации» list for an open request
+- **WHEN** staff approves or cancels that open request (and no other open request remains for A on P)
+- **THEN** P no longer appears on A’s list
+
+#### Scenario [SC-PACK-77]: Cards answers status uses three-phase labels including dirty
+
+- **GIVEN** answers are dirty relative to the last answers submit and there is no open answers request
+- **WHEN** the cards page renders
+- **THEN** answers status shows «ожидает отправки на модерацию»
+- **AND GIVEN** answers become pending after submit
+- **WHEN** the cards page renders
+- **THEN** answers status shows «на модерации»
+
 
 #### Scenario [SC-PACK-29]: Catalog lists approved packs
 
@@ -538,25 +586,28 @@ The client MUST expose: a collection list as the primary entry from lobby into t
 - **WHEN** the user attempts to add/save the question
 - **THEN** the client prevents the action until at least one slot references an answer card
 
-#### Scenario [SC-PACK-48]: Changed task sets show needs-moderation mark
+#### Scenario [SC-PACK-48]: Task-set list shows three-phase moderation marks
 
-- **GIVEN** the editor changed task set S since the last successful tasks submit and has not submitted tasks again
-- **WHEN** the user returns to the cards page task-set list (including after reload)
-- **THEN** set S shows a needs-moderation mark
-- **AND** unchanged sets do not show that mark solely for S’s edits
+- **GIVEN** the editor’s cards page task-set list for pack P
+- **WHEN** a task set is dirty since the last successful tasks submit and tasks are not pending/rejected
+- **THEN** that set shows «ожидает отправки на модерацию»
+- **WHEN** tasks are pending for P
+- **THEN** task sets in that open request show «на модерации» (not only a cleared dirty mark)
+- **WHEN** tasks are rejected (needs-revision) for P
+- **THEN** those sets show «нужна доработка»
 
 #### Scenario [SC-PACK-60]: Needs-moderation marks clear after tasks approval without further edits
 
 - **GIVEN** author A submitted tasks, staff approved tasks, and A did not edit tasks after that submit
 - **WHEN** A opens the cards page task-set list (including after reload)
-- **THEN** those task sets MUST NOT show a needs-moderation mark
+- **THEN** those task sets MUST NOT show «ожидает отправки» / dirty mark
 - **AND** the tasks status MAY show approved
 
-#### Scenario [SC-PACK-49]: Status labels on cards and tasks pages
+#### Scenario [SC-PACK-49]: Answers and tasks pages use the same three-phase vocabulary
 
-- **GIVEN** answers (or tasks) are pending, rejected, or approved for the editor’s pack
+- **GIVEN** answers (or tasks) are dirty without an open request, pending, or rejected for the editor’s pack
 - **WHEN** the editor opens the cards (or tasks) page
-- **THEN** the page shows the corresponding status label for that type (pending / rejected needs revision / approved as applicable)
+- **THEN** the page shows the corresponding label: «ожидает отправки на модерацию» / «на модерации» / «нужна доработка» (or approved when applicable after a closed cycle)
 
 #### Scenario [SC-PACK-50]: Quiet autosave without top saving caption
 

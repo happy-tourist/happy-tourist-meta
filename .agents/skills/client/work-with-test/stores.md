@@ -5,8 +5,9 @@ Pinia store, or when the store itself is the SUT.
 
 Product store conventions: meta skill `work-with-stores`. Domains: `auth`,
 `theme`, `game`, `support`, `content` (HTTP packs via `client.http`; dual submit;
-D1′/D5′ locks; author delete unpublished; staff `tasksOnly`/`answersActionsAvailable`
-— spy `client.http`, do not hit live server).
+my-moderation; three-phase marks; D1′/D5′ on open=pending|rejected; author delete unpublished; staff
+pending|rejected + `tasksOnly`/`answersActionsAvailable` / approve-from-rejected
+(`not_approvable`) — spy `client.http`, do not hit live server).
 
 ## Testing a page / component that uses a store
 

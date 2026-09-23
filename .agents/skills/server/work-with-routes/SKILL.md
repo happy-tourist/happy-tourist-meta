@@ -4,7 +4,7 @@ description: >-
   Use when adding, changing, or reviewing HTTP routes on the happy-tourist
   Colyseus server: createRouter / createEndpoint in app.config.ts, Express
   hook handlers (/health, /hi), auth /auth/*, theme, support tickets, content
-  packs (/api/content/* dual submit answers|tasks + D1′/D5′ locks + author delete unpublished + draft statuses/tasksDirty/needsModeration + staff queue tasks-only + hub tasksOnly/answersActionsAvailable; block endpoints retained), admin roles, or Colyseus room listing /rooms/:roomName.
+  packs (/api/content/* dual submit answers|tasks + D1′/D5′ locks + author delete unpublished + draft statuses/tasksDirty/needsModeration + three-phase marks + GET my-moderation + staff queue reject-stays + approve-from-rejected + tasks-only hub tasksOnly/answersActionsAvailable; block endpoints retained), admin roles, or Colyseus room listing /rooms/:roomName.
   Keep HTTP thin — game logic belongs in rooms.
 ---
 
@@ -114,17 +114,18 @@ For CORS / monitor details use `work-with-middleware` and `work-with-config`.
 | GET | `/api/content/packs` | `createEndpoint` | JWT; approved live catalog (blocked still listed); helpers in `src/lib/content.ts` |
 | POST | `/api/content/packs` | `createEndpoint` | JWT + non-anonymous + `emailVerified` (DB); create pack + draft into author collection |
 | GET | `/api/content/packs/:id` | `createEndpoint` | JWT; live approved snapshot + `inCollection` + `pendingAnswersAuthorId` / `pendingTasksAuthorId` |
-| GET\|POST | `/api/content/packs/:id/draft` | `createEndpoint` | JWT + verified editor; get/put draft (statuses + `tasksDirty` / `needsModeration` + requestId; **D1′**/D5′ locks) |
-| POST | `/api/content/packs/:id/submit/answers` | `createEndpoint` | JWT + verified; answers submit (≥2 cards; one pending per `(pack, type)`; only pending author may resubmit) |
-| POST | `/api/content/packs/:id/submit/tasks` | `createEndpoint` | JWT + verified; tasks submit (≥2 tasks, filled slots; **D1′**/D5′ deny rules) |
+| GET\|POST | `/api/content/packs/:id/draft` | `createEndpoint` | JWT + verified editor; get/put draft (statuses + `tasksDirty` / `needsModeration` + requestId; **D1′**/D5′ on **open** = pending\|rejected) |
+| POST | `/api/content/packs/:id/submit/answers` | `createEndpoint` | JWT + verified; answers submit (≥2 cards; one open per `(pack, type)`; open author resubmit; rejected→pending) |
+| POST | `/api/content/packs/:id/submit/tasks` | `createEndpoint` | JWT + verified; tasks submit (≥2 tasks, filled slots; **D1′**/D5′ deny while answers open under other) |
 | GET\|POST | `/api/content/packs/:id/moderation` (+ `/messages`) | `createEndpoint` | JWT; type-scoped change-author ↔ staff thread (reject comment on reject) |
 | POST | `/api/content/packs/:id/block` \| `/unblock` | `createEndpoint` | JWT moderator\|admin (retained; client UI hidden) |
 | POST | `/api/content/pack/delete` | `createEndpoint` | JWT + creator; hard-delete **unpublished** pack (cascade) |
 | POST | `/api/content/task-set/delete` | `createEndpoint` | JWT + creator; delete task set from draft + liveTasks while unpublished |
 | GET | `/api/content/collection` | `createEndpoint` | JWT (incl. anonymous); own collection |
 | POST | `/api/content/collection` \| `/remove` | `createEndpoint` | JWT; add/remove pack |
-| GET | `/api/content/staff/pending` | `createEndpoint` | JWT moderator\|admin; answers-pending **and** tasks-only (one row per pack; `tasksOnly`) |
-| GET\|POST | `/api/content/staff/requests/:id` (+ `/approve` `/reject` `/cancel` `/messages`) | `createEndpoint` | JWT staff; same hub layout; tasks-only: live answers context + `answersActionsAvailable: false`; nested tasks; approve answers needs live tasks |
+| GET | `/api/content/my-moderation` | `createEndpoint` | JWT; caller’s open requests (pending\|rejected) for author «На модерации» |
+| GET | `/api/content/staff/pending` | `createEndpoint` | JWT moderator\|admin; answers-pending **and** tasks-only **and** open rejected (one row per pack; `tasksOnly`; reject stays) |
+| GET\|POST | `/api/content/staff/requests/:id` (+ `/approve` `/reject` `/cancel` `/messages`) | `createEndpoint` | JWT staff; same hub; approve from pending\|rejected (no mandatory resubmit; else `not_approvable`); cancel drops; reject mail «Нужна доработка»; tasks-only: live answers context + `answersActionsAvailable: false`; nested tasks; approve answers needs live tasks |
 | GET | `/api/admin/users` | `createEndpoint` | JWT admin; **exclude** anonymous; include `emailVerified` (+ id/email/role/displayName) |
 
 **Content moderation mail (D20):** links from `src/lib/content.ts` (`editorThreadLink`) go to embedded-thread pages — answers → `#/content/packs/:id/edit`, tasks → `#/content/packs/:id/tasks/:taskSetId` (fallback `#/…/edit`) — **not** bare `#/content/packs/:id/moderation`.

@@ -54,12 +54,13 @@ Router mode: hash (`/#/lobby`, `/#/support`, `/#/content/packs`, `/#/content/sta
 | `/admin/users` | `admin-users` | `AdminUsersPage`; `requiresAuth` + `requiresAdmin` |
 | `/content/packs` | `content-catalog` | `ContentCatalogPage`; `meta.requiresAuth` |
 | `/content/collection` | `content-collection` | `ContentCollectionPage`; lobby «Наборы» entry; Edit + trash + click isolation (no row `:to`; hide Edit if `blocked`); `meta.requiresAuth` |
+| `/content/my-moderation` | `content-my-moderation` | `ContentMyModerationPage`; author «На модерации»; `meta.requiresAuth` |
 | `/content/packs/new` | `content-pack-new` | `ContentPackCreatePage`; → answers; `meta.requiresAuth` |
 | `/content/packs/:id` | `content-pack` | `ContentPackPage`; live Edit when `inCollection` (+ pending-author; hide if `blocked`/foreign pending); `meta.requiresAuth` |
-| `/content/packs/:id/edit` | `content-pack-edit` | `ContentPackEditorPage` («Набор карточек»); `meta.requiresAuth` |
-| `/content/packs/:id/tasks/:taskSetId` | `content-pack-tasks` | `ContentPackTasksPage`; statuses/thread; `meta.requiresAuth` |
+| `/content/packs/:id/edit` | `content-pack-edit` | `ContentPackEditorPage` («Набор карточек» + three-phase marks); `meta.requiresAuth` |
+| `/content/packs/:id/tasks/:taskSetId` | `content-pack-tasks` | `ContentPackTasksPage`; three-phase marks/thread; `meta.requiresAuth` |
 | `/content/packs/:id/moderation` | `content-pack-moderation` | `ContentPackModerationPage`; `meta.requiresAuth` |
-| `/content/staff` | `content-staff` | `ContentStaffPage`; answers + tasks-only queue; `requiresAuth` + `requiresStaff` |
+| `/content/staff` | `content-staff` | `ContentStaffPage`; answers + tasks-only + rejected queue (approve-from-rejected); `requiresAuth` + `requiresStaff` |
 | `/content/staff/requests/:id` | `content-staff-request` | `ContentStaffRequestPage`; same hub layout; hide answers actions when `tasksOnly` / `answersActionsAvailable === false` |
 | `/content/staff/requests/:id/tasks` | `content-staff-request-tasks` | `ContentStaffTasksPage`; nested → hub after approve (queue if tasks-only) |
 | `/game/:roomId` | `game` | `GamePage`; `meta.requiresAuth` |
@@ -91,7 +92,7 @@ Shared mutable session and realtime I/O belong in Pinia, not ad-hoc page-only `c
 | Auth session | `stores/auth.ts`: `register` / `login` / `loginAnonymously` / `loginWithGoogle` / `logout` / `whenReady`; `isAuthenticated`, `displayName`, `role` / `isStaff` / `isAdmin`; optional `user.theme`; sync via `client.auth.onChange` |
 | UI theme (chrome Dark) | `stores/theme.ts`: `syncFromAuthUser` / `toggle`; guest `localStorage` (`ht-theme`); registered `client.http.get('/api/theme')` restore (≠ JWT-only; **no** `auth.user` replace after GET) + `post` on toggle; `App.vue` stable `watch([() => auth.ready, () => auth.user?.id, () => auth.user?.anonymous], …)` (SC-THEME-10) |
 | Support tickets / staff / admin | `stores/support.ts`: HTTP `/api/support/*` + `/api/admin/*` via `client.http` (staff `topic`/`status` query; admin `emailVerified`); pages `Support*` / `AdminUsersPage` |
-| Content packs (live Edit in-collection + trash/click isolation; hide Edit if `blocked`; «Набор карточек» + nested tasks; dual submit; D1′/D5′ locks; author delete unpublished; staff hub redirect / no block UI) | `stores/content.ts`: HTTP `/api/content/*` via `client.http`; `submitAnswers`/`submitTasks` + `deleteUnpublishedPack`/`deleteTaskSet`; live `inCollection` + `pendingAnswersAuthorId`/`pendingTasksAuthorId`; `answersDirty`/`tasksDirty` + statuses/`needsModeration`; map API codes with `contentErrorI18nKey`; pages `Content*` (collection trash+Edit isolation; live Edit when `inCollection`; hide if blocked); create/edit need verified non-anonymous (page modal; server enforces) |
+| Content packs (live Edit in-collection + trash/click isolation; hide Edit if `blocked`; «Набор карточек» + nested tasks; dual submit; my-moderation; three-phase marks; D1′/D5′ on open=pending\|rejected; author delete unpublished; staff reject-stays + approve-from-rejected / hub `tasksOnly` / no block UI) | `stores/content.ts`: HTTP `/api/content/*` via `client.http` (`listMyModeration`, `submitAnswers`/`submitTasks`, `deleteUnpublishedPack`/`deleteTaskSet`); live `inCollection` + open author ids; `answersDirty`/`tasksDirty` + statuses/`needsModeration` + three-phase; map API codes with `contentErrorI18nKey` (incl. `not_approvable`); pages `Content*` (incl. `ContentMyModerationPage`; catalog/collection nav → my-moderation); create/edit need verified non-anonymous (page modal; server enforces) |
 | Lobby room list | `stores/game.ts` `subscribeLobby` / `unsubscribeLobby` → LobbyRoom `rooms` / `+` / `-` |
 | Enter / leave room | `createGame` / `joinGame` / `leaveGame` (`TOURIST_ROOM` / `LOBBY_ROOM`) |
 | Room attach | `_attachRoom` `onStateChange` / `onLeave`; getter `isInRoom` |
@@ -118,9 +119,9 @@ Do not invent room schemas, HTTP routes, or move payloads — note the server pa
 - Cabinet displayName / change-password / email → `pages/AccountPage.vue` + `stores/auth` (`updateDisplayName` / `changePassword` / `canChangePassword`).
 - Lobby create / join / list (join busy-lock; clear stale rooms) → `pages/LobbyPage.vue` + `stores/game.ts`.
 - Support create / list / thread / staff / admin roles → `pages/Support*.vue` / `AdminUsersPage.vue` + `stores/support.ts` (+ `auth.role` gating).
-- Content packs collection (Edit + trash + click isolation; hide Edit if `blocked`) / catalog / create / live (`inCollection` Edit; hide if blocked/foreign pending) / «Набор карточек» editor (author delete unpublished) / task-set (D1′ lock + delete set) / moderation / staff hub (no block UI; redirect after approve) → `pages/Content*.vue` + `stores/content.ts` (+ verify gate / `auth.isStaff`).
+- Content packs collection (Edit + trash + click isolation; hide Edit if `blocked`) / catalog / create / author «На модерации» / live (`inCollection` Edit; hide if blocked/foreign pending) / «Набор карточек» editor (three-phase marks; author delete unpublished) / task-set (D1′ + three-phase + delete set) / moderation / staff hub (reject-stays; approve-from-rejected; no block UI; redirect after approve) → `pages/Content*.vue` + `stores/content.ts` (+ verify gate / `auth.isStaff`).
 - Board interaction / continuous board-busy / presence reserve / `rejoinGame` → `pages/GamePage.vue` + `stores/game.ts`.
-- Locale messages → `src/i18n/` (default `en-US`; auth policy/cabinet + support + `content.*` keys incl. trash remove confirm / delete).
+- Locale messages → `src/i18n/` (default `en-US`; auth policy/cabinet + support + `content.*` keys incl. `myModeration*` / `statusCycle*` / trash remove confirm / delete).
 - Unit tests (Vitest) → `vitest.config.ts` + `test/setup.ts` + colocated `src/**/__tests__/*` / page tests; see meta `work-with-test`.
 - Deploy / Pages 404 fallback → `.github/workflows/deploy.yml` (`quasar build -m spa`, `index.html` → `404.html`).
 
@@ -131,7 +132,7 @@ Do not invent room schemas, HTTP routes, or move payloads — note the server pa
 | Auth (email/password policy, anonymous, Google, cabinet profile, logout, role nav) | `pages/LoginPage.vue` / `AccountPage.vue` + `stores/auth.ts` + `lib/passwordPolicy.ts`; router guards in `router/index.ts` |
 | Lobby (list / create / join busy-lock; clear stale rooms; quiet resubscribe; Support + «Наборы»→collection) | `pages/LobbyPage.vue` + `stores/game` `subscribeLobby` / `createGame` / `joinGame` |
 | Support (tickets / staff queue / admin roles) | `pages/Support*.vue` / `AdminUsersPage.vue` + `stores/support.ts` |
-| Content packs (live Edit in-collection; trash/click isolation; hide Edit if `blocked`; D1′/D5′; author delete unpublished; staff queue tasks-only + hub `tasksOnly`/`answersActionsAvailable` / no block UI) | `pages/Content*.vue` + `stores/content.ts` |
+| Content packs (live Edit in-collection; trash/click isolation; hide Edit if `blocked`; my-moderation; three-phase marks; D1′/D5′; author delete unpublished; staff reject-stays + approve-from-rejected + hub `tasksOnly` / no block UI) | `pages/Content*.vue` + `stores/content.ts` |
 | Game board (layout, unfinished pieces, continuous board-busy, finish/timeout UX, dual presence rings + seated top-row reserve, strip, turn select/`sendMove`, rejoin) | `pages/GamePage.vue` + `stores/game` `onStateChange` / `sendMove` / `rejoinGame(roomId)` |
 | Env / deploy | `.env.*`, `env.d.ts`, `boot/colyseus.ts`, `.github/workflows/deploy.yml` |
 | Theme / layout / brand chrome | `App.vue` header (logo + theme + Game status/leave) + `stores/theme` + `boot/theme` + `assets/brand/` + `css/*` (board CSS ≠ app Dark) |
