@@ -59,9 +59,9 @@ Router mode: hash (`/#/lobby`, `/#/support`, `/#/content/packs`, `/#/content/sta
 | `/content/packs/:id/edit` | `content-pack-edit` | `ContentPackEditorPage` («Набор карточек»); `meta.requiresAuth` |
 | `/content/packs/:id/tasks/:taskSetId` | `content-pack-tasks` | `ContentPackTasksPage`; statuses/thread; `meta.requiresAuth` |
 | `/content/packs/:id/moderation` | `content-pack-moderation` | `ContentPackModerationPage`; `meta.requiresAuth` |
-| `/content/staff` | `content-staff` | `ContentStaffPage`; answers-pending; `requiresAuth` + `requiresStaff` |
-| `/content/staff/requests/:id` | `content-staff-request` | `ContentStaffRequestPage`; answers hub = task-set list → nested |
-| `/content/staff/requests/:id/tasks` | `content-staff-request-tasks` | `ContentStaffTasksPage`; nested tasks review / approve |
+| `/content/staff` | `content-staff` | `ContentStaffPage`; answers + tasks-only queue; `requiresAuth` + `requiresStaff` |
+| `/content/staff/requests/:id` | `content-staff-request` | `ContentStaffRequestPage`; same hub layout; hide answers actions when `tasksOnly` / `answersActionsAvailable === false` |
+| `/content/staff/requests/:id/tasks` | `content-staff-request-tasks` | `ContentStaffTasksPage`; nested → hub after approve (queue if tasks-only) |
 | `/game/:roomId` | `game` | `GamePage`; `meta.requiresAuth` |
 | `/:catchAll(.*)*` | — | redirect to `/lobby` |
 
@@ -131,7 +131,7 @@ Do not invent room schemas, HTTP routes, or move payloads — note the server pa
 | Auth (email/password policy, anonymous, Google, cabinet profile, logout, role nav) | `pages/LoginPage.vue` / `AccountPage.vue` + `stores/auth.ts` + `lib/passwordPolicy.ts`; router guards in `router/index.ts` |
 | Lobby (list / create / join busy-lock; clear stale rooms; quiet resubscribe; Support + «Наборы»→collection) | `pages/LobbyPage.vue` + `stores/game` `subscribeLobby` / `createGame` / `joinGame` |
 | Support (tickets / staff queue / admin roles) | `pages/Support*.vue` / `AdminUsersPage.vue` + `stores/support.ts` |
-| Content packs (live Edit in-collection; trash/click isolation; hide Edit if `blocked`; D1′/D5′; author delete unpublished; staff redirect / no block UI) | `pages/Content*.vue` + `stores/content.ts` |
+| Content packs (live Edit in-collection; trash/click isolation; hide Edit if `blocked`; D1′/D5′; author delete unpublished; staff queue tasks-only + hub `tasksOnly`/`answersActionsAvailable` / no block UI) | `pages/Content*.vue` + `stores/content.ts` |
 | Game board (layout, unfinished pieces, continuous board-busy, finish/timeout UX, dual presence rings + seated top-row reserve, strip, turn select/`sendMove`, rejoin) | `pages/GamePage.vue` + `stores/game` `onStateChange` / `sendMove` / `rejoinGame(roomId)` |
 | Env / deploy | `.env.*`, `env.d.ts`, `boot/colyseus.ts`, `.github/workflows/deploy.yml` |
 | Theme / layout / brand chrome | `App.vue` header (logo + theme + Game status/leave) + `stores/theme` + `boot/theme` + `assets/brand/` + `css/*` (board CSS ≠ app Dark) |

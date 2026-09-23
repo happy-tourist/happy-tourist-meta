@@ -73,6 +73,9 @@ UGC-наборы (**набор карточек** + задания): созда�
 | SC-PACK-64 | covered |
 | SC-PACK-65 | covered |
 | SC-PACK-66 | covered |
+| SC-PACK-70 | covered |
+| SC-PACK-71 | covered |
+| SC-PACK-72 | covered |
 
 ## ADDED Requirements
 
@@ -327,7 +330,7 @@ A pack MAY have at most one pending request per type (`answers`, `tasks`). While
 
 ### Requirement: Staff moderation via answers hub
 
-Moderator and admin MUST see a queue only for packs that have an **answers** pending request (tasks-only pending MUST NOT appear alone). Opening an answers pending item MUST show an answers/cards preview and a **list** of task sets with status marks (needs moderation / pending / approved / rejected as applicable) — NOT a fully expanded dump of all questions. Staff MUST open a nested tasks page to review questions/slots and to approve/reject/cancel **tasks**. Approve/reject/cancel **answers** and the answers thread MUST be available on the cards hub page. Staff MUST approve **tasks** before approving **answers**. Approving answers MUST require live tasks already present and MUST publish the pack to the public catalog (unless blocked). Staff MAY reject with comment, cancel, or message on the relevant request thread. Threads remain visible only to that request’s change author and staff. After approval of a type, a later cycle of the same type MUST open a new thread. Non-staff MUST NOT perform staff actions.
+Moderator and admin MUST see a single queue of packs that have an **answers** pending request and/or a **tasks-only** pending request (tasks pending with no answers pending MUST appear). When both answers and tasks are pending for the same pack, the queue MUST list the pack once via the answers request (nested tasks as today). Opening a queue item MUST show the same hub layout: an answers/cards preview of the **full pack context** first, then a **list** of task sets with status marks — NOT a fully expanded dump of all questions. For answers-pending, answers come from the answers request revision; for tasks-only, answers MUST come from the current live answers (read-only context). Staff MUST open a nested tasks page to review questions/slots and to approve/reject/cancel **tasks**. Approve/reject/cancel **answers** and the answers thread MUST be available on the hub only when an answers request is pending; for tasks-only they MUST NOT be shown or MUST be disabled. When answers are also pending, staff MUST approve **tasks** before approving **answers**. Approving answers MUST require live tasks already present and MUST publish the pack to the public catalog (unless blocked). For tasks-only, approving tasks MUST update live tasks without requiring an answers approve. Staff MAY reject with comment, cancel, or message on the relevant request thread. Threads remain visible only to that request’s change author and staff. After approval of a type, a later cycle of the same type MUST open a new thread. Non-staff MUST NOT perform staff actions.
 
 #### Scenario [SC-PACK-18]: Staff approves answers into catalog after live tasks
 
@@ -363,12 +366,12 @@ Moderator and admin MUST see a queue only for packs that have an **answers** pen
 - **WHEN** moderation starts for that new change
 - **THEN** a new moderation thread is created for that type (not a continuation of the old approved thread)
 
-#### Scenario [SC-PACK-30]: Staff queue lists only answers-pending packs
+#### Scenario [SC-PACK-30]: Staff queue lists answers-pending and tasks-only packs
 
 - **GIVEN** pack A has answers pending and pack B has only tasks pending
 - **WHEN** staff opens the moderation queue
 - **THEN** pack A is listed
-- **AND** pack B is not listed solely for tasks-pending
+- **AND** pack B is listed for its tasks-only pending
 - **AND** a role `user` session MUST NOT access that queue
 
 #### Scenario [SC-PACK-39]: Staff must approve tasks before answers
@@ -378,11 +381,36 @@ Moderator and admin MUST see a queue only for packs that have an **answers** pen
 - **THEN** the system rejects answers approve until tasks are live
 - **AND** staff can approve the nested tasks request from the tasks page first
 
-#### Scenario [SC-PACK-40]: Tasks-only pending is invisible to staff
+#### Scenario [SC-PACK-40]: Tasks-only pending is visible with full pack hub
 
 - **GIVEN** pack P has tasks pending and no answers pending
-- **WHEN** staff opens the moderation queue
-- **THEN** pack P does not appear
+- **WHEN** staff opens the moderation queue and opens pack P
+- **THEN** pack P appears in the queue
+- **AND** the hub shows answers/cards context for the whole pack then the task-set list
+- **AND** answers approve/reject controls are not available
+- **AND** staff MAY approve or reject the tasks request from the nested tasks page
+
+#### Scenario [SC-PACK-70]: Tasks-only hub uses live answers as context
+
+- **GIVEN** pack P has approved live answers and a tasks-only pending request
+- **WHEN** staff opens the tasks-only hub for P
+- **THEN** the answers preview reflects the live answers content (full pack context)
+- **AND** task sets reflect the pending tasks revision
+
+#### Scenario [SC-PACK-71]: Tasks-only approve does not require answers approve
+
+- **GIVEN** pack P is tasks-only pending and already catalog-live from a prior answers approve
+- **WHEN** staff approves the tasks request
+- **THEN** live tasks update accordingly
+- **AND** no answers approve step is required to complete that cycle
+
+#### Scenario [SC-PACK-72]: Client staff UI gates answers actions when tasks-only
+
+- **GIVEN** staff opens a tasks-only hub item
+- **WHEN** the hub renders
+- **THEN** answers appear above the task-set list
+- **AND** answers approve/reject buttons are hidden or disabled
+- **AND** nested tasks moderation remains available
 
 #### Scenario [SC-PACK-44]: Staff hub lists task sets; tasks page for detail
 
@@ -473,7 +501,7 @@ When the change author is a non-anonymous user with an email, the system MUST se
 
 ### Requirement: Client surfaces — split editor, collection-first, autosave
 
-The client MUST expose: a collection list as the primary entry from lobby into the packs section (with Edit, trash remove-from-collection + confirm, and row→live/editor without stealing action clicks); a public catalog reachable from the collection; a live pack view with collect state from `inCollection` and with **Edit** when the pack is in the user’s collection subject to pending-author rules (SC-PACK-53/61–63); a **cards pack** editing page titled as a card pack / «Набор карточек» (pack title/description, single card form, cards list with edit affordance, nested task-set list labeled by author/coauthor with per-set needs-moderation marks when applicable, answers submit, answers status label, answers thread, and author delete-pack when unpublished); a **task-set** editing page nested under cards (single question form, slots, answer tiles, questions list, tasks submit, tasks status label, tasks thread, and author delete-task-set when the pack is unpublished) that follows D1′ dirty/pending rules; and a staff answers-pending queue whose hub lists only actionable task sets and opens a nested tasks page while tasks pending, then returns to the hub after tasks approve. Draft edits MUST autosave **without** a top-of-page «saving» caption that shifts layout; save/submit affordances MAY show button loading instead. Destructive deletes MUST ask for confirmation. Answers submit MUST be disabled when answers are not dirty or minima fail; tasks submit MUST be disabled when tasks are not dirty or minima fail. Adding/saving a question MUST require at least one filled answer slot. Create task-set MUST show a hover/tooltip hint when blocked. Loading, empty, and error states MUST be visible. Create/edit entry points MUST show the auth/verify modal when the user is ineligible. The public catalog MUST NOT list unapproved packs; moderation statuses appear on editor pages, not as catalog badges. Staff block/unblock controls MUST NOT be shown.
+The client MUST expose: a collection list as the primary entry from lobby into the packs section (with Edit, trash remove-from-collection + confirm, and row→live/editor without stealing action clicks); a public catalog reachable from the collection; a live pack view with collect state from `inCollection` and with **Edit** when the pack is in the user’s collection subject to pending-author rules (SC-PACK-53/61–63); a **cards pack** editing page titled as a card pack / «Набор карточек» (pack title/description, single card form, cards list with edit affordance, nested task-set list labeled by author/coauthor with per-set needs-moderation marks when applicable, answers submit, answers status label, answers thread, and author delete-pack when unpublished); a **task-set** editing page nested under cards (single question form, slots, answer tiles, questions list, tasks submit, tasks status label, tasks thread, and author delete-task-set when the pack is unpublished) that follows D1′ dirty/pending rules; and a staff moderation queue that lists answers-pending and tasks-only-pending packs, whose hub shows answers/cards context first then a task-set list and opens a nested tasks page, hiding answers approve when tasks-only. Draft edits MUST autosave **without** a top-of-page «saving» caption that shifts layout; save/submit affordances MAY show button loading instead. Destructive deletes MUST ask for confirmation. Answers submit MUST be disabled when answers are not dirty or minima fail; tasks submit MUST be disabled when answers are dirty, when tasks are not dirty, or when minima fail. Adding/saving a question MUST require at least one filled answer slot. Create task-set MUST show a hover/tooltip hint when blocked. Loading, empty, and error states MUST be visible. Create/edit entry points MUST show the auth/verify modal when the user is ineligible. The public catalog MUST NOT list unapproved packs; moderation statuses appear on editor pages, not as catalog badges. Staff block/unblock controls MUST NOT be shown.
 
 #### Scenario [SC-PACK-29]: Catalog lists approved packs
 

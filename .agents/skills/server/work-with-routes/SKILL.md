@@ -4,7 +4,7 @@ description: >-
   Use when adding, changing, or reviewing HTTP routes on the happy-tourist
   Colyseus server: createRouter / createEndpoint in app.config.ts, Express
   hook handlers (/health, /hi), auth /auth/*, theme, support tickets, content
-  packs (/api/content/* dual submit answers|tasks + D1′/D5′ locks + author delete unpublished + draft statuses/tasksDirty/needsModeration + staff nested hub; block endpoints retained), admin roles, or Colyseus room listing /rooms/:roomName.
+  packs (/api/content/* dual submit answers|tasks + D1′/D5′ locks + author delete unpublished + draft statuses/tasksDirty/needsModeration + staff queue tasks-only + hub tasksOnly/answersActionsAvailable; block endpoints retained), admin roles, or Colyseus room listing /rooms/:roomName.
   Keep HTTP thin — game logic belongs in rooms.
 ---
 
@@ -123,8 +123,8 @@ For CORS / monitor details use `work-with-middleware` and `work-with-config`.
 | POST | `/api/content/task-set/delete` | `createEndpoint` | JWT + creator; delete task set from draft + liveTasks while unpublished |
 | GET | `/api/content/collection` | `createEndpoint` | JWT (incl. anonymous); own collection |
 | POST | `/api/content/collection` \| `/remove` | `createEndpoint` | JWT; add/remove pack |
-| GET | `/api/content/staff/pending` | `createEndpoint` | JWT moderator\|admin; **answers-pending** packs only |
-| GET\|POST | `/api/content/staff/requests/:id` (+ `/approve` `/reject` `/cancel` `/messages`) | `createEndpoint` | JWT staff; answers hub (actionable task-set list) → nested tasks; approve answers needs live tasks |
+| GET | `/api/content/staff/pending` | `createEndpoint` | JWT moderator\|admin; answers-pending **and** tasks-only (one row per pack; `tasksOnly`) |
+| GET\|POST | `/api/content/staff/requests/:id` (+ `/approve` `/reject` `/cancel` `/messages`) | `createEndpoint` | JWT staff; same hub layout; tasks-only: live answers context + `answersActionsAvailable: false`; nested tasks; approve answers needs live tasks |
 | GET | `/api/admin/users` | `createEndpoint` | JWT admin; **exclude** anonymous; include `emailVerified` (+ id/email/role/displayName) |
 
 **Content moderation mail (D20):** links from `src/lib/content.ts` (`editorThreadLink`) go to embedded-thread pages — answers → `#/content/packs/:id/edit`, tasks → `#/content/packs/:id/tasks/:taskSetId` (fallback `#/…/edit`) — **not** bare `#/content/packs/:id/moderation`.

@@ -143,3 +143,21 @@
 ## 15. Meta — hints after affordance polish
 
 - [x] 15.1 Обновить sibling AGENTS + skills (pages/stores/routes/localization) под live Edit in-collection, trash icon, `inCollection`, click isolation; verify без полного dump spec
+
+## 16. Server — staff queue + hub for tasks-only
+
+- [x] 16.1 Прочитать `proposal.md`, `design.md` (D34–D36), `specs/content/packs/spec.md` (SC-PACK-30/40/70…); сверить `listPendingPacks` / preview / `zz-contentPacks.test.ts`
+
+- [x] 16.2 `listPendingPacks`: включать tasks-only pending (без дубля, если есть answers pending); verify SC-PACK-30/70; login не ломается
+
+- [x] 16.3 Preview/hub entry для tasks-only: ответы из live + task sets; approve path только tasks; mocha SC-PACK-40/71; Traceability → covered; `npm test`
+
+## 17. Client — staff list/hub tasks-only
+
+- [x] 17.1 Staff queue показывает tasks-only; hub: ответы → список task sets; скрыть approve answers когда нет answers pending; nested tasks без изменений UX; verify SC-PACK-70/71/72
+
+- [x] 17.2 `npm run lint` + `typecheck`; Traceability client SC → covered; починить падения
+
+## 18. Meta — hints after tasks-only staff
+
+- [x] 18.1 Обновить sibling AGENTS + skills (pages/stores/routes/localization/tests) под staff tasks-only queue/hub; verify без полного dump spec

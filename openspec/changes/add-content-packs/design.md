@@ -2,7 +2,7 @@
 
 См. `proposal.md` и delta `specs/content/packs/spec.md`.
 
-Секции 1–12 (dual flow + staff/delete follow-up) уже в runtime. Этот revision — **UX affordances**: коллекция (клик/корзина/Edit), live Edit при членстве, `inCollection`, pending-author exception. Чеклист — `tasks.md` §13+.
+Секции 1–15 уже в runtime. Этот revision — **staff tasks-only**: очередь + тот же hub (ответы → task sets), approve только tasks. Чеклист — `tasks.md` §16+.
 
 Пакеты: **server** (`../happy-tourist-server`) + **client** (`../happy-tourist.github.io`) + meta AGENTS/skills.
 
@@ -10,71 +10,74 @@
 
 **Goals:**
 
-- Список коллекции: явные actions без ложной навигации; корзина + confirm.
-- Live page: Edit когда пак в коллекции; скрыт при чужом pending; автор pending видит Edit.
-- Collect button отражает реальное членство (`inCollection`).
+- Tasks-only pending виден в staff queue рядом с answers-pending.
+- Hub UX как сейчас: ответы (весь набор) сверху → список task sets → nested tasks.
+- Tasks-only: нет кнопок approve answers; только tasks moderation.
+- Answers+tasks pending: прежний порядок (tasks live before answers approve).
 
 **Non-Goals:**
 
-- Менять серверные ACL edit/submit кроме payload для UI; block UI; wipe published.
+- Менять D1′ dirty edit/submit locks, seed snapshots, collection/live Edit polish.
+- Отдельная вкладка очереди (один список).
 
 ## Decisions
 
-### D1–D26: Prior (реализовано)
+### D1–D30: Prior (реализовано)
 
-Dual flow, D1′ locks, staff redirect, snapshot fix, author delete unpublished, hide block UI — см. предыдущие revision. **D23 (collection-only Edit, no live Edit) superseded by D27.**
+Dual flow, D1′ locks, staff answers-only queue (SC-PACK-30/40), snapshot-on-detach, collection/live Edit (D27–D29). **SC-PACK-30/40 «tasks-only invisible» superseded by D34.**
 
-### D27: Live Edit when in collection (replaces D23)
+### D34: Staff queue includes tasks-only
 
 ```
-live pack page
+listPendingPacks
   |
-  +-- NOT in collection --> no Edit (view + add-to-collection only)
-  |
-  +-- in collection
-        |
-        +-- any pending answers|tasks whose author != me --> hide Edit
-        |
-        +-- no pending OR I am author of pending --> show Edit
-              (gate login/verify on enter editor, like create)
+  +-- pending type=answers  --> list item (as today)
+  +-- pending type=tasks AND no answers pending --> list item (NEW)
+  +-- both answers+tasks pending --> one list item via answers request (nested tasks as today)
 ```
 
-- Collection list **keeps** Edit icon (always → editor route).
-- Catalog / stranger live view: no Edit (not in collection).
+- Deduplicate by pack: if answers pending exists, list via answers requestId (hasTasksPending flag). Do not double-list the same pack for tasks.
+- Tasks-only row: `requestId` = tasks pending id (or stable hub entry id); client opens same hub route with mode `tasksOnly`.
 
-### D28: Collection list interaction
+### D35: Same hub layout; tasks-only hides answers actions
 
-- Row click → live view if `hasLive`, else editor (draft-only).
-- Side icons: Edit → `content-pack-edit`; trash → confirm remove-from-collection.
-- MUST stop propagation so icon clicks never fire row navigation.
-- Remove icon: Material **`delete`** (корзина), not `remove_circle_outline`.
+```
+staff hub (answers pending OR tasks-only)
+  |
+  +-- answers/cards preview (full pack context)
+  |     answers pending: from answers request revision
+  |     tasks-only: from live answers (read-only context)
+  |
+  +-- task-set list (marks / nested link)
+  |
+  +-- answers pending: approve/reject/cancel answers + thread
+  +-- tasks-only: NO answers approve/reject; optional read-only note
+  |
+  +-- nested tasks page: approve/reject/cancel tasks (unchanged)
+```
 
-### D29: `inCollection` on live GET
+- After tasks-only approve → leave hub / back to queue (no answers approve step).
+- Catalog already live when answers were approved earlier; tasks approve updates liveTasks / merge as today.
 
-- `GET /api/content/packs/:id` includes `pack.inCollection: boolean` for the caller.
-- Optional (same response or adjacent): enough pending hints for D27 UI, e.g. `pendingAnswersAuthorId` / `pendingTasksAuthorId` (or boolean `canShowEdit` computed server-side). Prefer explicit flags the client can reason about.
-- Client: derive collect button from `inCollection` (not ephemeral local `added` reset on load).
-- After successful add → set true; after remove (from list) membership updates on next live visit via GET.
+### D36: Docs
 
-### D30: Docs
-
-- Skills/AGENTS: live Edit when in collection + pending-author exception; trash icon; `inCollection` on live; collection click isolation.
+- Skills/AGENTS: staff queue tasks-only; hub same layout; no answers approve when tasks-only.
 
 ## Risks / Trade-offs
 
 | Risk | Mitigation |
 |------|------------|
-| Quasar `q-item` `:to` + child buttons | D28: `@click.stop` / separate non-link row body; verify Edit with `hasLive` |
-| Pending flags missing on live GET | D29: enrich payload; mocha SC-PACK-61… |
-| Users expect Edit while foreign pending | D27: hide; author path unchanged |
+| Double-list pack with both pendings | D34: prefer answers row |
+| Hub route assumes answers requestId | D34/D35: support tasks requestId + `tasksOnly` / detect by request.type |
+| Old tests SC-PACK-30/40 | Rewrite to expect tasks-only listed |
 
 ## Migration Plan
 
-- Server enrich live GET → client collection + live pages → docs.
+- Server listPending + preview entry → client staff pages → mocha → docs.
 - No DB migration.
 
 ## Open Questions
 
-- Нет (explore: D1 in-collection Edit, D2 trash, D3 pending author keeps Edit, row→live, collect button).
+- Нет (T1 same hub, T2 whole pack, T3 tasks-only approve; dirty/marks out of scope).
 
-Чеклист — `tasks.md` §13+.
+Чеклист — `tasks.md` §16+.
