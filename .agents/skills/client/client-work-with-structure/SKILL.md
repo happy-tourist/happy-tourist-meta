@@ -5,7 +5,7 @@ description: >-
   (*Page.vue), components, Pinia stores, Quasar boot files, dependency
   direction between layers, or deciding whether new UI belongs in pages vs
   components vs stores vs App shell (always-button brand logo ≥60px; Game leave via logo + status;
-  auth→lobby; theme; no page «В лобби»; content packs live Edit in-collection + trash/click isolation (no row `:to`; hide Edit if `blocked`) / author «На модерации» / three-phase marks / cascade/hasLive confirm / yellow gaps / task-row slots / author delete unpublished / D1′ / staff reject-stays + approve-from-rejected + hub `tasksOnly` / no block UI). No blocks/
+  auth→lobby; theme; no page «В лобби»; content packs live Edit in-collection + trash/click isolation (no row `:to`; hide Edit if `blocked`) / staff unpublish/republish / author «На модерации» / three-phase marks / cascade outline + slot chips / draftStale pull / author delete unpublished / D1′ / staff reject-stays + approve-from-rejected + hub `tasksOnly` / no block UI). No blocks/
   or dialogs/ registry layers.
 ---
 

@@ -27,18 +27,31 @@ under D1′).
 | `markCascadeGaps(taskIds, draft)` | After save: add ids that still have empty slots |
 | `pruneCascadeGaps(draft)` | Drop yellow when slots refilled or task gone (call after autosave flush) |
 | `restoreCascadeGapsIfNeeded(draft)` | On `loadDraft`: if `answersDirty` and in-memory gaps empty, seed from dirty+empty slots (F5) |
-| `taskHasCascadeGap` / `taskSetHasCascadeGap` | Page class `bg-warning text-dark` on task row / task-set list item |
+| `taskHasCascadeGap` / `taskSetHasCascadeGap` | Page class `cascade-gap-outline` (yellow border, **not** `bg-warning` row fill) on task row / task-set list item |
 
 Editor flow: content change or delete → `taskIdsReferencingCard` → save (no
 slot wipe) → `markCascadeGaps`. Tasks page: show answer slots on each row;
 prune after flush.
+
+## Publish UX (SC-PACK-85…96)
+
+| Helper / state | Role |
+|----------------|------|
+| `draftStale` | From GET draft / rebase — banner + «Подтянуть» on cards/tasks editors |
+| `unpublishPack` / `republishPack` | Staff collection: clear/restore catalog live; patch `hasLive` / `unpublishedByStaff` / `hasLastLive` |
+| `unpublishLiveTaskSet(packId, liveTaskSetId)` | Staff cards editor; API needs **live** id (draft ids remapped — match fingerprint) |
+| `rebaseDraft` | Pull live base; keep local edits as new ids |
+
+- Status subtitle: answers approved + `hasLive` → `taskSetStatusMarks.published` («Опубликовано»); tasks approved without catalog live → `approved` («Одобрено»).
+- Live pack + staff tasks preview: slot chips (`slotLabel`), not `slotsCount` / joined text alone.
+- Collection: hide Edit for non-staff when `unpublishedByStaff`; badge `unpublishedByStaff` ≠ `draftOnly`.
 
 ## UI contracts (pages mirror these)
 
 - Delete-card confirm: `content.deleteCardConfirmPublished` iff `pack.hasLive`,
   else `content.deleteCardConfirm`.
 - Three-phase page subtitles / list marks: **`content.taskSetStatusMarks.*`**
-  (`pending` / `rejected` / `needs_moderation` / `approved`). Keep
+  (`pending` / `rejected` / `needs_moderation` / `approved` / `published`). Keep
   `statusCycle*` as aliases only — do not re-wire pages to them.
 - Live Edit from `inCollection` (+ open-author exception; hide if `blocked` or
   foreign open). Collection trash + click isolation (no row `:to`).
@@ -46,7 +59,8 @@ prune after flush.
   are not a tasks edit under that lock.
 - Staff: pending|rejected / `tasksOnly` / `answersActionsAvailable`
   (approve-from-rejected; map `not_approvable`; hide answers approve when
-  tasks-only; nested → hub or queue); no block UI.
+  tasks-only; nested → hub or queue); no block UI; pack unpublish/republish +
+  task-set unpublish when ≥2 live sets.
 
 ## Anti-patterns
 
