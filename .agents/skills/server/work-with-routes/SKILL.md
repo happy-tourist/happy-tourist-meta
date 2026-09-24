@@ -4,7 +4,7 @@ description: >-
   Use when adding, changing, or reviewing HTTP routes on the happy-tourist
   Colyseus server: createRouter / createEndpoint in app.config.ts, Express
   hook handlers (/health, /hi), auth /auth/*, theme, support tickets, content
-  packs (/api/content/* working-copy draft + unified `POST …/submit` + add-task-set + edit-lock/staff-save + needs-revision + cascadeNormalize ≠ false `answers_dirty` + author delete unpublished + GET my-moderation + staff pending queue; block endpoints retained; drop dual submit/unpublish/rebase), admin roles, or Colyseus room listing /rooms/:roomName.
+  packs (/api/content/* working-copy draft + unified `POST …/submit` + add-task-set + edit-lock/staff-save + needs-revision + cascadeNormalize ≠ false `answers_dirty` + author delete unpublished + staff soft-unpublish/republish (`inCatalog`) + GET my-moderation + staff pending queue; block endpoints retained; drop dual submit/rebase/stale), admin roles, or Colyseus room listing /rooms/:roomName.
   Keep HTTP thin — game logic belongs in rooms.
 ---
 
@@ -103,7 +103,7 @@ For CORS / monitor details use `work-with-middleware` and `work-with-config`.
 | POST | `/api/auth/reset-password` | `createEndpoint` | Unauthenticated JSON `{ token, password }` → password policy → reset + bumpTokenVersion + one-time token; product SPA reset path |
 | POST | `/api/auth/display-name` | `createEndpoint` | JWT; `{ displayName }` trim min 1 → `users.displayName` |
 | POST | `/api/auth/change-password` | `createEndpoint` | JWT; `{ currentPassword, newPassword }` → Hash.verify + policy → set hash + bumpTokenVersion; reject if no password credential |
-| POST | `/api/support/tickets` | `createEndpoint` | JWT any; `{ topic, body [, packId] }` — `change_pack` requires catalog `packId` + live link in first message (SC-SUP-27/28); create-ack mail (non-anonymous); helpers in `src/lib/support.ts` |
+| POST | `/api/support/tickets` | `createEndpoint` | JWT any; `{ topic, body [, packId] }` — `change_pack` requires **in-catalog** `packId` + live link (SC-SUP-27/28; soft-unpublished rejected); create-ack mail (non-anonymous); helpers in `src/lib/support.ts` |
 | GET | `/api/support/tickets` | `createEndpoint` | JWT; own list |
 | GET | `/api/support/tickets/:id` | `createEndpoint` | JWT; detail + messages (owner or staff; may include `packId`) |
 | POST | `/api/support/tickets/:id/messages` | `createEndpoint` | JWT; author/staff reply; closed rejects; author from `awaiting_response` → `in_progress` with `notify: false` (D4 — no status mail on self-reply bump) |
@@ -111,9 +111,10 @@ For CORS / monitor details use `work-with-middleware` and `work-with-config`.
 | GET | `/api/support/staff/tickets` | `createEndpoint` | JWT moderator\|admin; query `topic` (optional), `status`=`open`\|`closed`\|`all` (default `open`); cap ~50 **after** filter |
 | POST | `/api/support/tickets/:id/take` | `createEndpoint` | JWT staff; take into `in_progress` |
 | POST | `/api/support/tickets/:id/status` | `createEndpoint` | JWT staff; `{ status }` |
-| GET | `/api/content/packs` | `createEndpoint` | JWT; approved live catalog (blocked still listed); helpers in `src/lib/content.ts` |
+| GET | `/api/content/packs` | `createEndpoint` | JWT; public = live + `inCatalog`; staff also see soft-unpublished (SC-PACK-120); helpers in `src/lib/content.ts` |
 | POST | `/api/content/packs` | `createEndpoint` | JWT + non-anonymous + `emailVerified` (DB); create pack + working copy into author collection |
-| GET | `/api/content/packs/:id` | `createEndpoint` | JWT; live approved snapshot + `inCollection` |
+| GET | `/api/content/packs/:id` | `createEndpoint` | JWT; live snapshot + `inCollection` + `inCatalog`; non-staff soft-unpublished → `pack_unpublished` (SC-PACK-122) |
+| POST | `/api/content/packs/:id/unpublish` \| `/republish` | `createEndpoint` | JWT staff; soft-hide / restore catalog without moderation (SC-PACK-120/123); keep `liveRevisionId` |
 | GET\|POST | `/api/content/packs/:id/draft` | `createEndpoint` | JWT + creator; unpublished working copy only (SC-PACK-100/101); `putDraft` compares `tasksStructuralKey` **after** `cascadeNormalizeTasks` — slot clear ≠ `answers_dirty` |
 | POST | `/api/content/packs/:id/submit` | `createEndpoint` | JWT + creator; unified first-publish (≥2 cards, ≥1 task set) |
 | GET\|PUT\|POST | `/api/content/packs/:id/add-task-set` (+ `/submit`) | `createEndpoint` | JWT + verified collector; new task set only (SC-PACK-108…110) |

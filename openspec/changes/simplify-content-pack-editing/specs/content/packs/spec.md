@@ -26,6 +26,12 @@
 | SC-PACK-117 | pending |
 | SC-PACK-118 | pending |
 | SC-PACK-119 | pending |
+| SC-PACK-120 | pending |
+| SC-PACK-121 | pending |
+| SC-PACK-122 | pending |
+| SC-PACK-123 | pending |
+| SC-PACK-124 | pending |
+| SC-PACK-125 | pending |
 | SC-PACK-10 | pending |
 | SC-PACK-11 | pending |
 | SC-PACK-12 | pending |
@@ -207,11 +213,60 @@ On content pack editor surfaces (cards editor, task-set editor, add-task-set pag
 - **THEN** showing or hiding that guidance MUST NOT change the surrounding layout height
 - **AND** a tooltip on the disabled save control is an acceptable form of the guidance
 
+### Requirement: Staff soft-unpublish and republish
+
+Moderator and admin MUST be able to **unpublish** a pack that currently appears in the public catalog and to **republish** it with a single action that restores catalog visibility **without** creating a new moderation request. Unpublish MUST be a soft-hide: live content remains stored; the pack MUST leave the **public** catalog. Staff MUST still see the pack in the **shared catalog list** with a clear «снято с публикации» state. Non-staff users MUST NOT open the live pack view or deep-link after unpublish. In a non-staff user’s collection, the row MUST appear disabled/gray with the label «Снято с публикации», MUST NOT navigate on row click, and MUST still allow remove-from-collection (trash + confirm). After the first catalog approve, the **creator** is treated like any other non-staff user for that pack (add-task-set only while in catalog; no working-copy Edit after soft-unpublish). Staff MUST be able to Edit a soft-unpublished pack under the exclusive lock (same staff-save path as published). Unpublish/republish MUST NOT be conflated with **block**. Controls MUST appear for staff in the **catalog** and **inside the pack** view.
+
+#### Scenario [SC-PACK-120]: Staff unpublish hides pack from public catalog
+
+- **GIVEN** in-catalog pack P and staff S
+- **WHEN** S chooses «Снять с публикации» for P
+- **THEN** non-staff callers MUST NOT see P in the public catalog
+- **AND** staff callers MUST still see P in the shared catalog list with an unpublished/снято state
+- **AND** P’s live content remains stored for staff access
+
+#### Scenario [SC-PACK-121]: Non-staff collection row is gray and non-navigating
+
+- **GIVEN** soft-unpublished pack P in non-staff user U’s collection
+- **WHEN** U views the collection list
+- **THEN** the row for P is visually disabled/gray
+- **AND** shows the label «Снято с публикации» (or equivalent i18n)
+- **AND** activating the row MUST NOT open live or editor
+- **AND** U MAY still remove P from collection via trash + confirmation
+
+#### Scenario [SC-PACK-122]: Non-staff cannot open soft-unpublished live
+
+- **GIVEN** soft-unpublished pack P and non-staff user U
+- **WHEN** U requests the live pack view or deep-link for P
+- **THEN** the system rejects or shows a non-enterable «снято» state
+- **AND** U MUST NOT receive editable or full live content
+
+#### Scenario [SC-PACK-123]: Staff republish restores catalog without moderation
+
+- **GIVEN** soft-unpublished pack P with stored live content and staff S
+- **WHEN** S chooses «Опубликовать снова»
+- **THEN** P appears in the public catalog with the same live content
+- **AND** no new moderation request is created for that republish
+
+#### Scenario [SC-PACK-124]: Staff may Edit soft-unpublished pack
+
+- **GIVEN** soft-unpublished pack P and staff S
+- **WHEN** S opens Edit on P and saves
+- **THEN** the save succeeds via staff direct-save under the exclusive lock
+- **AND** non-staff still cannot enter or edit P
+
+#### Scenario [SC-PACK-125]: Creator after first publish has no special unpublish rights
+
+- **GIVEN** pack P created by A that was approved into the catalog and then soft-unpublished by staff
+- **WHEN** A views collection or attempts Edit / live open for P
+- **THEN** A is treated as any non-staff user (gray non-navigating collection row; no enter; no working-copy Edit)
+- **AND** A MUST NOT unpublish or republish P
+
 ## MODIFIED Requirements
 
 ### Requirement: Collection gates editing; anyone with session may collect approved packs
 
-Only the **creator** MAY edit an **unpublished** pack’s working copy (cards and task sets) and submit first publish, subject to verified non-anonymous identity. After the pack is in the public catalog, non-staff users MUST NOT enter full Edit of existing cards or task sets from collection or live; verified collectors MAY only use the **add task set** flow. **Staff** (moderator/admin) MUST be able to Edit any pack without collection membership, subject to the exclusive staff lock. Any authenticated user (including anonymous and unverified) MUST be able to view an approved non-blocked pack in the public catalog and add it to their collection. The live pack response MUST report `inCollection`. Removing a pack from the user’s own collection MUST use a clear trash affordance and confirmation. Unauthenticated callers MUST be rejected for collection mutations.
+Only the **creator** MAY edit a **never-published** pack’s working copy (cards and task sets) and submit first publish, subject to verified non-anonymous identity. After the pack has been approved into the public catalog at least once, non-staff users (including the creator) MUST NOT enter full Edit of existing cards or task sets; while the pack is **in catalog**, verified collectors MAY only use the **add task set** flow. Soft-unpublished packs MUST NOT be enterable by non-staff. **Staff** (moderator/admin) MUST be able to Edit any pack (in-catalog or soft-unpublished) without collection membership, subject to the exclusive staff lock. Any authenticated user (including anonymous and unverified) MUST be able to view an approved **in-catalog** non-blocked pack in the public catalog and add it to their collection. The live pack response MUST report `inCollection`. Removing a pack from the user’s own collection MUST use a clear trash affordance and confirmation (including for soft-unpublished gray rows). Unauthenticated callers MUST be rejected for collection mutations.
 
 #### Scenario [SC-PACK-10]: User without collection cannot edit
 
@@ -221,7 +276,7 @@ Only the **creator** MAY edit an **unpublished** pack’s working copy (cards an
 
 #### Scenario [SC-PACK-11]: Guest may add an approved pack to collection
 
-- **GIVEN** an authenticated anonymous user and an approved non-blocked pack in the public catalog
+- **GIVEN** an authenticated anonymous user and an approved non-blocked **in-catalog** pack in the public catalog
 - **WHEN** the user adds the pack to their collection
 - **THEN** the pack is in that user’s collection
 - **AND** the guest still cannot create or edit packs
@@ -275,14 +330,15 @@ Only the **creator** MAY edit an **unpublished** pack’s working copy (cards an
 
 #### Scenario [SC-PACK-65]: Collection trash icon and row click isolation
 
-- **GIVEN** an authenticated user on the collection list with pack P
+- **GIVEN** an authenticated user on the collection list with pack P that is in catalog (or never-published for creator)
 - **WHEN** the list renders
 - **THEN** remove-from-collection uses a trash/delete icon (not a minus-only glyph)
 - **AND WHEN** the user activates remove
 - **THEN** confirmation is required before the API call
 - **AND WHEN** the user clicks the row (not the action icons)
-- **THEN** they navigate to the live view if P has live content (else creator editor when unpublished and caller is creator)
+- **THEN** they navigate to the live view if P is in catalog with live content (else creator editor when never-published and caller is creator)
 - **AND** activating action icons MUST NOT navigate via the row link instead of the intended action
+- **AND** soft-unpublished rows follow SC-PACK-121 (no navigate) instead of this navigate rule
 
 #### Scenario [SC-PACK-66]: Collection Edit reaches editor when pack has live
 

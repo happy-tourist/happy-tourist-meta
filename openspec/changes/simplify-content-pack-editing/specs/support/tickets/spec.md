@@ -19,7 +19,7 @@
 
 ### Requirement: Change-pack topic includes catalog pack selection and link
 
-Authenticated users MUST be able to create a support ticket with topic **change_pack** (изменить набор карточек). When that topic is selected, the client MUST show a pack selector listing packs from the **public catalog** (title and description). On submit the ticket MUST include the selected pack identity and a link/URL to that pack’s live page so staff can open the pack and use Edit themselves. Create without a selected pack for this topic MUST be rejected. Other existing topics keep topic+body-only create.
+Authenticated users MUST be able to create a support ticket with topic **change_pack** (изменить набор карточек). When that topic is selected, the client MUST show a pack selector listing packs from the **public catalog** (title and description) — soft-unpublished packs MUST NOT appear. On submit the ticket MUST include the selected pack identity and a link/URL to that pack’s live page so staff can open the pack and use Edit themselves. Create without a selected pack for this topic MUST be rejected. Other existing topics keep topic+body-only create.
 
 #### Scenario [SC-SUP-27]: Change-pack topic requires pack from catalog
 

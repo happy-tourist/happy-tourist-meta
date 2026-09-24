@@ -355,7 +355,7 @@ Dependency direction: `pages` → `stores` / `boot` / `components`. Keep Colyseu
 - Put domain state in `stores/index.ts` or grow the unused `counter` scaffold.
 - Reintroduce legacy draughts `board` / `{ from, to }` as current product canon.
 - Mix auth session concerns into `game` or room lifecycle into `auth`; do not fold content packs into `support`.
-- Call removed dual `submitAnswers` / `submitTasks`, `draftStale`/`rebaseDraft`, or unpublish/republish APIs — use `submitPack` / add-task-set / staff save.
+- Call removed dual `submitAnswers` / `submitTasks` or `draftStale`/`rebaseDraft` — use `submitPack` / add-task-set / staff save; staff soft-unpublish/republish (`unpublishPack`/`republishPack`, `inCatalog`) is allowed (SC-PACK-120…125; see [content.md](content.md)).
 - Pre-clear task slots before cascade save — see [content.md](content.md).
 - Forget HMR `acceptHMRUpdate` on new stores.
 - After theme GET, replace `auth.user` only to set `theme` — feeds the App

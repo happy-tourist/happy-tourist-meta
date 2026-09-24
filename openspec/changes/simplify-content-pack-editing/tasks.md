@@ -34,3 +34,11 @@
 - [x] 5.4 Live: add-task-set рядом с секцией «Задания»; убрать шапочную кнопку live и row playlist_add в коллекции; verify SC-PACK-117/118 (+ SC-PACK-66)
 - [x] 5.5 Editor/Tasks/AddTaskSet: убрать скачущие caption (`questionNeedsSlot`, submit/tasks hints) — tooltip / reserved space; verify SC-PACK-119
 - [x] 5.6 Из client: `npm run lint`, `npm run typecheck`, `npm test` — зелёные
+
+## 6. Server + client — staff soft-unpublish / republish
+
+- [x] 6.1 Прочитать design D9, delta SC-PACK-120…125; skills `work-with-database`, `work-with-routes`, `work-with-pages`, `work-with-stores` (content), localization
+- [x] 6.2 Server: soft-hide flag (inCatalog) + migrate live→true; `unpublish`/`republish` staff-only; public catalog/getLive/collect filter; staff catalog includes снятые; staff Edit soft-unpublished; mocha SC-PACK-120/122/123/124
+- [x] 6.3 Client store/API: unpublish/republish wrappers + catalog/collection flags; i18n «Снято с публикации» / кнопки
+- [x] 6.4 UI: staff кнопки в каталоге и внутри набора; коллекция gray disabled + label + trash; non-staff no navigate/deep-link; verify SC-PACK-121/125 vitest
+- [x] 6.5 Support change_pack select только in-catalog; из server+client: `npm test` (+ client lint/typecheck) — зелёные для SC-PACK-120…125
