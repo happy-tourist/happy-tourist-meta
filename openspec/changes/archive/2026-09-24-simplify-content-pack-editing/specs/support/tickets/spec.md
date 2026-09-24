@@ -6,14 +6,14 @@
 
 | Scenario ID | Coverage |
 |-------------|----------|
-| SC-SUP-27 | pending |
-| SC-SUP-28 | pending |
-| SC-SUP-29 | pending |
-| SC-SUP-01 | pending |
-| SC-SUP-02 | pending |
-| SC-SUP-03 | pending |
-| SC-SUP-19 | pending |
-| SC-SUP-20 | pending |
+| SC-SUP-27 | covered (server mocha + client vitest) |
+| SC-SUP-28 | covered (server mocha) |
+| SC-SUP-29 | covered (client vitest) |
+| SC-SUP-01 | covered (modified — change_pack in topics) |
+| SC-SUP-02 | covered-by-reuse |
+| SC-SUP-03 | covered-by-reuse |
+| SC-SUP-19 | covered (server mocha — allowed topics incl. change_pack) |
+| SC-SUP-20 | covered-by-reuse |
 
 ## ADDED Requirements
 

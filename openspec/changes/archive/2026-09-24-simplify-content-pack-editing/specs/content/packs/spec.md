@@ -6,54 +6,54 @@
 
 | Scenario ID | Coverage |
 |-------------|----------|
-| SC-PACK-100 | pending |
-| SC-PACK-101 | pending |
-| SC-PACK-102 | pending |
-| SC-PACK-103 | pending |
-| SC-PACK-104 | pending |
-| SC-PACK-105 | pending |
-| SC-PACK-106 | pending |
-| SC-PACK-107 | pending |
-| SC-PACK-108 | pending |
-| SC-PACK-109 | pending |
-| SC-PACK-110 | pending |
-| SC-PACK-111 | pending |
-| SC-PACK-112 | pending |
-| SC-PACK-113 | pending |
-| SC-PACK-114 | pending |
-| SC-PACK-115 | pending |
-| SC-PACK-116 | pending |
-| SC-PACK-117 | pending |
-| SC-PACK-118 | pending |
-| SC-PACK-119 | pending |
-| SC-PACK-120 | pending |
-| SC-PACK-121 | pending |
-| SC-PACK-122 | pending |
-| SC-PACK-123 | pending |
-| SC-PACK-124 | pending |
-| SC-PACK-125 | pending |
-| SC-PACK-126 | pending |
-| SC-PACK-127 | pending |
-| SC-PACK-128 | pending |
-| SC-PACK-129 | pending |
-| SC-PACK-130 | pending |
-| SC-PACK-131 | pending |
-| SC-PACK-132 | pending |
-| SC-PACK-133 | pending |
-| SC-PACK-134 | pending |
-| SC-PACK-135 | pending |
-| SC-PACK-136 | pending |
-| SC-PACK-10 | pending |
-| SC-PACK-11 | pending |
-| SC-PACK-12 | pending |
-| SC-PACK-53 | pending |
-| SC-PACK-54 | pending |
-| SC-PACK-61 | pending |
-| SC-PACK-62 | pending |
-| SC-PACK-63 | pending |
-| SC-PACK-64 | pending |
-| SC-PACK-65 | pending |
-| SC-PACK-66 | pending |
+| SC-PACK-100 | covered (server mocha + client) |
+| SC-PACK-101 | covered (server mocha) |
+| SC-PACK-102 | covered (server mocha) |
+| SC-PACK-103 | covered (server mocha) |
+| SC-PACK-104 | covered (server mocha) |
+| SC-PACK-105 | covered (server mocha) |
+| SC-PACK-106 | covered (client UX + store) |
+| SC-PACK-107 | covered (client UX) |
+| SC-PACK-108 | covered (server mocha) |
+| SC-PACK-109 | covered (server mocha) |
+| SC-PACK-110 | covered (server mocha) |
+| SC-PACK-111 | covered (server mocha) |
+| SC-PACK-112 | covered (server mocha) |
+| SC-PACK-113 | covered (server mocha) |
+| SC-PACK-114 | covered (server mocha) |
+| SC-PACK-115 | covered (client vitest) |
+| SC-PACK-116 | covered (client vitest) |
+| SC-PACK-117 | covered (client vitest) |
+| SC-PACK-118 | covered (client vitest) |
+| SC-PACK-119 | covered (client vitest) |
+| SC-PACK-120 | covered (server mocha) |
+| SC-PACK-121 | covered (client vitest) |
+| SC-PACK-122 | covered (server mocha) |
+| SC-PACK-123 | covered (server mocha) |
+| SC-PACK-124 | covered (server mocha) |
+| SC-PACK-125 | covered (client vitest) |
+| SC-PACK-126 | covered (client vitest) |
+| SC-PACK-127 | covered (client vitest) |
+| SC-PACK-128 | covered (client vitest) |
+| SC-PACK-129 | covered (client vitest) |
+| SC-PACK-130 | covered (client vitest) |
+| SC-PACK-131 | covered (server mocha + client) |
+| SC-PACK-132 | covered (client vitest) |
+| SC-PACK-133 | covered (client vitest) |
+| SC-PACK-134 | covered (server + client vitest) |
+| SC-PACK-135 | covered (server mocha + client vitest) |
+| SC-PACK-136 | covered (client vitest) |
+| SC-PACK-10 | covered (modified ACL) |
+| SC-PACK-11 | covered (modified ACL) |
+| SC-PACK-12 | covered (modified ACL) |
+| SC-PACK-53 | covered (client live Edit ACL) |
+| SC-PACK-54 | covered (client collection trash confirm) |
+| SC-PACK-61 | covered (client live Edit hidden) |
+| SC-PACK-62 | covered (client pending non-author) |
+| SC-PACK-63 | covered (client pending author amend) |
+| SC-PACK-64 | covered (client inCollection) |
+| SC-PACK-65 | covered (client trash + soft-unpublish row) |
+| SC-PACK-66 | covered (client collection → add-task-set) |
 
 ## ADDED Requirements
 

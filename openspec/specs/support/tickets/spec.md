@@ -34,17 +34,20 @@
 | SC-SUP-24 | client: SupportPage / SupportTicketPage clear + no red empty (lazy-rules / nextTick reset) |
 | SC-SUP-25 | client: SupportTicketPage thread message spacing |
 | SC-SUP-26 | client: SupportTicketPage gap between last message and reply composer |
+| SC-SUP-27 | covered (server mocha + client vitest) |
+| SC-SUP-28 | covered (server mocha) |
+| SC-SUP-29 | covered (client vitest) |
 
 ## Requirements
 
 ### Requirement: Authenticated user creates a support ticket with topic and body
 
-Any user with a valid JWT (registered or anonymous) MUST be able to create a support ticket by selecting a topic and providing a non-empty message body. Unauthenticated callers MUST be rejected. Topic MUST be one of: `problem`, `suggestion`, `feedback`, `question`, `other`. On success the ticket MUST start in status `under_review` and MUST have a dedicated detail resource the author can open.
+Any user with a valid JWT (registered or anonymous) MUST be able to create a support ticket by selecting a topic and providing a non-empty message body. Unauthenticated callers MUST be rejected. Topic MUST be one of: `problem`, `suggestion`, `feedback`, `question`, `other`, `change_pack`. On success the ticket MUST start in status `under_review` and MUST have a dedicated detail resource the author can open. When the topic is `change_pack`, create MUST also require a catalog `packId` and pack link as specified in the change-pack topic requirement.
 
 #### Scenario [SC-SUP-01]: Create ticket with topic and body
 
 - **GIVEN** an authenticated user (registered or anonymous)
-- **WHEN** the user submits a support ticket with a valid topic and a non-empty body
+- **WHEN** the user submits a support ticket with a valid non-change-pack topic and a non-empty body
 - **THEN** the system creates the ticket in status `under_review`
 - **AND** the author can retrieve that ticket by its id
 
@@ -64,7 +67,7 @@ Any user with a valid JWT (registered or anonymous) MUST be able to create a sup
 #### Scenario [SC-SUP-19]: Only allowed topics are accepted
 
 - **GIVEN** an authenticated user
-- **WHEN** the user submits a topic outside `problem` | `suggestion` | `feedback` | `question` | `other`
+- **WHEN** the user submits a topic outside `problem` | `suggestion` | `feedback` | `question` | `other` | `change_pack`
 - **THEN** the system rejects the create request
 
 #### Scenario [SC-SUP-20]: Unauthenticated create is rejected
@@ -72,6 +75,30 @@ Any user with a valid JWT (registered or anonymous) MUST be able to create a sup
 - **GIVEN** no auth session
 - **WHEN** a create-ticket request is made
 - **THEN** the system rejects the request
+
+### Requirement: Change-pack topic includes catalog pack selection and link
+
+Authenticated users MUST be able to create a support ticket with topic **change_pack** (изменить набор карточек). When that topic is selected, the client MUST show a pack selector listing packs from the **public catalog** (title and description) — soft-unpublished packs MUST NOT appear. On submit the ticket MUST include the selected pack identity and a link/URL to that pack’s live page so staff can open the pack and use Edit themselves. Create without a selected pack for this topic MUST be rejected. Other existing topics keep topic+body-only create.
+
+#### Scenario [SC-SUP-27]: Change-pack topic requires pack from catalog
+
+- **GIVEN** an authenticated user and at least one published catalog pack P
+- **WHEN** the user creates a ticket with the change-pack topic, selects P, and a non-empty body
+- **THEN** the ticket is created
+- **AND** the ticket payload/thread context includes P’s identity and a link to P’s live pack page
+
+#### Scenario [SC-SUP-28]: Change-pack without pack selection is rejected
+
+- **GIVEN** an authenticated user
+- **WHEN** the user submits the change-pack topic without selecting a catalog pack
+- **THEN** the system rejects the create request
+
+#### Scenario [SC-SUP-29]: Pack selector shows catalog title and description
+
+- **GIVEN** the user opened support create and chose the change-pack topic
+- **WHEN** the pack selector is shown
+- **THEN** options are taken from the public catalog
+- **AND** each option presents the pack title and description
 
 ### Requirement: Guest is warned about email and session loss
 
