@@ -1,5 +1,5 @@
 change: unpublish-cancels-moderation
-phase: commit
+phase: done
 apply_block: null
 blocker: null
-updated: "2026-09-24T08:15:00Z"
+updated: "2026-09-24T08:30:00Z"
