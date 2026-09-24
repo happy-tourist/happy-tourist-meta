@@ -22,13 +22,33 @@ creator working-copy draft (`GET|PUT /api/content/packs/:id/draft`) / unified
 co-edit of full pack. **Staff soft-unpublish/republish is in scope** (D9) — not
 the same as product **block**.
 
-## Cascade yellow (SC-PACK-81 / D43–D46)
+## Cascade yellow (SC-PACK-81 / D43–D46; SC-PACK-126)
 
 Server clears slots on card content change / delete (`cascadeNormalizeTasks`).
 Client must **not** pre-clear slots before save (false `answers_dirty` under
 D1′). Helpers: `cascadeGapTaskIds`, `markCascadeGaps`, `pruneCascadeGaps`,
 `restoreCascadeGapsIfNeeded`, `taskHasCascadeGap` / `taskSetHasCascadeGap` →
 page class `cascade-gap-outline` (not `bg-warning` row fill).
+
+**Visible CSS required on both surfaces:** `ContentPackTasksPage` (task rows)
+and `ContentPackEditorPage` (task-set rows). Class alone without scoped
+`outline: 2px solid var(--q-warning)` is insufficient (SC-PACK-126 / D10).
+
+## Question list slot chips (SC-PACK-127)
+
+Every task/question list row MUST show answer slot chips (filled / empty):
+`ContentPackTasksPage`, `ContentPackPage` (live), `ContentStaffRequestPage`,
+`ContentPackAddTaskSetPage`. Pattern: dense `q-chip` per slot + `slotEmpty`
+when no slots.
+
+## Add-task-set moderation thread (SC-PACK-128)
+
+`ContentPackAddTaskSetPage` MUST show open-request status
+(`taskSetStatusMarks.pending` | `needs_revision`) and the same thread + reply
+UX as the cards editor while the author’s `task_set` request is
+`pending`|`needs_revision`. Load via `loadModeration` / `postModerationMessage`
+(prefer not inventing a parallel messages payload). Hide the thread block when
+there is no open own request (fresh create / foreign pending).
 
 ## ACL surfaces (simplify-content-pack-editing)
 
@@ -49,8 +69,11 @@ page class `cascade-gap-outline` (not `bg-warning` row fill).
 - Staff Edit session: cards↔tasks keep lock / `staffEditTarget`; tasks persist → `staffSavePack`; unlock only on leave Edit (SC-PACK-115). Helper: `isStaffEditSessionNavigation`.
 - Support `change_pack` select: **in-catalog only** (`inCatalog !== false && hasLive`).
 - Editor hints: tooltips / reserved space — no jumping `v-if` captions (SC-PACK-119).
+- Cascade yellow: `cascade-gap-outline` CSS on **Editor task-set rows** and Tasks task rows (SC-PACK-126).
+- Slot chips on every question list (staff hub, add-task-set, tasks, live) (SC-PACK-127).
+- Add-task-set: status + moderation thread + reply while open request (SC-PACK-128).
 - Delete-card confirm: `deleteCardConfirmPublished` iff `pack.hasLive`.
-- Status labels: prefer `content.statuses.needs_revision` (keep `rejected` alias in i18n for legacy rows).
+- Status labels: prefer `content.statuses.needs_revision` / `taskSetStatusMarks.needs_revision` (keep `rejected` alias in i18n for legacy rows).
 - No block/unblock UI (block ≠ soft-unpublish).
 
 ## Anti-patterns
@@ -65,3 +88,6 @@ page class `cascade-gap-outline` (not `bg-warning` row fill).
 - Header add-task-set on live pack or row playlist_add on collection (place beside «Задания»; SC-PACK-117/118).
 - Showing «На модерации» nav to staff (SC-PACK-116).
 - Offering soft-unpublished packs in Support `change_pack` select.
+- Applying `cascade-gap-outline` class on Editor without the matching scoped CSS (SC-PACK-126).
+- Question lists without slot chips on staff hub / add-task-set (SC-PACK-127).
+- Add-task-set amend without status + moderation thread while open (SC-PACK-128).

@@ -12,7 +12,8 @@ description: >-
   uses intact/hold/vanish classes, not mid-fade swap) + trapped piece chrome +
   top presence + sticky seated `.game-hud` presence/ring/avatar + strip
   row/narrow 2×2 + chrome grille + budgets beside avatar + end-turn icon
-  right-center + peek/rescue/push top-center + say bubbles top↓/own↑), Quasar
+  right-center + peek/rescue/push top-center + say bubbles top↓/own↑), content
+  pack `.cascade-gap-outline` (Editor task-set + Tasks rows; SC-PACK-126), Quasar
   utility classes, Material Icons / Roboto, or color props on Quasar
   components.
 ---
@@ -171,6 +172,21 @@ Custom CSS lives **inline in the SFC** with `scoped`, not in a sibling
 Layout/spacing still uses Quasar classes (`q-pa-md`, `q-gutter-md`,
 `flex flex-center`). Scoped CSS only constrains card width.
 
+### Content pack cascade yellow (`ContentPackEditorPage` / `ContentPackTasksPage`)
+
+Class `cascade-gap-outline` marks cleared answer slots after cascade normalize.
+**Same visible outline on both pages** (SC-PACK-126 / D10):
+
+```css
+.cascade-gap-outline {
+  outline: 2px solid var(--q-warning);
+  outline-offset: -2px;
+}
+```
+
+Do not use `bg-warning` row fill. Applying the class without this scoped CSS
+is a hard defect. Contracts: meta `work-with-stores/content.md`.
+
 ### Tourist board (`GamePage.vue`)
 
 Board UI is custom CSS Grid (not Quasar widgets). Keep selectors local and class-driven:
@@ -311,3 +327,5 @@ Prefer the login → lobby → game flow for new UI (dead `pages/index*` scaffol
   server validates moves.
 - Creating co-located `styles.scss` folders by habit from other projects —
   this repo keeps page styles in the SFC.
+- Binding `cascade-gap-outline` on Editor/Tasks without matching scoped
+  `outline: 2px solid var(--q-warning)` (SC-PACK-126).

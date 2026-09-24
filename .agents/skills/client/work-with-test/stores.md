@@ -8,11 +8,13 @@ Product store conventions: meta skill `work-with-stores`. Domains: `auth`,
 `SupportChangePack.test.ts`, store `support.changePack.test.ts`), `content`
 (HTTP packs via `client.http`; working copy / `submitPack` / add-task-set /
 staff lock+save / soft-unpublish/`inCatalog` / needs_revision; cascadeGap* / hasLive confirm; simplify ACL
-SC-PACK-100…125 — pages `Content*Acl.test.ts` incl. `ContentCatalogAcl` /
+SC-PACK-100…128 — pages `Content*Acl.test.ts` incl. `ContentCatalogAcl` /
 `ContentCollectionAcl` / `ContentPackAcl`, `ContentSoftUnpublish.test.ts`
 (SC-PACK-120…125 staff unpublish/republish + soft-unpublished gray/non-nav),
 `ContentPackTasksHints.test.ts`
-(SC-PACK-115/119 staff session + stable hints), store
+(SC-PACK-115/119 staff session + stable hints), `ContentModerationUx.test.ts`
+(SC-PACK-126 editor cascade CSS; SC-PACK-127 slot chips on staff hub + add-task-set;
+SC-PACK-128 add-task-set thread/status/reply), store
 `content.simplifyAcl.test.ts`; spy `client.http`, do not hit live server;
 cascade helpers + `isStaffEditSessionNavigation`: meta `work-with-stores/content.md`).
 

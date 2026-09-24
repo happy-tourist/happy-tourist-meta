@@ -2,7 +2,7 @@
 
 См. `proposal.md` — Why. Базовая модель: одна working copy до first approve; после live — freeze для non-staff; add-task-set; staff lock + session cards↔tasks; без personal drafts / stale.
 
-После apply блоков 1–5: unpublish/republish HTTP/UI сняты (task 1.5 / D4 старый). Explore вернул потребность staff soft-unpublish.
+После apply блоков 1–6: soft-unpublish/`inCatalog` в runtime. Explore выявил UX-дыры: cascade yellow на task-set в editor без CSS; staff hub / add-task-set без slot chips в списке вопросов; add-task-set без thread/status needs_revision.
 
 Пакеты: **server** + **client**. Room/tourist не затрагивается. `block` остаётся отдельным API без UI.
 
@@ -19,6 +19,9 @@
 - Add-task-set affordance у секции «Задания» на live; не в списке коллекции / не в шапке live
 - Content-редакторы: подсказки без скачков высоты
 - **Staff soft-unpublish / republish:** публичный каталог скрывает; staff видят в общем каталоге; коллекция gray+подпись; enter/Edit только staff; republish одной кнопкой без новой модерации
+- **Cascade yellow на набор:** outline на task-set row в cards editor, пока есть cascade gaps (паритет с task yellow на Tasks)
+- **Slot chips везде в списках вопросов:** staff hub, add-task-set, tasks editor, live
+- **Add-task-set thread UX:** статус needs_revision/pending + moderation thread + reply как на cards editor
 
 **Non-Goals:**
 
@@ -85,6 +88,18 @@ Topic id kebab/snake в каноне API (например `change_pack`); i18n 
 
 **Альтернатива:** clear `liveRevisionId` + stash last_live — отвергнуто: лишняя миграция; staff Edit/republish проще при сохранённом live.
 
+### D10 — Cascade yellow CSS on cards editor (explore)
+
+`ContentPackEditorPage` уже вешает `cascade-gap-outline` на строку набора через `taskSetHasCascadeGap`. Стили `.cascade-gap-outline` сейчас **только** в `ContentPackTasksPage` (`scoped`) — на editor рамки нет. **Fix:** тот же outline CSS на Editor (scoped или shared). Логику `markCascadeGaps` / store не менять, если gaps уже ставятся после delete/content cascade.
+
+### D11 — Answer slots on every question list row (explore Q1)
+
+Во **всех** списках вопросов (не только TasksPage) каждая строка задания MUST показывать slot chips (filled content / empty): `ContentStaffRequestPage` hub, `ContentPackAddTaskSetPage` list, `ContentPackTasksPage` (уже), live `ContentPackPage` (уже). Паттерн chips как на TasksPage. Не возвращать отдельную nested staff-tasks page ради слотов.
+
+### D12 — Add-task-set moderation thread parity (explore Q2=A)
+
+`ContentPackAddTaskSetPage` MUST показывать тот же UX-блок, что cards editor: статус под заголовком (pending / needs_revision), список `moderationThread` messages, reply при open status. Данные: reuse `loadModeration` / `postModerationMessage` (API уже резолвит open `task_set`); опционально добавить `messages` в GET add-task-set — не обязательно, если client грузит thread отдельно. My-moderation → add-task-set для type task_set остаётся.
+
 ## Risks / Trade-offs
 
 - [Миграция чужих drafts] → потеря незапушенных правок; mitigation: один раз drop/archive drafts при деплое
@@ -93,33 +108,37 @@ Topic id kebab/snake в каноне API (например `change_pack`); i18n 
 - [Edit session без unlock на route change] → lock «висит»; mitigation: TTL + unlock on leave Edit
 - [Soft-unpublished в staff catalog] → путаница с never-published; mitigation: явный бейдж/подпись «Снято с публикации» vs «Черновик автора»
 - [Open add-task-set pending при unpublish] → default: оставить pending; staff может needs_revision/cancel; non-staff amend через deep-link недоступен — зафиксировать в apply если всплывёт UX-дыра
+- [Два open request pack+task_set] → getModerationThread предпочитает pack; post-publish у автора обычно только task_set — OK
 
 ## Migration Plan
 
-1. Deploy server: working-copy + lock (уже); добавить inCatalog/soft-unpublish + endpoints; migrate existing live packs → inCatalog true
-2. Deploy client: ACL surfaces (уже) + unpublish/republish UI + collection gray
-3. Rollback unpublish: feature-flag или revert endpoints; публичный каталог снова показывает все live
+1. Deploy server: working-copy + lock + inCatalog (уже)
+2. Deploy client: unpublish UI (уже) + cascade CSS + slot chips + add-task-set thread
+3. Rollback follow-up 3: revert client pages only
 
 ## Open Questions
 
-Нет (explore D1–D7 закрыты; defaults: trash на gray-строке; block отдельно; pending add-task-set не авто-cancel).
+Нет (explore: Q1 slots everywhere; Q2=A thread parity; cascade = CSS).
 
 ## Точки врезки
 
 **Server** (`../happy-tourist-server/`):
 
-- `src/db/schema.ts`, `src/lib/content.ts` — working copy, submit/approve, add-task-set, staff save/lock; **inCatalog / unpublish / republish**; listCatalog staff vs public; getLive ACL
+- `src/db/schema.ts`, `src/lib/content.ts` — working copy, submit/approve, add-task-set, staff save/lock; **inCatalog / unpublish / republish**; listCatalog staff vs public; getLive ACL; moderation thread (уже для task_set)
 - `src/app.config.ts` — content + lock + unpublish/republish endpoints
 - `src/lib/support.ts` — change_pack select только in-catalog
 - `test/zz-contentPacks.test.ts`, `test/support.test.ts`
 
 **Client** (`../happy-tourist.github.io/`):
 
-- `src/stores/content.ts` — unpublish/republish wrappers; catalog item flags; collection gray
-- `ContentCatalogPage.vue`, `ContentPackPage.vue` — staff unpublish/republish controls
-- `ContentCollectionPage.vue` — gray disabled row + i18n label; no row navigate when unpublished
-- `ContentPackEditorPage.vue` / Tasks — staff Edit soft-unpublished (уже staff-save path)
+- `src/stores/content.ts` — unpublish/republish; loadModeration for add-task-set thread
+- `ContentCatalogPage.vue`, `ContentPackPage.vue` — staff unpublish/republish; live slots (уже)
+- `ContentCollectionPage.vue` — gray disabled row
+- `ContentPackEditorPage.vue` — **cascade-gap-outline CSS** на task-set rows
+- `ContentPackTasksPage.vue` — task yellow + slots (уже)
+- `ContentStaffRequestPage.vue` — **slot chips на каждой строке вопроса**
+- `ContentPackAddTaskSetPage.vue` — **slot chips в списке** + **status + thread + reply**
 - `src/i18n/en-US/index.ts`
-- unit tests SC-PACK-120…
+- unit tests SC-PACK-120… + SC-PACK-126…
 
 Чеклист — `tasks.md`.

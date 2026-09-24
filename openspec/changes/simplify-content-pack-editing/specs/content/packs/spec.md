@@ -32,6 +32,9 @@
 | SC-PACK-123 | pending |
 | SC-PACK-124 | pending |
 | SC-PACK-125 | pending |
+| SC-PACK-126 | pending |
+| SC-PACK-127 | pending |
+| SC-PACK-128 | pending |
 | SC-PACK-10 | pending |
 | SC-PACK-11 | pending |
 | SC-PACK-12 | pending |
@@ -261,6 +264,41 @@ Moderator and admin MUST be able to **unpublish** a pack that currently appears 
 - **WHEN** A views collection or attempts Edit / live open for P
 - **THEN** A is treated as any non-staff user (gray non-navigating collection row; no enter; no working-copy Edit)
 - **AND** A MUST NOT unpublish or republish P
+
+### Requirement: Cascade yellow visible on task set in cards editor
+
+After an answers cascade clears one or more slots, the client MUST highlight both the affected **task** (on the task-set editor page) and the containing **task set** (on the cards editor list) with the same yellow/warning outline while cascade gaps remain. Applying the highlight class without visible styles is insufficient.
+
+#### Scenario [SC-PACK-126]: Task-set row outline visible after answer delete cascade
+
+- **GIVEN** cards editor for pack P with task set S containing task T that referenced deleted/changed answer card A
+- **AND** cascade emptied at least one slot on T
+- **WHEN** the cards editor task-set list renders
+- **THEN** the row for S MUST show a visible yellow/warning outline (same visual language as task cascade highlight)
+- **AND** opening S MUST still show T highlighted while the gap remains
+
+### Requirement: Answer slots visible on every question list row
+
+Wherever the client lists tasks/questions for review or editing (staff moderation hub preview, add-task-set page question list, task-set editor list, live pack task list), each task row MUST show its answer slots (filled card content and/or empty). Staff MUST be able to see slot bindings without opening a separate nested tasks-only page.
+
+#### Scenario [SC-PACK-127]: Staff hub and add-task-set lists show slots
+
+- **GIVEN** a moderation preview or add-task-set page with tasks that have slots
+- **WHEN** the questions list renders
+- **THEN** each task row shows its answer slots (filled and/or empty)
+- **AND** the same rule applies on staff request hub and on the author add-task-set list
+
+### Requirement: Add-task-set author sees moderation status and thread
+
+When the change author opens the add-task-set page for an open `task_set` request (including navigation from «На модерации»), the page MUST show the open request status (pending vs needs_revision) and the same moderation thread UX as the cards editor: existing messages readable, and reply allowed while the request is open (pending or needs_revision). Staff needs_revision comments MUST be visible without a separate obscure route.
+
+#### Scenario [SC-PACK-128]: Author amend add-task-set sees needs_revision thread
+
+- **GIVEN** author A has an open add-task-set request on pack P with status needs_revision and at least one staff message
+- **WHEN** A opens the add-task-set page for P (including from «На модерации»)
+- **THEN** the page shows a needs_revision (or equivalent) status
+- **AND** shows the moderation thread including the staff comment(s)
+- **AND** A MAY reply and amend/resubmit while the request remains open
 
 ## MODIFIED Requirements
 

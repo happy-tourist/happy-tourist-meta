@@ -6,8 +6,10 @@ description: >-
   login toggle, ForgotPasswordPage / ResetPasswordPage / AccountPage
   (displayName + change-password), shared password policy + PasswordStrengthMeter
   (register/reset/change; login unchanged), SupportPage create ticket (topic +
-  body; `change_pack` requires **in-catalog** pack select + packId), anonymous guest / Google one-click buttons, auth or support store
-  submit, or q-banner errors.
+  body; `change_pack` requires **in-catalog** pack select + packId), content
+  moderation reply on Editor / AddTaskSet / Moderation (`lazy-rules` + clear →
+  `nextTick` → `resetValidation`; SC-PACK-128), anonymous guest / Google one-click
+  buttons, auth or support/content store submit, or q-banner errors.
 ---
 
 # Work With Forms
@@ -26,6 +28,7 @@ This package validates with Quasar `q-form` + `q-input` `:rules` and `<script se
 | Cabinet | `src/pages/AccountPage.vue` | displayName + change-password (if `canChangePassword`) + email confirm/change; logout |
 | Support create | `src/pages/SupportPage.vue` | Topic `q-select` + body textarea → `support.createTicket`; `change_pack` adds **in-catalog** pack select (title/description; filter `inCatalog !== false && hasLive`) and requires `packId`; on success clear → `await nextTick()` → `resetValidation`; `lazy-rules` on inputs; rate-limit codes → `support.errors.*` |
 | Support reply | `src/pages/SupportTicketPage.vue` | Body textarea → `support.postMessage`; on success clear → `await nextTick()` → `resetValidation`; `lazy-rules` on body |
+| Content moderation reply | `ContentPackEditorPage` / `ContentPackAddTaskSetPage` / `ContentPackModerationPage` | Thread body → `content.postModerationMessage`; show only while open own request `pending`\|`needs_revision` (SC-PACK-128); same clear → `nextTick` → `resetValidation` + `lazy-rules` |
 
 Shared pieces:
 
@@ -104,9 +107,12 @@ Quasar rules: `(val) => true | string`. String = invalid message.
 
 Prefer keeping rules next to the input (inline arrays) until a shared helper appears. Do not introduce Vuetify-style `$refs.validate()` or `vue-the-mask` unless product asks.
 
-## Support create / reply (clear without red empty)
+## Support / content moderation reply (clear without red empty)
 
-После успешного submit нельзя оставлять пустое поле в красном error-state Quasar (SC-SUP-24 / D8 / D12).
+После успешного submit нельзя оставлять пустое поле в красном error-state Quasar
+(SC-SUP-24 / D8 / D12; content moderation reply SC-PACK-128). Same pattern on
+Support create/reply **and** content pack moderation reply (Editor / AddTaskSet /
+Moderation).
 
 1. На body (и create topic/body) inputs — `lazy-rules` (правила не срабатывают на каждое изменение `v-model` до blur/submit).
 2. После успеха: `field.value = ''` → `await nextTick()` → `formRef.value?.resetValidation()`.

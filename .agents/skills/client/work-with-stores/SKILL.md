@@ -8,7 +8,8 @@ description: >-
   D13 atomic `$patch` seats+revealing/broken, peek/end-turn), acceptHMRUpdate,
   and Quasar pinia entry. Core in SKILL.md; content-pack working copy / unified
   submit / add-task-set / staff lock+save / `isStaffEditSessionNavigation`
-  (SC-PACK-115…119) / cascade yellow details in content.md.
+  (SC-PACK-115…119) / cascade yellow + slot chips + add-task-set thread
+  (SC-PACK-126…128) details in content.md.
   Use when adding, changing, reviewing, or debugging Pinia stores, shared
   game/auth/theme/support/content state (incl. admin setUserRole merge /
   emailVerified; support `change_pack` + packId), or page-to-store wiring.

@@ -42,3 +42,11 @@
 - [x] 6.3 Client store/API: unpublish/republish wrappers + catalog/collection flags; i18n «Снято с публикации» / кнопки
 - [x] 6.4 UI: staff кнопки в каталоге и внутри набора; коллекция gray disabled + label + trash; non-staff no navigate/deep-link; verify SC-PACK-121/125 vitest
 - [x] 6.5 Support change_pack select только in-catalog; из server+client: `npm test` (+ client lint/typecheck) — зелёные для SC-PACK-120…125
+
+## 7. Client — cascade yellow, slots everywhere, add-task-set thread
+
+- [x] 7.1 Прочитать design D10–D12, delta SC-PACK-126…128; skills `work-with-pages`, `work-with-stores` (content), `work-with-styles` / localization / test
+- [x] 7.2 Editor: видимый `cascade-gap-outline` на строке набора (CSS паритет с Tasks); verify SC-PACK-126 vitest
+- [x] 7.3 Staff hub + AddTaskSet (+ любые другие списки вопросов без chips): слоты ответов на каждой строке; verify SC-PACK-127 vitest
+- [x] 7.4 AddTaskSet: статус pending/needs_revision + moderation thread + reply (как Editor); load via existing moderation API; verify SC-PACK-128 vitest
+- [x] 7.5 Из client: `npm run lint`, `npm run typecheck`, `npm test` — зелёные для SC-PACK-126…128
