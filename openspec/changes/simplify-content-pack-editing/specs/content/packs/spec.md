@@ -35,6 +35,11 @@
 | SC-PACK-126 | pending |
 | SC-PACK-127 | pending |
 | SC-PACK-128 | pending |
+| SC-PACK-129 | pending |
+| SC-PACK-130 | pending |
+| SC-PACK-131 | pending |
+| SC-PACK-132 | pending |
+| SC-PACK-133 | pending |
 | SC-PACK-10 | pending |
 | SC-PACK-11 | pending |
 | SC-PACK-12 | pending |
@@ -218,12 +223,12 @@ On content pack editor surfaces (cards editor, task-set editor, add-task-set pag
 
 ### Requirement: Staff soft-unpublish and republish
 
-Moderator and admin MUST be able to **unpublish** a pack that currently appears in the public catalog and to **republish** it with a single action that restores catalog visibility **without** creating a new moderation request. Unpublish MUST be a soft-hide: live content remains stored; the pack MUST leave the **public** catalog. Staff MUST still see the pack in the **shared catalog list** with a clear «снято с публикации» state. Non-staff users MUST NOT open the live pack view or deep-link after unpublish. In a non-staff user’s collection, the row MUST appear disabled/gray with the label «Снято с публикации», MUST NOT navigate on row click, and MUST still allow remove-from-collection (trash + confirm). After the first catalog approve, the **creator** is treated like any other non-staff user for that pack (add-task-set only while in catalog; no working-copy Edit after soft-unpublish). Staff MUST be able to Edit a soft-unpublished pack under the exclusive lock (same staff-save path as published). Unpublish/republish MUST NOT be conflated with **block**. Controls MUST appear for staff in the **catalog** and **inside the pack** view.
+Moderator and admin MUST be able to **unpublish** a pack that currently appears in the public catalog and to **republish** it with a single action that restores catalog visibility **without** creating a new moderation request. Unpublish MUST be a soft-hide: live content remains stored; the pack MUST leave the **public** catalog. Staff MUST still see the pack in the **shared catalog list** with a clear «снято с публикации» state. Non-staff users MUST NOT open the live pack view or deep-link after unpublish. In a non-staff user’s collection, the row MUST appear disabled/gray with the label «Снято с публикации», MUST NOT navigate on row click, and MUST still allow remove-from-collection (trash + confirm). After the first catalog approve, the **creator** is treated like any other non-staff user for that pack (add-task-set only while in catalog; no working-copy Edit after soft-unpublish). Staff MUST be able to Edit a soft-unpublished pack under the exclusive lock (same staff-save path as published). Unpublish/republish MUST NOT be conflated with **block**. Staff unpublish/republish controls MUST appear in the **catalog**, the **collection** list, and **inside the pack** live view. Staff MUST confirm before unpublishing a pack. Republish of a pack MUST NOT require confirmation. Staff moderation queue MUST NOT expose pack unpublish/republish controls.
 
 #### Scenario [SC-PACK-120]: Staff unpublish hides pack from public catalog
 
 - **GIVEN** in-catalog pack P and staff S
-- **WHEN** S chooses «Снять с публикации» for P
+- **WHEN** S chooses «Снять с публикации» for P (after confirmation)
 - **THEN** non-staff callers MUST NOT see P in the public catalog
 - **AND** staff callers MUST still see P in the shared catalog list with an unpublished/снято state
 - **AND** P’s live content remains stored for staff access
@@ -250,6 +255,7 @@ Moderator and admin MUST be able to **unpublish** a pack that currently appears 
 - **WHEN** S chooses «Опубликовать снова»
 - **THEN** P appears in the public catalog with the same live content
 - **AND** no new moderation request is created for that republish
+- **AND** no confirmation dialog is required for republish
 
 #### Scenario [SC-PACK-124]: Staff may Edit soft-unpublished pack
 
@@ -265,6 +271,16 @@ Moderator and admin MUST be able to **unpublish** a pack that currently appears 
 - **THEN** A is treated as any non-staff user (gray non-navigating collection row; no enter; no working-copy Edit)
 - **AND** A MUST NOT unpublish or republish P
 
+#### Scenario [SC-PACK-129]: Staff unpublish/republish in collection with confirm
+
+- **GIVEN** staff S viewing the collection list with in-catalog pack P
+- **WHEN** the collection list renders
+- **THEN** S MUST see «Снять с публикации» (or republish when soft-unpublished) on that row
+- **AND WHEN** S chooses unpublish
+- **THEN** the client MUST ask for confirmation before calling the unpublish API
+- **AND** cancelling the dialog MUST leave P in catalog
+- **AND** staff moderation queue MUST NOT show pack unpublish/republish controls
+
 ### Requirement: Cascade yellow visible on task set in cards editor
 
 After an answers cascade clears one or more slots, the client MUST highlight both the affected **task** (on the task-set editor page) and the containing **task set** (on the cards editor list) with the same yellow/warning outline while cascade gaps remain. Applying the highlight class without visible styles is insufficient.
@@ -279,7 +295,7 @@ After an answers cascade clears one or more slots, the client MUST highlight bot
 
 ### Requirement: Answer slots visible on every question list row
 
-Wherever the client lists tasks/questions for review or editing (staff moderation hub preview, add-task-set page question list, task-set editor list, live pack task list), each task row MUST show its answer slots (filled card content and/or empty). Staff MUST be able to see slot bindings without opening a separate nested tasks-only page.
+Wherever the client lists tasks/questions for review or editing (staff moderation hub preview, add-task-set page question list, task-set editor list, live pack drill-in task list), each task row MUST show its answer slots (filled card content and/or empty). Staff MUST be able to see slot bindings without opening a separate nested tasks-only page.
 
 #### Scenario [SC-PACK-127]: Staff hub and add-task-set lists show slots
 
@@ -299,6 +315,51 @@ When the change author opens the add-task-set page for an open `task_set` reques
 - **THEN** the page shows a needs_revision (or equivalent) status
 - **AND** shows the moderation thread including the staff comment(s)
 - **AND** A MAY reply and amend/resubmit while the request remains open
+
+### Requirement: Live pack shows task-set summary and drill-in
+
+On the live pack view, the client MUST show answer cards and a **list of task-set rows** (not an inline expansion of all questions). Each published task-set row MUST show at least the task count and a difficulty breakdown (counts for difficulties 1, 2, and 3). Activating a published task-set row MUST navigate to a page that lists that set’s questions with answer slots. Soft-unpublished task-set rows follow the soft-unpublish task-set rules (gray, non-enterable for non-staff).
+
+#### Scenario [SC-PACK-130]: Live pack drills into task set questions
+
+- **GIVEN** in-catalog pack P with at least one published task set S that has tasks of mixed difficulties
+- **WHEN** a viewer opens the live pack page for P
+- **THEN** the page lists S as a summary row with task count and difficulty 1/2/3 counts
+- **AND** MUST NOT expand S’s questions inline on that page
+- **AND WHEN** the viewer activates the row for S
+- **THEN** the client opens a questions view for S showing each task’s answer slots
+
+### Requirement: Staff soft-unpublish and republish task set
+
+Moderator and admin MUST be able to soft-unpublish an entire **task set** on a live pack and to republish it without a new moderation request. Soft-unpublish of a task set MUST NOT remove individual questions as a separate product action. Soft-unpublish MUST keep the set stored; non-staff viewers MUST see the set row as gray with «Снято с публикации» and MUST NOT enter the set. Staff MUST still be able to Edit the soft-unpublished set (staff-save / lock session) and MUST have republish on the **task-set row** (editor and live list) and **inside** the task-set page. Staff MUST confirm before unpublishing a set; republish MUST NOT require confirmation. The system MUST reject unpublishing a task set when it is the **only** published task set on the pack. Soft-unpublish of individual tasks/questions MUST NOT be offered. Staff moderation queue MUST NOT expose task-set unpublish controls. Hard-delete of published or soft-unpublished task sets is out of scope for this requirement.
+
+#### Scenario [SC-PACK-131]: Staff cannot unpublish the only published task set
+
+- **GIVEN** live pack P with exactly one published task set S and an authenticated staff user
+- **WHEN** the staff user attempts to soft-unpublish S
+- **THEN** the system rejects the attempt (or the client disables the control)
+- **AND** S remains published
+
+#### Scenario [SC-PACK-132]: Soft-unpublished task set is gray and non-enterable
+
+- **GIVEN** live pack P with published task set S1 and soft-unpublished task set S2
+- **WHEN** a non-staff viewer opens live P
+- **THEN** S2’s row is gray with «Снято с публикации»
+- **AND** activating S2 MUST NOT open the questions view
+- **AND** staff MAY still Edit S2 and choose «Опубликовать снова» on the row or inside the task-set page without confirmation
+- **AND WHEN** staff chooses «Снять с публикации» on a published set that is not the last published set
+- **THEN** the client asks for confirmation before the API call
+
+### Requirement: Add-task-set answer tiles match task editor chips
+
+On the add-task-set page, the answer-card picker used to fill slots MUST use the same rounded chip visual language as the staff/creator task-set editor (not rectangular button tiles).
+
+#### Scenario [SC-PACK-133]: Add-task-set answer tiles are rounded chips
+
+- **GIVEN** author A on the add-task-set page with live answer cards available
+- **WHEN** the answer tiles picker renders
+- **THEN** each tile is a rounded chip consistent with the task-set editor answer picker
+- **AND** MUST NOT use rectangular primary outline buttons for those tiles
 
 ## MODIFIED Requirements
 

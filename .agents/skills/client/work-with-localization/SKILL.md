@@ -17,9 +17,11 @@ description: >-
   `slotEmpty` / `slotFilled`;
   `deleteCardConfirm` / `deleteCardConfirmPublished` by hasLive; cascade yellow;
   collection trash + author delete unpublished; staff soft-unpublish/republish
-  (`unpublish` / `republish` / `unpublishedByStaff`); staff Approve / needs-revision;
+  (`unpublish` / `republish` / `unpublishedByStaff` / `unpublishConfirm*` /
+  `unpublishTaskSetConfirm*` / `taskSetDifficultySummary` /
+  `lastPublishedTaskSetHint`); staff Approve / needs-revision;
   no block UI; `content.errors.*` incl. `edit_locked` / `submit_need_task_sets` /
-  `pack_unpublished` — RU under en-US; support topic `change_pack`).
+  `pack_unpublished` / `last_published_task_set` — RU under en-US; support topic `change_pack`).
 ---
 
 # Work With Localization

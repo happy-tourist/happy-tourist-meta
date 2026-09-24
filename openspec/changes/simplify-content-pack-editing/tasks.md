@@ -50,3 +50,14 @@
 - [x] 7.3 Staff hub + AddTaskSet (+ любые другие списки вопросов без chips): слоты ответов на каждой строке; verify SC-PACK-127 vitest
 - [x] 7.4 AddTaskSet: статус pending/needs_revision + moderation thread + reply (как Editor); load via existing moderation API; verify SC-PACK-128 vitest
 - [x] 7.5 Из client: `npm run lint`, `npm run typecheck`, `npm test` — зелёные для SC-PACK-126…128
+
+## 8. Server + client — pack unpublish everywhere, task-set soft-hide, live drill-in
+
+- [x] 8.1 Прочитать design D9/D13–D16, delta SC-PACK-129…133; skills `work-with-database`, `work-with-routes`, `work-with-pages`, `work-with-stores` (content), localization / test
+- [x] 8.2 Server: task-set published/inCatalog flag + migrate live sets → true; staff unpublish/republish set endpoints; reject unpublish when last published set; mocha SC-PACK-131
+- [x] 8.3 Client store/API: set unpublish/republish wrappers + pack/set flags; i18n confirm / unpublished set labels
+- [x] 8.4 UI pack: staff unpublish/republish + **confirm** in catalog, **collection**, and live; no unpublish in staff queue; verify SC-PACK-129 (+ confirm on existing catalog/live)
+- [x] 8.5 UI live: set summary rows (count + difficulty 1/2/3) + drill-in to questions+slots; soft-unpublished set gray no-enter; staff Edit/Republish on row; verify SC-PACK-130/132
+- [x] 8.6 UI Editor + Tasks: set unpublish (confirm) / republish on row and inside Tasks; disable unpublish if last published; verify SC-PACK-131/132
+- [x] 8.7 AddTaskSet: answer tiles → rounded chips like Tasks; verify SC-PACK-133
+- [x] 8.8 Из server+client: `npm test` (+ client lint/typecheck) — зелёные для SC-PACK-129…133

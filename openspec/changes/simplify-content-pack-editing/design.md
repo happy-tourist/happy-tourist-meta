@@ -2,7 +2,7 @@
 
 См. `proposal.md` — Why. Базовая модель: одна working copy до first approve; после live — freeze для non-staff; add-task-set; staff lock + session cards↔tasks; без personal drafts / stale.
 
-После apply блоков 1–6: soft-unpublish/`inCatalog` в runtime. Explore выявил UX-дыры: cascade yellow на task-set в editor без CSS; staff hub / add-task-set без slot chips в списке вопросов; add-task-set без thread/status needs_revision.
+После apply блоков 1–7: soft-unpublish пака, cascade CSS, slot chips, add-task-set thread в runtime. Explore follow-up 4: unpublish пака не во всех списках (нет в коллекции); нет confirm; нет soft-hide task set; live разворачивает все вопросы; AddTaskSet answer tiles — прямоугольные `q-btn`.
 
 Пакеты: **server** + **client**. Room/tourist не затрагивается. `block` остаётся отдельным API без UI.
 
@@ -18,10 +18,13 @@
 - Staff Edit: одна сессия cards↔tasks без сброса lock; без my-moderation nav; staff hint без «отправки на модерацию»
 - Add-task-set affordance у секции «Задания» на live; не в списке коллекции / не в шапке live
 - Content-редакторы: подсказки без скачков высоты
-- **Staff soft-unpublish / republish:** публичный каталог скрывает; staff видят в общем каталоге; коллекция gray+подпись; enter/Edit только staff; republish одной кнопкой без новой модерации
+- **Staff soft-unpublish / republish pack:** публичный каталог скрывает; staff видят в каталоге **и коллекции**; confirm перед unpublish; republish one-click; gray+подпись; enter/Edit только staff
+- **Soft-unpublish / republish task set:** flag на set; ≥1 published set; gray row + no enter; staff Edit + republish на строке и внутри Tasks; confirm на unpublish set
+- **Live set summary + drill-in:** ответы + строки sets (count + diff 1/2/3); вопросы+слоты только после клика
 - **Cascade yellow на набор:** outline на task-set row в cards editor, пока есть cascade gaps (паритет с task yellow на Tasks)
-- **Slot chips везде в списках вопросов:** staff hub, add-task-set, tasks editor, live
+- **Slot chips везде в списках вопросов:** staff hub, add-task-set, tasks editor, live drill-in
 - **Add-task-set thread UX:** статус needs_revision/pending + moderation thread + reply как на cards editor
+- **AddTaskSet answer tiles:** `q-chip` parity with Tasks
 
 **Non-Goals:**
 
@@ -30,6 +33,7 @@
 - Peek / tourist-room binding
 - Отдельная роль admin ≠ moderator в content (оба `isStaff`)
 - Hard-delete published / soft-unpublished packs
+- Hard-delete published / soft-unpublished task sets (позже)
 
 ## Decisions
 
@@ -78,9 +82,11 @@ Topic id kebab/snake в каноне API (например `change_pack`); i18n 
 **Модель:** soft-hide. Не обнулять `liveRevisionId` при unpublish — сохранить live payload. Флаг на pack (например `inCatalog` / `catalogListed` boolean, default true когда есть live; или `unpublishedAt`). Публичный `listCatalog` / collect / non-staff `getLive` фильтруют `inCatalog === true`. Staff `listCatalog` возвращает и soft-unpublished с полем статуса. Republish = выставить inCatalog true **без** новой moderation request.
 
 **UI:**
-- Staff: «Снять с публикации» в **каталоге** (row) и **внутри набора** (live/staff view); «Опубликовать снова» в тех же местах, когда снято
+- Staff: «Снять с публикации» в **каталоге**, **коллекции** и **внутри набора** (live); «Опубликовать снова» в тех же местах, когда снято
+- **Confirm** перед unpublish пака; republish пака — **без** confirm (one-click)
 - Non-staff коллекция: строка gray/disabled, подпись «Снято с публикации», **не кликабельна**; trash/remove-from-collection остаётся
 - Non-staff deep-link на pack → отказ / «снято» (не read-only live)
+- Staff moderation queue / my-moderation: **без** unpublish controls
 
 **ACL:** только `isStaff` вызывают unpublish/republish и открывают/Edit soft-unpublished. Creator после first approve не получает working-copy Edit при unpublish.
 
@@ -94,11 +100,33 @@ Topic id kebab/snake в каноне API (например `change_pack`); i18n 
 
 ### D11 — Answer slots on every question list row (explore Q1)
 
-Во **всех** списках вопросов (не только TasksPage) каждая строка задания MUST показывать slot chips (filled content / empty): `ContentStaffRequestPage` hub, `ContentPackAddTaskSetPage` list, `ContentPackTasksPage` (уже), live `ContentPackPage` (уже). Паттерн chips как на TasksPage. Не возвращать отдельную nested staff-tasks page ради слотов.
+Во **всех** списках вопросов (не только TasksPage) каждая строка задания MUST показывать slot chips (filled content / empty): `ContentStaffRequestPage` hub, `ContentPackAddTaskSetPage` list, `ContentPackTasksPage` (уже), live drill-in view. Паттерн chips как на TasksPage. Не возвращать отдельную nested staff-tasks page ради слотов.
 
 ### D12 — Add-task-set moderation thread parity (explore Q2=A)
 
 `ContentPackAddTaskSetPage` MUST показывать тот же UX-блок, что cards editor: статус под заголовком (pending / needs_revision), список `moderationThread` messages, reply при open status. Данные: reuse `loadModeration` / `postModerationMessage` (API уже резолвит open `task_set`); опционально добавить `messages` в GET add-task-set — не обязательно, если client грузит thread отдельно. My-moderation → add-task-set для type task_set остаётся.
+
+### D13 — Soft-unpublish task set (explore follow-up 4)
+
+**Модель:** soft-hide на уровне **task set** (не отдельных questions). Флаг на set в live revision payload / schema (напр. `inCatalog` / `published` boolean, default true при approve/append). Soft-unpublish set **не** трогает pack `inCatalog`. **Запрет:** нельзя снять set, если он единственный с published/inCatalog=true на live паке (server 409 + client disable).
+
+**ACL:** только `isStaff`. Confirm перед unpublish set. Republish set — one-click на **строке** (Editor / live list) и **внутри** Tasks page. Не показывать unpublish в staff moderation queue.
+
+**UX снятого set:** серый + бейдж «Снято с публикации»; non-staff / ordinary viewers **не** входят (drill-in disabled); staff MAY Edit (staff-save) и Republish. Hard-delete published/soft-unpublished set — **out of scope**.
+
+**Альтернатива:** hard-delete set с live — отвергнуто (explore: сначала soft; delete later).
+
+### D14 — Live pack: set summary + drill-in (explore)
+
+`ContentPackPage` (live): секция ответов + **список строк** task sets (как Editor): caption = число заданий + разбивка по сложности 1/2/3. **Не** разворачивать вопросы на месте. Клик по **опубликованной** строке → страница просмотра вопросов со слотами (reuse `ContentPackTasksPage` read-only **или** эквивалент; staff в Edit session → editable Tasks). Снятая строка: gray + бейдж; клик non-staff no-op; staff → Edit / Republish на строке.
+
+### D15 — AddTaskSet answer tile shape (explore)
+
+На `ContentPackAddTaskSetPage` picker «карточки для слотов» сейчас `q-btn` (прямоугольные). **Fix:** `q-chip clickable outline` как на `ContentPackTasksPage`.
+
+### D16 — Confirm on pack unpublish (explore Q1)
+
+Любой staff «Снять с публикации» для **пака** (catalog / collection / live) — через confirm dialog. Republish пака — без confirm.
 
 ## Risks / Trade-offs
 
@@ -109,36 +137,37 @@ Topic id kebab/snake в каноне API (например `change_pack`); i18n 
 - [Soft-unpublished в staff catalog] → путаница с never-published; mitigation: явный бейдж/подпись «Снято с публикации» vs «Черновик автора»
 - [Open add-task-set pending при unpublish] → default: оставить pending; staff может needs_revision/cancel; non-staff amend через deep-link недоступен — зафиксировать в apply если всплывёт UX-дыра
 - [Два open request pack+task_set] → getModerationThread предпочитает pack; post-publish у автора обычно только task_set — OK
+- [Unpublish последнего published set] → pack в каталоге без playable sets; mitigation: server reject + client disable
+- [Live drill-in vs Edit route] → путаница режимов; mitigation: read-only Tasks когда не staff Edit session
 
 ## Migration Plan
 
-1. Deploy server: working-copy + lock + inCatalog (уже)
-2. Deploy client: unpublish UI (уже) + cascade CSS + slot chips + add-task-set thread
-3. Rollback follow-up 3: revert client pages only
+1. Deploy server: task-set published flag + unpublish/republish set endpoints; migrate existing live sets → published true
+2. Deploy client: collection pack unpublish + confirms; live summary + drill-in; set soft-hide UI; AddTaskSet chips
+3. Rollback follow-up 4: revert client + server set-flag endpoints; pack soft-hide остаётся
 
 ## Open Questions
 
-Нет (explore: Q1 slots everywhere; Q2=A thread parity; cascade = CSS).
+Нет (explore follow-up 4: D1–D8 + Q1 confirm только Unpublish).
 
 ## Точки врезки
 
 **Server** (`../happy-tourist-server/`):
 
-- `src/db/schema.ts`, `src/lib/content.ts` — working copy, submit/approve, add-task-set, staff save/lock; **inCatalog / unpublish / republish**; listCatalog staff vs public; getLive ACL; moderation thread (уже для task_set)
-- `src/app.config.ts` — content + lock + unpublish/republish endpoints
+- `src/db/schema.ts`, `src/lib/content.ts` — working copy, submit/approve, add-task-set, staff save/lock; pack `inCatalog`; **task-set published/inCatalog**; unpublish/republish pack+set; listCatalog; getLive ACL + set summaries; moderation thread
+- `src/app.config.ts` — content + lock + unpublish/republish (pack + set) endpoints
 - `src/lib/support.ts` — change_pack select только in-catalog
 - `test/zz-contentPacks.test.ts`, `test/support.test.ts`
 
 **Client** (`../happy-tourist.github.io/`):
 
-- `src/stores/content.ts` — unpublish/republish; loadModeration for add-task-set thread
-- `ContentCatalogPage.vue`, `ContentPackPage.vue` — staff unpublish/republish; live slots (уже)
-- `ContentCollectionPage.vue` — gray disabled row
-- `ContentPackEditorPage.vue` — **cascade-gap-outline CSS** на task-set rows
-- `ContentPackTasksPage.vue` — task yellow + slots (уже)
-- `ContentStaffRequestPage.vue` — **slot chips на каждой строке вопроса**
-- `ContentPackAddTaskSetPage.vue` — **slot chips в списке** + **status + thread + reply**
+- `src/stores/content.ts` — pack/set unpublish/republish; loadModeration
+- `ContentCatalogPage.vue`, `ContentCollectionPage.vue`, `ContentPackPage.vue` — staff pack unpublish/republish + **confirm**; collection buttons; live **set summary rows** + drill-in
+- `ContentPackEditorPage.vue` — set row unpublish/republish + cascade CSS
+- `ContentPackTasksPage.vue` — read-only live drill-in; staff set republish/unpublish inside; task yellow + slots
+- `ContentStaffRequestPage.vue` — slot chips (уже); **без** unpublish
+- `ContentPackAddTaskSetPage.vue` — slot chips + thread + **q-chip answer tiles**
 - `src/i18n/en-US/index.ts`
-- unit tests SC-PACK-120… + SC-PACK-126…
+- unit tests SC-PACK-120… + 126… + **129…**
 
 Чеклист — `tasks.md`.

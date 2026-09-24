@@ -8,6 +8,8 @@ Follow-up после первой реализации: staff (moderator = admin
 
 Третий follow-up (UX модерации/редактора): после удаления ответа жёлтая рамка видна на задании, но не на наборе в editor; в staff hub и add-task-set в списке вопросов нет слотов ответов; автор add-task-set из «На модерации» не видит статус «нужна доработка» и thread с комментариями staff.
 
+Четвёртый follow-up: unpublish пака нужен staff во **всех** списках (вкл. коллекцию); confirm перед unpublish; soft-unpublish **целого task set** (≥1 опубликованный set остаётся); live — сводка наборов + drill-in к вопросам; снятый set серый без входа; answer tiles на add-task-set — скруглённые chips как у staff.
+
 ## What Changes
 
 - **BREAKING:** убрать персональные drafts / dual post-publish edit / foreign-pending co-edit; одна рабочая копия до первого апрува.
@@ -19,10 +21,13 @@ Follow-up после первой реализации: staff (moderator = admin
 - Первая модерация: один submit (карточки + ≥1 task set), одна кнопка «Одобрить» / «Доработать»; hard-reject убрать; автор может Cancel.
 - Support: тема «изменить набор карточек» + select из каталога (название/описание) + ссылка на пак в заявке.
 - Убрать wipe-drafts / draftStale-rebase из publish-ux.
-- **Staff unpublish / republish (restore):** «Снять с публикации» в **каталоге** и **внутри набора**; публичный каталог без снятого пака; staff видят строку в общем каталоге с пометкой; коллекция — серая некликабельная строка + «Снято с публикации» (trash оставить); non-staff не открывают live/deep-link; «Опубликовать снова» одной кнопкой (без новой очереди модерации); `block` не смешивать.
+- **Staff unpublish / republish (restore):** «Снять с публикации» в **каталоге**, **коллекции** и **внутри набора**; confirm перед unpublish; republish one-click (без confirm); публичный каталог без снятого пака; staff видят строку в общем каталоге с пометкой; коллекция — серая некликабельная строка + «Снято с публикации» (trash оставить); non-staff не открывают live/deep-link; `block` не смешивать; **не** в staff moderation queue.
+- **Soft-unpublish task set:** staff снимает **целый** набор заданий (не отдельные вопросы); нельзя снять единственный опубликованный set; снятый set — серый + «Снято…», войти нельзя; staff Edit + republish на **строке** и **внутри** страницы набора; confirm перед unpublish set; republish set one-click.
+- **Live как editor:** ответы + список наборов (число заданий + разбивка по сложности 1/2/3); вопросы со слотами — только после клика по строке (drill-in / read-only или staff Edit).
 - **Cascade yellow на набор:** после cascade пустых слотов жёлтая рамка видна и на **наборе заданий** в cards editor (не только на задании внутри Tasks).
-- **Слоты в каждом списке вопросов:** на staff request hub, add-task-set, tasks editor, live — в строке задания видны слоты ответов (filled/empty).
+- **Слоты в каждом списке вопросов:** на staff request hub, add-task-set, tasks editor, live drill-in — в строке задания видны слоты ответов (filled/empty).
 - **Add-task-set amend UX:** тот же блок статуса + moderation thread + reply, что на cards editor; автор из «На модерации» видит needs_revision и сообщения staff.
+- **Add-task-set answer tiles:** picker карточек для слотов — скруглённые chips как на Tasks (не прямоугольные `q-btn`).
 
 ## Scope
 
@@ -33,6 +38,7 @@ Follow-up после первой реализации: staff (moderator = admin
 - Follow-up: client staff Edit session + nav/placement + layout-stable hints (server lock API без смены контракта, кроме при необходимости TTL/heartbeat на обеих страницах)
 - Follow-up 2: staff unpublish/republish soft-hide + catalog/collection/live ACL + i18n/tests
 - Follow-up 3: cascade set outline CSS; slot chips на всех task-list surfaces; add-task-set thread/status (reuse existing moderation messages API)
+- Follow-up 4: pack unpublish in collection + confirm; task-set soft-unpublish/republish (≥1 published); live set summary + drill-in; AddTaskSet rounded answer tiles
 
 ## Out of scope
 
@@ -41,6 +47,7 @@ Follow-up после первой реализации: staff (moderator = admin
 - Новые npm-зависимости / внешние сервисы
 - Изменение ролей staff/admin вне ACL Edit (admin уже приравнен к moderator через `isStaff`)
 - Hard-delete опубликованного / снятого пака staff или автором
+- Hard-delete опубликованного / soft-unpublished **task set** (подумаем позже)
 
 ## Capabilities
 
@@ -50,18 +57,18 @@ Follow-up после первой реализации: staff (moderator = admin
 
 ### Modified Capabilities
 
-- `content/packs`: freeze после publish; одна рабочая копия; единый approve/доработать; add-only task set; staff live edit + lock **session across cards/tasks**; staff без my-moderation nav; add-task-set у секции «Задания»; layout-stable editor hints; удаление personal drafts / stale pull; **staff soft-unpublish / republish**; **cascade yellow на task-set row**; **slot chips во всех списках вопросов**; **add-task-set moderation thread + needs_revision status**
+- `content/packs`: freeze после publish; одна рабочая копия; единый approve/доработать; add-only task set; staff live edit + lock **session across cards/tasks**; staff без my-moderation nav; add-task-set у секции «Задания»; layout-stable editor hints; удаление personal drafts / stale pull; **staff soft-unpublish / republish** (pack + task set; collection controls; confirm on unpublish); **live set summary + drill-in**; **cascade yellow на task-set row**; **slot chips во всех списках вопросов**; **add-task-set moderation thread + needs_revision status**; **AddTaskSet rounded answer tiles**
 - `support/tickets`: тема change-pack + select каталога + ссылка на пак
 
 ## Impact
 
-- Client: Content* pages/store, i18n; Support create form (topic + pack select); staff Edit session; catalog/collection nav; live add-task-set placement; editor hint layout; unpublish/republish controls + collection gray rows; Editor cascade CSS; StaffRequest/AddTaskSet slot rows + AddTaskSet thread UI
-- Server: `lib/content`, schema visibility/unpublish flag, content HTTP unpublish/republish; `lib/support` topics + create payload; при необходимости — messages в GET add-task-set (или reuse `/moderation`)
-- Тесты: mocha SC-PACK* / SC-SUP*; vitest content + support (вкл. SC-PACK-115… + unpublish SC-PACK-120… + SC-PACK-126…)
+- Client: Content* pages/store, i18n; Support create form (topic + pack select); staff Edit session; catalog/collection nav; live set list + drill-in; unpublish confirm + collection staff controls; task-set soft-hide UI; Editor cascade CSS; StaffRequest/AddTaskSet slot rows + thread UI + chip answer tiles
+- Server: `lib/content`, schema pack `inCatalog` + **task-set published/inCatalog flag**; content HTTP unpublish/republish (pack + set); `lib/support` topics + create payload
+- Тесты: mocha SC-PACK* / SC-SUP*; vitest content + support (вкл. SC-PACK-115… + 120… + 126… + 129…)
 - Specs: delta → sync в main после archive
 
 ## References
 
-- Explore-решения D1–D16 + follow-up staff UX / anti-jump + unpublish D1–D7 + moderation UX (cascade/slots/thread) (сессия openspec-explore)
+- Explore-решения D1–D16 + follow-up staff UX / anti-jump + unpublish D1–D7 + moderation UX + follow-up 4 (pack lists / task-set soft-hide / live drill-in / chips) (сессия openspec-explore)
 - Main: `openspec/specs/content/packs/spec.md`, `openspec/specs/support/tickets/spec.md`
 - Sibling AGENTS: `happy-tourist.github.io/AGENTS.md`, `happy-tourist-server/AGENTS.md`

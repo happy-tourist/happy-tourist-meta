@@ -9,7 +9,8 @@ description: >-
   and Quasar pinia entry. Core in SKILL.md; content-pack working copy / unified
   submit / add-task-set / staff lock+save / `isStaffEditSessionNavigation`
   (SC-PACK-115…119) / cascade yellow + slot chips + add-task-set thread
-  (SC-PACK-126…128) details in content.md.
+  (SC-PACK-126…128) / pack+set soft-unpublish + live drill-in + AddTaskSet chips
+  (SC-PACK-129…133) details in content.md.
   Use when adding, changing, reviewing, or debugging Pinia stores, shared
   game/auth/theme/support/content state (incl. admin setUserRole merge /
   emailVerified; support `change_pack` + packId), or page-to-store wiring.
@@ -356,7 +357,7 @@ Dependency direction: `pages` → `stores` / `boot` / `components`. Keep Colyseu
 - Put domain state in `stores/index.ts` or grow the unused `counter` scaffold.
 - Reintroduce legacy draughts `board` / `{ from, to }` as current product canon.
 - Mix auth session concerns into `game` or room lifecycle into `auth`; do not fold content packs into `support`.
-- Call removed dual `submitAnswers` / `submitTasks` or `draftStale`/`rebaseDraft` — use `submitPack` / add-task-set / staff save; staff soft-unpublish/republish (`unpublishPack`/`republishPack`, `inCatalog`) is allowed (SC-PACK-120…125; see [content.md](content.md)).
+- Call removed dual `submitAnswers` / `submitTasks` or `draftStale`/`rebaseDraft` — use `submitPack` / add-task-set / staff save; staff soft-unpublish/republish of **pack** (`unpublishPack`/`republishPack`) and **task set** (`unpublishTaskSet`/`republishTaskSet`, set `inCatalog`) is allowed (SC-PACK-120…125 / 129…132; see [content.md](content.md)).
 - Pre-clear task slots before cascade save — see [content.md](content.md).
 - Forget HMR `acceptHMRUpdate` on new stores.
 - After theme GET, replace `auth.user` only to set `theme` — feeds the App

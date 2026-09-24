@@ -4,9 +4,9 @@ description: >-
   Use when planning or writing Vue 3 / Quasar unit tests for the happy-tourist
   client (pages, components, Pinia stores, lib helpers): Vitest +
   @vue/test-utils, q-form rules, auth/theme/game/support/content stores
-  (my-moderation / cascadeGap* / hasLive confirm / simplify ACL SC-PACK-100…128 /
-  soft-unpublish `ContentSoftUnpublish` / `ContentModerationUx` SC-PACK-126…128 /
-  SupportChangePack SC-SUP-27…29), Colyseus client.auth / client.http / room I/O spies, store error +
+  (my-moderation / cascadeGap* / hasLive confirm / simplify ACL SC-PACK-100…133 /
+  soft-unpublish `ContentSoftUnpublish` / follow-up 4 `ContentFollowUp4` SC-PACK-129…133 /
+  `ContentModerationUx` SC-PACK-126…128 / SupportChangePack SC-SUP-27…29), Colyseus client.auth / client.http / room I/O spies, store error +
   q-banner, vue-i18n / router. Harness live (`vitest.config.ts`, `test/setup.ts`,
   `npm test`). Core in SKILL.md; topics: forms.md, stores.md, colyseus.md,
   errors.md, plugins.md, composables.md, provide-inject.md.
