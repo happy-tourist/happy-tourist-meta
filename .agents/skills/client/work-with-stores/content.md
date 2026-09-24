@@ -37,15 +37,25 @@ page class `cascade-gap-outline` (not `bg-warning` row fill).
 and `ContentPackEditorPage` (task-set rows). Class alone without scoped
 `outline: 2px solid var(--q-warning)` is insufficient (SC-PACK-126 / D10).
 
-## Question list slot chips (SC-PACK-127 / 130)
+## Question list slot chips (SC-PACK-127 / 130 / 134)
 
 Every task/question list row MUST show answer slot chips (filled / empty):
 `ContentPackTasksPage` (incl. live drill-in), `ContentStaffRequestPage`,
 `ContentPackAddTaskSetPage`. Live pack page (`ContentPackPage`) shows **set
 summary rows** only (count + difficulty 1/2/3) — slots appear after drill-in
 (SC-PACK-130). Pattern: dense `q-chip` per slot + `slotEmpty` when no slots.
-Add-task-set answer **picker** tiles MUST be rounded `q-chip` like Tasks
-(SC-PACK-133), not rectangular `q-btn`.
+A filled slot MUST show the answer card’s text (not a generic «заполнен» when
+the card resolves). For staff `task_set` preview, server merges live
+`answerCards` into `previewPending` (SC-PACK-134). Add-task-set answer
+**picker** tiles MUST be rounded `q-chip` like Tasks (SC-PACK-133), not
+rectangular `q-btn`.
+
+## Task-set author label + Tasks back (SC-PACK-135 / 136)
+
+`TaskSet.authorDisplayName` (displayName else email local-part) drives
+`content.taskSetLabelFrom` on live / editor / staff hub / Tasks heading.
+Live drill-in back uses `content.back` («Вернуться»), not pack title;
+editor keeps `content.backToAnswers`.
 
 ## Add-task-set moderation thread (SC-PACK-128)
 

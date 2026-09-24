@@ -10,7 +10,8 @@ description: >-
   submit / add-task-set / staff lock+save / `isStaffEditSessionNavigation`
   (SC-PACK-115…119) / cascade yellow + slot chips + add-task-set thread
   (SC-PACK-126…128) / pack+set soft-unpublish + live drill-in + AddTaskSet chips
-  (SC-PACK-129…133) details in content.md.
+  (SC-PACK-129…133) / authorDisplayName + slot text + Tasks `back` (SC-PACK-134…136)
+  details in content.md.
   Use when adding, changing, reviewing, or debugging Pinia stores, shared
   game/auth/theme/support/content state (incl. admin setUserRole merge /
   emailVerified; support `change_pack` + packId), or page-to-store wiring.

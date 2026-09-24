@@ -4,8 +4,9 @@ description: >-
   Use when placing or moving code in the happy-tourist Colyseus server: rooms,
   schema state, db/user schema, app.config (defineServer), HTTP express /
   createEndpoint routes, tests, loadtest, or deciding where game logic vs sync
-  fields vs auth belong (incl. content packs soft-unpublish pack+set/`in_catalog`). Prefer aligning room name/schema/messages with the
-  client.
+  fields vs auth belong (incl. content packs soft-unpublish pack+set/`in_catalog`
+  + `previewPending` live cards + `authorDisplayName`). Prefer aligning room
+  name/schema/messages with the client.
 ---
 
 # Work With Structure
@@ -54,7 +55,7 @@ Sibling client: `../happy-tourist.github.io` (room type `tourist`, board + piece
 | Entry | `src/index.ts` | `listen(app)` only |
 | Server wiring | `src/app.config.ts` | `defineServer`: `database`, `rooms`, `routes`, `express`; import auth config; `configureAuthEmailFlows` after DB boot; thin `POST /api/auth/*` + `/api/support/*` + `/api/content/*` + `/api/admin/*`; boot `ensureSupportTables` / `ensureContentTables` / `bootstrapAdminIds` / `startAutoCloseInterval` |
 | Auth config | `src/config/` | `auth.ts` — `getRuntimeAuth` / Google `addProvider` / email hooks; wrap OAuth callback for `emailVerified`; map `htRole` → userdata `role` |
-| Mailer / support / content / password policy | `src/lib/` | `mailer.ts` — smtp.bz `sendEmail` (+ test setter); `support.ts` — tickets/messages/roles/bootstrap/auto-close + `change_pack`/`pack_id` (**in-catalog** only) + create-ack mail + staff list filters + `setTicketStatus(..., { notify })` (HTTP stays thin); `content.ts` — working-copy draft CRUD + unified `submitPack`/approve + add-task-set + staff edit lock/save + soft-unpublish/republish pack + task-set (`in_catalog` on packs and sets) + needs-revision + `cascadeNormalizeTasks` (slot clear ≠ `answers_dirty`) + author delete + `listMyModerationPacks` / staff pending queue; migrate drop `content_user_drafts` + `ALTER` pack/set `in_catalog`; `passwordPolicy.ts` — shared ≥8 + lower/upper/digit/symbol (register wrap / JSON reset / change-password) |
+| Mailer / support / content / password policy | `src/lib/` | `mailer.ts` — smtp.bz `sendEmail` (+ test setter); `support.ts` — tickets/messages/roles/bootstrap/auto-close + `change_pack`/`pack_id` (**in-catalog** only) + create-ack mail + staff list filters + `setTicketStatus(..., { notify })` (HTTP stays thin); `content.ts` — working-copy draft CRUD + unified `submitPack`/approve + add-task-set + staff edit lock/save + soft-unpublish/republish pack + task-set (`in_catalog` on packs and sets) + `previewPending` merges live `answerCards` for `task_set` (SC-PACK-134) + `authorDisplayName` on sets (SC-PACK-135) + needs-revision + `cascadeNormalizeTasks` (slot clear ≠ `answers_dirty`) + author delete + `listMyModerationPacks` / staff pending queue; migrate drop `content_user_drafts` + `ALTER` pack/set `in_catalog`; `passwordPolicy.ts` — shared ≥8 + lower/upper/digit/symbol (register wrap / JSON reset / change-password) |
 | Auth HTML | `html/` | Legacy Colyseus cwd templates; product confirm/reset UX is **SPA + JSON** (mail links via `CLIENT_APP_URL`) |
 | Database | `src/db/` | `GameDatabase` (`index.ts`) + Drizzle user schema (`schema.ts`; `htRole` + support table decls) |
 | Rooms | `src/rooms/` | Room handlers (`onCreate` / `onJoin` / `onDrop` / `onReconnect` / leave / dispose; `onMessage('move'|'ready'|'say')`) |
@@ -212,7 +213,7 @@ src/db/
 src/lib/
 ├── mailer.ts          # smtp.bz sendEmail (+ setSendEmailImpl for tests)
 ├── support.ts         # tickets / roles / bootstrap helpers
-├── content.ts         # content packs (ensureContentTables + working copy + submitPack/add-task-set + staff lock/save + soft-unpublish pack+set in_catalog + needs-revision + cascadeNormalize ≠ answers_dirty + author delete + listMyModeration/listPending)
+├── content.ts         # content packs (ensureContentTables + working copy + submitPack/add-task-set + staff lock/save + soft-unpublish pack+set in_catalog + previewPending live cards + authorDisplayName + needs-revision + cascadeNormalize ≠ answers_dirty + author delete + listMyModeration/listPending)
 └── passwordPolicy.ts  # shared product password policy (register / reset / change)
 
 html/           # legacy Colyseus cwd templates (not product SPA UX)

@@ -40,6 +40,9 @@
 | SC-PACK-131 | pending |
 | SC-PACK-132 | pending |
 | SC-PACK-133 | pending |
+| SC-PACK-134 | pending |
+| SC-PACK-135 | pending |
+| SC-PACK-136 | pending |
 | SC-PACK-10 | pending |
 | SC-PACK-11 | pending |
 | SC-PACK-12 | pending |
@@ -295,7 +298,7 @@ After an answers cascade clears one or more slots, the client MUST highlight bot
 
 ### Requirement: Answer slots visible on every question list row
 
-Wherever the client lists tasks/questions for review or editing (staff moderation hub preview, add-task-set page question list, task-set editor list, live pack drill-in task list), each task row MUST show its answer slots (filled card content and/or empty). Staff MUST be able to see slot bindings without opening a separate nested tasks-only page.
+Wherever the client lists tasks/questions for review or editing (staff moderation hub preview, add-task-set page question list, task-set editor list, live pack drill-in task list), each task row MUST show its answer slots. A filled slot MUST display the referenced answer card’s textual content (same resolution as when viewing a live pack / task-set page). An empty slot MUST show an empty affordance. A generic filled placeholder (e.g. «заполнен») MUST NOT be shown when the card content is available. For staff preview of an add-task-set (`task_set`) request, answer cards used for slot resolution MUST come from the pack’s **live** answers (revision for add-task-set does not store cards). Staff MUST be able to see slot bindings without opening a separate nested tasks-only page. A separate top-level «Ответы» list on the staff hub for `task_set` is not required when slots already show card text.
 
 #### Scenario [SC-PACK-127]: Staff hub and add-task-set lists show slots
 
@@ -303,6 +306,14 @@ Wherever the client lists tasks/questions for review or editing (staff moderatio
 - **WHEN** the questions list renders
 - **THEN** each task row shows its answer slots (filled and/or empty)
 - **AND** the same rule applies on staff request hub and on the author add-task-set list
+
+#### Scenario [SC-PACK-134]: Staff task_set preview shows answer text in slots
+
+- **GIVEN** an open add-task-set (`task_set`) moderation request whose tasks reference live answer cards by id
+- **AND** those live cards have non-empty content
+- **WHEN** staff opens the staff request hub preview
+- **THEN** each filled slot chip shows that card’s content text
+- **AND** MUST NOT show only a generic «filled» / «заполнен» placeholder for those slots
 
 ### Requirement: Add-task-set author sees moderation status and thread
 
@@ -360,6 +371,30 @@ On the add-task-set page, the answer-card picker used to fill slots MUST use the
 - **WHEN** the answer tiles picker renders
 - **THEN** each tile is a rounded chip consistent with the task-set editor answer picker
 - **AND** MUST NOT use rectangular primary outline buttons for those tiles
+
+### Requirement: Task-set rows show author display name
+
+Wherever the client lists or titles a task set (live pack summary, cards editor list, staff moderation hub, task-set / questions page header when a set label is shown), each set MUST be labeled with the contributing author’s display identity: preferred form «Набор заданий {n} от {name}» (or equivalent i18n). The name MUST be the user’s `displayName` when non-empty; otherwise the local-part of their email (substring before `@`). The name MUST be visible to **all** viewers including public live. Multiple sets by the same author MUST each show the author name on their own row (no collapsing). Optional co-author labels MAY appear beside the author name; they remain display-only.
+
+#### Scenario [SC-PACK-135]: Live and editor show author on every task-set row
+
+- **GIVEN** pack P with two task sets by the same author whose displayName is «Мария»
+- **WHEN** a viewer opens the live pack page or the cards editor task-set list
+- **THEN** each task-set row includes «от Мария» (or equivalent) in its label
+- **AND** the two rows are not merged into one
+- **AND WHEN** the author has no displayName but email `ivan@example.com`
+- **THEN** the label uses local-part `ivan`
+
+### Requirement: Back from questions list is not the pack title
+
+On the task-set questions page (including live drill-in read-only), the control that navigates back to the pack live page or cards editor MUST use a stable back label (e.g. «Вернуться» or the existing «К карточкам»). It MUST NOT use the pack title (or task-set title) as that control’s visible label.
+
+#### Scenario [SC-PACK-136]: Live drill-in back is not pack title
+
+- **GIVEN** a viewer on the live pack questions view for a task set of pack P titled «Большой пак»
+- **WHEN** the page header back control renders
+- **THEN** the control label is a generic back affordance («Вернуться» / «К карточкам» or equivalent)
+- **AND** MUST NOT equal P’s title «Большой пак»
 
 ## MODIFIED Requirements
 

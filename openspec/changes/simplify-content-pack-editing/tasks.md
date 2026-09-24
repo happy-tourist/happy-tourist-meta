@@ -61,3 +61,13 @@
 - [x] 8.6 UI Editor + Tasks: set unpublish (confirm) / republish on row and inside Tasks; disable unpublish if last published; verify SC-PACK-131/132
 - [x] 8.7 AddTaskSet: answer tiles → rounded chips like Tasks; verify SC-PACK-133
 - [x] 8.8 Из server+client: `npm test` (+ client lint/typecheck) — зелёные для SC-PACK-129…133
+
+## 9. Server + client — slot text, author name, tasks back (follow-up 5)
+
+- [x] 9.1 Прочитать design D11/D17–D19, delta SC-PACK-134…136; skills `work-with-database`, `work-with-routes`, `work-with-pages`, `work-with-stores` (content), localization / test
+- [x] 9.2 Server: `previewPending` для `task_set` отдаёт live answer cards; mocha/vitest path for SC-PACK-134
+- [x] 9.3 Server: task-set payload `authorDisplayName` (displayName иначе email local-part); live/draft/preview; mocha SC-PACK-135 (API)
+- [x] 9.4 Client: staff hub (+ add-task-set/tasks) `slotLabel` резолвит текст карточки; нет «заполнен» при найденной карте; verify SC-PACK-134
+- [x] 9.5 Client: live / editor / staff hub / Tasks — label «Набор заданий {n} от {name}» (+ coauthors); i18n; verify SC-PACK-135
+- [x] 9.6 Client Tasks: back label не `pack.title` — «Вернуться» и/или `backToAnswers`; verify SC-PACK-136
+- [x] 9.7 Из server+client: `npm test` (+ client lint/typecheck) — зелёные для SC-PACK-134…136

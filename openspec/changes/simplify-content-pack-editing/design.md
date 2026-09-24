@@ -2,7 +2,7 @@
 
 См. `proposal.md` — Why. Базовая модель: одна working copy до first approve; после live — freeze для non-staff; add-task-set; staff lock + session cards↔tasks; без personal drafts / stale.
 
-После apply блоков 1–7: soft-unpublish пака, cascade CSS, slot chips, add-task-set thread в runtime. Explore follow-up 4: unpublish пака не во всех списках (нет в коллекции); нет confirm; нет soft-hide task set; live разворачивает все вопросы; AddTaskSet answer tiles — прямоугольные `q-btn`.
+После apply блоков 1–8: soft-unpublish pack+set, live summary+drill-in, chips в runtime. Explore follow-up 5: staff hub slot chips показывают «заполнен» (нет live cards в `task_set` preview); нет displayName автора на строках наборов; live Tasks back = название пака.
 
 Пакеты: **server** + **client**. Room/tourist не затрагивается. `block` остаётся отдельным API без UI.
 
@@ -22,9 +22,11 @@
 - **Soft-unpublish / republish task set:** flag на set; ≥1 published set; gray row + no enter; staff Edit + republish на строке и внутри Tasks; confirm на unpublish set
 - **Live set summary + drill-in:** ответы + строки sets (count + diff 1/2/3); вопросы+слоты только после клика
 - **Cascade yellow на набор:** outline на task-set row в cards editor, пока есть cascade gaps (паритет с task yellow на Tasks)
-- **Slot chips везде в списках вопросов:** staff hub, add-task-set, tasks editor, live drill-in
+- **Slot chips с текстом карточки:** staff hub / add-task-set / tasks / live drill-in; для `task_set` preview — live cards как при просмотре
 - **Add-task-set thread UX:** статус needs_revision/pending + moderation thread + reply как на cards editor
 - **AddTaskSet answer tiles:** `q-chip` parity with Tasks
+- **Author on task-set rows:** «Набор заданий {n} от {имя}» везде; displayName иначе email local-part; публично
+- **Tasks back label:** не название пака; «Вернуться» или «К карточкам»
 
 **Non-Goals:**
 
@@ -34,6 +36,7 @@
 - Отдельная роль admin ≠ moderator в content (оба `isStaff`)
 - Hard-delete published / soft-unpublished packs
 - Hard-delete published / soft-unpublished task sets (позже)
+- Отдельный блок «Ответы» на staff hub для `task_set` (достаточно слотов с текстом)
 
 ## Decisions
 
@@ -100,7 +103,9 @@ Topic id kebab/snake в каноне API (например `change_pack`); i18n 
 
 ### D11 — Answer slots on every question list row (explore Q1)
 
-Во **всех** списках вопросов (не только TasksPage) каждая строка задания MUST показывать slot chips (filled content / empty): `ContentStaffRequestPage` hub, `ContentPackAddTaskSetPage` list, `ContentPackTasksPage` (уже), live drill-in view. Паттерн chips как на TasksPage. Не возвращать отдельную nested staff-tasks page ради слотов.
+Во **всех** списках вопросов (не только TasksPage) каждая строка задания MUST показывать slot chips (filled **card content** / empty): `ContentStaffRequestPage` hub, `ContentPackAddTaskSetPage` list, `ContentPackTasksPage` (уже), live drill-in view. Паттерн chips как на TasksPage. Не возвращать отдельную nested staff-tasks page ради слотов.
+
+**Follow-up 5:** placeholder «заполнен» (`slotFilled`) при наличии `answerCardId` **запрещён**, если карточка резолвится. Для staff preview `task_set`: revision без cards → подмешать **live** `answerCards` в preview (как `getAddTaskSet.liveCards` / как просмотр набора). Отдельный список «Ответы» на hub для `task_set` не обязателен — текст в слотах на странице вопросов достаточнен.
 
 ### D12 — Add-task-set moderation thread parity (explore Q2=A)
 
@@ -128,6 +133,18 @@ Topic id kebab/snake в каноне API (например `change_pack`); i18n 
 
 Любой staff «Снять с публикации» для **пака** (catalog / collection / live) — через confirm dialog. Republish пака — без confirm.
 
+### D17 — Staff slot labels resolve like live view (explore follow-up 5)
+
+`previewPending` для `task_set` MUST отдавать карточки ответов live пака (поле `content.answerCards` или явное `liveCards`), чтобы client `slotLabel` резолвил текст. Pack first-submit уже несёт cards в revision. Client: не показывать `slotFilled`, пока id есть и карта найдена; empty → `slotEmpty`.
+
+### D18 — Task-set author display name (explore follow-up 5)
+
+При сериализации task set в API (live / draft / staff preview): поле отображаемого автора (`authorDisplayName` или эквивалент) = `users.displayName` trim, иначе local-part email (`split('@')[0]`), иначе стабильный fallback «Автор». **Видимо всем**, включая публичный live. UI на **каждой** строке/заголовке набора: `Набор заданий {n} от {authorDisplayName}` (+ coauthorLabels рядом, если есть). Не схлопывать строки с одним автором. Поверхности: live, editor, staff hub, Tasks header (где есть set label).
+
+### D19 — Back from questions list (explore follow-up 5)
+
+На `ContentPackTasksPage` кнопка возврата к паку/editor MUST NOT использовать `pack.title` как label (liveViewMode сейчас так делает). Использовать стабильную подпись: «Вернуться» и/или существующую «К карточкам» (`backToAnswers`) — одна и та же семантика «назад», без названия набора/пака.
+
 ## Risks / Trade-offs
 
 - [Миграция чужих drafts] → потеря незапушенных правок; mitigation: один раз drop/archive drafts при деплое
@@ -139,35 +156,36 @@ Topic id kebab/snake в каноне API (например `change_pack`); i18n 
 - [Два open request pack+task_set] → getModerationThread предпочитает pack; post-publish у автора обычно только task_set — OK
 - [Unpublish последнего published set] → pack в каталоге без playable sets; mitigation: server reject + client disable
 - [Live drill-in vs Edit route] → путаница режимов; mitigation: read-only Tasks когда не staff Edit session
+- [Email local-part на публичном live] → частичный PII; accepted (explore A5): показ всем
 
 ## Migration Plan
 
-1. Deploy server: task-set published flag + unpublish/republish set endpoints; migrate existing live sets → published true
-2. Deploy client: collection pack unpublish + confirms; live summary + drill-in; set soft-hide UI; AddTaskSet chips
-3. Rollback follow-up 4: revert client + server set-flag endpoints; pack soft-hide остаётся
+1. Deploy server: task-set published flag + unpublish/republish set endpoints; migrate existing live sets → published true; **authorDisplayName** в payload; **previewPending** live cards для task_set
+2. Deploy client: collection pack unpublish + confirms; live summary + drill-in; set soft-hide UI; AddTaskSet chips; **slot text**; **author labels**; **Tasks back**
+3. Rollback follow-up 4–5: revert client + server set-flag / author / preview enrich; pack soft-hide остаётся
 
 ## Open Questions
 
-Нет (explore follow-up 4: D1–D8 + Q1 confirm только Unpublish).
+Нет (explore follow-up 5: slots / author / back закрыты).
 
 ## Точки врезки
 
 **Server** (`../happy-tourist-server/`):
 
-- `src/db/schema.ts`, `src/lib/content.ts` — working copy, submit/approve, add-task-set, staff save/lock; pack `inCatalog`; **task-set published/inCatalog**; unpublish/republish pack+set; listCatalog; getLive ACL + set summaries; moderation thread
+- `src/db/schema.ts`, `src/lib/content.ts` — working copy, submit/approve, add-task-set, staff save/lock; pack `inCatalog`; **task-set published/inCatalog**; unpublish/republish pack+set; listCatalog; getLive ACL + set summaries; moderation thread; **`previewPending` + live cards**; **authorDisplayName** resolve
 - `src/app.config.ts` — content + lock + unpublish/republish (pack + set) endpoints
 - `src/lib/support.ts` — change_pack select только in-catalog
 - `test/zz-contentPacks.test.ts`, `test/support.test.ts`
 
 **Client** (`../happy-tourist.github.io/`):
 
-- `src/stores/content.ts` — pack/set unpublish/republish; loadModeration
-- `ContentCatalogPage.vue`, `ContentCollectionPage.vue`, `ContentPackPage.vue` — staff pack unpublish/republish + **confirm**; collection buttons; live **set summary rows** + drill-in
-- `ContentPackEditorPage.vue` — set row unpublish/republish + cascade CSS
-- `ContentPackTasksPage.vue` — read-only live drill-in; staff set republish/unpublish inside; task yellow + slots
-- `ContentStaffRequestPage.vue` — slot chips (уже); **без** unpublish
+- `src/stores/content.ts` — pack/set unpublish/republish; loadModeration; authorDisplayName types
+- `ContentCatalogPage.vue`, `ContentCollectionPage.vue`, `ContentPackPage.vue` — staff pack unpublish/republish + **confirm**; collection buttons; live **set summary rows** + drill-in + **author label**
+- `ContentPackEditorPage.vue` — set row unpublish/republish + cascade CSS + **author label**
+- `ContentPackTasksPage.vue` — read-only live drill-in; staff set republish/unpublish inside; task yellow + slots; **back label без pack.title**; optional author in header
+- `ContentStaffRequestPage.vue` — slot chips **с текстом**; author на set; **без** unpublish
 - `ContentPackAddTaskSetPage.vue` — slot chips + thread + **q-chip answer tiles**
-- `src/i18n/en-US/index.ts`
-- unit tests SC-PACK-120… + 126… + **129…**
+- `src/i18n/en-US/index.ts` — `taskSetLabelFrom`, `back` / reuse `backToAnswers`
+- unit tests SC-PACK-120… + 126… + 129… + **134…**
 
 Чеклист — `tasks.md`.

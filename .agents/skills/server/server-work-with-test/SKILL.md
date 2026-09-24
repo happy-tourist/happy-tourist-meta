@@ -21,7 +21,7 @@ description: >-
   or content packs (test/zz-contentPacks.test.ts — SC-PACK-* working copy +
   unified submit SC-PACK-100…105; add-task-set SC-PACK-108…110; staff lock/save
   SC-PACK-111…113; author delete SC-PACK-114; soft-unpublish/republish
-  SC-PACK-120…124 (`in_catalog` pack) + task-set soft-hide SC-PACK-131
+  SC-PACK-120…124 (`in_catalog` pack) + task-set soft-hide SC-PACK-131 + preview live cards / authorDisplayName SC-PACK-134…135
   (`content_task_sets.in_catalog`; last-set 409); cascade; my-moderation +
   needs_revision; mock mailer; ensureContentTables / setEmailVerifiedForTests).
   Core workflow: test plan (mocks/verify) → write test/*.test.ts → run npm test

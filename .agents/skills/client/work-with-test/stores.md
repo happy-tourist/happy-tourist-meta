@@ -8,15 +8,16 @@ Product store conventions: meta skill `work-with-stores`. Domains: `auth`,
 `SupportChangePack.test.ts`, store `support.changePack.test.ts`), `content`
 (HTTP packs via `client.http`; working copy / `submitPack` / add-task-set /
 staff lock+save / soft-unpublish pack+set/`inCatalog` / needs_revision; cascadeGap* / hasLive confirm; simplify ACL
-SC-PACK-100…133 — pages `Content*Acl.test.ts` incl. `ContentCatalogAcl` /
+SC-PACK-100…136 — pages `Content*Acl.test.ts` incl. `ContentCatalogAcl` /
 `ContentCollectionAcl` / `ContentPackAcl`, `ContentSoftUnpublish.test.ts`
 (SC-PACK-120…125 staff unpublish/republish + soft-unpublished gray/non-nav),
 `ContentFollowUp4.test.ts` (SC-PACK-129…133 confirm everywhere / set soft-hide /
-live summary+drill-in / AddTaskSet chips), `ContentPackTasksHints.test.ts`
-(SC-PACK-115/119 staff session + stable hints), `ContentModerationUx.test.ts`
-(SC-PACK-126 editor cascade CSS; SC-PACK-127 slot chips on staff hub + add-task-set;
-SC-PACK-128 add-task-set thread/status/reply), store
-`content.simplifyAcl.test.ts`; spy `client.http`, do not hit live server;
+live summary+drill-in / AddTaskSet chips), `ContentFollowUp5.test.ts`
+(SC-PACK-134…136 slot card text / `authorDisplayName` / Tasks `content.back`),
+`ContentPackTasksHints.test.ts` (SC-PACK-115/119 staff session + stable hints),
+`ContentModerationUx.test.ts` (SC-PACK-126 editor cascade CSS; SC-PACK-127 slot
+chips on staff hub + add-task-set; SC-PACK-128 add-task-set thread/status/reply),
+store `content.simplifyAcl.test.ts`; spy `client.http`, do not hit live server;
 cascade helpers + `isStaffEditSessionNavigation`: meta `work-with-stores/content.md`).
 
 ## Testing a page / component that uses a store

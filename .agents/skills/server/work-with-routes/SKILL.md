@@ -4,7 +4,7 @@ description: >-
   Use when adding, changing, or reviewing HTTP routes on the happy-tourist
   Colyseus server: createRouter / createEndpoint in app.config.ts, Express
   hook handlers (/health, /hi), auth /auth/*, theme, support tickets, content
-  packs (/api/content/* working-copy draft + unified `POST …/submit` + add-task-set + edit-lock/staff-save + needs-revision + cascadeNormalize ≠ false `answers_dirty` + author delete unpublished + staff soft-unpublish/republish pack (`inCatalog`) + task-set soft-hide (`POST …/task-set/unpublish|republish`) + GET my-moderation + staff pending queue; block endpoints retained; drop dual submit/rebase/stale), admin roles, or Colyseus room listing /rooms/:roomName.
+  packs (/api/content/* working-copy draft + unified `POST …/submit` + add-task-set + edit-lock/staff-save + needs-revision + cascadeNormalize ≠ false `answers_dirty` + author delete unpublished + staff soft-unpublish/republish pack (`inCatalog`) + task-set soft-hide (`POST …/task-set/unpublish|republish`) + staff `previewPending` live cards / `authorDisplayName` (SC-PACK-134…135) + GET my-moderation + staff pending queue; block endpoints retained; drop dual submit/rebase/stale), admin roles, or Colyseus room listing /rooms/:roomName.
   Keep HTTP thin — game logic belongs in rooms.
 ---
 
@@ -130,7 +130,7 @@ For CORS / monitor details use `work-with-middleware` and `work-with-config`.
 | POST | `/api/content/collection` \| `/remove` | `createEndpoint` | JWT; add/remove pack |
 | GET | `/api/content/my-moderation` | `createEndpoint` | JWT; caller’s open requests (pending\|needs_revision) for author «На модерации» |
 | GET | `/api/content/staff/pending` | `createEndpoint` | JWT moderator\|admin; open pending\|needs_revision queue |
-| GET\|POST | `/api/content/staff/requests/:id` (+ `/approve` `/needs-revision` `/reject` `/cancel` `/messages`) | `createEndpoint` | JWT staff; Approve → catalog live; needs-revision (alias `/reject`); cancel drops; no hard-reject |
+| GET\|POST | `/api/content/staff/requests/:id` (+ `/approve` `/needs-revision` `/reject` `/cancel` `/messages`) | `createEndpoint` | JWT staff; GET = `previewPending` (for `task_set`/`tasks` merge live `answerCards` so slot labels resolve — SC-PACK-134; payload sets include `authorDisplayName` — SC-PACK-135); Approve → catalog live; needs-revision (alias `/reject`); cancel drops; no hard-reject |
 | GET | `/api/admin/users` | `createEndpoint` | JWT admin; **exclude** anonymous; include `emailVerified` (+ id/email/role/displayName) |
 
 **Content moderation mail:** deep-links prefer `#/content/packs/:id/edit` (working copy / staff edit) — **not** bare `#/content/packs/:id/moderation`.

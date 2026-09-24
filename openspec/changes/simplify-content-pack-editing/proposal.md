@@ -10,6 +10,8 @@ Follow-up после первой реализации: staff (moderator = admin
 
 Четвёртый follow-up: unpublish пака нужен staff во **всех** списках (вкл. коллекцию); confirm перед unpublish; soft-unpublish **целого task set** (≥1 опубликованный set остаётся); live — сводка наборов + drill-in к вопросам; снятый set серый без входа; answer tiles на add-task-set — скруглённые chips как у staff.
 
+Пятый follow-up (модерация / атрибуция / навигация): на staff hub слоты вопросов показывают «заполнен» вместо текста ответа (особенно add-task-set — карточек нет в revision); на строках наборов нет имени автора; возврат из списка вопросов (live drill-in) подписан названием пака вместо «назад».
+
 ## What Changes
 
 - **BREAKING:** убрать персональные drafts / dual post-publish edit / foreign-pending co-edit; одна рабочая копия до первого апрува.
@@ -25,9 +27,11 @@ Follow-up после первой реализации: staff (moderator = admin
 - **Soft-unpublish task set:** staff снимает **целый** набор заданий (не отдельные вопросы); нельзя снять единственный опубликованный set; снятый set — серый + «Снято…», войти нельзя; staff Edit + republish на **строке** и **внутри** страницы набора; confirm перед unpublish set; republish set one-click.
 - **Live как editor:** ответы + список наборов (число заданий + разбивка по сложности 1/2/3); вопросы со слотами — только после клика по строке (drill-in / read-only или staff Edit).
 - **Cascade yellow на набор:** после cascade пустых слотов жёлтая рамка видна и на **наборе заданий** в cards editor (не только на задании внутри Tasks).
-- **Слоты в каждом списке вопросов:** на staff request hub, add-task-set, tasks editor, live drill-in — в строке задания видны слоты ответов (filled/empty).
+- **Слоты в каждом списке вопросов:** на staff request hub, add-task-set, tasks editor, live drill-in — в строке задания видны слоты ответов; **заполненный слот MUST показывать текст карточки** (не placeholder «заполнен»); для `task_set` резолв как при просмотре live (live cards).
 - **Add-task-set amend UX:** тот же блок статуса + moderation thread + reply, что на cards editor; автор из «На модерации» видит needs_revision и сообщения staff.
 - **Add-task-set answer tiles:** picker карточек для слотов — скруглённые chips как на Tasks (не прямоугольные `q-btn`).
+- **Имя автора на наборе заданий:** везде, где строка/заголовок набора — «Набор заданий {n} от {имя}»; имя = `displayName`, иначе local-part email; видно всем (вкл. публичный live); строки не схлопывать; coauthors рядом.
+- **Назад из списка вопросов:** кнопка возврата к паку/карточкам MUST NOT быть названием пака; стабильная подпись («Вернуться» / как раньше «К карточкам»).
 
 ## Scope
 
@@ -39,6 +43,7 @@ Follow-up после первой реализации: staff (moderator = admin
 - Follow-up 2: staff unpublish/republish soft-hide + catalog/collection/live ACL + i18n/tests
 - Follow-up 3: cascade set outline CSS; slot chips на всех task-list surfaces; add-task-set thread/status (reuse existing moderation messages API)
 - Follow-up 4: pack unpublish in collection + confirm; task-set soft-unpublish/republish (≥1 published); live set summary + drill-in; AddTaskSet rounded answer tiles
+- Follow-up 5: staff slot chip content resolution; task-set author display name everywhere; Tasks back label without pack title
 
 ## Out of scope
 
@@ -57,18 +62,18 @@ Follow-up после первой реализации: staff (moderator = admin
 
 ### Modified Capabilities
 
-- `content/packs`: freeze после publish; одна рабочая копия; единый approve/доработать; add-only task set; staff live edit + lock **session across cards/tasks**; staff без my-moderation nav; add-task-set у секции «Задания»; layout-stable editor hints; удаление personal drafts / stale pull; **staff soft-unpublish / republish** (pack + task set; collection controls; confirm on unpublish); **live set summary + drill-in**; **cascade yellow на task-set row**; **slot chips во всех списках вопросов**; **add-task-set moderation thread + needs_revision status**; **AddTaskSet rounded answer tiles**
+- `content/packs`: freeze после publish; одна рабочая копия; единый approve/доработать; add-only task set; staff live edit + lock **session across cards/tasks**; staff без my-moderation nav; add-task-set у секции «Задания»; layout-stable editor hints; удаление personal drafts / stale pull; **staff soft-unpublish / republish** (pack + task set; collection controls; confirm on unpublish); **live set summary + drill-in**; **cascade yellow на task-set row**; **slot chips с текстом карточки** (вкл. staff `task_set` + live cards); **add-task-set moderation thread + needs_revision status**; **AddTaskSet rounded answer tiles**; **task-set author display name**; **Tasks back без названия пака**
 - `support/tickets`: тема change-pack + select каталога + ссылка на пак
 
 ## Impact
 
-- Client: Content* pages/store, i18n; Support create form (topic + pack select); staff Edit session; catalog/collection nav; live set list + drill-in; unpublish confirm + collection staff controls; task-set soft-hide UI; Editor cascade CSS; StaffRequest/AddTaskSet slot rows + thread UI + chip answer tiles
-- Server: `lib/content`, schema pack `inCatalog` + **task-set published/inCatalog flag**; content HTTP unpublish/republish (pack + set); `lib/support` topics + create payload
-- Тесты: mocha SC-PACK* / SC-SUP*; vitest content + support (вкл. SC-PACK-115… + 120… + 126… + 129…)
+- Client: Content* pages/store, i18n; Support create form (topic + pack select); staff Edit session; catalog/collection nav; live set list + drill-in; unpublish confirm + collection staff controls; task-set soft-hide UI; Editor cascade CSS; StaffRequest/AddTaskSet slot rows + thread UI + chip answer tiles; author attribution labels; Tasks back label
+- Server: `lib/content`, schema pack `inCatalog` + **task-set published/inCatalog flag**; content HTTP unpublish/republish (pack + set); **authorDisplayName** (displayName / email local-part) на task sets; staff preview live cards для `task_set`; `lib/support` topics + create payload
+- Тесты: mocha SC-PACK* / SC-SUP*; vitest content + support (вкл. SC-PACK-115… + 120… + 126… + 129… + **134…**)
 - Specs: delta → sync в main после archive
 
 ## References
 
-- Explore-решения D1–D16 + follow-up staff UX / anti-jump + unpublish D1–D7 + moderation UX + follow-up 4 (pack lists / task-set soft-hide / live drill-in / chips) (сессия openspec-explore)
+- Explore-решения D1–D19 + follow-up staff UX / anti-jump + unpublish + moderation UX + follow-up 4–5 (slots content / author name / back label) (сессия openspec-explore)
 - Main: `openspec/specs/content/packs/spec.md`, `openspec/specs/support/tickets/spec.md`
 - Sibling AGENTS: `happy-tourist.github.io/AGENTS.md`, `happy-tourist-server/AGENTS.md`

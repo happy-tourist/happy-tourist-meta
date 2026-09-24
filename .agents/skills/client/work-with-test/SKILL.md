@@ -6,7 +6,7 @@ description: >-
   @vue/test-utils, q-form rules, auth/theme/game/support/content stores
   (my-moderation / cascadeGap* / hasLive confirm / simplify ACL SC-PACK-100…133 /
   soft-unpublish `ContentSoftUnpublish` / follow-up 4 `ContentFollowUp4` SC-PACK-129…133 /
-  `ContentModerationUx` SC-PACK-126…128 / SupportChangePack SC-SUP-27…29), Colyseus client.auth / client.http / room I/O spies, store error +
+  `ContentModerationUx` SC-PACK-126…128 / ContentFollowUp5 SC-PACK-134…136 / SupportChangePack SC-SUP-27…29), Colyseus client.auth / client.http / room I/O spies, store error +
   q-banner, vue-i18n / router. Harness live (`vitest.config.ts`, `test/setup.ts`,
   `npm test`). Core in SKILL.md; topics: forms.md, stores.md, colyseus.md,
   errors.md, plugins.md, composables.md, provide-inject.md.
