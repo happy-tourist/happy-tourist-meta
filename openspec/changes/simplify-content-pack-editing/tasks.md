@@ -25,3 +25,12 @@
 - [x] 4.2 Store/API: убрать drafts/stale/unpublish wrappers; working-copy + unified submit/approve/needs-revision/cancel; add-task-set; staff save + lock
 - [x] 4.3 UI: unpublished creator editor; published non-staff add-only (без edit-списков); staff Edit + lock error; my-moderation оставить; i18n
 - [x] 4.4 Vitest SC-PACK-100…114 (релевантные UI/store); из client: `npm run lint`, `npm run typecheck`, `npm test` — зелёные
+
+## 5. Client — staff Edit session, placement, stable hints (follow-up)
+
+- [x] 5.1 Прочитать design D3/D6–D8, SC-PACK-115…119; skills `work-with-pages`, `work-with-stores` (content), `work-with-styles` / localization
+- [x] 5.2 Staff Edit session: не release lock / не сбрасывать staffEditTarget при cards↔tasks; tasks persist → staff-save; unlock только при выходе из Edit; verify SC-PACK-115 vitest
+- [x] 5.3 Скрыть «На модерации» при `auth.isStaff` (catalog + collection); staff hint без moderation copy; verify SC-PACK-116
+- [x] 5.4 Live: add-task-set рядом с секцией «Задания»; убрать шапочную кнопку live и row playlist_add в коллекции; verify SC-PACK-117/118 (+ SC-PACK-66)
+- [x] 5.5 Editor/Tasks/AddTaskSet: убрать скачущие caption (`questionNeedsSlot`, submit/tasks hints) — tooltip / reserved space; verify SC-PACK-119
+- [x] 5.6 Из client: `npm run lint`, `npm run typecheck`, `npm test` — зелёные

@@ -10,7 +10,8 @@ Setup store `content` owns catalog / collection (trash confirm) /
 `listMyModeration` / live (`inCollection`; patch membership on collect/remove) /
 creator working-copy draft (`GET|PUT /api/content/packs/:id/draft`) / unified
 `submitPack` / add-task-set load+save+submit / staff `acquireEditLock` +
-`staffSavePack` + release / `needsRevisionRequest` + `cancelRequest` +
+`staffSavePack` + release / helper `isStaffEditSessionNavigation` /
+`needsRevisionRequest` + `cancelRequest` +
 `approveRequest` / author delete unpublished. Open moderation =
 `pending`|`needs_revision` (no hard-reject). Map API codes with
 `contentErrorI18nKey` → `content.errors.*`.
@@ -38,8 +39,10 @@ page class `cascade-gap-outline` (not `bg-warning` row fill).
 
 ## UI contracts
 
-- Collection: Edit for unpublished creator or staff; add-task-set nav for published non-staff; trash + click isolation (no row `:to`).
-- Live: staff Edit (+ lock); non-staff add-task-set; no full Edit for non-staff after publish (SC-PACK-53/106).
+- Collection: Edit for unpublished creator or staff; **no** row add-task-set (SC-PACK-118); trash + click isolation (no row `:to`); «На модерации» nav hidden for staff (SC-PACK-116).
+- Live: staff Edit (+ lock); non-staff add-task-set **beside «Задания»** (not header; SC-PACK-117); no full Edit for non-staff after publish (SC-PACK-53/106).
+- Staff Edit session: cards↔tasks keep lock / `staffEditTarget`; tasks persist → `staffSavePack`; unlock only on leave Edit (SC-PACK-115). Helper: `isStaffEditSessionNavigation`.
+- Editor hints: tooltips / reserved space — no jumping `v-if` captions (SC-PACK-119).
 - Delete-card confirm: `deleteCardConfirmPublished` iff `pack.hasLive`.
 - Status labels: prefer `content.statuses.needs_revision` (keep `rejected` alias in i18n for legacy rows).
 - No block/unblock UI; no unpublish/republish chrome.
@@ -50,3 +53,7 @@ page class `cascade-gap-outline` (not `bg-warning` row fill).
 - Showing editable card/task lists to non-staff on published packs.
 - Staff Submit-for-moderation control on own staff edits.
 - Calling removed draftStale / unpublish / dual-submit APIs.
+- Releasing staff edit lock on cards↔tasks navigation (use `isStaffEditSessionNavigation`; unlock only when leaving the Edit session).
+- Jumping `v-if` caption hints for submit / questionNeedsSlot / tasksSave (use `q-tooltip` or always-reserved caption; SC-PACK-119).
+- Header add-task-set on live pack or row playlist_add on collection (place beside «Задания»; SC-PACK-117/118).
+- Showing «На модерации» nav to staff (SC-PACK-116).

@@ -53,13 +53,13 @@ Router mode: hash (`/#/lobby`, `/#/support`, `/#/content/packs`, `/#/content/sta
 | `/support/:id` | `support-ticket` | `SupportTicketPage`; `meta.requiresAuth` |
 | `/admin/users` | `admin-users` | `AdminUsersPage`; `requiresAuth` + `requiresAdmin` |
 | `/content/packs` | `content-catalog` | `ContentCatalogPage`; `meta.requiresAuth` |
-| `/content/collection` | `content-collection` | `ContentCollectionPage`; Edit unpublished creator/staff; add-task-set on published; trash + click isolation (no row `:to`; hide Edit if `blocked`); `meta.requiresAuth` |
+| `/content/collection` | `content-collection` | `ContentCollectionPage`; Edit unpublished creator/staff; **no** row add-task-set; trash + click isolation (no row `:to`; hide Edit if `blocked`); `meta.requiresAuth` |
 | `/content/my-moderation` | `content-my-moderation` | `ContentMyModerationPage`; author «На модерации»; `meta.requiresAuth` |
 | `/content/packs/new` | `content-pack-new` | `ContentPackCreatePage`; → working-copy editor; `meta.requiresAuth` |
-| `/content/packs/:id` | `content-pack` | `ContentPackPage`; staff Edit+lock; non-staff add-task-set; `meta.requiresAuth` |
-| `/content/packs/:id/edit` | `content-pack-edit` | `ContentPackEditorPage` (creator working copy / staff save+lock); `meta.requiresAuth` |
+| `/content/packs/:id` | `content-pack` | `ContentPackPage`; staff Edit+lock; add-task-set beside «Задания»; `meta.requiresAuth` |
+| `/content/packs/:id/edit` | `content-pack-edit` | `ContentPackEditorPage` (creator working copy / staff save+lock session); `meta.requiresAuth` |
 | `/content/packs/:id/add-task-set` | `content-pack-add-task-set` | `ContentPackAddTaskSetPage`; post-publish add-only; `meta.requiresAuth` |
-| `/content/packs/:id/tasks/:taskSetId` | `content-pack-tasks` | `ContentPackTasksPage`; nested unpublished/staff; `meta.requiresAuth` |
+| `/content/packs/:id/tasks/:taskSetId` | `content-pack-tasks` | `ContentPackTasksPage`; nested unpublished/staff session; `meta.requiresAuth` |
 | `/content/packs/:id/moderation` | `content-pack-moderation` | `ContentPackModerationPage`; `meta.requiresAuth` |
 | `/content/staff` | `content-staff` | `ContentStaffPage`; pending\|needs_revision queue; `requiresAuth` + `requiresStaff` |
 | `/content/staff/requests/:id` | `content-staff-request` | `ContentStaffRequestPage`; Approve / needs-revision; no block UI |
@@ -120,10 +120,10 @@ Do not invent room schemas, HTTP routes, or move payloads — note the server pa
 - Cabinet displayName / change-password / email → `pages/AccountPage.vue` + `stores/auth` (`updateDisplayName` / `changePassword` / `canChangePassword`).
 - Lobby create / join / list (join busy-lock; clear stale rooms) → `pages/LobbyPage.vue` + `stores/game.ts`.
 - Support create / list / thread / staff / admin roles → `pages/Support*.vue` / `AdminUsersPage.vue` + `stores/support.ts` (+ `auth.role` gating; `change_pack` + catalog pack select).
-- Content packs collection (Edit unpublished creator/staff; add-task-set on published; trash/click isolation) / catalog / create / author «На модерации» / live (staff Edit+lock; non-staff add-task-set) / working-copy editor (`submitPack` / staff save) / add-task-set page / nested tasks / moderation / staff hub (Approve / needs-revision; no block UI) → `pages/Content*.vue` + `stores/content.ts` (+ verify gate / `auth.isStaff`).
+- Content packs collection (Edit unpublished creator/staff; **no** row add-task-set; trash/click isolation) / catalog («На модерации» hidden for staff) / create / author «На модерации» / live (staff Edit+lock; add-task-set beside «Задания») / working-copy editor (`submitPack` / staff save session cards↔tasks) / add-task-set page / nested tasks / moderation / staff hub (Approve / needs-revision; no block UI) → `pages/Content*.vue` + `stores/content.ts` (+ verify gate / `auth.isStaff`).
 - Board interaction / continuous board-busy / presence reserve / `rejoinGame` → `pages/GamePage.vue` + `stores/game.ts`.
 - Locale messages → `src/i18n/` (default `en-US`; auth policy/cabinet + support incl. `change_pack` + `content.*` keys incl. `addTaskSet*` / `statuses.needs_revision` / `deleteCardConfirm*` by hasLive / trash remove / `errors.*`).
-- Unit tests (Vitest) → `vitest.config.ts` + `test/setup.ts` + colocated `src/**/__tests__/*` (incl. `Content*Acl.test.ts`, `content.simplifyAcl.test.ts`, `SupportChangePack.test.ts`, `support.changePack.test.ts`); see meta `work-with-test`.
+- Unit tests (Vitest) → `vitest.config.ts` + `test/setup.ts` + colocated `src/**/__tests__/*` (incl. `Content*Acl.test.ts`, `ContentPackTasksHints.test.ts`, `content.simplifyAcl.test.ts`, `SupportChangePack.test.ts`, `support.changePack.test.ts`); store helper `isStaffEditSessionNavigation`; see meta `work-with-test`.
 - Deploy / Pages 404 fallback → `.github/workflows/deploy.yml` (`quasar build -m spa`, `index.html` → `404.html`).
 
 ## Domain Hotspots

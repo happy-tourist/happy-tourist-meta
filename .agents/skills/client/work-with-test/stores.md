@@ -8,9 +8,11 @@ Product store conventions: meta skill `work-with-stores`. Domains: `auth`,
 `SupportChangePack.test.ts`, store `support.changePack.test.ts`), `content`
 (HTTP packs via `client.http`; working copy / `submitPack` / add-task-set /
 staff lock+save / needs_revision; cascadeGap* / hasLive confirm; simplify ACL
-SC-PACK-100…114 — pages `Content*Acl.test.ts`, store
+SC-PACK-100…119 — pages `Content*Acl.test.ts` incl. `ContentCatalogAcl` /
+`ContentCollectionAcl` / `ContentPackAcl`, `ContentPackTasksHints.test.ts`
+(SC-PACK-115/119 staff session + stable hints), store
 `content.simplifyAcl.test.ts`; spy `client.http`, do not hit live server;
-cascade helpers: meta `work-with-stores/content.md`).
+cascade helpers + `isStaffEditSessionNavigation`: meta `work-with-stores/content.md`).
 
 ## Testing a page / component that uses a store
 

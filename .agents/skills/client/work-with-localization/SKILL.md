@@ -9,7 +9,9 @@ description: >-
   (no touristChipAria; no returnConfirm*), support topics/statuses/guest
   warning / staff filters / emailUnverified / rate-limit errors / roles (RU
   under en-US), and content packs `content.*` («Набор карточек»; working-copy /
-  unified submit / `addTaskSet*`; `myModeration*`; `statuses.needs_revision`;
+  unified submit / `addTaskSet*`; `staffEditSubtitle` / `tasksSaveHint` /
+  `questionNeedsSlot` (tooltip / reserved hints, not jumping captions);
+  `myModeration*`; `statuses.needs_revision`;
   `deleteCardConfirm` / `deleteCardConfirmPublished` by hasLive; cascade yellow;
   collection trash + author delete unpublished; staff Approve / needs-revision;
   no block UI; `content.errors.*` incl. `edit_locked` / `submit_need_task_sets` —

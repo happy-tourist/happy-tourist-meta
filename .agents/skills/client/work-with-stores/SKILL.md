@@ -7,7 +7,8 @@ description: >-
   removed-task holes, grille trap/rescue/push/return, catapult reveal keys,
   D13 atomic `$patch` seats+revealing/broken, peek/end-turn), acceptHMRUpdate,
   and Quasar pinia entry. Core in SKILL.md; content-pack working copy / unified
-  submit / add-task-set / staff lock+save / cascade yellow details in content.md.
+  submit / add-task-set / staff lock+save / `isStaffEditSessionNavigation`
+  (SC-PACK-115…119) / cascade yellow details in content.md.
   Use when adding, changing, reviewing, or debugging Pinia stores, shared
   game/auth/theme/support/content state (incl. admin setUserRole merge /
   emailVerified; support `change_pack` + packId), or page-to-store wiring.
@@ -30,7 +31,7 @@ src/stores/
   theme.ts          # setup store — Quasar Dark preference (guest local / registered HTTP)
   game.ts           # options store
   support.ts        # setup store — support tickets + staff queue + admin users HTTP
-  content.ts        # setup store — working copy + submitPack + add-task-set + staff lock; see content.md
+  content.ts        # setup store — working copy + submitPack + add-task-set + staff lock + isStaffEditSessionNavigation; see content.md
   example-store.ts  # Quasar scaffold counter — unused by login/lobby/game
 ```
 
@@ -43,7 +44,7 @@ Read the matching file in this folder when the change involves that area
 
 | Topic | File |
 |-------|------|
-| Content packs (`content` store: working copy, `submitPack`, add-task-set, staff lock/save, cascade yellow, needs_revision) | [content.md](content.md) |
+| Content packs (`content` store: working copy, `submitPack`, add-task-set, staff lock/save, `isStaffEditSessionNavigation`, SC-PACK-115…119 UI contracts, cascade yellow, needs_revision) | [content.md](content.md) |
 
 ### Store styles in this repo
 
@@ -53,7 +54,7 @@ Read the matching file in this folder when the change involves that area
 | `theme` | **Setup** (`defineStore('theme', () => { … })`) | Dark preference + `syncFromAuthUser` / `toggle`; registered GET restore + POST save |
 | `game` | **Options** (`defineStore('game', { state, getters, actions })`) | Clear room lifecycle, `this.*` mutations, private helpers `_enterRoom` / `_attachRoom` |
 | `support` | **Setup** (`defineStore('support', () => { … })`) | HTTP tickets/staff/admin via `client.http`; `change_pack` requires `packId` (SC-SUP-28); staff list passes `topic`/`status` query; admin list expects `emailVerified`; after `setUserRole` **merge** `{ …u, …updated }` so list-only fields survive if API omits them; `error` + page `q-banner` |
-| `content` | **Setup** (`defineStore('content', () => { … })`) | HTTP packs via `client.http`; working-copy draft / `submitPack` / add-task-set / staff `acquireEditLock`+`staffSavePack` / `needsRevisionRequest`; cascade yellow; open = pending\|needs_revision — details in [content.md](content.md) |
+| `content` | **Setup** (`defineStore('content', () => { … })`) | HTTP packs via `client.http`; working-copy draft / `submitPack` / add-task-set / staff `acquireEditLock`+`staffSavePack` / `isStaffEditSessionNavigation` / `needsRevisionRequest`; cascade yellow; open = pending\|needs_revision — details in [content.md](content.md) |
 | `counter` (`example-store`) | Options | Scaffold only — do not extend for product features |
 
 **When to choose setup vs options**

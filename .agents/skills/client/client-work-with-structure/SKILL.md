@@ -5,7 +5,7 @@ description: >-
   (*Page.vue), components, Pinia stores, Quasar boot files, dependency
   direction between layers, or deciding whether new UI belongs in pages vs
   components vs stores vs App shell (always-button brand logo ≥60px; Game leave via logo + status;
-  auth→lobby; theme; no page «В лобби»; content packs working copy + add-task-set + staff Edit lock + trash/click isolation (no row `:to`; hide Edit if `blocked`) / author «На модерации» / cascade yellow / author delete unpublished / staff needs_revision / no block UI). No blocks/
+  auth→lobby; theme; no page «В лобби»; content packs working copy + add-task-set beside «Задания» + staff Edit lock session + trash/click isolation (no row `:to`; hide Edit if `blocked`) / author «На модерации» (hidden for staff) / cascade yellow / author delete unpublished / staff needs_revision / no block UI). No blocks/
   or dialogs/ registry layers.
 ---
 
@@ -232,7 +232,7 @@ Registered in `quasar.config.ts` boot array: `theme`, `i18n`, `colyseus` (+ `fra
 | Lobby / rooms | `LobbyPage` | `stores/game.subscribeLobby` / create `{ maxSeats, grilleDensity, catapultDensity }` / join |
 | Game session | `GamePage` | `stores/game` room attach + seats / grilles / catapults / top + seated-HUD presence / say / strip + rescue/push + return strip icon (no modal); soft-drop gated by `consentedLeaving` |
 | Game leave + match status | `App.vue` header (logo leave on Game; status on Game) | `stores/game` `leaveGame` + status / phase getters |
-| Content packs | `ContentCatalogPage` / `ContentCollectionPage` (Edit unpublished creator/staff; add-task-set on published; trash; no row `:to`) / `ContentMyModerationPage` / `ContentPackPage` (staff Edit+lock; non-staff add-task-set) / `ContentPackCreatePage` / `ContentPackEditorPage` / `ContentPackAddTaskSetPage` / `ContentPackTasksPage` / `ContentPackModerationPage` / `ContentStaffPage` / `ContentStaffRequestPage` (Approve / needs-revision; no block UI) / `ContentStaffTasksPage` (→ hub) | `stores/content` HTTP (`client.http`); working copy + `submitPack` + add-task-set + staff lock/save + cascadeGap* + needs_revision |
+| Content packs | `ContentCatalogPage` / `ContentCollectionPage` (Edit unpublished creator/staff; **no** row add-task-set; trash; no row `:to`) / `ContentMyModerationPage` / `ContentPackPage` (staff Edit+lock; add-task-set beside «Задания») / `ContentPackCreatePage` / `ContentPackEditorPage` / `ContentPackAddTaskSetPage` / `ContentPackTasksPage` / `ContentPackModerationPage` / `ContentStaffPage` / `ContentStaffRequestPage` (Approve / needs-revision; no block UI) / `ContentStaffTasksPage` (→ hub) | `stores/content` HTTP (`client.http`); working copy + `submitPack` + add-task-set + staff lock session + cascadeGap* + needs_revision |
 | Support | `SupportPage` / `SupportTicketPage` / `SupportStaffPage` | `stores/support` |
 | Brand / title / favicon | `App.vue` + `package.json` / `index.html` / `public/favicon.ico` | `assets/brand/logo.png`; `productName` Happy Tourist; single favicon |
 | Shell | `App.vue` | layout + always-button brand logo ≥60px + theme header/banner + Game leave/status + `router-view` |

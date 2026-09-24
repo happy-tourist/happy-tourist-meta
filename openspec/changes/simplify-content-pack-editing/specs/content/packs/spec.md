@@ -21,6 +21,11 @@
 | SC-PACK-112 | pending |
 | SC-PACK-113 | pending |
 | SC-PACK-114 | pending |
+| SC-PACK-115 | pending |
+| SC-PACK-116 | pending |
+| SC-PACK-117 | pending |
+| SC-PACK-118 | pending |
+| SC-PACK-119 | pending |
 | SC-PACK-10 | pending |
 | SC-PACK-11 | pending |
 | SC-PACK-12 | pending |
@@ -128,7 +133,7 @@ After publish, a verified non-anonymous user who has pack P in their collection 
 
 ### Requirement: Staff may edit any pack live without moderation under exclusive lock
 
-Moderator and admin MUST be able to open Edit on any pack (published or not) **without** requiring the pack in their collection. Staff content changes (including add card / add task set / edit / delete within policy) MUST apply **directly to live or to the single working copy** without entering the moderation queue. The client MUST NOT show staff a «submit for moderation» control for their own staff edits. While staff A holds an edit lock on pack P, staff B’s Edit attempt MUST fail with an error. The lock MUST release when A leaves the edit session or after a short timeout.
+Moderator and admin MUST be able to open Edit on any pack (published or not) **without** requiring the pack in their collection. Staff content changes (including add card / add task set / edit / delete within policy) MUST apply **directly to live or to the single working copy** without entering the moderation queue. The client MUST NOT show staff a «submit for moderation» control for their own staff edits. While staff A holds an edit lock on pack P, staff B’s Edit attempt MUST fail with an error. The lock MUST release when A leaves the **entire** edit session (leaves Edit for live/collection/catalog/another pack) or after a short timeout — NOT when navigating between the cards editor and a task-set editor of the same pack. Saves of cards and of tasks during that session MUST use the staff direct-save path, not the creator working-copy path.
 
 #### Scenario [SC-PACK-111]: Staff edits published pack without queue
 
@@ -156,6 +161,51 @@ Moderator and admin MUST be able to open Edit on any pack (published or not) **w
 - **WHEN** A hard-deletes P
 - **THEN** P and its working copy and open requests are removed
 - **AND** published packs remain non-deletable by the creator
+
+#### Scenario [SC-PACK-115]: Staff saves task edits after opening from cards editor
+
+- **GIVEN** published pack P and staff S holding an edit lock after opening Edit on cards
+- **WHEN** S navigates to a task-set editor for P and saves a question change
+- **THEN** the save succeeds via staff direct-save
+- **AND** the client MUST NOT call the creator working-copy save path
+- **AND** S MUST NOT see a hard error that a published pack cannot be edited via working copy
+
+#### Scenario [SC-PACK-116]: Staff does not see author my-moderation nav
+
+- **GIVEN** an authenticated moderator or admin
+- **WHEN** the user views the content catalog or collection chrome
+- **THEN** the «На модерации» (author my-moderation) control is not shown
+- **AND** staff MAY still open the staff moderation queue control
+
+### Requirement: Add-task-set affordance beside tasks section on live
+
+For a verified non-staff collector viewing a published pack’s live page, the primary control to start adding a new task set MUST appear **beside the «Задания» / task-sets section heading**, not as a header-only action and not as a row action in the collection list. The collection list MUST NOT show a dedicated add-task-set icon/button per row (trash and staff Edit remain as applicable). Staff add new task sets through the full Edit surface (button beside the task-sets heading in the editor), not via the non-staff add-task-set live control.
+
+#### Scenario [SC-PACK-117]: Live add-task-set control sits by tasks section
+
+- **GIVEN** published pack P in verified non-staff user U’s collection
+- **WHEN** U opens the live pack page for P
+- **THEN** U sees «Добавить набор заданий» next to the tasks section heading
+- **AND** U does not rely on a collection-list row add-task-set button
+
+#### Scenario [SC-PACK-118]: Collection list has no add-task-set row button
+
+- **GIVEN** an authenticated verified non-staff user on the collection list with published pack P
+- **WHEN** the list renders
+- **THEN** the row for P MUST NOT show an add-task-set action icon
+- **AND** trash / remove-from-collection may still appear
+- **AND** staff MAY still see Edit on rows where applicable
+
+### Requirement: Content editor hints must not shift layout height
+
+On content pack editor surfaces (cards editor, task-set editor, add-task-set page), validation and save guidance that depends on form state (for example empty slots, submit minima, autosave/moderation hints) MUST NOT appear or disappear in a way that changes the page’s vertical layout height. Such guidance MUST use tooltips on disabled controls and/or always-reserved / always-visible static hint space.
+
+#### Scenario [SC-PACK-119]: Slot hint does not jump page height
+
+- **GIVEN** a user editing a task form with a non-empty question and no filled slot
+- **WHEN** the client shows guidance that a slot answer is required
+- **THEN** showing or hiding that guidance MUST NOT change the surrounding layout height
+- **AND** a tooltip on the disabled save control is an acceptable form of the guidance
 
 ## MODIFIED Requirements
 
@@ -237,9 +287,10 @@ Only the **creator** MAY edit an **unpublished** pack’s working copy (cards an
 #### Scenario [SC-PACK-66]: Collection Edit reaches editor when pack has live
 
 - **GIVEN** a verified user with published pack P in their collection
-- **WHEN** the user activates the collection contribution control for P (add-task-set; not full Edit of live cards)
+- **WHEN** the user activates the collection contribution path for P (navigate to live, then add-task-set from the tasks section; not full Edit of live cards)
 - **THEN** the client opens the add-task-set flow
 - **AND** MUST NOT open a full cards/tasks editor of existing live content for non-staff
+- **AND** the collection row itself MUST NOT be the primary add-task-set control
 
 ## REMOVED Requirements
 
