@@ -21,7 +21,8 @@ description: >-
   or content packs (test/zz-contentPacks.test.ts — SC-PACK-* working copy +
   unified submit SC-PACK-100…105; add-task-set SC-PACK-108…110; staff lock/save
   SC-PACK-111…113; author delete SC-PACK-114; soft-unpublish/republish
-  SC-PACK-120…124 (`in_catalog` pack) + task-set soft-hide SC-PACK-131 + preview live cards / authorDisplayName SC-PACK-134…135
+  SC-PACK-120…124 (`in_catalog` pack) + cascade-cancel open requests + mail
+  SC-PACK-137…141 + task-set soft-hide SC-PACK-131 + preview live cards / authorDisplayName SC-PACK-134…135
   (`content_task_sets.in_catalog`; last-set 409); cascade; my-moderation +
   needs_revision; mock mailer; ensureContentTables / setEmailVerifiedForTests).
   Core workflow: test plan (mocks/verify) → write test/*.test.ts → run npm test
@@ -77,7 +78,7 @@ tests; fix failures before claiming done.
 | Auth email flows (confirm / forgot / change-email / cooldown / password policy on register+reset) | `test/zz-authEmail.test.ts` — mock `setSendEmailImpl`; `clearConfirmSendCooldownForTests`; `keepLatestRequestListener` after boot; cover SC-AUTH-08 / SC-RESET-09 / SC-AUTH-10 where asserted |
 | Auth profile (displayName + change-password) | `test/zz-authProfile.test.ts` — SC-PROFILE-01/02/04/05; bumpTokenVersion; reject no-password credential |
 | Support tickets + roles (SC-SUP-* / SC-ROLE-*) | `test/support.test.ts` — mock mailer; `ensureSupportTables` / `bootstrapAdminIds` / `setUserRoleForTests` / `runAutoClose`; cover create-ack (SC-SUP-21), staff `topic`/`status` filters (SC-SUP-22), author self-reply **no** status mail, admin list excludes anonymous + `emailVerified`, role POST response includes `emailVerified` (SC-ROLE-09); `change_pack` in-catalog only + soft-unpublished → `pack_not_in_catalog` (D5/D9); `keepLatestRequestListener` after boot |
-| Content packs (SC-PACK-*) | `test/zz-contentPacks.test.ts` — mock mailer; `ensureContentTables` / `setEmailVerifiedForTests` / `setUserRoleForTests`; cover catalog/collection, create+verify gate, working copy + unified submit SC-PACK-100…105, add-task-set SC-PACK-108…110, staff lock/save SC-PACK-111…113, author delete SC-PACK-114, soft-unpublish/republish SC-PACK-120…124 (`in_catalog` pack; keep live; ≠ block), task-set soft-hide SC-PACK-131 (`POST /api/content/task-set/unpublish|republish`; last published → `last_published_task_set`), cascade save, my-moderation + staff pending\|needs_revision, block endpoints + mail links; `keepLatestRequestListener` after boot |
+| Content packs (SC-PACK-*) | `test/zz-contentPacks.test.ts` — mock mailer; `ensureContentTables` / `setEmailVerifiedForTests` / `setUserRoleForTests`; cover catalog/collection, create+verify gate, working copy + unified submit SC-PACK-100…105, add-task-set SC-PACK-108…110, staff lock/save SC-PACK-111…113, author delete SC-PACK-114, soft-unpublish/republish SC-PACK-120…124 (`in_catalog` pack; keep live; ≠ block), pack unpublish cascade-cancel open requests + one RU mail/author without links SC-PACK-137…141 (manual cancel still no mail; republish does not restore), task-set soft-hide SC-PACK-131 (`POST /api/content/task-set/unpublish|republish`; last published → `last_published_task_set`), cascade save, my-moderation + staff pending\|needs_revision, block endpoints + mail links; `keepLatestRequestListener` after boot |
 
 Mocha picks up `test/**.test.ts` via the npm script. Mirror room names under
 `test/` as rooms grow; keep relative imports to `../src/...`.

@@ -29,7 +29,7 @@ Search and assign ownership top-down along the call path.
 | Entry | `src/index.ts` | `listen(app)` from `@colyseus/tools` |
 | Server def | `src/app.config.ts` | `defineServer`: database, rooms, routes, express (CORS, `/health`, `/hi`, support + content bootstrap, monitor/playground); side-effect import `./config/auth.js` |
 | OAuth config | `src/config/auth.ts` | `auth.oauth.addProvider('google', …)`; `htRole` → userdata `role`; leave built-in `onOAuthProviderCallback` alone (except verified wrap) |
-| Lib | `src/lib/mailer.ts`, `src/lib/support.ts`, `src/lib/content.ts` | smtp.bz mail; support tickets/roles/bootstrap/auto-close + `change_pack`/`pack_id`; content packs (ensure + working copy + unified `submitPack`/approve + add-task-set + staff edit lock/save + soft-unpublish pack+set/`in_catalog` + previewPending live cards + authorDisplayName + needs-revision + `cascadeNormalizeTasks` + author delete + `listMyModerationPacks` / staff pending queue) |
+| Lib | `src/lib/mailer.ts`, `src/lib/support.ts`, `src/lib/content.ts` | smtp.bz mail; support tickets/roles/bootstrap/auto-close + `change_pack`/`pack_id`; content packs (ensure + working copy + unified `submitPack`/approve + add-task-set + staff edit lock/save + soft-unpublish pack+set/`in_catalog` + pack unpublish cascade-cancel open req + mail SC-PACK-137…141 + previewPending live cards + authorDisplayName + needs-revision + `cascadeNormalizeTasks` + author delete + `listMyModerationPacks` / staff pending queue) |
 | DB | `src/db/index.ts`, `src/db/schema.ts` | `GameDatabase`, `users` extension (`htRole`), support + `content_*` table decls |
 | Rooms | `src/rooms/MyRoom.ts` | `onAuth` / `onCreate` / `onJoin` / `onDrop` / `onReconnect` / `onLeave` / `onDispose` |
 | Schema | `src/rooms/schema/MyRoomState.ts` | `@colyseus/schema` sync state (`connected` / `reconnectUntil`) |
@@ -124,7 +124,7 @@ Use these rules to pick the layer before naming files.
 | Auth email + password policy | `test/zz-authEmail.test.ts` |
 | Auth profile (displayName / change-password) | `test/zz-authProfile.test.ts` |
 | Support tickets + roles | `test/support.test.ts` (incl. SC-SUP-27/28 `change_pack`) |
-| Content packs (SC-PACK-*) | `test/zz-contentPacks.test.ts` — mock mailer; `ensureContentTables` / `setEmailVerifiedForTests`; working copy + unified submit SC-PACK-100…105; add-task-set SC-PACK-108…110; staff lock/save SC-PACK-111…113; author delete SC-PACK-114; soft-unpublish pack SC-PACK-120…124; task-set soft-hide SC-PACK-131 (`last_published_task_set`); SC-PACK-134…135 preview/authorDisplayName; cascade save; my-moderation + staff pending\|needs_revision |
+| Content packs (SC-PACK-*) | `test/zz-contentPacks.test.ts` — mock mailer; `ensureContentTables` / `setEmailVerifiedForTests`; working copy + unified submit SC-PACK-100…105; add-task-set SC-PACK-108…110; staff lock/save SC-PACK-111…113; author delete SC-PACK-114; soft-unpublish pack SC-PACK-120…124; cascade-cancel open requests + mail SC-PACK-137…141; task-set soft-hide SC-PACK-131 (`last_published_task_set`); SC-PACK-134…135 preview/authorDisplayName; cascade save; my-moderation + staff pending\|needs_revision |
 | Multi-client join pressure | `loadtest/example.ts` (`joinOrCreate`; `--room` / `--numClients`) |
 
 ## Domain Hotspots

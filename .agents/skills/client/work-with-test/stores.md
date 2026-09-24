@@ -11,7 +11,7 @@ staff lock+save / soft-unpublish pack+set/`inCatalog` / needs_revision; cascadeG
 SC-PACK-100…136 — pages `Content*Acl.test.ts` incl. `ContentCatalogAcl` /
 `ContentCollectionAcl` / `ContentPackAcl`, `ContentSoftUnpublish.test.ts`
 (SC-PACK-120…125 staff unpublish/republish + soft-unpublished gray/non-nav),
-`ContentFollowUp4.test.ts` (SC-PACK-129…133 confirm everywhere / set soft-hide /
+`ContentFollowUp4.test.ts` (SC-PACK-129…133 + SC-PACK-139 unpublishConfirm warns open requests / set soft-hide /
 live summary+drill-in / AddTaskSet chips), `ContentFollowUp5.test.ts`
 (SC-PACK-134…136 slot card text / `authorDisplayName` / Tasks `content.back`),
 `ContentPackTasksHints.test.ts` (SC-PACK-115/119 staff session + stable hints),

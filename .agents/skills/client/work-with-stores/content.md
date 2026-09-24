@@ -74,15 +74,15 @@ there is no open own request (fresh create / foreign pending).
 | Published non-staff | verified + inCollection + in-catalog | add-task-set only → `content-pack-add-task-set` |
 | Soft-unpublished non-staff | any | collection gray row only; no live/Edit; trash OK |
 | Staff Edit | moderator\|admin | `acquireEditLock` → `loadStaffEdit` / `staffSavePack` (no Submit); includes soft-unpublished |
-| Staff soft-unpublish pack | staff | `unpublishPack` / `republishPack` (catalog + **collection** + live; confirm on unpublish; SC-PACK-129) |
+| Staff soft-unpublish pack | staff | `unpublishPack` / `republishPack` (catalog + **collection** + live; confirm warns open requests will be cancelled — SC-PACK-139; server cascade SC-PACK-137…141; SC-PACK-129) |
 | Staff soft-unpublish set | staff | `unpublishTaskSet` / `republishTaskSet` (Editor/live row + inside Tasks; confirm on unpublish; disable last published; SC-PACK-131/132) |
 | Staff queue | staff | `approveRequest` / `needsRevisionRequest` (`/needs-revision`); **no** pack/set unpublish |
 
 ## UI contracts
 
-- Collection: Edit for unpublished creator or staff; **no** row add-task-set (SC-PACK-118); trash + click isolation (no row `:to`); «На модерации» nav hidden for staff (SC-PACK-116); soft-unpublished (`hasLive && inCatalog === false`) row gray + «Снято с публикации», non-navigating for non-staff, trash remains (SC-PACK-121/125); **staff** pack unpublish/republish on row with confirm (SC-PACK-129).
-- Catalog: staff see soft-unpublished with badge + «Опубликовать снова»; public list hides them (server); staff «Снять с публикации» + confirm on in-catalog rows (SC-PACK-120/129).
-- Live: staff Edit (+ lock) including soft-unpublished pack; staff pack + **task-set** unpublish/republish (confirm on unpublish); set **summary rows** + drill-in (SC-PACK-130); soft-unpublished set gray / no enter for non-staff (SC-PACK-132); non-staff add-task-set **beside «Задания»** only while in-catalog (SC-PACK-117); no full Edit for non-staff after publish (SC-PACK-53/106); non-staff deep-link → `pack_unpublished` / empty (SC-PACK-122).
+- Collection: Edit for unpublished creator or staff; **no** row add-task-set (SC-PACK-118); trash + click isolation (no row `:to`); «На модерации» nav hidden for staff (SC-PACK-116); soft-unpublished (`hasLive && inCatalog === false`) row gray + «Снято с публикации», non-navigating for non-staff, trash remains (SC-PACK-121/125); **staff** pack unpublish/republish on row with confirm (`unpublishConfirm` / SC-PACK-139) (SC-PACK-129).
+- Catalog: staff see soft-unpublished with badge + «Опубликовать снова»; public list hides them (server); staff «Снять с публикации» + confirm (`content.unpublishConfirm` warns open moderation requests will be cancelled — SC-PACK-139) on in-catalog rows (SC-PACK-120/129).
+- Live: staff Edit (+ lock) including soft-unpublished pack; staff pack + **task-set** unpublish/republish (pack confirm same `unpublishConfirm` / SC-PACK-139; set uses `unpublishTaskSetConfirm*` — no pack-request cascade); set **summary rows** + drill-in (SC-PACK-130); soft-unpublished set gray / no enter for non-staff (SC-PACK-132); non-staff add-task-set **beside «Задания»** only while in-catalog (SC-PACK-117); no full Edit for non-staff after publish (SC-PACK-53/106); non-staff deep-link → `pack_unpublished` / empty (SC-PACK-122).
 - Staff Edit session: cards↔tasks keep lock / `staffEditTarget`; tasks persist → `staffSavePack`; unlock only on leave Edit (SC-PACK-115). Helper: `isStaffEditSessionNavigation`.
 - Support `change_pack` select: **in-catalog only** (`inCatalog !== false && hasLive`).
 - Editor hints: tooltips / reserved space — no jumping `v-if` captions (SC-PACK-119).

@@ -4,7 +4,7 @@ description: >-
   Use when adding, changing, or reviewing HTTP routes on the happy-tourist
   Colyseus server: createRouter / createEndpoint in app.config.ts, Express
   hook handlers (/health, /hi), auth /auth/*, theme, support tickets, content
-  packs (/api/content/* working-copy draft + unified `POST …/submit` + add-task-set + edit-lock/staff-save + needs-revision + cascadeNormalize ≠ false `answers_dirty` + author delete unpublished + staff soft-unpublish/republish pack (`inCatalog`) + task-set soft-hide (`POST …/task-set/unpublish|republish`) + staff `previewPending` live cards / `authorDisplayName` (SC-PACK-134…135) + GET my-moderation + staff pending queue; block endpoints retained; drop dual submit/rebase/stale), admin roles, or Colyseus room listing /rooms/:roomName.
+  packs (/api/content/* working-copy draft + unified `POST …/submit` + add-task-set + edit-lock/staff-save + needs-revision + cascadeNormalize ≠ false `answers_dirty` + author delete unpublished + staff soft-unpublish/republish pack (`inCatalog`; unpublish cascade-cancels open requests + RU email SC-PACK-137…141) + task-set soft-hide (`POST …/task-set/unpublish|republish`) + staff `previewPending` live cards / `authorDisplayName` (SC-PACK-134…135) + GET my-moderation + staff pending queue; block endpoints retained; drop dual submit/rebase/stale), admin roles, or Colyseus room listing /rooms/:roomName.
   Keep HTTP thin — game logic belongs in rooms.
 ---
 
@@ -114,7 +114,7 @@ For CORS / monitor details use `work-with-middleware` and `work-with-config`.
 | GET | `/api/content/packs` | `createEndpoint` | JWT; public = live + `inCatalog`; staff also see soft-unpublished (SC-PACK-120); helpers in `src/lib/content.ts` |
 | POST | `/api/content/packs` | `createEndpoint` | JWT + non-anonymous + `emailVerified` (DB); create pack + working copy into author collection |
 | GET | `/api/content/packs/:id` | `createEndpoint` | JWT; live snapshot + `inCollection` + `inCatalog`; non-staff soft-unpublished → `pack_unpublished` (SC-PACK-122) |
-| POST | `/api/content/packs/:id/unpublish` \| `/republish` | `createEndpoint` | JWT staff; soft-hide / restore pack catalog without moderation (SC-PACK-120/123); keep `liveRevisionId` |
+| POST | `/api/content/packs/:id/unpublish` \| `/republish` | `createEndpoint` | JWT staff; soft-hide / restore pack catalog without moderation (SC-PACK-120/123); keep `liveRevisionId`; **unpublish** cascade-cancels open requests (`pending`\|`needs_revision`) + one RU email/author without links (SC-PACK-137…141; early re-unpublish no-op; republish does not restore; task-set unpublish does **not** cascade) |
 | POST | `/api/content/task-set/unpublish` \| `/republish` | `createEndpoint` | JWT staff; soft-hide / restore **task set** (`in_catalog` on `content_task_sets`; SC-PACK-131/132); body `{ packId, taskSetId }`; unpublish last published set → 409 `last_published_task_set` |
 | GET\|POST | `/api/content/packs/:id/draft` | `createEndpoint` | JWT + creator; unpublished working copy only (SC-PACK-100/101); `putDraft` compares `tasksStructuralKey` **after** `cascadeNormalizeTasks` — slot clear ≠ `answers_dirty` |
 | POST | `/api/content/packs/:id/submit` | `createEndpoint` | JWT + creator; unified first-publish (≥2 cards, ≥1 task set) |
