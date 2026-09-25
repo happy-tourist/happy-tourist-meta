@@ -24,10 +24,12 @@ description: >-
   SC-PACK-120…124 (`in_catalog` pack) + cascade-cancel open requests + mail
   SC-PACK-137…141 + task-set soft-hide SC-PACK-131 + preview live cards / authorDisplayName SC-PACK-134…135
   (`content_task_sets.in_catalog`; last-set 409); cascade; my-moderation +
-  needs_revision; mock mailer; ensureContentTables / setEmailVerifiedForTests;
+  needs_revision; cancel keeps working → list draft + per-set moderationStatus
+  SC-PACK-171…179; mock mailer; ensureContentTables / setEmailVerifiedForTests;
   default packs SC-PACK-170 (grants retired) in test/zz-defaultContentPacks.test.ts;
   content maps in test/zz-contentMaps.test.ts — SC-MAP-01…28 create/list/submit/
-  staff queue type map / soft-unpublish cascade-cancel + mail / room create ignores maps —
+  staff queue type map / soft-unpublish cascade-cancel + mail / room create ignores maps /
+  cancel→draft when working differs SC-MAP-41/42 —
   isolated `game.test.db` via test/setupEnv.ts).
   Core workflow: test plan (mocks/verify) → write test/*.test.ts → run npm test
   from server package root and fix failures. Do not invent Jest/babel patterns.
@@ -85,7 +87,7 @@ tests; fix failures before claiming done.
 | Content packs (SC-PACK-*) | `test/zz-contentPacks.test.ts` — unified list/statuses/favorites/author re-edit/staff take + working copy/submit + soft-unpublish cascade + add-task-set **no** collection gate; mock mailer; `keepLatestRequestListener` |
 | Content maps (SC-MAP-*) | `test/zz-contentMaps.test.ts` — list statuses + author re-edit + staff take + soft-unpublish |
 | Default content packs (SC-PACK-170) | `test/zz-defaultContentPacks.test.ts` — parse/eligible remain; grant/backfill/create-user **do not** auto-grant collections |
-| Content maps (SC-MAP-*) | `test/zz-contentMaps.test.ts` — mock mailer; `ensureContentTables` (pulls `ensureContentMapTables`); cover create+verify gate SC-MAP-01…03, seats clamp SC-MAP-05, list visibility SC-MAP-06/07, submit starts gate SC-MAP-09…13, shared staff queue type badge + approve/needs_revision SC-MAP-14…18, author delete SC-MAP-19/20, soft-unpublish cascade-cancel + mail SC-MAP-21…27, room create ignores maps SC-MAP-28; `keepLatestRequestListener` after boot |
+| Content maps (SC-MAP-*) | `test/zz-contentMaps.test.ts` — mock mailer; `ensureContentTables` (pulls `ensureContentMapTables`); cover create+verify gate SC-MAP-01…03, seats clamp SC-MAP-05, list visibility SC-MAP-06/07, submit starts gate SC-MAP-09…13, shared staff queue type badge + approve/needs_revision SC-MAP-14…18, author delete SC-MAP-19/20, soft-unpublish cascade-cancel + mail SC-MAP-21…27, room create ignores maps SC-MAP-28, cancel keeps working → list draft SC-MAP-41/42; `keepLatestRequestListener` after boot |
 
 Mocha picks up `test/**.test.ts` via the npm script. Mirror room names under
 `test/` as rooms grow; keep relative imports to `../src/...`.

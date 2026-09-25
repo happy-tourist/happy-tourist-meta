@@ -112,7 +112,7 @@ Pages already wired:
 | Page | Calls |
 |------|-------|
 | `LoginPage` | `auth.register` / `login` / `loginAnonymously` / `loginWithGoogle` |
-| `LobbyPage` | `subscribeLobby` / `unsubscribeLobby`, `createGame`, `joinGame`, `leaveGame`; `auth.logout` |
+| `LobbyPage` | `subscribeLobby` / `unsubscribeLobby`, `createGame`, `joinGame`, `leaveGame` (session logout → App header, not this page) |
 | `GamePage` | `game.rejoinGame(roomId)` on remount / soft-fail; pieces + grilles + presence + budgets + peek from store; move → `sendMove`; rescue/push/return → `sendRescue` / `sendPush` / `sendReturnFromFinish`; peek → `sendPeek` / `sendPeekAnswer`; end-turn → `sendEndTurn`; say → `sendSay`; `leaveGame` |
 | Router | `auth.whenReady()` before `requiresAuth` / `guest` guards |
 

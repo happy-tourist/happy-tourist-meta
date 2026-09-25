@@ -25,7 +25,7 @@ Coordinate schema / protocol (room name, state shape, seat connectivity, `move` 
 | Store | `src/stores/game.ts` | `TOURIST_ROOM`, create/join/rejoin/leave, token persist, `_attachRoom` listeners |
 | Lobby | `src/pages/LobbyPage.vue` | `createGame` / `joinGame` → navigate to `game` with `roomId` |
 | Game | `src/pages/GamePage.vue` | Board + bottom HUD presence; `rejoinGame(roomId)` on mount / soft-fail |
-| Leave UX | `src/App.vue` (Game route) | Always-button brand logo: on Game = leave + confirm → `leaveGame` → lobby (non-Game nav/`noop` is `work-with-pages`) |
+| Leave UX | `src/App.vue` (Game route) | Brand logo **and** right-side `header-game-leave`: same confirm → `leaveGame` → lobby (non-Game nav/`noop` / session logout is `work-with-pages`) |
 | Boot | `src/boot/colyseus.ts` | Shared `Client` (`VITE_COLYSEUS_URL`) |
 | Route | `/game/:roomId` | Hash mode; `meta.requiresAuth` |
 
@@ -148,8 +148,8 @@ async leaveGame() {
 }
 ```
 
-- Used for logout / explicit leave (Lobby «Выйти», App header brand logo on Game with accessible name `game.leave` / «Выход из игры») — **consented** leave on server (immediate seat remove, no grace).
-- Leave-confirm UX (`q-dialog` when seated ∧ `phase === 'playing'` ∧ `finishPlace === 0` ∧ `!timeExpired`) lives in **`App.vue`** on Game route (`work-with-pages`); finished / time-expired seats and spectators leave immediately; store `leaveGame` stays confirm-agnostic. Do **not** reintroduce page-local leave header on `GamePage`.
+- Used for logout / explicit leave (App header session logout off-Game; Game brand logo **and** `header-game-leave` with accessible name `game.leave` / «Выход из игры») — **consented** leave on server (immediate seat remove, no grace).
+- Leave-confirm UX (`q-dialog` when seated ∧ `phase === 'playing'` ∧ `finishPlace === 0` ∧ `!timeExpired`) lives in **`App.vue`** on Game route (`work-with-pages`) for both logo and `header-game-leave`; finished / time-expired seats and spectators leave immediately; store `leaveGame` stays confirm-agnostic. Do **not** reintroduce page-local leave header on `GamePage` or Lobby «Выйти».
 - Clear tourist token, reset Pinia, then call `leave`.
 - **Swallow** closed-room errors — do not surface them as `game.error`.
 - `_enterRoom` uses `_leaveTouristRoom` (not `leaveGame`) so a failed enter keeps the lobby list live; `_leaveTouristRoom` also clears the prior tourist token when leaving a live prior room.

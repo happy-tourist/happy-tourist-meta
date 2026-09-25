@@ -1,14 +1,17 @@
 ## Why
 
-Наборы живут в трёх поверхностях (коллекция / каталог / «На модерации»), а карты — в одном общем списке со своими черновиками. Пользователям неудобно искать статусы и свои материалы; коллекция мешает модели «весь каталог доступен», а после publish авторы не могут дорабатывать контент через очередь. Нужен паритет списков, избранное вместо коллекции, author re-edit через модерацию и exclusive «взять в модерацию» для staff.
+Наборы жили в нескольких поверхностях; коллекция мешала модели «весь каталог доступен», а после publish авторы не могли дорабатывать контент через очередь. Первый проход уже дал общий список, избранное, author re-edit и staff take. Остались UX-дыры: автор набора заданий не видит статусы модерации **внутри** пака; разделы и staff-модерация спрятаны в лобби/списках; после Cancel правок черновик плохо находится в общем списке; навигация «назад» дублирует нужные крошки; зелёный бейдж «В каталоге» шумит; карта при провале сразу даёт инструменты клеток вместо чистого просмотра.
 
 ## What Changes
 
-- **BREAKING:** убрать раздел коллекции и membership; lobby ведёт в общий список наборов; default-grant в коллекцию убрать.
-- Один общий список наборов (как у карт) со статусами и фильтрами; у пользователей убрать nav «На модерации» (остаётся фильтр «на модерации» = своё).
-- Избранное (звезда) для наборов; фильтры на картах без избранного.
-- После publish автор / staff могут править; автор — только через модерацию; exclusive edit lock; авторы task set правят свой set.
-- Staff: «Взять в модерацию» на строке очереди и внутри; без take нельзя модерировать; TTL как у Edit.
+- **BREAKING (уже в change):** убрать коллекцию и default-grant; единый список наборов; избранное; author/task-set re-edit; staff take.
+- **Follow-up:** статусы модерации на строках наборов заданий внутри пака (автор сета + staff; pack creator без чужих).
+- **Follow-up:** Cancel (staff или author) → working сохраняется, для автора сущность как **черновик** в общем списке; для остальных — прежний live-слепок; hard-delete автора — удаление.
+- **Follow-up:** разделы (Наборы, Карты, Поддержка) и **Модерация** (staff) в общей шапке; бургер на мобилке; убрать секции с лобби и «Модерацию» из списков паков/карт.
+- **Follow-up:** крошки под шапкой; убрать «К наборам» / «Вернуться» где крошки закрывают путь.
+- **Follow-up / BREAKING UX:** на Game — «выйти из игры» справа; logo на Game тоже leave; session logout на Game нет. Название набора по центру — **out of scope**.
+- **Follow-up:** убрать только бейдж статуса **«В каталоге»** (зелёный) в списках packs/maps; pending / needs_revision / draft / unpublished оставить.
+- **Follow-up:** never-published пак/карта → сразу Edit; опубликованная карта → сначала View (автор, участники×туристы, без paint tools); Edit снаружи и внутри + exclusive lock; live пак — как сейчас для знакомства с содержимым.
 
 ## Capabilities
 
@@ -18,35 +21,35 @@
 
 ### Modified Capabilities
 
-- `content/packs`: общий список вместо коллекции; избранное; фильтры/статусы; убрать my-moderation nav у non-staff; author/task-set re-edit через очередь; edit lock для авторов; staff moderation take; add-task-set без коллекции (verified).
-- `content/maps`: статусы pending/needs_revision в общем списке; фильтры (без избранного); убрать my-moderation nav у non-staff; author re-edit через модерацию после publish; edit lock для автора; staff moderation take.
+- `content/packs`: база + per-set статусы; cancel→draft; крошки; без in_catalog-бейджа; never-published → Edit.
+- `content/maps`: база + cancel→draft; крошки; без in_catalog-бейджа; View vs Edit; never-published → Edit.
+- `ui/branding`: шапка секций / staff / бургер / крошки.
+- `game/leave`: leave справа + logo leave на Game.
 
 ## Scope
 
-- **Capability ID:** `content/packs`, `content/maps`
-- **Пакеты:** client + server (HTTP content API, UI списков/редакторов/staff queue)
-- Client: раздел наборов (единый список, фильтры, звезда, live/editor ACL), раздел карт (статусы + фильтры), staff queue take, убрать коллекцию / author my-moderation для пользователей
-- Server: list ACL без коллекции; favorites; author working-copy re-submit после publish; edit lock для non-staff editors; moderation take на request; удаление collection/default-grant путей
-- Auth: verified registered для create/edit/submit/add-task-set/favorites; гости — только публичный каталог
+- **Capability ID:** `content/packs`, `content/maps`, `ui/branding`, `game/leave`
+- **Пакеты:** client + server
+- Client: статусы сетов; шапка/крошки/leave; без «В каталоге»-бейджа; map View/Edit; never-published → Edit; pack live browsing unchanged
+- Server: per-set status; cancel→draft; list status без обязанности отдавать UI-бейдж in_catalog (поле может остаться для ACL)
+- Auth: staff = moderator|admin для шапки «Модерация»
 
 ## Out of scope
 
-- Привязка packs/maps к `tourist-room` / выбор контента при create game / runtime peek из паков (отдельный change)
-- Смена ролей staff/admin вне content ACL
-- Hard-delete опубликованного пака/карты
-- Block/unblock UI (серверные endpoints могут остаться)
-- Новые внешние сервисы / npm-зависимости под I/O
+- Привязка packs/maps к `tourist-room` / createGame / runtime peek
+- Название набора по центру шапки на Game
+- Hard-delete опубликованного пака/карты (кроме каноничного delete unpublished)
+- Block/unblock UI; новые npm/SaaS
+- Смена SMTP/OAuth/ролей вне content ACL
+- Перестройка live pack browsing (карточки/сеты) — остаётся как сейчас
 
 ## Impact
 
-- Client: навигация lobby «Наборы», страницы списков/коллекции/my-moderation (non-staff), фильтры, звезда, editor/staff ACL
-- Server: HTTP `/api/content/*` (packs list, favorites, collection removal, edit-lock, moderation take, maps list statuses); SQLite (favorites; moderation take fields; deprecate/stop using collections + default pack grants)
-- Support `change_pack` select из каталога — без зависимости от коллекции
-- Согласованные delta specs `content/packs` + `content/maps`
+- Client: списки (без green in_catalog badge), MapEditor view-only chrome, row→Edit для drafts, header/crumbs/leave
+- Server: list/live status fields as needed for draft/pending; map view meta
+- Delta: packs, maps, branding, leave
 
 ## References
 
-- Explore-сессия 2026-09-25 (D1–D9, D2b–D5c)
-- Main specs: `openspec/specs/content/packs/spec.md`, `openspec/specs/content/maps/spec.md`
-- Sibling: `../happy-tourist.github.io/AGENTS.md`, `../happy-tourist-server/AGENTS.md`
-- Meta: `docs/projects-map.md`, `.agents/AGENTS.md`
+- Explore 2026-09-25 (D1–D9) + Q/G/C + V1–V5 (no in_catalog badge; map View/Edit; never-published→Edit)
+- Main specs + sibling AGENTS + `docs/projects-map.md`

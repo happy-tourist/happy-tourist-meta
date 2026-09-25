@@ -1,45 +1,62 @@
-# content/packs — delta: unified list, favorites, author re-edit, moderation take
+# content/packs — delta: unified list, favorites, author re-edit, moderation take, set statuses, cancel→draft, crumbs
 
-Базовый канон: `openspec/specs/content/packs/spec.md`. Этот change убирает коллекцию как продукт, выравнивает список с картами, добавляет избранное/фильтры, author re-edit через очередь и staff «взять в модерацию».
+Базовый канон: `openspec/specs/content/packs/spec.md`. Change: коллекция→единый список, избранное, author re-edit, take; follow-up: статусы сетов внутри пака, cancel→draft, крошки/без лишних back, staff из шапки (`ui/branding`).
 
 ## Traceability
 
 | Scenario ID | Coverage |
 |-------------|----------|
-| SC-PACK-148 | pending |
-| SC-PACK-149 | pending |
-| SC-PACK-150 | pending |
-| SC-PACK-151 | pending |
-| SC-PACK-152 | pending |
-| SC-PACK-153 | pending |
-| SC-PACK-154 | pending |
-| SC-PACK-155 | pending |
-| SC-PACK-156 | pending |
-| SC-PACK-157 | pending |
-| SC-PACK-158 | pending |
-| SC-PACK-159 | pending |
-| SC-PACK-160 | pending |
-| SC-PACK-161 | pending |
-| SC-PACK-162 | pending |
-| SC-PACK-163 | pending |
-| SC-PACK-164 | pending |
-| SC-PACK-165 | pending |
-| SC-PACK-166 | pending |
-| SC-PACK-170 | pending |
+| SC-PACK-148 | covered (mocha) |
+| SC-PACK-149 | covered (mocha) |
+| SC-PACK-150 | covered (mocha) |
+| SC-PACK-151 | covered (vitest) |
+| SC-PACK-152 | covered (vitest) |
+| SC-PACK-153 | covered (vitest) |
+| SC-PACK-154 | covered (mocha/vitest) |
+| SC-PACK-155 | covered (mocha/vitest) |
+| SC-PACK-156 | covered (mocha) |
+| SC-PACK-157 | covered (mocha) |
+| SC-PACK-158 | covered (mocha) |
+| SC-PACK-159 | covered (mocha) |
+| SC-PACK-160 | covered (mocha) |
+| SC-PACK-161 | covered (mocha) |
+| SC-PACK-162 | covered (mocha) |
+| SC-PACK-163 | covered (mocha) |
+| SC-PACK-164 | covered (mocha) |
+| SC-PACK-165 | covered (mocha) |
+| SC-PACK-166 | covered (vitest) |
+| SC-PACK-170 | covered (mocha) |
+| SC-PACK-171 | covered (mocha/vitest) |
+| SC-PACK-172 | covered (mocha/vitest) |
+| SC-PACK-173 | covered (mocha/vitest) |
+| SC-PACK-174 | covered (mocha/vitest) |
+| SC-PACK-175 | covered (mocha/vitest) |
+| SC-PACK-176 | covered (mocha/vitest) |
+| SC-PACK-177 | covered (mocha/vitest) |
+| SC-PACK-178 | covered (mocha/vitest) |
+| SC-PACK-179 | covered (mocha/vitest) |
+| SC-PACK-180 | covered (vitest) |
+| SC-PACK-181 | covered (vitest) |
+| SC-PACK-182 | covered (vitest) |
+| SC-PACK-183 | covered (vitest) |
+| SC-PACK-184 | covered (vitest) |
+| SC-PACK-185 | covered (vitest) |
+| SC-PACK-186 | covered (vitest) |
 
-Related: `content/maps` (list/filter/moderation-take parity); roles — `support/roles`. Tourist-room wiring still out of scope.
+Related: `content/maps`; `ui/branding` (header/crumbs); `game/leave`; roles — `support/roles`. Tourist-room wiring still out of scope.
 
 ## ADDED Requirements
 
 ### Requirement: Unified packs list with status badges
 
-The client MUST expose a single **packs list** (reachable from the lobby as the packs section entry) showing: (1) all **approved in-catalog** non-blocked packs to any authenticated user (including anonymous); (2) for the current user, that user’s **own never-published** packs (creator drafts, including those with an open first-publish request); (3) for staff, soft-unpublished packs with a clear unpublished state. Each row that the caller is allowed to see MUST show a status distinguishing at least: in catalog; never-published draft without open request; open moderation **pending**; open moderation **needs_revision**; soft-unpublished (staff). Non-authors MUST NOT see another user’s never-published packs. There MUST be a **Create pack** affordance for eligible verified users. The system MUST NOT require collection membership to view or open an in-catalog pack.
+The client MUST expose a single **packs list** (reachable from the lobby as the packs section entry, and later from the shared header) showing: (1) all **approved in-catalog** non-blocked packs to any authenticated user (including anonymous); (2) for the current user, that user’s **own never-published** packs (creator drafts, including those with an open first-publish request); (3) for staff, soft-unpublished packs with a clear unpublished state. Status badges on rows MUST cover **pending**, **needs_revision**, **draft**, and soft-**unpublished** (staff) when applicable. Rows that are simply published / in catalog MUST **NOT** show an «В каталоге» / in_catalog status badge. Non-authors MUST NOT see another user’s never-published packs. There MUST be a **Create pack** affordance for eligible verified users. The system MUST NOT require collection membership to view or open an in-catalog pack.
 
 #### Scenario [SC-PACK-148]: In-catalog packs visible to all sessions
 
 - **GIVEN** an approved in-catalog pack P and any authenticated user U (including anonymous)
 - **WHEN** U opens the packs list
-- **THEN** P appears with an in-catalog status indication
+- **THEN** P appears on the list
+- **AND** P MUST NOT show an «В каталоге» / in_catalog status badge
 
 #### Scenario [SC-PACK-149]: Author sees own draft and pending on the same list
 
@@ -191,11 +208,133 @@ Non-staff users MUST NOT be shown a separate «На модерации» navigat
 - **THEN** the author «На модерации» control is not shown
 - **AND** the on-moderation list filter is available
 
+### Requirement: Task-set rows show moderation status for set author and staff
+
+On the live pack surface task-set list, each task set MUST show a moderation status distinguishing at least: live/published without open author work; open **pending**; open **needs_revision**; and author **draft** (working edits not in an open request, including after Cancel). The **author of that task set** and **staff** (moderator|admin) MUST see these marks for that set. The pack creator MUST NOT see another user’s task-set moderation marks solely by being pack `createdBy`. Other non-staff users MUST NOT see foreign set moderation marks.
+
+#### Scenario [SC-PACK-171]: Set author sees pending on live set row
+
+- **GIVEN** published pack P with task set S authored by U and an open pending request for S
+- **WHEN** U opens the live pack task-set list
+- **THEN** S shows a pending status indication
+
+#### Scenario [SC-PACK-172]: Set author sees needs_revision on live set row
+
+- **GIVEN** published pack P with task set S authored by U and an open needs_revision request for S
+- **WHEN** U opens the live pack task-set list
+- **THEN** S shows a needs_revision status indication
+
+#### Scenario [SC-PACK-173]: Pack creator does not see foreign set moderation marks
+
+- **GIVEN** pack P created by A, task set S authored by U (U ≠ A), and S has an open pending request
+- **WHEN** non-staff A views the live pack task-set list
+- **THEN** A MUST NOT see a pending/needs_revision moderation mark on S solely as pack creator
+
+#### Scenario [SC-PACK-174]: Staff sees set moderation marks
+
+- **GIVEN** pack P with task set S under open pending moderation and staff S1
+- **WHEN** S1 views the live pack task-set list
+- **THEN** S shows a pending status indication
+
+### Requirement: Cancel returns author work to draft on the unified list
+
+When staff or the change author **cancels** an open moderation request (pack, task_set, or equivalent pack content cycle), the system MUST keep the working copy edits and MUST NOT treat Cancel as hard-delete. For the change author, the affected entity MUST appear as **draft** on the unified packs list (including the drafts filter) so they can open Edit and submit again. Other users MUST continue to see the last approved **live** catalog snapshot when one exists. If the author **hard-deletes** the unpublished entity, it MUST be removed (not shown as draft). Soft-unpublish cascade cancel of open requests MUST keep working edits and follow the same author-draft visibility rules for those authors.
+
+#### Scenario [SC-PACK-175]: Staff cancel yields author draft on list
+
+- **GIVEN** author A has an open pending pack or task_set request on entity E and staff who has taken the request
+- **WHEN** staff cancels that request
+- **THEN** A sees E as draft on the unified packs list
+- **AND** the working edits remain available for Edit
+
+#### Scenario [SC-PACK-176]: Author cancel yields author draft on list
+
+- **GIVEN** author A has an open pending request on entity E
+- **WHEN** A cancels that request
+- **THEN** A sees E as draft on the unified packs list
+
+#### Scenario [SC-PACK-177]: Author delete removes entity
+
+- **GIVEN** never-published pack P created by A with no catalog live
+- **WHEN** A hard-deletes P
+- **THEN** P is removed and MUST NOT appear as a draft for A
+
+#### Scenario [SC-PACK-178]: Others keep live snapshot after cancel of post-publish edits
+
+- **GIVEN** in-catalog pack P with live content, author A’s open pending content request cancelled, and non-author user B
+- **WHEN** B opens the packs list
+- **THEN** B sees P with the live in-catalog snapshot
+- **AND** A sees P as draft for their retained working edits
+
+#### Scenario [SC-PACK-179]: Cancelled task_set request is draft for set author
+
+- **GIVEN** set author U had an open task_set request on pack P that was cancelled (staff or U)
+- **WHEN** U opens the packs list and/or the live pack task-set list
+- **THEN** U can reach the retained working edits as draft (list and/or set-row draft mark)
+
+### Requirement: Breadcrumbs replace pack back affordances
+
+Content pack surfaces MUST show breadcrumbs under the shared header (e.g. Lobby / Packs / pack title / cards or task set). The live pack detail MUST NOT require a separate «К наборам» control when breadcrumbs provide that path. The live tasks drill-in MUST NOT require a separate «Вернуться» control when breadcrumbs provide return to the pack. Staff-only queue chrome MAY keep a distinct back-to-queue control.
+
+#### Scenario [SC-PACK-180]: Breadcrumbs on pack live and tasks
+
+- **GIVEN** an authenticated user on a live pack or its tasks drill-in
+- **WHEN** the page renders
+- **THEN** breadcrumbs include a path back toward Lobby and Packs
+
+#### Scenario [SC-PACK-181]: Pack detail has no «К наборам» when crumbs present
+
+- **GIVEN** an authenticated user on live pack detail with breadcrumbs
+- **WHEN** the page renders
+- **THEN** a separate «К наборам» control is not shown
+
+#### Scenario [SC-PACK-182]: Tasks drill-in has no «Вернуться» when crumbs present
+
+- **GIVEN** an authenticated user on live tasks drill-in with breadcrumbs
+- **WHEN** the page renders
+- **THEN** a separate «Вернуться» control is not shown
+
+### Requirement: Staff moderation entry is not on packs list chrome
+
+Moderator and admin MUST open the staff moderation queue from the **shared application header** (see `ui/branding`), not from an embedded «Модерация» control on the packs list chrome. Packs list chrome MUST NOT show a staff moderation nav entry.
+
+#### Scenario [SC-PACK-183]: Staff reaches queue from header
+
+- **GIVEN** an authenticated moderator or admin on any non-Game authenticated screen with the shared header
+- **WHEN** the user activates the header «Модерация» (or equivalent) control
+- **THEN** the staff moderation queue is shown
+
+#### Scenario [SC-PACK-184]: Packs list has no staff moderation link
+
+- **GIVEN** an authenticated moderator or admin on the packs list
+- **WHEN** the user views packs list chrome
+- **THEN** an embedded staff «Модерация» control is not shown on that list chrome
+
+### Requirement: No in_catalog status badge on packs list
+
+Published in-catalog packs MUST appear on the packs list without an «В каталоге» / in_catalog status badge. Other status badges (pending, needs_revision, draft, unpublished) MUST remain when applicable.
+
+#### Scenario [SC-PACK-185]: Published pack has no in_catalog badge
+
+- **GIVEN** an approved in-catalog pack P with no open author-facing draft/pending/needs_revision mark for the caller
+- **WHEN** the caller opens the packs list
+- **THEN** P has no «В каталоге» / in_catalog status badge
+
+### Requirement: Never-published pack opens Edit directly
+
+Choosing a never-published pack from the packs list MUST open the pack editor (Edit) directly, not a separate browse-only surface first.
+
+#### Scenario [SC-PACK-186]: Never-published pack row opens Edit
+
+- **GIVEN** creator A has never-published pack P
+- **WHEN** A chooses P from the packs list
+- **THEN** the pack editor (Edit) opens
+
 ## MODIFIED Requirements
 
 ### Requirement: Client surfaces — split editor, collection-first, autosave
 
-The client MUST expose a **unified packs list** as the primary lobby entry into the packs section (with create, filters, favorites star, status badges, and row→live/editor without stealing action clicks). There MUST NOT be a collection list as the primary entry; collect/remove-from-collection affordances MUST NOT be offered. A separate non-staff «На модерации» page MUST NOT be required — open author items MUST be reachable via the **on moderation** list filter. Staff MUST retain the staff moderation queue. Live pack view MUST be available for in-catalog packs without collection membership; **Edit** follows author / task-set-author / staff rules in this change. Cards editor, tasks / add-task-set, three-phase status vocabulary, cascade yellow, slot chips, quiet autosave, and delete-card confirm copy MUST remain as in the base capability except where membership/collection is removed.
+The client MUST expose a **unified packs list** as the primary lobby entry into the packs section (with create, filters, favorites star, status badges for pending/needs_revision/draft/unpublished only — **not** an in_catalog badge, and row→live/editor without stealing action clicks). There MUST NOT be a collection list as the primary entry; collect/remove-from-collection affordances MUST NOT be offered. A separate non-staff «На модерации» page MUST NOT be required — open author items MUST be reachable via the **on moderation** list filter. Staff MUST retain the staff moderation queue. Live pack view MUST be available for in-catalog packs without collection membership; **Edit** follows author / task-set-author / staff rules in this change. Never-published packs MUST open Edit directly from the list. Cards editor, tasks / add-task-set, three-phase status vocabulary, cascade yellow, slot chips, quiet autosave, and delete-card confirm copy MUST remain as in the base capability except where membership/collection is removed.
 
 #### Scenario [SC-PACK-81]: Yellow highlight on task and task set after cascade
 
@@ -381,7 +520,7 @@ Moderator and admin MUST be able to open Edit on any pack (published or not) **w
 - **GIVEN** an authenticated moderator or admin
 - **WHEN** the user views the packs list chrome
 - **THEN** the «На модерации» (author my-moderation) control is not shown
-- **AND** staff MAY still open the staff moderation queue control
+- **AND** staff MUST open the staff moderation queue from the shared header, not from an embedded list control
 
 ## REMOVED Requirements
 

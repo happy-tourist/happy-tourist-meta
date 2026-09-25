@@ -8,13 +8,13 @@ description: >-
   join-by-id (no Play shortcut), and navigation to /game/:roomId in the
   happy-tourist tourist client. Use when changing LobbyPage,
   game.subscribeLobby / unsubscribeLobby / createGame / joinGame, LOBBY_ROOM /
-  TOURIST_ROOM listing, lobby loading flags, game.error banners, logout from
-  the lobby, or lobby header links to Support / content packs («Наборы» → `content-catalog`).
+  TOURIST_ROOM listing, lobby loading flags, game.error banners, or lobby→game
+  navigation (section links / logout live in App header — not LobbyPage).
 ---
 
 # Work With Lobby
 
-Use this skill for the **lobby** in the happy-tourist tourist client (`happy-tourist.github.io`): live room list via built-in Colyseus `LobbyRoom`, create (with maxSeats + grilleDensity + catapultDensity) / join-by-id, then enter the game route. **No** primary «Играть» / `joinOrCreate` shortcut. Header also links to Support, unified packs list (`content-catalog`), and content maps (`content-maps`).
+Use this skill for the **lobby** in the happy-tourist tourist client (`happy-tourist.github.io`): live room list via built-in Colyseus `LobbyRoom`, create (with maxSeats + grilleDensity + catapultDensity) / join-by-id, then enter the game route. **No** primary «Играть» / `joinOrCreate` shortcut. Packs / Maps / Support / staff «Модерация» / account / session logout live in the **shared App header** (SC-BRAND-11…15) — LobbyPage MUST NOT duplicate that toolbar.
 
 Stack: Vue 3 `<script setup>`, Quasar 2, Pinia `useGameStore` / `useAuthStore`, `@colyseus/sdk` 0.18.
 
@@ -26,7 +26,7 @@ Sibling server: `../happy-tourist-server`. Coordinate room name (`tourist`), `lo
 
 | Topic | Pattern |
 |-------|---------|
-| Page | `src/pages/LobbyPage.vue` — route `/lobby`, `meta.requiresAuth`; header links Support + content packs (`content.nav` → `content-catalog`) + maps (`maps.nav` → `content-maps`) |
+| Page | `src/pages/LobbyPage.vue` — route `/lobby`, `meta.requiresAuth`; greeting + room list only (no page-local section/account/logout toolbar) |
 | Store | `src/stores/game.ts` — `rooms`, `lobbyRoom`, `lobbyWanted`, `listing`, `error`, `subscribeLobby`, `unsubscribeLobby`, `createGame`, `joinGame`, `leaveGame` |
 | Room names | `TOURIST_ROOM = 'tourist'`; `LOBBY_ROOM = 'lobby'` |
 | Live list | `subscribeLobby` → `joinOrCreate('lobby', { filter: { name: TOURIST_ROOM } })` + handlers `rooms` / `+` / `-` |
@@ -40,7 +40,7 @@ Sibling server: `../happy-tourist-server`. Coordinate room name (`tourist`), `lo
 | After enter | `router.push({ name: 'game', params: { roomId } })` |
 | Loading | Store `listing` during subscribe connect; page refs `creating`, `joining` |
 | Errors | `game.error` + `q-banner` for **real** subscribe fail (SC-LOBBY-07); filter lobby reconnect / `seat reservation expired` noise (SC-LOBBY-08) |
-| Logout | `game.leaveGame()` → `auth.logout()` → `replace({ name: 'login' })` |
+| Logout | Session logout is in **App header** (`onSessionLogout`); LobbyPage MUST NOT own a logout control |
 | I/O boundary | Pages call store actions only; Colyseus stays in Pinia |
 | HTTP fallback | `refreshRooms` → `client.http.get('/rooms/tourist')` exists but **LobbyPage must not poll it** |
 
@@ -59,14 +59,14 @@ Sibling server: `../happy-tourist-server`. Coordinate room name (`tourist`), `lo
 | Join busy-lock: early-return if `joining`; disable rows / non-clickable while joining (SC-LOBBY-19) | Allow double-join from row + button |
 | Clear `rooms = []` on subscribe start / unsubscribe / leave; keep `listing` until fresh `rooms` snapshot (SC-LOBBY-20) | Flash stale rooms after leave/resubscribe |
 | Show `game.error` with `q-banner` for real listing failure | Duplicate a second error channel; treat transient reconnect noise as SC-LOBBY-07 |
-| Logout via `useAuthStore().logout()` after `leaveGame()` | Call `client.auth.signOut` from LobbyPage |
+| Logout via App header (`leaveGame` → `auth.logout` → login); keep Lobby free of section/account/logout chrome | Call `client.auth.signOut` from LobbyPage; revive Lobby-only Packs/Maps/Support/logout toolbar |
 | Keep room type / metadata in sync with `../happy-tourist-server` | Change `TOURIST_ROOM` / `LOBBY_ROOM` without the server; add LobbyRoom grace on server |
 
 ## Map Of Pieces
 
 | Layer | Path | Role |
 |-------|------|------|
-| Page | `src/pages/LobbyPage.vue` | List UI, subscribe lifecycle, create-with-maxSeats + grilleDensity + catapultDensity modal / Join, Support + «Наборы»→`content-catalog` + «Карты»→`content-maps`, logout |
+| Page | `src/pages/LobbyPage.vue` | List UI, subscribe lifecycle, create-with-maxSeats + grilleDensity + catapultDensity modal / Join (sections/logout → App header) |
 | Store | `src/stores/game.ts` | LobbyRoom subscribe + room enter / leave |
 | Auth | `src/stores/auth.ts` | `displayName`, `logout` |
 | Client | `src/boot/colyseus.ts` | Shared `Client` (`VITE_COLYSEUS_URL`) |

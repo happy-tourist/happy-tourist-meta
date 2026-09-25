@@ -29,7 +29,7 @@ Search and assign ownership top-down along the call path.
 | Entry | `src/index.ts` | `listen(app)` from `@colyseus/tools` |
 | Server def | `src/app.config.ts` | `defineServer`: database, rooms, routes, express (CORS, `/health`, `/hi`, support + content bootstrap, monitor/playground); side-effect import `./config/auth.js` |
 | OAuth config | `src/config/auth.ts` | Google/`htRole`; create-user calls grant helper (**no-op** SC-PACK-170) |
-| Lib | `src/lib/mailer.ts`, `support.ts`, `content.ts`, `contentMaps.ts`, `defaultContentPacks.ts` | content: unified list + favorites + author re-edit + staff take + soft-unpublish; maps: list statuses + author re-edit; default packs: parse/eligible, grant/backfill **no-ops** |
+| Lib | `src/lib/mailer.ts`, `support.ts`, `content.ts`, `contentMaps.ts`, `defaultContentPacks.ts` | content: unified list + favorites + author re-edit + staff take + soft-unpublish + working≠live draft + set `moderationStatus`; maps: list statuses + cancel→draft; default packs: parse/eligible, grant/backfill **no-ops** |
 | DB | `src/db/index.ts`, `src/db/schema.ts` | `GameDatabase`, `users` extension (`htRole`), support + `content_*` pack + map table decls |
 | Rooms | `src/rooms/MyRoom.ts` | `onAuth` / `onCreate` / `onJoin` / `onDrop` / `onReconnect` / `onLeave` / `onDispose` |
 | Schema | `src/rooms/schema/MyRoomState.ts` | `@colyseus/schema` sync state (`connected` / `reconnectUntil`) |
@@ -101,8 +101,8 @@ Use these rules to pick the layer before naming files.
 | Cabinet display-name / change-password HTTP | `POST /api/auth/display-name` + `POST /api/auth/change-password` in `src/app.config.ts` (`createEndpoint`); bumpTokenVersion on password change/reset |
 | Persisted profile fields (`displayName`, `rating`, `gamesPlayed`, `gamesWon`, nullable `theme`, `emailVerified`, `htRole`, …) | `src/db/schema.ts` users extension — **NOT NULL** custom columns need `.default(...)` so `/auth/register` / `/auth/login` do not fail; nullable prefs like `theme` do not; **do not** name JS field `role` |
 | Support tickets / messages | `src/db/schema.ts` decls + `src/lib/support.ts` (`ensureSupportTables`; topic `change_pack` + `pack_id`) — not SchemaSet auto-sync |
-| Content packs (unified list + favorites + author re-edit + staff take; soft-unpublish; add-task-set no collection; DEFAULT grants retired SC-PACK-170) | `src/db/schema.ts` (`content_pack_favorites`, moderation `taken_by`/`taken_at`) + `src/lib/content.ts` + `defaultContentPacks.ts` (no-op grant) + thin routes in `app.config.ts` |
-| Content maps (list statuses + author re-edit + staff take gate; SC-MAP) | `src/lib/contentMaps.ts` + schema map tables + routes |
+| Content packs (unified list + favorites + author re-edit + staff take; soft-unpublish; add-task-set no collection; cancel keeps working → list draft; set `moderationStatus`; DEFAULT grants retired SC-PACK-170) | `src/db/schema.ts` (`content_pack_favorites`, moderation `taken_by`/`taken_at`) + `src/lib/content.ts` + `defaultContentPacks.ts` (no-op grant) + thin routes in `app.config.ts` |
+| Content maps (list statuses + author re-edit + staff take gate; cancel→draft when working differs; SC-MAP) | `src/lib/contentMaps.ts` + schema map tables + routes |
 | GameDatabase wiring / schemas map | `src/db/index.ts` |
 | Secrets for auth (salt, JWT, session, Google client) | `.env.example` / `.env.development` / `.env.production` (`AUTH_SALT`, `JWT_SECRET`, `SESSION_SECRET`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`) |
 
@@ -125,7 +125,7 @@ Use these rules to pick the layer before naming files.
 | Auth email + password policy | `test/zz-authEmail.test.ts` |
 | Auth profile (displayName / change-password) | `test/zz-authProfile.test.ts` |
 | Support tickets + roles | `test/support.test.ts` (incl. SC-SUP-27/28 `change_pack`) |
-| Content packs (SC-PACK-*) | `test/zz-contentPacks.test.ts` — mock mailer; `ensureContentTables` / `setEmailVerifiedForTests`; working copy + unified submit SC-PACK-100…105; add-task-set SC-PACK-108…110; staff lock/save SC-PACK-111…113; author delete SC-PACK-114; soft-unpublish pack SC-PACK-120…124; cascade-cancel open requests + mail SC-PACK-137…141; task-set soft-hide SC-PACK-131 (`last_published_task_set`); SC-PACK-134…135 preview/authorDisplayName; cascade save; my-moderation + staff pending\|needs_revision |
+| Content packs (SC-PACK-*) | `test/zz-contentPacks.test.ts` — mock mailer; `ensureContentTables` / `setEmailVerifiedForTests`; working copy + unified submit SC-PACK-100…105; add-task-set SC-PACK-108…110; staff lock/save SC-PACK-111…113; author delete SC-PACK-114; soft-unpublish pack SC-PACK-120…124; cascade-cancel open requests + mail SC-PACK-137…141; task-set soft-hide SC-PACK-131 (`last_published_task_set`); SC-PACK-134…135 preview/authorDisplayName; cascade save; my-moderation + staff pending\|needs_revision; cancel→draft / set marks / fingerprint SC-PACK-171…179 |
 | Multi-client join pressure | `loadtest/example.ts` (`joinOrCreate`; `--room` / `--numClients`) |
 
 ## Domain Hotspots

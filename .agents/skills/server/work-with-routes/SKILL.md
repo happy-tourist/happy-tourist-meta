@@ -115,13 +115,13 @@ For CORS / monitor details use `work-with-middleware` and `work-with-config`.
 | GET | `/api/support/staff/tickets` | `createEndpoint` | JWT moderator\|admin; query `topic` (optional), `status`=`open`\|`closed`\|`all` (default `open`); cap ~50 **after** filter |
 | POST | `/api/support/tickets/:id/take` | `createEndpoint` | JWT staff; take into `in_progress` |
 | POST | `/api/support/tickets/:id/status` | `createEndpoint` | JWT staff; `{ status }` |
-| GET | `/api/content/packs` | `createEndpoint` | JWT; unified list — in-catalog + caller drafts/pending + staff soft-unpublished; rows carry `moderationStatus` / `isMine` / `isFavorite` (SC-PACK-148…153) |
+| GET | `/api/content/packs` | `createEndpoint` | JWT; unified list — in-catalog + caller drafts/pending + staff soft-unpublished; rows carry `moderationStatus` / `isMine` / `isFavorite` (SC-PACK-148…153); **caller working≠live → `draft`** even when in-catalog (SC-PACK-175…179) |
 | POST | `/api/content/packs` | `createEndpoint` | JWT + non-anonymous + `emailVerified` (DB); create pack + working copy |
-| GET | `/api/content/packs/:id` | `createEndpoint` | JWT; live snapshot + `isFavorite` + `inCatalog` (+ legacy `inCollection`); non-staff soft-unpublished → `pack_unpublished` |
+| GET | `/api/content/packs/:id` | `createEndpoint` | JWT; live snapshot + `isFavorite` + `inCatalog` + per-set `moderationStatus` for set author/staff (SC-PACK-171…174); legacy `inCollection`; non-staff soft-unpublished → `pack_unpublished` |
 | POST | `/api/content/packs/:id/favorite` \| `/unfavorite` | `createEndpoint` | JWT registered non-anonymous; star/unstar in-catalog pack (SC-PACK-154) |
 | POST | `/api/content/packs/:id/unpublish` \| `/republish` | `createEndpoint` | JWT staff; soft-hide / restore pack catalog; unpublish cascade-cancels open requests + RU email SC-PACK-137…141 |
 | POST | `/api/content/task-set/unpublish` \| `/republish` | `createEndpoint` | JWT staff; soft-hide / restore **task set**; last published → 409 `last_published_task_set` |
-| GET\|POST | `/api/content/packs/:id/draft` | `createEndpoint` | JWT + creator **or** task-set author; working copy incl. post-publish re-edit (`editorKind`); staff → `author_request_open` when author request open |
+| GET\|POST | `/api/content/packs/:id/draft` | `createEndpoint` | JWT + creator **or** task-set author; working copy incl. post-publish re-edit (`editorKind`); set `moderationStatus` on payload; staff → `author_request_open` when author request open |
 | POST | `/api/content/packs/:id/submit` | `createEndpoint` | JWT + author; unified submit / resubmit (may stay pending while staff holds take) |
 | GET\|PUT\|POST | `/api/content/packs/:id/add-task-set` (+ `/submit`) | `createEndpoint` | JWT + verified; **no** collection membership required (SC-PACK-164) |
 | GET\|POST | `/api/content/packs/:id/edit-lock` | `createEndpoint` | JWT author **or** staff; acquire/status (TTL 5 min); staff blocked if author request open |
@@ -137,7 +137,7 @@ For CORS / monitor details use `work-with-middleware` and `work-with-config`.
 | GET | `/api/content/staff/pending` | `createEndpoint` | JWT staff; open queue (pack **and** map) + `takenBy`/`takenAt` |
 | POST | `/api/content/staff/requests/:id/take` \| `/release` | `createEndpoint` | JWT staff; take-to-moderate / release (TTL = edit lock; SC-PACK-161…163 / SC-MAP-38/39) |
 | GET\|POST | `/api/content/staff/requests/:id` (+ `/approve` `/needs-revision` `/reject` `/cancel` `/messages`) | `createEndpoint` | JWT staff; terminal actions require held take (`moderation_take_required`); GET = `previewPending` |
-| GET\|POST | `/api/content/maps` | `createEndpoint` | JWT; list with `moderationStatus` / `authorRequestOpen` / create |
+| GET\|POST | `/api/content/maps` | `createEndpoint` | JWT; list with `moderationStatus` / `authorRequestOpen` / create; author working≠live → `draft` (SC-MAP-41/42) |
 | GET\|POST | `/api/content/maps/:id` (+ `/draft` `/submit` `/moderation` `/edit-lock` `/staff-edit` `/staff-save` `/unpublish` `/republish`) | `createEndpoint` | JWT; author re-edit + staff lock gated by open author request; soft-unpublish cascade SC-MAP |
 | POST | `/api/content/map/delete` | `createEndpoint` | JWT + creator; hard-delete **never-approved** map |
 | GET | `/api/admin/users` | `createEndpoint` | JWT admin; **exclude** anonymous; include `emailVerified` (+ id/email/role/displayName) |

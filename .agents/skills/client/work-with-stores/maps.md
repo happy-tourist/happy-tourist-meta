@@ -19,7 +19,8 @@ Setup store `maps` owns:
   (`author_request_open`; SC-MAP-36)
 - `unpublishMap` / `republishMap` (soft-hide `inCatalog`; cascade-cancel + RU mail)
 - `deleteUnpublishedMap` → `POST /api/content/map/delete` (never-approved only)
-- `cancelRequest` → shared staff cancel endpoint
+- `cancelRequest` → shared cancel; keeps working → author-facing
+  `moderationStatus` `draft` + list row update (SC-MAP-41/42 / D11)
 - Known errors include `author_request_open`, `moderation_taken`,
   `moderation_take_required` (take HTTP lives on `content` store)
 
@@ -53,12 +54,18 @@ HTTP in `maps` beyond cancel/preview helpers the editor already needs.
 ## UI contracts
 
 - **List:** filters all / moderation / drafts / mine (identity-only disabled for
-  guests); status badges from `moderationStatus`; mini `MapGridPreview` + author +
-  `players×tourists`; Create at top; **no** collect (SC-MAP-06…08).
-- **Editor:** interactive preview + palette + seats; quiet autosave while
+  guests); badges for draft / pending / needs_revision / unpublished only —
+  **published / `in_catalog` rows show no badge** (SC-MAP-45); mini
+  `MapGridPreview` + author + `players×tourists`; Create at top; **no** collect;
+  **no** list-chrome staff «Модерация» (SC-MAP-43 — App header).
+- **Editor view:** author display + seat config; optional Enter Edit; **no**
+  paint tools / seat selects (SC-MAP-46/47). Breadcrumbs replace «К картам»
+  (SC-MAP-44).
+- **Editor edit:** interactive preview + palette + seats; quiet autosave while
   creator-editable; **author may re-edit published** via lock + draft → moderation
   (mirrors packs); staff `?staff=1` lock session when no open author request
-  (else blocked tooltip `maps.staffEditBlockedAuthorRequest`).
+  (else blocked tooltip `maps.staffEditBlockedAuthorRequest`). Cancel → draft,
+  keep working (do not `clearWorkingFlags`).
 - Unpublish confirm warns open requests cancelled (`maps.unpublishConfirm`).
 - Errors: page `q-banner` on `maps.error`; prefer `mapsErrorI18nKey` when set.
 
@@ -66,7 +73,8 @@ HTTP in `maps` beyond cancel/preview helpers the editor already needs.
 
 - Paint pure: `src/stores/__tests__/maps.paint.test.ts` (SC-MAP-04).
 - Pages/UI: `src/pages/__tests__/ContentMaps.test.ts` (list filters/statuses +
-  SC-MAP-06…08, 14, 17, 21, 24–25, 29–36 + submit starts gate).
+  view meta / crumbs / cancel→draft SC-MAP-41…47 + SC-MAP-06…08, 14, 17, 21,
+  24–25, 29–36 + submit starts gate).
 - Server twin: `test/zz-contentMaps.test.ts` (mocha) — do not mix stacks.
 
 See meta `work-with-test` / `work-with-pages` / `work-with-localization` (`maps.*`).

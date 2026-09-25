@@ -27,6 +27,10 @@ Setup store `content` owns:
 - Staff `staffSavePack` + `isStaffEditSessionNavigation`
 - Soft-unpublish pack/set (`inCatalog`; SC-PACK-120…132 / 139)
 - Cascade yellow helpers (`cascadeGap*`)
+- Cancel open request keeps working copy → author-facing `moderationStatus`
+  `draft` on pack + catalog row (SC-PACK-175…179 / D11); hard-delete removes
+  from `catalog` too (SC-PACK-177)
+- Per-set `TaskSet.moderationStatus` from live/draft payloads (SC-PACK-171…174)
 
 Open moderation = `pending`|`needs_revision`. Map API codes with
 `contentErrorI18nKey` → `content.errors.*` (incl. `author_request_open`,
@@ -62,11 +66,19 @@ A filled slot MUST show the answer card’s text. For staff `task_set` preview,
 server merges live `answerCards` into `previewPending` (SC-PACK-134). Add-task-set
 answer **picker** tiles MUST be rounded `q-chip` (SC-PACK-133).
 
-## Task-set author label + Tasks back (SC-PACK-135 / 136)
+## Task-set author label + Tasks back (SC-PACK-135 / 136 / 182)
 
 `TaskSet.authorDisplayName` drives `content.taskSetLabelFrom` on live / editor /
-staff hub / Tasks heading. Live drill-in back uses `content.back` («Вернуться»);
-editor keeps `content.backToAnswers`.
+staff hub / Tasks heading. Live drill-in **omits** page «Вернуться» when App
+breadcrumbs cover the path (SC-PACK-182); editor keeps `content.backToAnswers`.
+Live pack page also omits «К наборам» (SC-PACK-181 — crumbs).
+
+## Per-set moderation marks (SC-PACK-171…174)
+
+`TaskSet.moderationStatus` (`pending` | `needs_revision` | `draft` | `live` |
+`null`) appears on live/editor payloads for **that set's author and staff
+only** — pack creator MUST NOT see foreign set marks solely as `createdBy`.
+`ContentPackPage` shows badges for pending / needs_revision / draft (not `live`).
 
 ## Add-task-set moderation thread (SC-PACK-128)
 
@@ -92,20 +104,24 @@ UX as the cards editor while the author’s `task_set` request is
 
 ## UI contracts
 
-- **Catalog (= primary «Наборы»):** Lobby + headers → `content-catalog` (not
-  collection). Filters + status badges (`moderationStatus`). Star on in-catalog
-  rows (stop click isolation). Draft/no-live row → edit route. Staff unpublish/
-  republish + confirm SC-PACK-139. **No** non-staff my-moderation nav
-  (SC-PACK-166); staff keep queue link.
+- **Catalog (= primary «Наборы»):** App header / Lobby crumbs → `content-catalog`
+  (not collection). Filters + status badges for draft / pending / needs_revision /
+  unpublished only — **published / `in_catalog` rows show no badge** (SC-PACK-148/
+  185). Star on in-catalog rows (stop click isolation). Draft/no-live row → edit
+  route. Staff unpublish/republish + confirm SC-PACK-139. **No** list-chrome staff
+  «Модерация» (SC-PACK-184 — App header); **no** non-staff my-moderation nav
+  (SC-PACK-166).
 - **Collection route:** redirect only (`content-collection` → `content-catalog`).
   Do not revive `ContentCollectionPage` as primary.
-- **Live detail:** favorite star; author Edit (creator) / set-row Edit (task-set
-  author); staff Edit gated by open author request; add-task-set beside «Задания»
-  when verified+in-catalog (**not** `inCollection`); no Collect button.
+- **Live detail:** breadcrumbs replace «К наборам»; favorite star; author Edit
+  (creator) / set-row Edit (task-set author); set-row `moderationStatus` badges
+  for set author+staff; staff Edit gated by open author request; add-task-set
+  beside «Задания» when verified+in-catalog (**not** `inCollection`); no Collect.
 - **Editor:** `cardsReadOnly` when `editorKind === 'task_set_author'`; author may
   resubmit while own pending (incl. while staff holds take — SC-PACK-163).
+  Cancel → keep working, list shows draft (not clear flags).
 - **Staff hub / request:** Take / Release; terminal actions require held take;
-  `moderationTakeHeldBy` + TTL.
+  `moderationTakeHeldBy` + TTL. Staff Модерация entry is App header only.
 - Support `change_pack` select: **in-catalog only** (`inCatalog !== false && hasLive`).
 - Cascade / slot chips / add-task-set thread / delete-card confirms — unchanged
   SC-PACK-126…136 contracts above.
@@ -115,11 +131,16 @@ UX as the cards editor while the author’s `task_set` request is
 
 - Rebuilding collection-first nav / Collect on live / gating add-task-set on
   `inCollection` or `not_in_collection`.
-- Showing non-staff «На модерации» header nav (use filters instead).
+- Showing non-staff «На модерации» header nav or list-chrome staff «Модерация»
+  (App header + filters instead).
+- Showing a green/`statusInCatalog` badge on published list rows.
 - Staff Edit while author request open (must show blocked + tooltip / 409
   `author_request_open`).
 - Approve / needs_revision / cancel without staff take (`moderation_take_required`).
-- Letting task-set author edit answer cards or foreign sets.
+- Letting task-set author edit answer cards or foreign sets; showing foreign
+  set `moderationStatus` to pack creator alone.
+- Clearing working flags on author cancel (must become draft, keep working).
 - Pre-clearing `slot.answerCardId` before save; conflating soft-unpublish with **block**.
 - Releasing staff edit lock on cards↔tasks navigation (`isStaffEditSessionNavigation`).
 - Jumping `v-if` caption hints (SC-PACK-119).
+- Reviving page «К наборам» / live «Вернуться» when App breadcrumbs cover the path.

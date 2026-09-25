@@ -78,7 +78,7 @@ Use these rules to pick the layer before naming files.
 | A new screen / URL | `src/router/routes.ts` (+ guard meta in `index.ts` if needed) + new `src/pages/FooPage.vue` |
 | Page-specific UI / interaction | owning `src/pages/*Page.vue` |
 | Reusable across pages | `src/components/` (only when reuse is real; avoid premature extraction) |
-| Global shell / brand logo / theme toggle | `src/App.vue` (`q-header` always-button brand logo ≥60px left + Dark toggle + `theme.error` banner; Game leave via logo; auth/other → lobby, lobby noop; syncs `auth` → `theme`) |
+| Global shell / brand logo / section nav / breadcrumbs / theme / leave | `src/App.vue` (`q-header`: logo ≥60px; Packs/Maps/Support + staff Модерация; burger narrow; account+theme+session logout off-Game; Game status + `header-game-leave`; `app-breadcrumbs` on packs/maps; `theme.error` banner; logo leave/toLobby/noop; syncs `auth` → `theme`) |
 | Brand asset / title / favicon | `src/assets/brand/logo.png`; `package.json` `productName` = `Happy Tourist`; `public/favicon.ico` + `index.html` (no PNG favicon set) |
 | Theme / Dark preference | `boot/theme.ts`, `stores/theme.ts`, `quasar.config.ts` (`Dark` plugin); guest `localStorage`; registered `GET`/`POST` `/api/theme` (restore ≠ JWT-only) |
 | Theme / global styles | `src/css/quasar.variables.scss`, `src/css/app.scss` (`.text-muted`) |
@@ -133,13 +133,14 @@ Do not invent room schemas, HTTP routes, or move payloads — note the server pa
 | Domain | Start here |
 |--------|------------|
 | Auth (email/password policy, anonymous, Google, cabinet profile, logout, role nav) | `pages/LoginPage.vue` / `AccountPage.vue` + `stores/auth.ts` + `lib/passwordPolicy.ts`; router guards in `router/index.ts` |
-| Lobby (list / create / join busy-lock; Support + «Наборы»→`content-catalog` + «Карты»→`content-maps`) | `pages/LobbyPage.vue` + `stores/game` |
+| Lobby (greeting + room list / create / join busy-lock; sections/logout → App header) | `pages/LobbyPage.vue` + `stores/game` |
 | Content packs (unified list + favorites + author re-edit + staff take; soft-unpublish; cascade SC-PACK-126…166) | `pages/Content*.vue` + `stores/content.ts` + `ContentUnifiedList` / `ContentAuthorEditTake` / `content.favorites` / FollowUp tests |
 | Content maps (list filters/statuses; author re-edit; staff take via content; SC-MAP) | `MapsListPage` / `MapEditorPage` + `stores/maps.ts` + `ContentMaps.test.ts` |
 | Support (tickets / `change_pack` / staff queue / admin roles) | `pages/Support*.vue` / `AdminUsersPage.vue` + `stores/support.ts` |
 | Game board (layout, unfinished pieces, continuous board-busy, finish/timeout UX, dual presence rings + seated top-row reserve, strip, turn select/`sendMove`, rejoin) | `pages/GamePage.vue` + `stores/game` `onStateChange` / `sendMove` / `rejoinGame(roomId)` |
 | Env / deploy | `.env.*`, `env.d.ts`, `boot/colyseus.ts`, `.github/workflows/deploy.yml` |
-| Theme / layout / brand chrome | `App.vue` header (logo + theme + Game status/leave) + `stores/theme` + `boot/theme` + `assets/brand/` + `css/*` (board CSS ≠ app Dark) |
+| Theme / layout / brand chrome | `App.vue` header (logo + sections + crumbs + theme + logout / Game leave+status) + `stores/theme` + `boot/theme` + `assets/brand/` + `css/*` (board CSS ≠ app Dark) |
+| App shell Vitest | `src/__tests__/AppHeaderChrome.test.ts` (sections/burger/crumbs/leave/logout) |
 | i18n copy | `src/i18n/`, boot `i18n` |
 
 Today: GamePage board + dual presence rings (outer turn from `turnUntil`/`turnBudgetSeconds`, inner reconnect) + unfinished pieces from synced `seats` (`touristId` + `pieces` (+ `finished`; empty until playing) + `connected` / `reconnectUntil` / `ready` / `finishPlace` / `timeExpired`) / `phase` / `maxSeats` / `countdownRemaining` / `currentTurnSessionId`; top opponents / spectator presence + seated strip (row / HUD ≤~420 → 2×2; no chip/`q-menu`) once own pieces exist; place + timeout + return-confirm modals; countdown overlay; ready affordance; on `isPlaying && isMyTurn && !isMySeatFinished && !isMySeatTimeExpired` select/hints → `sendMove`. Tourist reconnect via `localStorage` token. Room name `tourist`.

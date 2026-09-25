@@ -1,91 +1,96 @@
 ## Context
 
-See `proposal.md` — Why. Базовый runtime: `lib/content.ts` (packs, collections, staff edit lock TTL 5 мин, moderation requests), `lib/contentMaps.ts`, `lib/defaultContentPacks.ts`; client `stores/content` + `stores/maps`, collection/catalog/my-moderation/staff pages, `MapsListPage`.
+See `proposal.md`. Базовый runtime уже содержит unified packs list, favorites, author re-edit, moderation take (packs+maps). Follow-up: in-pack task-set status marks, cancel→draft, App header + breadcrumbs, Game leave-right, drop in_catalog list badge, map View vs Edit, never-published → Edit.
 
-Explore decisions (закрыты): D1–D9, D2b out of scope (game wiring), D3c author via moderation only, D5 take-to-moderate, D5c no moderate without take, D7/D7b verified add-task-set without collection, D8 favorites = starred, D9 task-set authors edit own sets.
+Explore closed: D1–D9; Q1–Q3, G1–G4, C1–C4, G1b; V1–V5.
 
 ## Goals / Non-Goals
 
 **Goals**
 
-- Unified packs list + map list parity (statuses, filters; favorites only packs)
-- Remove collection product surface and default-grant
-- Author / task-set-author re-edit via queue; exclusive edit lock shared with staff
-- Staff moderation take with same TTL as edit lock
+- Unified packs/maps lists + favorites/take/author re-edit (first pass — done in code)
+- Per–task-set moderation badges on live pack set list (set author + staff; not pack creator for others’ sets)
+- Cancel (staff|author) keeps working copy; author sees **draft** on unified list; others keep live catalog snapshot
+- Shared header: packs/maps/support + staff «Модерация»; burger; breadcrumbs; Game leave right + logo leave
+- List rows: **no** green «В каталоге» / in_catalog status badge; keep pending / needs_revision / draft / unpublished
+- Published map: View first (author + players×tourists; no paint tools); Edit outside and inside under exclusive lock
+- Never-published pack/map: open **Edit** directly
+- Pack live browsing stays as today (content for discovery)
 
-**Non-Goals (design-level)**
+**Non-Goals**
 
-- Wiring packs/maps into `tourist-room` / createGame
-- New npm/SaaS dependencies
-- Redesign support `change_pack` beyond dropping collection dependency (catalog select stays)
+- Game header center pack title
+- tourist-room content wiring
+- New npm/SaaS
+- Redesigning pack live content layout beyond existing browse + Edit
 
 ## Decisions
 
-### D1 — Packs list API replaces collection-first
+### D1–D9 — First pass (unchanged summary)
 
-- **Choice:** Expand `GET /api/content/packs` (or dedicated list) to return in-catalog + caller’s never-published + staff soft-unpublished, with `moderationStatus`, `isMine`, `isFavorite`, contribution flags for filters. Deprecate collection list as primary; remove collect/uncollect UI.
-- **Why:** Mirrors `listMaps`.
-- **Alt:** Keep collection table as favorites — rejected (D1: favorites separate, collection gone).
+D1 unified packs list API; D2 favorites table; D3 drop collection/default-grant; D4 author working after publish; D5 task-set author ACL; D6 edit lock for authors; D7 moderation take; D8 maps list enrichment; D9 client list surfaces. Runtime already landed.
 
-### D2 — Favorites table
+### D10 — Per–task-set moderation status on pack live list
 
-- **Choice:** New `content_pack_favorites` (userId, packId, createdAt); star/unstar endpoints; list field `isFavorite`. Registered non-anonymous only; in-catalog packs.
-- **Why:** Personal filter without membership semantics.
-- **Alt:** Reuse `content_pack_collections` — rejected (product meaning differs; cleaner drop).
+- **Choice:** Each task-set row on the live pack surface exposes moderation phase for eligible viewers: pending / needs_revision / draft-awaiting-submit when applicable; published/live otherwise. Visible to **that set’s author** and **staff**. Pack `createdBy` MUST NOT see another author’s set moderation marks solely by being creator. API: per-set `moderationStatus` on live/editor pack payload.
+- **Why:** Q1.
 
-### D3 — Drop collections + default grants
+### D11 — Cancel → author draft; others keep live
 
-- **Choice:** Stop using `content_pack_collections` in product paths; remove `defaultContentPacks` grant on create/startup (or no-op). Drop/ignore `DEFAULT_CONTENT_PACK_IDS` grant behavior. Client: lobby → packs list; delete or redirect collection route; remove my-moderation nav for non-staff.
-- **Migration:** Leave table unused or migrate once empty; no user-facing collection.
-- **Why:** Explore D1/D2/(2).
+- **Choice:** Staff/author Cancel keeps working; author list status `draft`; others see live snapshot. Hard-delete remains delete. Soft-unpublish cascade cancel same keep-working rule.
+- **Why:** C1–C4.
 
-### D4 — Author working copy after publish
+### D12 — Shared header navigation
 
-- **Choice:** When published pack/map is edited by eligible author, mutate `workingRevisionId` (create working from live if needed), submit opens/resumes moderation request; approve promotes to live. Staff direct `staff-save` blocked while open author request on that entity.
-- **Why:** D3c — author only via moderation.
-- **Alt:** Author live save — rejected.
+- **Choice:** Packs/Maps/Support + staff «Модерация» in App header; burger on narrow; remove Lobby section toolbar and list-embedded staff links; hide sections on Game.
+- **Why:** G4 + explore.
 
-### D5 — Task-set author ACL
+### D13 — Breadcrumbs replace redundant back
 
-- **Choice:** Pack-level `edit_locked_*` shared. Permission: `createdBy` → cards + any sets; task-set author → own set only; staff → all when allowed. Submit type `task_set` for set-only cycles.
-- **Why:** D9 / explore C + pack owner may edit all sets.
+- **Choice:** Crumbs under header; remove «К наборам» / «Вернуться» where crumbs cover the path.
+- **Why:** User request.
 
-### D6 — Edit lock for authors
+### D14 — Game leave on the right; logo also leave
 
-- **Choice:** Reuse `edit_locked_by` / `edit_locked_at` + `EDIT_LOCK_TTL_MS` (5 min); acquire on author Edit enter; same errors `edit_locked` / `edit_lock_required`.
-- **Why:** Existing pattern; explore «как редактирование».
+- **Choice:** Right-side leave-from-room + logo leave on Game; no session logout on Game.
+- **Why:** G1b/G3.
 
-### D7 — Moderation take
+### D15 — Server list draft after cancel
 
-- **Choice:** Columns on `content_moderation_requests`: `taken_by`, `taken_at` (TTL = edit lock). Endpoints: take / release (or unlock-on-leave). Approve/reject/cancel require `taken_by === caller` and non-expired. UI: button on staff queue row + detail. Author resubmit allowed while taken.
-- **Why:** D5/D5c; page-only lock fragile on tab close — explicit take + TTL.
-- **Alt:** Page-entry lock without button — rejected by product.
+- **Choice:** Author-facing `draft` after cancel with retained working; maps parity.
+- **Files:** `lib/content.ts`, `lib/contentMaps.ts`, client lists.
 
-### D8 — Maps list enrichment
+### D16 — No in_catalog status badge on list rows
 
-- **Choice:** `listMaps` / `mapSummary` include `moderationStatus`; client badges + filters (all / moderation / drafts / mine). Remove non-staff my-moderation nav from Maps chrome. Author re-edit + take same as packs.
-- **Why:** Parity; no favorites.
+- **Choice:** Packs and Maps list rows MUST NOT show an «В каталоге» / in_catalog status badge (the green one). Rows that are simply published appear without that badge. Badges for **pending**, **needs_revision**, **draft**, and **unpublished** (staff) remain. Filters unchanged. API may still expose catalog membership for ACL; UI simply omits the in_catalog badge.
+- **Why:** V2/V3.
+- **Alt:** Remove all status badges — rejected.
 
-### D9 — Client surfaces
+### D17 — Map View vs Edit; never-published → Edit
 
-- **Choice:** Primary packs page = unified list with filter chips + star; pack detail star; staff queue take control; Map list filters; routes: collection → redirect to packs list; hide `content-my-moderation` for non-staff (staff may keep deep-link unused).
-- **Layers:** pages → Pinia `content` / `maps` → `client.http`; errors via store + banner.
+- **Choice:** Opening a **published / in-catalog** map (row click or equivalent) enters **View**: show author, players×tourists (and grid preview as read-only); MUST NOT show paint-tool controls or other edit chrome at the bottom. **Edit** affordances exist on the list row and inside View; activating Edit acquires the exclusive lock and enters edit mode (tools + submit/staff-save as eligible). **Never-published** maps open **Edit** directly (no View-first). Exclusive lock: who holds it blocks others (existing TTL).
+- **Layers:** `MapsListPage` routing; `MapEditorPage` hide tools when view-only; lock on Edit enter.
+- **Why:** V1/V4 maps half.
+
+### D18 — Pack never-published → Edit; live browse unchanged
+
+- **Choice:** Never-published packs open the editor (Edit) directly from the list. In-catalog / published packs open the existing live pack surface for content discovery (author, cards, task sets as today); Edit from list and/or live enters editor under exclusive lock (existing). No strip-down of pack live browsing.
+- **Why:** V4/V5.
 
 ## Risks / Trade-offs
 
-- **[Risk] Stale collection rows / default-grant env** → Mitigation: ignore membership in ACL; no-op grants; document env ignore; optional table drop later.
-- **[Risk] Two locks (edit vs take) confuse staff** → Mitigation: clear i18n («занято редактированием» / «взято на модерацию»); block staff Edit when author request open.
-- **[Risk] Concurrent author resubmit while staff reviews** → Mitigation: accepted (explore); preview refreshes on load; take does not freeze author.
-- **[Risk] Large list without server-side filter** → Mitigation: start with client filter on ≤200 rows (current list limits); add query params if needed.
-- **[Risk] Support/default-pack skills/docs drift** → Mitigation: update meta skills/AGENTS hints in apply follow-up via check-changes (not blocking design).
+- **[Risk] Dual view of same pack (author draft vs public in_catalog)** → Mitigation: status per caller.
+- **[Risk] Logo+right leave duplicate** → Accepted.
+- **[Risk] Header crowding on mobile** → Burger.
+- **[Risk] Map View still shares editor route** → Use view-only mode; hide tools rather than new page unless needed.
 
 ## Migration Plan
 
-1. Server: schema favorites + moderation take; list endpoints; ACL without collection; disable default grants; author re-edit + lock; take gates.
-2. Client: unified list UI, filters, star; remove collection/my-moderation nav; staff take; map filters/statuses; author Edit affordances.
-3. Tests: mocha SC-PACK-148… / SC-MAP-31…; vitest list/filter/ACL/take.
-4. Rollback: feature flags not required; revert deploy; favorites table harmless if unused.
+1. Server: per-set status + cancel→draft (packs+maps).
+2. Client: set badges; no in_catalog badge; map View/Edit + never-published→Edit; pack never-published→Edit; header/crumbs/leave.
+3. Tests: mocha/vitest for new SC-*; lint/typecheck.
+4. Rollback: revert deploy.
 
 ## Open Questions
 
-None material — defaults: pack `createdBy` may edit all sets; favorites only in-catalog; take release on leave + TTL like edit unlock.
+None — V1–V5 closed.

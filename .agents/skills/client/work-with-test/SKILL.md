@@ -4,11 +4,12 @@ description: >-
   Use when planning or writing Vue 3 / Quasar unit tests for the happy-tourist
   client (pages, components, Pinia stores, lib helpers): Vitest +
   @vue/test-utils, q-form rules, auth/theme/game/support/content/maps stores
-  (my-moderation / cascadeGap* / hasLive confirm / simplify ACL SC-PACK-100…166 /
+  (my-moderation / cascadeGap* / hasLive confirm / simplify ACL SC-PACK-100…185 /
   unified list `ContentUnifiedList` + favorites `content.favorites` + author
   edit/take `ContentAuthorEditTake` / lobby packs entry `LobbyPacksEntry` /
   soft-unpublish `ContentSoftUnpublish` / follow-up 4–5 / `ContentModerationUx` /
-  `ContentMaps` + `maps.paint` SC-MAP / SupportChangePack SC-SUP-27…29), Colyseus client.auth / client.http / room I/O spies, store error +
+  `ContentMaps` + `maps.paint` SC-MAP / App header chrome `AppHeaderChrome` in
+  `src/__tests__/` / SupportChangePack SC-SUP-27…29), Colyseus client.auth / client.http / room I/O spies, store error +
   q-banner, vue-i18n / router. Harness live (`vitest.config.ts`, `test/setup.ts`,
   `npm test`). Core in SKILL.md; topics: forms.md, stores.md, colyseus.md,
   errors.md, plugins.md, composables.md, provide-inject.md.
@@ -86,7 +87,7 @@ lint/typecheck alone. Map each executable scenario to an `SC-…` ID in Traceabi
    [composables.md](composables.md).
 3. Place the test file next to the SUT: `Feature/__tests__/Name.test.ts` or
    `src/lib/__tests__/passwordPolicy.test.ts`. Prefer `__tests__` colocated
-   with the module.
+   with the module. App shell (`App.vue`) → `src/__tests__/AppHeaderChrome.test.ts`.
 4. Write tests following the conventions below and specialized topics.
 5. Cover planned success, error, loading, event, and conditional scenarios.
 6. **Required props check (components):** after writing the file, re-read

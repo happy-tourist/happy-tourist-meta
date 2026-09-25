@@ -1,29 +1,38 @@
-# content/maps — delta: list statuses/filters, author re-edit, moderation take
+# content/maps — delta: list statuses/filters, author re-edit, moderation take, cancel→draft, crumbs
 
-Базовый канон: `openspec/specs/content/maps/spec.md`. Паритет с packs: статусы/фильтры в общем списке, без author my-moderation nav у non-staff, author re-edit через очередь, edit lock для автора, staff «взять в модерацию». Избранного у карт нет.
+Базовый канон: `openspec/specs/content/maps/spec.md`. Паритет с packs + follow-up: cancel→draft, убрать staff-link из списка, крошки. Избранного у карт нет.
 
 ## Traceability
 
 | Scenario ID | Coverage |
 |-------------|----------|
-| SC-MAP-31 | pending |
-| SC-MAP-32 | pending |
-| SC-MAP-33 | pending |
-| SC-MAP-34 | pending |
-| SC-MAP-35 | pending |
-| SC-MAP-36 | pending |
-| SC-MAP-37 | pending |
-| SC-MAP-38 | pending |
-| SC-MAP-39 | pending |
-| SC-MAP-40 | pending |
+| SC-MAP-31 | covered (mocha) |
+| SC-MAP-32 | covered (mocha) |
+| SC-MAP-33 | covered (vitest) |
+| SC-MAP-34 | covered (vitest) |
+| SC-MAP-35 | covered (mocha) |
+| SC-MAP-36 | covered (mocha) |
+| SC-MAP-37 | covered (mocha) |
+| SC-MAP-38 | covered (mocha) |
+| SC-MAP-39 | covered (mocha) |
+| SC-MAP-40 | covered (vitest) |
+| SC-MAP-41 | covered (mocha/vitest) |
+| SC-MAP-42 | covered (mocha/vitest) |
+| SC-MAP-43 | covered (vitest) |
+| SC-MAP-44 | covered (vitest) |
+| SC-MAP-45 | covered (vitest) |
+| SC-MAP-46 | covered (vitest) |
+| SC-MAP-47 | covered (vitest) |
+| SC-MAP-48 | covered (vitest) |
+| SC-MAP-49 | covered (vitest) |
 
-Related: `content/packs` (unified list / moderation take / author re-edit). Tourist-room wiring still out of scope.
+Related: `content/packs`; `ui/branding`. Tourist-room wiring still out of scope.
 
 ## ADDED Requirements
 
 ### Requirement: Maps list shows moderation statuses
 
-The Maps list MUST show status on each visible row distinguishing at least: in catalog; never-published draft without open request; open moderation **pending**; open moderation **needs_revision**; soft-unpublished (staff). A map with an open request MUST show pending or needs_revision rather than only a generic draft badge. Non-authors still MUST NOT see another user’s never-published maps.
+The Maps list MUST show status badges for **pending**, **needs_revision**, **draft** (never-published without open request or author draft after cancel), and soft-**unpublished** (staff) when applicable. Rows that are simply published / in catalog MUST **NOT** show an «В каталоге» / in_catalog status badge. A map with an open request MUST show pending or needs_revision rather than only a generic draft badge. Non-authors still MUST NOT see another user’s never-published maps.
 
 #### Scenario [SC-MAP-31]: Pending map shows pending on Maps list
 
@@ -106,6 +115,88 @@ Non-staff users MUST NOT be shown a separate «На модерации» navigat
 - **WHEN** the user views Maps navigation chrome
 - **THEN** the author «На модерации» control is not shown
 - **AND** the on-moderation filter is available
+
+### Requirement: Cancel returns author map work to draft on the Maps list
+
+When staff or the change author cancels an open map moderation request, the system MUST keep the working grid/config and MUST NOT hard-delete the map. For the author, the map MUST appear as **draft** on the Maps list (including the drafts filter). Other users MUST continue to see the last approved **live** in-catalog snapshot when one exists. Author hard-delete of a never-published map removes it.
+
+#### Scenario [SC-MAP-41]: Cancel yields author draft on Maps list
+
+- **GIVEN** author A has an open pending map request on map M
+- **WHEN** staff (after take) or A cancels that request
+- **THEN** A sees M as draft on the Maps list
+- **AND** working edits remain available for Edit
+
+#### Scenario [SC-MAP-42]: Others keep live snapshot after cancel of post-publish map edits
+
+- **GIVEN** in-catalog map M, author A’s open pending request cancelled, and non-author user B
+- **WHEN** B opens the Maps list
+- **THEN** B sees M with the live in-catalog snapshot
+- **AND** A sees M as draft for retained working edits
+
+### Requirement: Staff moderation entry is not on Maps list chrome
+
+Moderator and admin MUST open the staff moderation queue from the shared application header, not from an embedded control on the Maps list chrome.
+
+#### Scenario [SC-MAP-43]: Maps list has no staff moderation link
+
+- **GIVEN** an authenticated moderator or admin on the Maps list
+- **WHEN** the user views Maps list chrome
+- **THEN** an embedded staff «Модерация» control is not shown on that list chrome
+
+### Requirement: Maps breadcrumbs
+
+Maps section surfaces MUST show breadcrumbs under the shared header (e.g. Lobby / Maps / map title) consistent with packs chrome.
+
+#### Scenario [SC-MAP-44]: Breadcrumbs on Maps list and editor
+
+- **GIVEN** an authenticated user on the Maps list or map editor
+- **WHEN** the page renders
+- **THEN** breadcrumbs include a path back toward Lobby and Maps
+
+### Requirement: No in_catalog status badge on Maps list
+
+Published in-catalog maps MUST appear on the Maps list without an «В каталоге» / in_catalog status badge. Other status badges remain when applicable.
+
+#### Scenario [SC-MAP-45]: Published map has no in_catalog badge
+
+- **GIVEN** an approved in-catalog map M with no open author-facing draft/pending/needs_revision mark for the caller
+- **WHEN** the caller opens the Maps list
+- **THEN** M has no «В каталоге» / in_catalog status badge
+
+### Requirement: Published map opens View without paint tools
+
+Choosing a published / in-catalog map MUST open a **View** surface first. View MUST show the author and players×tourists (and MAY show a read-only grid preview). View MUST NOT show map paint-tool controls or other bottom edit chrome. **Edit** MUST be available from the Maps list row and from inside View; activating Edit acquires the exclusive edit lock and enters edit mode. While a user holds a non-expired edit lock, another eligible editor MUST NOT acquire it.
+
+#### Scenario [SC-MAP-46]: Published map row opens View without tools
+
+- **GIVEN** an in-catalog map M
+- **WHEN** a user chooses M from the Maps list (row open, not Edit)
+- **THEN** View opens
+- **AND** paint-tool controls are not shown
+
+#### Scenario [SC-MAP-47]: Map View shows author and seat meta
+
+- **GIVEN** user U is on View for in-catalog map M
+- **WHEN** the View renders
+- **THEN** M’s author and players×tourists are shown
+
+#### Scenario [SC-MAP-48]: Edit from list or View enters locked edit
+
+- **GIVEN** in-catalog map M with a free edit lock and eligible editor E
+- **WHEN** E activates Edit from the list or from View
+- **THEN** edit mode opens under E’s exclusive lock
+- **AND** paint tools are available to E as allowed by edit rules
+
+### Requirement: Never-published map opens Edit directly
+
+Choosing a never-published map from the Maps list MUST open Edit directly (not View-first).
+
+#### Scenario [SC-MAP-49]: Never-published map row opens Edit
+
+- **GIVEN** creator A has never-published map M
+- **WHEN** A chooses M from the Maps list
+- **THEN** Edit opens (not View-first)
 
 ## MODIFIED Requirements
 
