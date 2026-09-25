@@ -8,7 +8,9 @@ description: >-
   unified list `ContentUnifiedList` (`openRequestType` live-first SC-PACK-191/192) +
   favorites `content.favorites` + author edit/take `ContentAuthorEditTake`
   (`neverLive` ghost SC-PACK-188…190) / lobby packs entry `LobbyPacksEntry` /
-  soft-unpublish `ContentSoftUnpublish` / follow-up 4–5 / `ContentModerationUx` /
+  lobby create wire `LobbyCreateWire` / game board wire `GameBoardWire` /
+  presence focus `GamePresenceFocus` / `boardGeometry` + `focusActionable` lib tests /
+  game peek `game.boardPeek` / soft-unpublish `ContentSoftUnpublish` / follow-up 4–5 / `ContentModerationUx` /
   `ContentMaps` + `maps.paint` SC-MAP-41…52 / App header chrome `AppHeaderChrome`
   (crumbs **inside** `q-page-container` SC-BRAND-17…18; narrow burger fold SC-BRAND-19) in `src/__tests__/` /
   SupportChangePack SC-SUP-27…29), Colyseus client.auth / client.http / room I/O spies, store error +

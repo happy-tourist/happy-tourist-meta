@@ -63,7 +63,7 @@ createGame / joinGame(roomId?) / joinGame() / rejoinGame(roomId)
 | Join or create | `joinGame()` (no id) | `client.joinOrCreate(TOURIST_ROOM, options)` — **not** a lobby primary CTA |
 | Rejoin after F5 | `rejoinGame(roomId)` | `client.reconnect(token)` then fallback `joinById` |
 | Leave (consented) | `leaveGame()` | clear token + `unsubscribeLobby` + `room.leave()` after `_resetRoomState` |
-| Game move | `sendMove(side, row, col)` | `room.send('move', { side, row, col })` when `phase === 'playing'` and `isMyTurn` |
+| Game move | `sendMove(pieceId, row, col)` | `room.send('move', { pieceId, row, col })` when `phase === 'playing'` and `isMyTurn` |
 | Ready to start | `sendReady()` | `room.send('ready')` when `canSendReady` |
 | Game say | `sendSay(presetId)` | `room.send('say', { presetId: 'hello'\|'luck' })` when seated+connected; max 3 live / 10s (not `ready`) |
 
@@ -248,7 +248,7 @@ Normal lobby → game navigation already has `game.room` set; skip rejoin.
 
 ## Game messages
 
-`sendMove(side, row, col)` → `room.send('move', { side, row, col })` only when `isMyTurn` and `room` present. Selection / legal hints stay on `GamePage` (`work-with-game-board`). Do not reintroduce legacy draughts `move` `{ from, to }`.
+`sendMove(pieceId, row, col)` → `room.send('move', { pieceId, row, col })` only when `isMyTurn` and `room` present. Selection / legal hints stay on `GamePage` (`work-with-game-board`). Do not reintroduce legacy draughts `move` `{ from, to }` or piece `side`.
 
 ## Do / Don't
 

@@ -255,7 +255,7 @@ Apply always; sibling skills win when they exist and conflict on a detail.
   `getAvailableRooms`).
 - Room type constant `TOURIST_ROOM = 'tourist'` in `stores/game`.
 - Room lifecycle: `create` / `joinById` / `joinOrCreate`, `onStateChange`,
-  `leave`, `sendMove` → `room.send('move', { side, row, col })`. `_enterRoom`
+  `leave`, `sendMove` → `room.send('move', { pieceId, row, col })`. `_enterRoom`
   must `_attachRoom` immediately after `connect()` — no `await` (e.g.
   `unsubscribeLobby`) before the listener, or the first `ROOM_STATE` is missed.
 - GamePage: tourist board with synced seat pieces; top presence (opponents /

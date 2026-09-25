@@ -53,7 +53,9 @@ The sibling client assumes a tourist contract; prefer aligning server to client 
 | Live lobby (`LobbyRoom`) | `lobby: defineRoom(LobbyRoom)` — client filters `name: tourist` |
 | Tourist board layout on Game | Client-only tile geometry; server does not sync layout |
 | Synced seats / phase / turn / connectivity | `MyRoomState`: `phase` + `maxSeats` + `countdownRemaining` + legacy `started` + `seats` Map (`touristId` + `pieces` (empty until playing) + `connected` / `reconnectUntil` / `ready` / `finishPlace` / `timeExpired`) + `currentTurnSessionId` + `turnUntil` + `turnBudgetSeconds` + `nextFinishPlace` |
-| Move message | `onMessage('move')` `{ side, row, col }` when playing + eligible (not finished / not time-expired); pure rules in `src/game/touristMove.ts` |
+| Move message | `onMessage('move')` `{ pieceId, row, col }` when playing + eligible; pure rules in `src/game/touristMove.ts` + `boardGeometry.ts` |
+| Room create snapshot | `src/lib/roomContentSnapshot.ts` — map+pack load in `MyRoom.onCreate` |
+| Tourist create fixture | `src/lib/touristCreateFixtureState.ts` — mocha fixture cache (cleared via `clearContentTablesForTests`) |
 | Turn timer | 60s multi → auto-pass; solo 300s → `timeExpired`; `setTurnBudgetsForTests` in mocha; clear on dispose |
 | Lobby `GET /rooms/tourist` | Available (HTTP fallback; UI uses live LobbyRoom) |
 

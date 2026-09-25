@@ -4,7 +4,8 @@ description: >-
   Use when planning or writing mocha + @colyseus/testing tests for
   happy-tourist-server: room connect with JWT, onAuth failures, waiting-only
   seating / deferred pieces until playing / reconnect grace (SC-PIECE), move +
-  steps/peeks / peek / endTurn / removed tiles (SC-MOVE-33…50 / SC-BOARD) +
+  pieceId payloads / shared peekPlace+Submit / endTurn / removed tiles (SC-MOVE /
+  SC-BOARD) + content snapshot create (map+pack) + boardGeometry +
   grille density / trap / rescue / push / returnFromFinish / all-jail /
   leave-clear (SC-LOBBY-14 / SC-BOARD-16/20 / SC-MOVE-51…64 /
   SC-MOVE-66…73 / SC-PIECE-24…28 / SC-FINISH-12/14) + catapult paced pipeline /
@@ -90,7 +91,7 @@ tests; fix failures before claiming done.
 | Content packs (SC-PACK-*) | `test/zz-contentPacks.test.ts` — unified list/statuses/`openRequestType`/favorites/author re-edit/staff take + working copy/submit + soft-unpublish cascade + add-task-set **no** collection gate + set marks without authorId fan-out + `neverLive` ghost SC-PACK-187…189 + cancel restore GET/put/submit SC-PACK-196/197; mock mailer; `keepLatestRequestListener` |
 | Content maps (SC-MAP-*) | `test/zz-contentMaps.test.ts` — list statuses + author re-edit + staff take + soft-unpublish |
 | Default content packs (SC-PACK-170) | `test/zz-defaultContentPacks.test.ts` — parse/eligible remain; grant/backfill/create-user **do not** auto-grant collections |
-| Content maps (SC-MAP-*) | `test/zz-contentMaps.test.ts` — mock mailer; `ensureContentTables` (pulls `ensureContentMapTables`); cover create+verify gate SC-MAP-01…03, seats clamp SC-MAP-05, list visibility SC-MAP-06/07, submit starts gate SC-MAP-09…13, shared staff queue type badge + approve/needs_revision SC-MAP-14…18, author delete SC-MAP-19/20, soft-unpublish cascade-cancel + mail SC-MAP-21…27, room create ignores maps SC-MAP-28, cancel keeps working → list draft SC-MAP-41/42; `keepLatestRequestListener` after boot |
+| Content maps (SC-MAP-*) | `test/zz-contentMaps.test.ts` — mock mailer; `ensureContentTables` (pulls `ensureContentMapTables`); cover create+verify gate SC-MAP-01…03, seats clamp SC-MAP-05, list visibility SC-MAP-06/07, submit starts gate SC-MAP-09…13, shared staff queue type badge + approve/needs_revision SC-MAP-14…18, author delete SC-MAP-19/20, soft-unpublish cascade-cancel + mail SC-MAP-21…27, room create uses map snapshot (no SC-MAP-28 ignore); cancel keeps working → list draft SC-MAP-41/42; `keepLatestRequestListener` after boot |
 
 Mocha picks up `test/**.test.ts` via the npm script. Mirror room names under
 `test/` as rooms grow; keep relative imports to `../src/...`.
@@ -141,7 +142,7 @@ Use these categories only when the SUT has relevant behavior:
 - Schema sync: after join, client-visible state matches room —
   `phase` / `maxSeats` / `countdownRemaining` (+ legacy `started`), `seats` Map
   (`touristId` + `pieces` keyed by side `N|E|S|W` →
-  `{ side, row, col, finished }` — **empty until playing** + `connected` /
+  `{ row, col, finished }` by pieceId — **empty until playing** + `connected` /
   `reconnectUntil` / `ready` / `finishPlace` / `timeExpired`),
   `currentTurnSessionId`, `turnUntil`, `turnBudgetSeconds`,
   `nextFinishPlace`, and `removedTaskKeys`. Assert deferred pieces then
@@ -154,7 +155,7 @@ Use these categories only when the SUT has relevant behavior:
   (first seated holds turn; join-order rotation; legal orthogonal/diagonal;
   occupied/non-playable reject; out-of-turn / spectator / pre-playing / finished /
   time-expired / no-steps reject; **successful `move` does not advance turn**;
-  `peek`/`peekAnswer`/`endTurn`; private `budgets`/`peekOpen`; grant multi +1/+1 /
+  `peek`/`peekPlace`/`peekSubmit`/`endTurn`; private `budgets`; grant multi +1/+1 /
   solo become-current +1 step (already-current→solo no re-grant — SC-MOVE-40/50);
   solo peeks∞ / finite steps; auto-end (keep turn when peeks∧live `*`); timeout force incorrect KEEP open peek; permanent leave
   advances; offline grace keeps turn for non-finished; deadline keeps ticking;
@@ -224,7 +225,7 @@ Verify move / turn / timer / budgets (SC-MOVE + SC-BOARD):
   full-seat finish (skip finished / time-expired)
 - Legal orthogonal/diagonal one-step: piece row/col update; illegal/out-of-turn/
   spectator/pre-playing/finished/time-expired/no-steps: unchanged
-- `peek` → private `peekOpen`; `peekAnswer` Correct → +reward steps + `"r,c"` in
+- `peek` → shared session; `peekSubmit` Correct → +difficulty steps + `"r,c"` in
   `removedTaskKeys` (**not landable**); Incorrect KEEP tile + reward; multi peeks while peeks remain;
   solo peeks∞ / finite steps; become-current into solo → +1 step; already-current→solo carries steps; step-loss without live `*` → `timeExpired`
 - Permanent leave of current advances turn; offline grace does not (non-finished);
@@ -362,7 +363,7 @@ Canonical coverage: `test/MyRoom.test.ts` (SC-SAY-* / ready cases).
 - After `connectTo`, read synced state from the client SDK view or room state
   the harness exposes; assert fields the client SPA expects:
   `phase` / `maxSeats` / `countdownRemaining` (+ legacy `started`), `seats` →
-  `touristId` + four `pieces` `{ side, row, col, finished, trapped }` + `connected` /
+  `touristId` + `pieces` by pieceId `{ row, col, finished, trapped }` + `connected` /
   `reconnectUntil` / `ready` / `finishPlace`, `currentTurnSessionId`,
   `removedTaskKeys`, `holdingGrilleKeys`, and `nextFinishPlace`.
 - Do not assert legacy draughts fields (`board`, `currentTurn`,

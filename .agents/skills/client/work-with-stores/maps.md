@@ -28,8 +28,9 @@ Open moderation = `pending`|`needs_revision`. Map API codes with
 `mapsErrorI18nKey` → `maps.errors.*` (not `content.errors.*`).
 
 **Out of scope (do not reintroduce):** map collection / add-to-collection;
-wiring map id into tourist-room create (SC-MAP-28); pack cascade yellow / slots;
-duplicating staff take/release HTTP here (use `content.takeModerationRequest`).
+pack cascade yellow / slots; duplicating staff take/release HTTP here
+(use `content.takeModerationRequest`). Lobby create **does** pick an in-catalog
+`mapId` (wired via `game.createGame` + server `roomContentSnapshot`).
 
 ## Shared queue vs maps store
 

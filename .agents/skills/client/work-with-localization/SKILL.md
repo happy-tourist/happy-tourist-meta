@@ -102,6 +102,13 @@ export default {
     // … cabinet / forgot / confirm / reset keys — human-facing RU
   },
   lobby: {
+    map: 'Карта',
+    pack: 'Набор карточек',
+    taskSets: 'Наборы заданий',
+    mapCapacity: '{players}×{tourists}',
+    emptyMaps: 'Нет опубликованных карт',
+    emptyPacks: 'Нет опубликованных наборов',
+    emptyTaskSets: 'Нет опубликованных наборов заданий',
     grilleDensity: 'Плотность решёток',
     grilleDensityFew: 'мало',
     grilleDensityMedium: 'средне',
@@ -137,10 +144,14 @@ export default {
     peeksCounterAria: 'Просмотры',
     budgetInfinity: '∞',
     endTurn: 'Завершить ход', // aria-only for skip_next on own avatar
-    peekModal: 'Под плиткой награда: {n}. Ответьте правильно, чтобы получить шаги.',
-    peekCorrect: 'Правильно',
-    peekWrong: 'Неправильно',
+    focusActionable: 'Выбрать ближайшего туриста',
+    peekDifficulty: 'Сложность: {n}',
+    peekQuestionFallback: 'Вопрос',
+    peekSlotEmpty: 'Слот',
+    peekSubmit: 'Ответить',
+    peekSpectatorHint: 'Игрок отвечает на вопрос…',
     peekAffordance: 'Посмотреть под плиткой',
+    // Shared Q&A — not stub Correct/Wrong
     soloUnlimitedModal:
       'Вы один в игре. Просмотры безлимитны, шаги по-прежнему ограничены.',
     soloUnlimitedModalOk: 'ОК',

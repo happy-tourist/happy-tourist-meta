@@ -386,7 +386,7 @@ Reminders to **open the skill** (or Built-in) — skill text wins.
 
 - **defineServer**: rooms/DB/routes/Express in `app.config.ts`; prefer not editing `index.ts`.
 - **CORS**: first middleware; prod `https://happy-tourist.github.io` + credentials.
-- **Room contract**: name `tourist`; live `lobby`; seats/`started`/`currentTurnSessionId`/`turnUntil`/`turnBudgetSeconds`/`timeExpired` + `move` `{ side, row, col }`.
+- **Room contract**: name `tourist`; live `lobby`; seats/`started`/`currentTurnSessionId`/`turnUntil`/`turnBudgetSeconds`/`timeExpired` + `move` `{ pieceId, row, col }`.
 - **Auth**: JWT in `onAuth`; `@colyseus/auth` + DB user store.
 - **Rules**: authoritative on server when they land; never trust client board.
 - **DB**: user column `.default(...)` for register/login.

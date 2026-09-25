@@ -119,11 +119,11 @@ Do not invent room schemas, HTTP routes, or move payloads — note the server pa
 - Login / register / guest / Google → `pages/LoginPage.vue` + `stores/auth.ts` + `lib/passwordPolicy.ts` + `components/PasswordStrengthMeter.vue`.
 - Forgot / confirm / reset SPA → `pages/ForgotPasswordPage.vue` / `ConfirmEmailPage.vue` / `ResetPasswordPage.vue` + `stores/auth`.
 - Cabinet displayName / change-password / email → `pages/AccountPage.vue` + `stores/auth` (`updateDisplayName` / `changePassword` / `canChangePassword`).
-- Lobby create / join / list (join busy-lock; clear stale rooms) → `pages/LobbyPage.vue` + `stores/game.ts`.
+- Lobby create / join / list (map+pack+taskSets pickers; join busy-lock; clear stale rooms) → `pages/LobbyPage.vue` + `stores/game.ts` (+ `stores/maps` / `stores/content` for pickers).
 - Support create / list / thread / staff / admin roles → `pages/Support*.vue` / `AdminUsersPage.vue` + `stores/support.ts` (+ `auth.role` gating; `change_pack` + **in-catalog** pack select).
 - Content packs unified catalog (filters/statuses/star; staff unpublish; **no** non-staff my-moderation nav) / live (author+staff Edit gates; star; add-task-set no collection) / editor (`editorKind` + author resubmit) / staff hub (**Take**) → `pages/Content*.vue` + `stores/content.ts`.
 - Content maps list filters/statuses / paint editor / author re-edit / staff Edit when no open author request → `MapsListPage` / `MapEditorPage` + `stores/maps.ts`.
-- Board interaction / continuous board-busy / presence reserve / `rejoinGame` → `pages/GamePage.vue` + `stores/game.ts`.
+- Board interaction / continuous board-busy / presence reserve / focus / shared peek / `rejoinGame` → `pages/GamePage.vue` + `stores/game.ts` + `lib/boardGeometry.ts` + `lib/focusActionable.ts`.
 - Locale messages → `src/i18n/` (default `en-US`; auth policy/cabinet + support incl. `change_pack` + `content.*` keys incl. `unpublish`/`republish`/`unpublishedByStaff` / `addTaskSet*` / `statuses.needs_revision` / `taskSetStatusMarks.*` / `moderationThread` / `slotEmpty` / `deleteCardConfirm*` by hasLive / trash remove / `errors.*` incl. `pack_unpublished` + `maps.*` list/editor/tools/unpublishConfirm/`errors.*`).
 - Unit tests (Vitest) → `vitest.config.ts` + `test/setup.ts` + colocated `src/**/__tests__/*` (incl. `Content*Acl.test.ts`, `ContentSoftUnpublish.test.ts`, `ContentFollowUp4.test.ts`, `ContentFollowUp5.test.ts`, `ContentPackTasksHints.test.ts`, `ContentModerationUx.test.ts` SC-PACK-126…136, `content.simplifyAcl.test.ts`, `ContentMaps.test.ts` / `maps.paint.test.ts` SC-MAP, `SupportChangePack.test.ts`, `support.changePack.test.ts`); store helper `isStaffEditSessionNavigation`; see meta `work-with-test`.
 - Deploy / Pages 404 fallback → `.github/workflows/deploy.yml` (`quasar build -m spa`, `index.html` → `404.html`).
@@ -133,11 +133,11 @@ Do not invent room schemas, HTTP routes, or move payloads — note the server pa
 | Domain | Start here |
 |--------|------------|
 | Auth (email/password policy, anonymous, Google, cabinet profile, logout, role nav) | `pages/LoginPage.vue` / `AccountPage.vue` + `stores/auth.ts` + `lib/passwordPolicy.ts`; router guards in `router/index.ts` |
-| Lobby (greeting + room list / create / join busy-lock; sections/logout → App header) | `pages/LobbyPage.vue` + `stores/game` |
+| Lobby (greeting + room list / create map+pack+sets / join busy-lock; sections/logout → App header) | `pages/LobbyPage.vue` + `stores/game` + maps/content pickers |
 | Content packs (unified list + favorites + author re-edit + staff take; soft-unpublish; cascade SC-PACK-126…166) | `pages/Content*.vue` + `stores/content.ts` + `ContentUnifiedList` / `ContentAuthorEditTake` / `content.favorites` / FollowUp tests |
 | Content maps (list filters/statuses; author re-edit; staff take via content; SC-MAP) | `MapsListPage` / `MapEditorPage` + `stores/maps.ts` + `ContentMaps.test.ts` |
 | Support (tickets / `change_pack` / staff queue / admin roles) | `pages/Support*.vue` / `AdminUsersPage.vue` + `stores/support.ts` |
-| Game board (layout, unfinished pieces, continuous board-busy, finish/timeout UX, dual presence rings + seated top-row reserve, strip, turn select/`sendMove`, rejoin) | `pages/GamePage.vue` + `stores/game` `onStateChange` / `sendMove` / `rejoinGame(roomId)` |
+| Game board (synced `grid` via `lib/boardGeometry`, unfinished pieces by pieceId, continuous board-busy, finish/timeout UX, dual presence rings + focus affordance, shared peek Q&A, strip, turn select/`sendMove`, rejoin) | `pages/GamePage.vue` + `stores/game` + `lib/boardGeometry` / `lib/focusActionable` |
 | Env / deploy | `.env.*`, `env.d.ts`, `boot/colyseus.ts`, `.github/workflows/deploy.yml` |
 | Theme / layout / brand chrome | `App.vue` elevated header (logo + sections; wide Acc/Theme/Logout; narrow burger fold SC-BRAND-19) + crumbs inside `q-page-container` (packs/maps/moderation SC-BRAND-17…18) + Game leave+status + `stores/theme` + `boot/theme` + `assets/brand/` + `css/*` (board CSS ≠ app Dark) |
 | App shell Vitest | `src/__tests__/AppHeaderChrome.test.ts` (sections/burger fold SC-BRAND-19 / crumbs in page-container / leave/logout) |

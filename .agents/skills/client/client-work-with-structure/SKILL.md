@@ -256,7 +256,7 @@ Routes (from `src/router/routes.ts`):
 
 Router mode: **hash** (`/#/lobby`, `/#/game/...`).
 
-Synced board encoding stays client-local (`LAYOUT`); authority for seating/turn/move is server schema + `move` message.
+Board geometry from synced `grid` via `src/lib/boardGeometry.ts` (+ `focusActionable.ts` for presence focus); authority for seating/turn/move is server schema + `move` `{ pieceId, row, col }`.
 
 ## Common Mistakes
 

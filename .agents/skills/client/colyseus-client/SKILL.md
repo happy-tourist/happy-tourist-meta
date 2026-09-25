@@ -34,7 +34,7 @@ There is **no** axios layer and **no** BFF. Live lobby uses `LobbyRoom` WebSocke
 | Theme preference | `stores/theme.ts` → registered `client.http.get('/api/theme')` restore (≠ JWT-only) + `post('/api/theme', { body: { theme } })` on toggle; guest uses `localStorage` only |
 | Room names | `TOURIST_ROOM = 'tourist'`; `LOBBY_ROOM = 'lobby'` in `stores/game.ts` |
 | Connect | `client.create` / `joinById` / `joinOrCreate` via game store actions |
-| Game messages | `sendMove` → `move` (no turn advance); `sendRescue` / `sendPush` / `sendReturnFromFinish`; `sendPeek` / `sendPeekAnswer` / `sendEndTurn`; `sendReady` → `ready`; `sendSay` → `say`; listen `budgets` / `peekOpen` / `allJailWarning` / `say` |
+| Game messages | `sendMove` → `move` (pieceId; no turn advance); `sendRescue` / `sendPush` / `sendReturnFromFinish`; `sendPeek` / `sendPeekPlace` / `sendPeekSubmit` / `sendEndTurn`; `sendReady` → `ready`; `sendSay` → `say`; listen `budgets` / `allJailWarning` / `say` (+ synced peek session) |
 | Auth | `client.auth` — register / signIn / signOut / `onChange`; token key `colyseus-auth-token` |
 | Env | `VITE_COLYSEUS_URL`, `VITE_API_URL` (typed in `env.d.ts`) |
 | Errors | Store `error` string; pages show `q-banner` |
@@ -52,7 +52,7 @@ There is **no** axios layer and **no** BFF. Live lobby uses `LobbyRoom` WebSocke
 | Restore/save registered theme via `stores/theme` → `GET`/`POST` `/api/theme` | Theme HTTP from page templates; JWT-only restore after reload; save guest theme to the server |
 | Use `TOURIST_ROOM` / `LOBBY_ROOM` constants | Hardcode room names in multiple places or invent names without the server |
 | Enter rooms via `createGame` / `joinGame` (`_enterRoom`) | Duplicate connect + `onStateChange` wiring in pages |
-| Keep room I/O in Pinia `game` store | Call `room.send` from GamePage — use `sendMove` / `sendRescue` / `sendPush` / `sendReturnFromFinish` / `sendPeek` / `sendPeekAnswer` / `sendEndTurn` / `sendSay` |
+| Keep room I/O in Pinia `game` store | Call `room.send` from GamePage — use `sendMove` / `sendRescue` / `sendPush` / `sendReturnFromFinish` / `sendPeek` / `sendPeekPlace` / `sendPeekSubmit` / `sendEndTurn` / `sendSay` |
 | Auth via `client.auth.*` in `stores/auth` | Import `@colyseus/auth` on the client (that package is **server-side**) |
 | Catch into store `error`; clear loading in `finally` | Leave `listing` / `loading` stuck on reject |
 | Pages → stores → `client` | Pages → `client` directly |
@@ -96,7 +96,7 @@ Local defaults: `.env.development` → `localhost:2567`. Production: `.env.produ
 | HTTP fallback | `stores/game.ts` → `refreshRooms` | `client.http.get('/rooms/tourist')` (unused by LobbyPage) |
 | Room lifecycle | `stores/game.ts` → `createGame` / `joinGame` / `leaveGame` | `client.create` / `joinById` / `joinOrCreate`, `room.leave` |
 | Game board UI | `pages/GamePage.vue` | Layout + pieces / strip / presence / grilles / budgets / peek / rescue / push / return icon / say; calls store sends (no direct `room.send`) |
-| Live state | `stores/game.ts` → `_attachRoom` | `onStateChange` (`seats`/`phase`/`maxSeats`/`countdownRemaining`/`currentTurnSessionId`/`removedTaskKeys`/`holdingGrilleKeys`/`revealingCatapultKeys`/`brokenCatapultKeys`); `onMessage('say'|'budgets'|'peekOpen'|'allJailWarning')`; `onError`, `onLeave` |
+| Live state | `stores/game.ts` → `_attachRoom` | `onStateChange` (`seats`/`phase`/`maxSeats`/`grid`/`touristsPerPlayer`/peek session/`countdownRemaining`/`currentTurnSessionId`/`removedTaskKeys`/`holdingGrilleKeys`/`revealingCatapultKeys`/`brokenCatapultKeys`); `onMessage('say'|'budgets'|'allJailWarning')` (+ synced peek); `onError`, `onLeave` |
 
 Allowed dependency direction: `pages` → `stores` / `boot` / `components`. Keep all `client.*` and `room.*` I/O in stores.
 
@@ -105,7 +105,7 @@ Allowed dependency direction: `pages` → `stores` / `boot` / `components`. Keep
 | Store | Actions / API |
 |-------|----------------|
 | `auth` | `register`, `login`, `loginAnonymously`, `loginWithGoogle`, `logout`, `whenReady` |
-| `game` | `subscribeLobby`, `unsubscribeLobby`, `createGame`, `joinGame`, `rejoinGame`, `leaveGame`, `sendMove`, `sendRescue`, `sendPush`, `sendReturnFromFinish`, `sendPeek`, `sendPeekAnswer`, `sendEndTurn`, `sendReady`, `sendSay` (`refreshRooms` HTTP unused) |
+| `game` | `subscribeLobby`, `unsubscribeLobby`, `createGame`, `joinGame`, `rejoinGame`, `leaveGame`, `sendMove`, `sendRescue`, `sendPush`, `sendReturnFromFinish`, `sendPeek`, `sendPeekPlace`, `sendPeekSubmit`, `sendEndTurn`, `sendReady`, `sendSay` (`refreshRooms` HTTP unused) |
 
 Pages already wired:
 
@@ -113,7 +113,7 @@ Pages already wired:
 |------|-------|
 | `LoginPage` | `auth.register` / `login` / `loginAnonymously` / `loginWithGoogle` |
 | `LobbyPage` | `subscribeLobby` / `unsubscribeLobby`, `createGame`, `joinGame`, `leaveGame` (session logout → App header, not this page) |
-| `GamePage` | `game.rejoinGame(roomId)` on remount / soft-fail; pieces + grilles + presence + budgets + peek from store; move → `sendMove`; rescue/push/return → `sendRescue` / `sendPush` / `sendReturnFromFinish`; peek → `sendPeek` / `sendPeekAnswer`; end-turn → `sendEndTurn`; say → `sendSay`; `leaveGame` |
+| `GamePage` | `game.rejoinGame(roomId)` on remount / soft-fail; pieces + grilles + presence + budgets + peek from store; move → `sendMove`; rescue/push/return → `sendRescue` / `sendPush` / `sendReturnFromFinish`; peek → `sendPeek` / `sendPeekPlace` / `sendPeekSubmit`; end-turn → `sendEndTurn`; say → `sendSay`; `leaveGame` |
 | Router | `auth.whenReady()` before `requiresAuth` / `guest` guards |
 
 ## Auth (`client.auth`)
@@ -232,7 +232,7 @@ Private (not schema) — wire in `_attachRoom`:
 | Message | Pinia fields |
 |---------|--------------|
 | `budgets` `{ steps, peeks, infinite, peekedThisTurn }` | `steps` (always finite), `peeks`, `budgetsInfinite` (peeks∞ only), `peekedThisTurn` (legacy) |
-| `peekOpen` `{ side, row, col, reward }` | `openPeek` |
+| synced peek session / optional `peekOpen` | `openPeek` |
 | `allJailWarning` `{}` | `allJailWarning = true` (own seat modal) |
 
 Wire once in the store:
@@ -257,67 +257,71 @@ room.onMessage('peekOpen', (message) => { /* openPeek */ });
 room.onMessage('allJailWarning', () => { this.allJailWarning = true; });
 ```
 
-`GamePage` may call `rejoinGame(roomId)` if Pinia lost the room after refresh / soft-fail / browser reopen (`localStorage` reconnection token → `reconnect`, clear stale on fail → `joinById`); failed rejoin → navigate to lobby. Board tile geometry is a **client constant** (`work-with-game-board`); seats + phase + connectivity + turn + removed tiles + holding grilles + catapult reveal keys come from sync; own budgets from private messages. Token details: `work-with-rooms`.
+`GamePage` may call `rejoinGame(roomId)` if Pinia lost the room after refresh / soft-fail / browser reopen (`localStorage` reconnection token → `reconnect`, clear stale on fail → `joinById`); failed rejoin → navigate to lobby. Board tile geometry from synced `grid` (`lib/boardGeometry`); seats + phase + connectivity + turn + removed tiles + holding grilles + catapult reveal keys + peek session come from sync; own budgets from private messages. Token details: `work-with-rooms`.
 
 ## Messages: game actions
 
 | Direction | Name | Payload |
 |-----------|------|---------|
-| Client → server | `move` | `{ side, row, col }` via `sendMove` when playing + `isMyTurn` (spends step; **no** turn advance; may trap) |
-| Client → server | `rescue` | `{ side }` via `sendRescue` |
-| Client → server | `push` | `{ pusherSide, targetSessionId, targetSide, row, col }` via `sendPush` (−1 step; relocates target only; no turn advance) |
-| Client → server | `returnFromFinish` | `{ side, row, col }` via `sendReturnFromFinish` |
-| Client → server | `peek` | `{ side }` via `sendPeek` (reject trapped) |
-| Client → server | `peekAnswer` | `{ correct }` via `sendPeekAnswer` |
+| Client → server | `move` | `{ pieceId, row, col }` via `sendMove` when playing + `isMyTurn` (spends step; **no** turn advance; may trap) |
+| Client → server | `rescue` | `{ pieceId }` via `sendRescue` |
+| Client → server | `push` | `{ pusherPieceId, targetSessionId, targetPieceId, row, col }` via `sendPush` (−1 step; relocates target only; no turn advance) |
+| Client → server | `returnFromFinish` | `{ pieceId, row, col }` via `sendReturnFromFinish` |
+| Client → server | `peek` / `peekPlace` / `peekSubmit` | `{ pieceId }` / place / submit — shared Q&A (no stub Correct/Wrong) |
 | Client → server | `endTurn` | empty via `sendEndTurn` |
 | Client → server | `ready` | empty via `sendReady` |
 | Client → server | `say` | `{ presetId }` via `sendSay` |
 | Server → owner | `budgets` | `{ steps, peeks, infinite, peekedThisTurn }` |
-| Server → owner | `peekOpen` | `{ side, row, col, reward: 1\|2\|3 }` |
+| Server → owner | `peekOpen` | legacy optional; prefer synced peek session |
 | Server → owner | `allJailWarning` | `{}` |
 | Server → clients | `say` | `{ sessionId, presetId, at }` → `sayEvents` (incl. readiness preset from ready) |
 
 ```ts
-sendMove(side: string, row: number, col: number): boolean {
+sendMove(pieceId: string, row: number, col: number): boolean {
   if (!this.room || this.phase !== 'playing' || !this.isMyTurn) return false;
-  this.room.send('move', { side, row, col });
+  this.room.send('move', { pieceId, row, col });
   return true;
 }
 
-sendRescue(side: string): boolean {
+sendRescue(pieceId: string): boolean {
   if (!this.room || this.phase !== 'playing' || !this.isMyTurn) return false;
-  this.room.send('rescue', { side });
+  this.room.send('rescue', { pieceId });
   return true;
 }
 
 sendPush(
-  pusherSide: string,
+  pusherPieceId: string,
   targetSessionId: string,
-  targetSide: string,
+  targetPieceId: string,
   row: number,
   col: number,
 ): boolean {
   if (!this.room || this.phase !== 'playing' || !this.isMyTurn) return false;
-  this.room.send('push', { pusherSide, targetSessionId, targetSide, row, col });
+  this.room.send('push', { pusherPieceId, targetSessionId, targetPieceId, row, col });
   return true;
 }
 
-sendReturnFromFinish(side: string, row: number, col: number): boolean {
+sendReturnFromFinish(pieceId: string, row: number, col: number): boolean {
   if (!this.room || this.phase !== 'playing' || !this.isMyTurn) return false;
-  this.room.send('returnFromFinish', { side, row, col });
+  this.room.send('returnFromFinish', { pieceId, row, col });
   return true;
 }
 
-sendPeek(side: string): boolean {
+sendPeek(pieceId: string): boolean {
   if (!this.room || this.phase !== 'playing' || !this.isMyTurn) return false;
-  this.room.send('peek', { side });
+  this.room.send('peek', { pieceId });
   return true;
 }
 
-sendPeekAnswer(correct: boolean): boolean {
-  if (!this.room || typeof correct !== 'boolean') return false;
-  this.room.send('peekAnswer', { correct });
-  this.openPeek = null;
+sendPeekPlace(slotIndex: number, answerCardId: string | null): boolean {
+  if (!this.room || !this.openPeek || !this.isPeekOwner) return false;
+  this.room.send('peekPlace', { slotIndex, answerCardId });
+  return true;
+}
+
+sendPeekSubmit(): boolean {
+  if (!this.room || !this.openPeek || !this.isPeekOwner) return false;
+  this.room.send('peekSubmit', {});
   return true;
 }
 
@@ -401,8 +405,8 @@ Catch at the page only if you need extra UI beyond `game.error`.
 ### Board + seats on GamePage
 
 ```ts
-// GamePage: LAYOUT + pieces + presence + budgets + peek + say; remount → rejoinGame(roomId)
-// Own turn: select → red targets → game.sendMove(side, row, col); eye → sendPeek / sendPeekAnswer
+// GamePage: synced grid + pieces + presence + budgets + shared peek + say; remount → rejoinGame(roomId)
+// Own turn: select → red targets → game.sendMove(pieceId, row, col); eye → sendPeek / place / submit
 // Multi: skip_next on own avatar (aria game.endTurn) → game.sendEndTurn(); solo hides end-turn
 // Own online marker: picker → game.sendSay('hello'|'luck'); bubbles from game.sayEvents
 await game.leaveGame(); // consented — clears tourist reconnect token
@@ -434,14 +438,14 @@ Show `auth.error` in a `q-banner`. Router already blocks until `whenReady()`.
 | Leaving `listing` / `loading` true after error | Always `finally` |
 | Skipping `whenReady` in router | Await before `requiresAuth` / `guest` redirects |
 | Inventing axios/BFF helpers | Stay on LobbyRoom + room messages (`client.http` only if needed) |
-| Calling `room.send('move'|'rescue'|'push'|'returnFromFinish'|'peek'|'endTurn'|'say', …)` from GamePage | Use `game.sendMove` / `sendRescue` / `sendPush` / `sendReturnFromFinish` / `sendPeek` / `sendPeekAnswer` / `sendEndTurn` / `sendSay` only |
+| Calling `room.send(…)` from GamePage | Use `game.sendMove` / `sendRescue` / `sendPush` / `sendReturnFromFinish` / `sendPeek` / `sendPeekPlace` / `sendPeekSubmit` / `sendEndTurn` / `sendSay` only |
 | Skipping `lint` / `typecheck` after Colyseus client changes | Run `npm run lint` / `typecheck` from client package root; fix failures |
 
 ## Checklist for a new or changed Colyseus call
 
 1. Belongs in `stores/auth` or `stores/game` (not a page).
 2. Uses shared `client` from `@/boot/colyseus`.
-3. Lobby list: LobbyRoom subscribe; rooms: `create({ maxSeats, grilleDensity, catapultDensity })` / `joinById` (no Play shortcut); Game `sendMove` → `move`; `sendRescue` / `sendPush` / `sendReturnFromFinish`; `sendPeek` / `sendPeekAnswer` / `sendEndTurn`; `sendReady` → `ready`; `sendSay` → `say` + `onMessage('say'|'budgets'|'peekOpen'|'allJailWarning')`. HTTP only as unused fallback.
+3. Lobby list: LobbyRoom subscribe; rooms: `create({ mapId, packId, taskSetIds, grilleDensity, catapultDensity })` / `joinById` (no Play shortcut); Game `sendMove` → `move` `{ pieceId, row, col }`; `sendRescue` / `sendPush` / `sendReturnFromFinish`; `sendPeek` / `sendPeekPlace` / `sendPeekSubmit` / `sendEndTurn`; `sendReady` → `ready`; `sendSay` → `say` + `onMessage('say'|'budgets'|'allJailWarning')`. HTTP only as unused fallback.
 4. Room types use `TOURIST_ROOM` / `LOBBY_ROOM`.
 5. Loading flag cleared in `finally`; failures set store `error`.
 6. State fields / message payloads match `../happy-tourist-server` (lockstep), including `currentTurnSessionId` / `removedTaskKeys` / `holdingGrilleKeys` / `revealingCatapultKeys` / `brokenCatapultKeys` / piece `trapped` / private budgets.

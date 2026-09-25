@@ -5,11 +5,12 @@ description: >-
   the happy-tourist tourist server: MyRoom lifecycle (onAuth / onCreate /
   onJoin / onDrop / onReconnect / onLeave / onDispose), tourist reconnect grace
   vs LobbyRoom fire-and-forget, room registration in app.config (lobby +
-  tourist + enableRealtimeListing), maxSeats / grilleDensity / catapultDensity
-  create options / waiting-only seating / deferred pieces / seat connectivity /
-  start phase, consented leave clears that seat’s holding grilles (SC-PIECE-28;
-  onDrop does not), onDispose cancels paced trap pipeline + clearTurnDeadline,
-  JWT room gate, or aligning room name with client TOURIST_ROOM.
+  tourist + enableRealtimeListing), mapId/packId/taskSetIds + grilleDensity +
+  catapultDensity create options (maxSeats from map.players) / waiting-only seating /
+  deferred pieces / seat connectivity / start phase, consented leave clears that
+  seat’s holding grilles (SC-PIECE-28; onDrop does not), onDispose cancels paced
+  trap pipeline + clearTurnDeadline, JWT room gate, or aligning room name with
+  client TOURIST_ROOM.
 ---
 
 # Work With Rooms
@@ -33,7 +34,9 @@ Coordinate with sibling skills when they exist: `work-with-schema`, `work-with-m
 |-------|------|------|
 | Registration | `src/app.config.ts` | `lobby: defineRoom(LobbyRoom)`; `tourist: defineRoom(MyRoom).enableRealtimeListing()` |
 | Game handler | `src/rooms/MyRoom.ts` | `Room` subclass: `onAuth`, `onCreate`, `onJoin`, `onDrop`, `onReconnect`, `onLeave`, `onDispose`; `onMessage('move'|'rescue'|'returnFromFinish'|'ready'|'say'|…)` |
-| Schema | `src/rooms/schema/MyRoomState.ts` | Synced: `phase` / `maxSeats` / `countdownRemaining` + legacy `started` + `seats` Map (`connected` / `reconnectUntil` / `ready` / `finishPlace` / `timeExpired` + piece `finished`/`trapped`; pieces empty until playing) + `currentTurnSessionId` + `turnUntil` + `turnBudgetSeconds` + `nextFinishPlace` + `removedTaskKeys` + `holdingGrilleKeys` + `revealingCatapultKeys` + `brokenCatapultKeys` |
+| Schema | `src/rooms/schema/MyRoomState.ts` | Synced: `phase` / `maxSeats` / `grid` / `touristsPerPlayer` / peek session / `countdownRemaining` + seats (pieces by pieceId) + turn + `removedTaskKeys` + grilles/catapults |
+| Snapshot | `src/lib/roomContentSnapshot.ts` | Immutable map+pack load on create |
+| Geometry | `src/game/boardGeometry.ts` | Parse grid → playable/task/center |
 | Tests | `test/MyRoom.test.ts` | JWT, tourist connect; capacity/start (SC-START-*); seating/deferred pieces (SC-PIECE-*); turn/move/grille/catapult (SC-MOVE-*); finish (SC-FINISH-*); say (SC-SAY-*); lobby/density (SC-LOBBY-*) |
 | Loadtest | `loadtest/example.ts` | `joinOrCreate`; `--room tourist` |
 
@@ -44,17 +47,17 @@ Constants: `RECONNECT_GRACE_SECONDS = 30`, `COUNTDOWN_SECONDS = 5`, `TURN_BUDGET
 ## Lifecycle Flow
 
 ```text
-client create({ maxSeats, grilleDensity?, catapultDensity? }) / joinById / joinOrCreate / reconnect('tourist')
+client create({ mapId, packId, taskSetIds, grilleDensity?, catapultDensity? }) / joinById / joinOrCreate / reconnect('tourist')
         │
         ▼
   static onAuth(token)     ← JWT.verify; fail → reject join
         │  returns userdata → onJoin(…, auth)
         ▼
-  onCreate(options)        ← once per room instance
-        │  setState; parse maxSeats (2|3|4, default 2) + grilleDensity + catapultDensity
-        │  (few/medium/many, default medium each)
-        │  refreshMetadata({ title, status, maxSeats, seats })
-        │  onMessage('move'|'rescue'|'returnFromFinish'|'peek'|…|'ready'|'say')
+  onCreate(options)        ← async once per room instance
+        │  setState; loadRoomContentSnapshot(options) → maxSeats=map.players + grid + pack
+        │  + grilleDensity + catapultDensity (few/medium/many, default medium each)
+        │  refreshMetadata({ title, status, maxSeats, seats, mapGrid, packTitle, … })
+        │  onMessage('move'|'rescue'|'push'|'returnFromFinish'|'peek'|'peekPlace'|'peekSubmit'|…|'ready'|'say')
         │  (enableRealtimeListing publishes to LobbyRoom subscribers)
         ▼
   onJoin(client, options, auth)
@@ -83,7 +86,7 @@ client create({ maxSeats, grilleDensity?, catapultDensity? }) / joinById / joinO
 | Hook | Do here | Don't |
 |------|---------|--------|
 | `static onAuth` | `JWT.verify(token)`; return userdata | Trust client-supplied identity without JWT |
-| `onCreate` | `setState`; parse `maxSeats` + `grilleDensity` + `catapultDensity` (room-private); `phase=waiting`; `refreshMetadata`; register `move`/`rescue`/`returnFromFinish`/`peek`/…/`ready`/`say`; do **not** set `maxClients = maxSeats` | Mutate board from HTTP |
+| `onCreate` | `setState`; **async** `loadRoomContentSnapshot(options)` → `maxSeats` from map.players + `grid` + pack; parse `grilleDensity`/`catapultDensity` (room-private); `phase=waiting`; `refreshMetadata` (incl. mapGrid/pack labels); register `move`/`rescue`/`push`/`returnFromFinish`/`peek`/`peekPlace`/`peekSubmit`/…/`ready`/`say`; do **not** set `maxClients = maxSeats` | Mutate board from HTTP; revive maxSeats-only create |
 | `onJoin` | Assign seat only while `phase === 'waiting'` and under `maxSeats`; unique `touristId`; pieces deferred until `playing`; online connectivity; `ready=false`; `timeExpired=false`; maybe start countdown when full | Cap the room with `maxClients`; seat during `countdown`/`playing`; invent pieces in waiting |
 | `onDrop` | Seated: mark offline + `allowReconnection(client, 30)`; hold seat/pieces; do not cancel countdown; do **not** pause turn deadline | Treat unexpected drop as immediate seat delete; grace for spectators or LobbyRoom |
 | `onReconnect` | Restore seat online (`connected=true`, `reconnectUntil=0`) | Re-assign a new seat / touristId |
@@ -104,12 +107,15 @@ export class MyRoom extends Room<{ state: MyRoomState }> {
     return userdata;
   }
 
-  onCreate(options: any) {
+  async onCreate(options: any) {
     this.setState(new MyRoomState());
-    this.state.maxSeats = parseMaxSeats(options); // 2|3|4, else 2
+    // await loadRoomContentSnapshot(options) → maxSeats=map.players, grid, packTitle, …
     this.state.phase = "waiting";
-    this.refreshMetadata(); // title / status / maxSeats / seats
+    this.refreshMetadata(); // title / status / maxSeats / seats / mapGrid / packTitle / …
     this.onMessage("move", …);
+    this.onMessage("peek", …);
+    this.onMessage("peekPlace", …);
+    this.onMessage("peekSubmit", …);
     this.onMessage("ready", …);
     this.onMessage("say", …);
   }
@@ -123,7 +129,7 @@ export class MyRoom extends Room<{ state: MyRoomState }> {
 
 - `onAuth` is **static**; invalid JWT throws → client cannot connect.
 - `auth` in `onJoin` is the userdata returned from `onAuth`.
-- `refreshMetadata` feeds LobbyPage: `{ title, status, maxSeats, seats }` — `seats` = occupied seated count; `status` is `playing` only when `phase === 'playing'` (else `waiting`, including countdown).
+- `refreshMetadata` feeds LobbyPage: `{ title, status, maxSeats, seats, mapGrid?, packTitle?, taskSetLabels? }` — `seats` = occupied seated count; `status` is `playing` only when `phase === 'playing'` (else `waiting`, including countdown).
 - Consented client `leave()` goes straight to `onLeave` (no grace) → clear that seat’s holding grilles before seat delete (SC-PIECE-28). Unexpected drop uses Colyseus `onDrop` → `allowReconnection` (holding stays while grace holds the seat).
 - Seating / start / reconnect / grille leave-clear details: `work-with-game` / `work-with-schema`.
 
@@ -143,7 +149,7 @@ rooms: {
 |---------------|--------------|
 | `joinOrCreate('lobby', { filter: { name: 'tourist' } })` | Key `lobby` → built-in `LobbyRoom` |
 | Live `rooms` / `+` / `-` updates | `.enableRealtimeListing()` on `tourist` |
-| `client.create('tourist', { maxSeats })` / `joinById` / `reconnect` | Key `tourist` in `rooms` + MyRoom grace hooks |
+| `client.create('tourist', { mapId, packId, taskSetIds, grilleDensity?, catapultDensity? })` / `joinById` / `reconnect` | Key `tourist` in `rooms` + MyRoom grace hooks |
 | `client.http.get('/rooms/tourist')` | Same (HTTP listing still available; UI uses LobbyRoom) |
 
 Without `.enableRealtimeListing()`, lobby subscribers will not get create/dispose updates for `tourist`.
@@ -161,7 +167,7 @@ Align with client Pinia expectations:
 | Concern | Target |
 |---------|--------|
 | Capacity | No `maxClients = maxSeats`; seated ≤ `maxSeats` (2\|3\|4) via seats check; spectators may join |
-| Seats | Unique `touristId` 1…4; pieces deferred until `playing` (four N/E/S/W on free start cells — see `work-with-game`); **new seat only while `phase === 'waiting'`** and under maxSeats |
+| Seats | Unique `touristId` 1…4; pieces deferred until `playing` (`touristsPerPlayer` pieces by pieceId on free start cells — see `work-with-game`); **new seat only while `phase === 'waiting'`** and under maxSeats |
 | Connectivity | `connected` + `reconnectUntil` on Seat (D2); online at assign; `timeExpired` for solo budget lock |
 | Start | `phase` waiting → countdown → playing (+ materialize + turn deadline); full table or all-ready underfilled; legacy `started` mirrors `phase === 'playing'` |
 | Turn timer | Synced `turnUntil` / `turnBudgetSeconds` (60 multi / 300 solo); clear on dispose / no eligible (see `work-with-game`) |

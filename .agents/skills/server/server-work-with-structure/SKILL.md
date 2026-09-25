@@ -60,7 +60,9 @@ Sibling client: `../happy-tourist.github.io` (room type `tourist`, board + piece
 | Database | `src/db/` | `GameDatabase` (`index.ts`) + Drizzle user schema (`schema.ts`; `htRole` + support + content pack/map table decls) |
 | Rooms | `src/rooms/` | Room handlers (`onCreate` / `onJoin` / `onDrop` / `onReconnect` / leave / dispose; `onMessage('move'|'ready'|'say')`) |
 | Schema | `src/rooms/schema/` | `@colyseus/schema` synced state (`phase` / `maxSeats` / `countdownRemaining` + legacy `started` + `seats` + `currentTurnSessionId`) |
-| Pure rules | `src/game/` | Authoritative move validate/apply (`touristMove.ts`) — no Colyseus I/O |
+| Pure rules | `src/game/` | Authoritative move validate/apply (`touristMove.ts`, `boardGeometry.ts`) — no Colyseus I/O |
+| Room create snapshot | `src/lib/roomContentSnapshot.ts` | Immutable map+pack snapshot for `MyRoom.onCreate` |
+| Create fixture cache | `src/lib/touristCreateFixtureState.ts` | Mocha tourist-create fixture ids (cleared with content tables) |
 | Tests | `test/` | mocha + `@colyseus/testing` (`*.test.ts`; auth email + theme + room + `support.test.ts` + `zz-contentPacks.test.ts` + `zz-contentMaps.test.ts` + `zz-defaultContentPacks.test.ts`) |
 | Loadtest | `loadtest/` | `@colyseus/loadtest` scripts |
 | Deploy | `ecosystem.config.cjs`, `.github/workflows/` | PM2 + CI rsync |
@@ -152,7 +154,7 @@ Decide in this order:
 **Put in rooms/schema**
 
 - Fields the client must sync once product decides (scaffold OK today).
-- Encoding / shape: align with client (`{ side, row, col }` — not draughts encoding as product canon).
+- Encoding / shape: align with client (`{ pieceId, row, col }` — not draughts / not N/E/S/W side).
 - Defaults via schema helpers — no rule engines here.
 
 **Put in db**
@@ -258,7 +260,7 @@ ecosystem.config.cjs
 
 **Test** — `boot(appConfig)`, `JWT.sign(...)`, `createRoom("tourist")`, `connectTo`, assert `sessionId`; lobby `+`/`-` cases when listing changes; auth email suite mocks mailer (`setSendEmailImpl`) and uses `keepLatestRequestListener` after multi-suite boot.
 
-**Client contract** — room `tourist` + live `lobby`; synced `phase` / `maxSeats` / `countdownRemaining` / `seats` (+ `ready` / `finishPlace` / piece `finished`) / `currentTurnSessionId` / `nextFinishPlace` (+ legacy `started`) + `move` `{ side, row, col }` (center → finish side-effect) + `ready` + ephemeral `say` `{ presetId }` → broadcast `{ sessionId, presetId, at }`; HTTP `/rooms/tourist` is fallback only.
+**Client contract** — room `tourist` + live `lobby`; synced `phase` / `maxSeats` / `grid` / peek session / seats (pieces by pieceId) / turn + `move` `{ pieceId, row, col }` + `peek`/`peekPlace`/`peekSubmit` + `ready` + `say`; HTTP `/rooms/tourist` is fallback only.
 
 ## Creating New Pieces — Checklist
 

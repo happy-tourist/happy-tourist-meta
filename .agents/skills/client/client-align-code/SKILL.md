@@ -120,7 +120,7 @@ Example shape (game enter / board + seats):
 
 ```ts
 // LobbyPage → game.createGame / joinGame → navigate Game
-// GamePage → LAYOUT tiles + pieces from game.seats (no room.send for board UX today)
+// GamePage → synced grid tiles + pieces from game.seats (no room.send for board UX today)
 // room.onStateChange → seats / phase / maxSeats / countdownRemaining / sessionId → status
 ```
 
@@ -133,7 +133,7 @@ await game.subscribeLobby();
 
 Method presence or "looks compatible" alone is insufficient. Track each contract fact separately so one correct component cannot hide another mismatch.
 
-The client↔server contract is Colyseus Auth + room type `tourist` + live `lobby` (LobbyRoom + `.enableRealtimeListing()`) + Game board mirroring seats/`finishPlace`/piece `finished`/`phase`/`maxSeats`/`countdownRemaining`/`currentTurnSessionId` + `sendMove` → `move` `{ side, row, col }` (center finish is schema side-effect) + `sendReady` → `ready`. When CR/docs/server and client disagree, report `code-only` / contradiction with both sides named (`src/stores/*` vs `../happy-tourist-server`).
+The client↔server contract is Colyseus Auth + room type `tourist` + live `lobby` (LobbyRoom + `.enableRealtimeListing()`) + Game board mirroring seats/`finishPlace`/piece `finished`/`phase`/`maxSeats`/`countdownRemaining`/`currentTurnSessionId` + `sendMove` → `move` `{ pieceId, row, col }` (center finish is schema side-effect) + shared peek + `sendReady` → `ready`. When CR/docs/server and client disagree, report `code-only` / contradiction with both sides named (`src/stores/*` vs `../happy-tourist-server`).
 
 A toast / silent catch is not blocking confirmation. When confirmation is required, wait for explicit approval; cancel/close must not perform the mutating action. With analogue-only evidence, require only what the analogue proves.
 
@@ -380,7 +380,7 @@ This SPA wires cross-tree contracts through Pinia stores, the Colyseus client/ro
 When a changed hunk touches `stores/auth`, `stores/theme`, `stores/game`, `boot/colyseus`, `boot/theme`, room `send`/`onStateChange`, App-level `watch` on auth, or `router` meta/guards, independently verify:
 
 1. **Pinia still wired** — `auth` setup-store exports (`register` / `login` / `loginAnonymously` / `logout` / `whenReady` / `isAuthenticated` / `displayName` / `error` / …), `theme` (`syncFromAuthUser` / `toggle` / …), and `game` options-store actions/getters (`subscribeLobby` / `unsubscribeLobby` / `createGame` / `joinGame` / `leaveGame` / `sendMove` / `isMyTurn` / `isInRoom` / …) still match callers; renamed action with old call sites is a regression.
-2. **Room protocol** — room names `TOURIST_ROOM = 'tourist'`, `LOBBY_ROOM = 'lobby'`; live listing via LobbyRoom subscribe (HTTP `refreshRooms` unused fallback only); `sendMove` → `move` `{ side, row, col }`; mirror `currentTurnSessionId` (do not require draughts cells `0`–`4`).
+2. **Room protocol** — room names `TOURIST_ROOM = 'tourist'`, `LOBBY_ROOM = 'lobby'`; live listing via LobbyRoom subscribe (HTTP `refreshRooms` unused fallback only); `sendMove` → `move` `{ pieceId, row, col }`; mirror `currentTurnSessionId` (do not require draughts cells `0`–`4`).
 3. **Auth lifecycle** — `client.auth.onChange` drives `token`/`user`/`ready`; token key `colyseus-auth-token`; protected routes wait for `whenReady()`.
 4. **Theme / preference sync** — registered restore via profile HTTP must not re-enter on every in-memory userdata patch; guest stays localStorage-only; Colyseus HTTP only from store (see **Reactive / async feedback loops**).
 5. **Route meta** — `/login` has `meta.guest`; `/lobby` and `/game/:roomId` have `meta.requiresAuth`; hash mode (`/#/…`). Removing or flipping meta without AC is `extra` / `missing`.

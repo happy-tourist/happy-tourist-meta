@@ -28,7 +28,7 @@ Pair with client board UX: `happy-tourist-meta/.agents/skills/client/work-with-g
 
 | Surface | Path | Role |
 | --- | --- | --- |
-| Room | `src/rooms/MyRoom.ts` | JWT `onAuth`; seat assign; start / ready / countdown; `turnOrder` + private `budgets` / `taskRewards` / `openPeek` / hidden grilles + hidden catapults; paced trap pipeline after land / post-rescue; `pendingTurnAdvance` defers auto-end/deadline; idle without pending **re-evals** auto-end/solo (SC-MOVE-93); `onMessage('move'\|'rescue'\|'push'\|'returnFromFinish'\|'peek'\|'peekAnswer'\|'endTurn'\|'ready'\|'say')`; `handlePush`; `onDrop`/`onReconnect`/`onLeave` |
+| Room | `src/rooms/MyRoom.ts` | JWT `onAuth`; async create via `roomContentSnapshot`; seat assign; start/ready/countdown; `turnOrder` + private `budgets` / task deck / BoardGeometry / `openPeek` / hidden grilles+catapults; paced trap pipeline; `onMessage('move'|'rescue'|'push'|'returnFromFinish'|'peek'|'peekPlace'|'peekSubmit'|'endTurn'|'ready'|'say')`; `onDrop`/`onReconnect`/`onLeave` |
 | Schema | `src/rooms/schema/MyRoomState.ts` | `phase` + `maxSeats` + `countdownRemaining` + `started` (legacy) + `seats` (+ `ready` / `finishPlace` / `timeExpired`) + piece `finished`/`trapped` + `currentTurnSessionId` + `turnUntil` + `turnBudgetSeconds` + `nextFinishPlace` + `removedTaskKeys` + `holdingGrilleKeys` + `revealingCatapultKeys` + `brokenCatapultKeys` |
 | Rules | `src/game/touristMove.ts` | Pure validate/apply one-step move; playable layout; landing excludes removed holes; `hasLegalMove` / `hasLegalPeek` / `hasLegalRescue` / `hasLegalReturn` / `farSideCell` / `validateTouristPush` / `hasLegalPush`; occupancy ignores `finished` (trapped still occupy); center landing is room side-effect; grille/catapult density + `catapultFlingCandidates` / `pickCatapultFlingDest` / `shuffleArray` |
 | Registration | `src/app.config.ts` | Room name must be `tourist` for client lobby |
@@ -40,7 +40,7 @@ Constants: `RECONNECT_GRACE_SECONDS = 30`, `COUNTDOWN_SECONDS = 5`, `TURN_BUDGET
 - Create options: `{ maxSeats: 2|3|4, grilleDensity?: 'few'|'medium'|'many', catapultDensity?: 'few'|'medium'|'many' }` (`maxSeats` invalid → **2**; either density invalid/omit → **medium**). Synced `state.maxSeats`; both densities are room-private until seed.
 - New seat **only** while `phase === 'waiting'` and `seats.size < maxSeats`: unique `touristId` 1…4, `connected=true`, `reconnectUntil=0`, `ready=false`, `finishPlace=0`, `timeExpired=false`.
 - Join during `countdown` or `playing` → spectator (no seat/kind/pieces), even if capacity is free after leave/grace.
-- **Pieces deferred:** in `waiting`/`countdown` — seat+kind only (no pieces). On enter `playing` — `materializePiecesForAllSeats()` (four pieces N/E/S/W on free start cells).
+- **Pieces deferred:** in `waiting`/`countdown` — seat+kind only (no pieces). On enter `playing` — `materializePiecesForAllSeats()` (`touristsPerPlayer` pieces keyed by pieceId on free start cells).
 - When `seats.size === maxSeats` while waiting: further joiners are spectators. No `maxClients = maxSeats`.
 - Metadata for lobby: `{ title, status, maxSeats, seats }` — `seats` = occupied seated count (not `clients`).
 - Assign only in Room lifecycle — client never invents seats. Reconnect within grace is not a new seat.
@@ -58,7 +58,7 @@ Constants: `RECONNECT_GRACE_SECONDS = 30`, `COUNTDOWN_SECONDS = 5`, `TURN_BUDGET
 
 | Path | Behavior |
 |------|----------|
-| **Consented leave** (`client.leave` / intentional exit) | Immediate `onLeave` → clear holding grilles of that seat’s trapped cells (SC-PIECE-28), then delete seat (all four pieces). Kind/cells back to pools. Subsequent join gets a seat **only** while `phase === 'waiting'` and under maxSeats. |
+| **Consented leave** (`client.leave` / intentional exit) | Immediate `onLeave` → clear holding grilles of that seat’s trapped cells (SC-PIECE-28), then delete seat (all pieces). Kind/cells back to pools. Subsequent join gets a seat **only** while `phase === 'waiting'` and under maxSeats. |
 | **Unexpected drop** (`onDrop`) | Seated only: `connected=false`, `reconnectUntil=now+30s`, `allowReconnection(client, 30)`; **hold** seat + pieces; **do not** clear holding grilles. Spectators: no grace. Does not cancel countdown. |
 | **Reconnect within grace** (`onReconnect`) | Same seat/kind/pieces; `connected=true`, `reconnectUntil=0`. |
 | **Grace timeout / denied** | Permanent remove as consented leave; no seating reopen outside `waiting`. |
@@ -83,7 +83,7 @@ Room-private (not schema):
 | Bookkeeping | Meaning |
 |-------------|---------|
 | `budgets: Map<sessionId, { steps, peeks, infinite, peekedThisTurn }>` | Owner-only; `infinite` = **peeks∞ only** (steps always finite). Resend `client.send('budgets', { steps, peeks, infinite, peekedThisTurn })`. `peekedThisTurn` kept for client mirror — **no** one-peek/turn gate |
-| `taskRewards: Map<"r,c", 1\|2\|3>` | Pregen on `enterPlaying` — bag **28×1 / 14×2 / 6×3**; revealed only in private `peekOpen` |
+| `taskDeck` / `taskPool` / `cellBindings` | Shuffled pack tasks at create; bind on first peek; flipped digit syncs via `flippedCells` |
 | `openPeek` | At most one unresolved peek for current seat |
 | `grilleDensity` + hidden grille keys | Create-time `few`/`medium`/`many` → **12/22/35%** of task cells (6/11/17 on 48); hidden keys never synced until reveal |
 | `catapultDensity` + hidden catapult keys | Same ratios/count formula as grille (`CATAPULT_DENSITY_RATIO` = `GRILLE_DENSITY_RATIO`); independent create option; seed only on task `*`; overlap with grilles OK; hidden never synced until consume reveal |
@@ -96,11 +96,11 @@ Behavior:
 - Multi (≥2 eligible) on becoming current: `steps++`, `peeks++`. Solo (1 eligible) on becoming current: `infinite=true` (peeks∞) then **+1 step only** (no peek increment); already-current→solo (non-current leave/finish) → peeks∞ + 5:00 **without** re-grant. No end-turn while solo.
 - `move`: always spend 1 step; **keep** turn; reject if piece `trapped`; after land → paced trap pipeline; then `maybeAutoEndTurn` (deferred while pipeline active) / solo step-loss. Landing on removed hole → reject.
 - **Paced trap pipeline (`startTrapPipeline` / `resolveNextTrapHop`):** one next trap on current cell after land/arrival budget → shuffle → grille applies holding then idle; catapult consume + sync reveal → wait overlay budget → fire-time fling/broken → clear reveal → fling travel budget → resolve **only** dest cell. No full-chain sync in one tick; no client `presentationDone`. Fling does **not** spend an extra step. `pendingTurnAdvance` + `onTrapPipelineIdle`: pending → `advanceTurn`; else **re-eval** `maybeAutoEndTurn` + solo exhaustion (SC-MOVE-90…93).
-- `rescue` `{ side }`: own trapped + Chebyshev-1 free own piece + steps≥1 → −1 step; clear trapped + holding grille (rescuer coords unchanged); then paced pipeline if a catapult remains. Solo = multi.
+- `rescue` `{ pieceId }`: own trapped + Chebyshev-1 free own piece + steps≥1 → −1 step; clear trapped + holding grille; then paced pipeline if a catapult remains.
 - `push` `{ pusherSide, targetSessionId, targetSide, row, col }`: own free pusher + free adj target → far-side dest; −1 step; relocate **target only**; land side-effects like move (paced pipeline on target). Reject trapped pusher/target, hole, occupied, bad geometry. Solo = multi.
-- `returnFromFinish` `{ side, row, col }`: `finishPlace===0` + finished side + legal center-ring cell → −1 step; unfinish onto cell → paced pipeline.
+- `returnFromFinish` `{ pieceId, row, col }`: `finishPlace===0` + finished piece + legal center-ring cell → −1 step; unfinish onto cell → paced pipeline.
 - All-jail (4 trapped): free pieces; clear 4 holding grilles; place on free starts per side; keep turn/steps/timer; private `allJailWarning` to that seat only.
-- `peek` `{ side }` → private `peekOpen`; reject if piece trapped; while peeks>0 (or solo ∞) and on live `*` — multi peeks per turn allowed (spent grille cell still peekable). `peekAnswer` → spend peek (finite); Correct +reward steps + remove tile; Incorrect KEEP.
+- `peek` `{ pieceId }` → shared peek session; reject if trapped; bind deck task on first open; flipped re-peek free. `peekPlace`/`peekSubmit` → peeker places chips / validates order; Correct +difficulty + remove tile; Incorrect KEEP.
 - `endTurn` (no payload): multi only; open peek → force incorrect KEEP first; then `advanceTurn` (+1/+1 next).
 - Auto-end (multi): advance only if no legal move **and not** (peeks≥1 ∧ unfinished on live `*`) **and not** legal rescue/return/push (SC-MOVE-38/47/62/73).
 - Solo step-loss: `steps===0` ∧ ¬hasLegalPeek on live `*` ∧ no legal rescue/return/push → `timeExpired` (SC-MOVE-48); distinct from timer (SC-MOVE-45).
@@ -116,7 +116,7 @@ Behavior:
 
 ## Move Rules (shipped — D2 / D3 + game/finish + steps + grilles)
 
-- Message: `room.send('move', { side: 'N'|'E'|'S'|'W', row, col })` — `side` = own piece; `row`/`col` = target. **No** separate `finish` message. Also `rescue` / `push` / `returnFromFinish` (see budgets section).
+- Message: `room.send('move', { pieceId, row, col })`. **No** separate `finish` message. Also `rescue` / `push` / `returnFromFinish` / `peekPlace` / `peekSubmit`.
 - Pure module `src/game/touristMove.ts`: playable = start + task + center; **landing on `removedKeys` rejected**; stand/leave from hole OK; Chebyshev distance === 1; occupancy = unfinished (incl. trapped); reject move if piece `trapped`; helpers `hasLegalMove(..., removedKeys)` / `hasLegalPeek(removedKeys)` / `farSideCell` / `validateTouristPush` / `hasLegalPush` + grille/catapult density + fling helpers.
 - `MyRoom.onMessage('move')`: require `phase === 'playing'` + seated + `finishPlace === 0` + `!timeExpired` + current turn + `steps > 0` → validate (holes not landable; not trapped) → update `row`/`col`; always `steps--` + `sendBudgets`; if target is center → `piece.finished=true`; else start paced trap pipeline; when seat’s 4th piece finishes → assign `finishPlace = nextFinishPlace++` then advance; else **do not** advance solely because move succeeded — run auto-end / solo step-loss (deferred if pipeline active). Reject → no state change.
 - Finished / time-expired seat may still `say`; cannot move/peek/rescue/push/return. Finished seats count toward `maxSeats` until leave/grace.
@@ -134,21 +134,21 @@ Behavior:
 | Field / message | Client expectation |
 | --- | --- |
 | Room name | `tourist` |
-| Board UI | Client-only `LAYOUT` in `GamePage`; server does **not** sync tile kinds; holes from synced `removedTaskKeys` |
+| Board UI | Synced `grid` → client/server `boardGeometry`; holes from `removedTaskKeys`; flipped digits from `flippedCells` |
 | Synced state | `phase`, `maxSeats`, `countdownRemaining`, `started` (legacy), `seats` Map → `touristId` + `pieces` (+ `finished`/`trapped`; may be empty pre-playing) + connectivity + `ready` + `finishPlace` + `timeExpired`, `currentTurnSessionId`, `turnUntil`, `turnBudgetSeconds`, `nextFinishPlace`, `removedTaskKeys`, `holdingGrilleKeys`, `revealingCatapultKeys`, `brokenCatapultKeys` |
-| Messages | `move` `{ side, row, col }` via `sendMove` (no turn advance); `rescue` `{ side }` / `push` `{ pusherSide, targetSessionId, targetSide, row, col }` / `returnFromFinish` `{ side, row, col }`; `peek` `{ side }` / `peekAnswer` `{ correct }` / `endTurn` via store; `ready` via `sendReady` |
-| Private | Server → owner `budgets` `{ steps, peeks, infinite` (peeks∞ only)`, peekedThisTurn }`; `peekOpen` `{ side, row, col, reward }`; `allJailWarning` `{}` (own seat only) |
+| Messages | `move`/`rescue`/`push`/`returnFromFinish`/`peek` with **pieceId**; `peekPlace`/`peekSubmit` shared Q&A; `endTurn`/`ready`/`say` via store |
+| Private | Server → owner `budgets` `{ steps, peeks, infinite` (peeks∞ only)`, peekedThisTurn }`; `allJailWarning` `{}`; peek session mostly schema-synced |
 | Create | `{ maxSeats, grilleDensity?: 'few'\|'medium'\|'many', catapultDensity?: 'few'\|'medium'\|'many' }` (both default medium) |
 | Say (ephemeral) | `say` `{ presetId: hello\|luck }` → broadcast; readiness preset only via `ready` — see `work-with-messages` |
 | Reconnect | Colyseus token; client `localStorage` + `reconnect` then `joinById`; resend `budgets` on reclaim |
 | Presence / hints | Client-only chrome (own counters + end-turn + eye); selection + red targets local to current-turn client |
 
-Client-local / room-private only (do **not** put on schema): Pinia status strings; `selectedSide` / legal hints; presence layout; say bubbles (`sayEvents` / `liveSays`); `turnOrder` / `budgets` / `taskRewards` / `openPeek` / `grilleDensity` / `catapultDensity` / hidden grille + hidden catapult keys (room-private). Lobby leave-before-enter / quiet listing stays in `work-with-rooms` / client `work-with-lobby`.
+Client-local / room-private only (do **not** put on schema): Pinia status strings; `selectedPieceId` / legal hints; presence layout; say bubbles; `turnOrder` / `budgets` / task deck / cell bindings / contentSnapshot / `grilleDensity` / `catapultDensity` / hidden grille+catapult keys. Shared peek session fields **are** on schema.
 
 ## Architecture Preference
 
 ```
-onMessage('move') → parse { side, row, col } → reject if finished / trapped / no steps
+onMessage('move') → parse { pieceId, row, col } → reject if finished / trapped / no steps
                   → pure validate (touristMove; occupancy ignores finished)
                   → if ok: write row/col; spend step; if center → finished + maybe finishPlace
                     else paced trap pipeline (one hop + presentation budget; fling then dest)
@@ -156,7 +156,7 @@ onMessage('move') → parse { side, row, col } → reject if finished / trapped 
 
 onMessage('rescue'|'push'|'returnFromFinish') → spend step; clear trap / relocate target / unfinish onto ring
                                                → paced pipeline on land (rescue: remaining catapult)
-onMessage('peek'|'peekAnswer'|'endTurn') → budgets / remove tile only on Correct / advanceTurn
+onMessage('peek'|'peekPlace'|'peekSubmit'|'endTurn') → shared peek / remove tile only on Correct / advanceTurn
                                            (endTurn rejects while trap pipeline active)
 ```
 
@@ -166,7 +166,7 @@ onMessage('peek'|'peekAnswer'|'endTurn') → budgets / remove tile only on Corre
 - [x] Product sync: `phase` / `maxSeats` / `countdownRemaining` + `seats` (+ connectivity + `ready` + piece `trapped`) + `currentTurnSessionId` + `removedTaskKeys` + `holdingGrilleKeys` + catapult reveal arrays; new seat only while `waiting` under maxSeats (no `maxClients` seat lock; no mid-game seat).
 - [x] Start: auto/all-ready countdown; `onMessage('ready')`; move gated on `phase === 'playing'`; mocha SC-START-* / SC-MOVE-18.
 - [x] Unexpected drop grace 30 s + `allowReconnection`; consented leave immediate; empty seated → dispose; mocha SC-PIECE-*.
-- [x] `turnOrder` + private budgets + `onMessage('move'|'rescue'|'push'|'returnFromFinish'|'peek'|'peekAnswer'|'endTurn')` + grille/catapult seed + paced trap pipeline / deferred turn + `touristMove.ts` (holes not landable; peeks∞ solo; multi peek; solo become-current +1 step; push + auto-end `hasLegalPush`); mocha SC-MOVE-33…92 / SC-BOARD-07…24 / SC-LOBBY-14…17.
+- [x] `turnOrder` + private budgets + pieceId messages + shared peek + content snapshot + `boardGeometry` + grille/catapult seed + paced trap pipeline + `touristMove.ts`; mocha SC-MOVE / SC-BOARD / SC-LOBBY map+pack create.
 
 ## Do
 
@@ -174,7 +174,7 @@ onMessage('peek'|'peekAnswer'|'endTurn') → budgets / remove tile only on Corre
 - Keep seating pools and start-cell geometry in Room (or a pure helper), not in schema files.
 - Prefer **`phase`** over legacy `started` for start/move gates.
 - Keep reconnect grace only on tourist seated players — not LobbyRoom.
-- Keep `turnOrder` / `budgets` / `taskRewards` / hidden grilles / hidden catapults room-private; sync only `currentTurnSessionId` + `removedTaskKeys` + `holdingGrilleKeys` + short-lived catapult reveal keys + `Piece.trapped` (not steps/peeks / hidden locations).
+- Keep `turnOrder` / `budgets` / task deck / contentSnapshot / hidden grilles/catapults room-private; sync `grid` + peek session + `flippedCells` + turn + `removedTaskKeys` + grilles/catapults + `Piece.trapped` (not steps/peeks / hidden locations).
 - Reject illegal / pre-playing moves/peeks/rescues/pushes/returns server-side without mutating state.
 - Prefer pure rules modules + thin Room glue.
 
