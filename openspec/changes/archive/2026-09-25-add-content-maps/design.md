@@ -28,7 +28,7 @@
 
 ### D2 — Хранение
 
-- **Choice:** отдельные SQLite tables через `ensureContentMapTables` (или расширение `ensureContentTables`): `content_maps` (id, createdBy, workingRevisionId, liveRevisionId, inCatalog, editLocked*, timestamps), `content_map_revisions` (grid JSON 10×10 cell enum, players, touristsPerPlayer), moderation requests с `type` включающим `map` (или отдельная таблица map requests с тем же status machine — предпочтительно **единая** `content_moderation_requests` с nullable `packId`/`mapId` + type `map`, либо параллельные columns; при apply выбрать один путь и не дублировать status enum).
+- **Choice (applied):** `ensureContentMapTables` → `content_maps` + `content_map_revisions`; единая `content_moderation_requests` с nullable `packId`/`mapId` и `type` `pack`|`map` (тот же status machine, без параллельной map-requests таблицы).
 - **Why:** packs уже на revision + request + messages; maps проще (один payload).
 - **Alt:** одна polymorphic `content_items` — overkill для первого change.
 
@@ -52,9 +52,9 @@
 
 ### D6 — Client structure
 
-- **Choice:** Pinia store `maps` (или расширение `content` с map namespaces — предпочтительно **отдельный `maps` store**, чтобы не раздувать packs store) + pages Maps list / create→editor / staff request map branch; lobby header «Карты». HTTP только через store + `client.http`.
+- **Choice (applied):** отдельный Pinia store `maps` + `MapsListPage` / editor routes; shared staff queue / my-moderation остаются в `content` store с type badge `pack`|`map`; lobby header «Карты». HTTP maps — через `maps` + `client.http`.
 - **Why:** packs store уже большой; maps lifecycle проще и параллелен.
-- **Alt:** всё в `content.ts` — допустимо, если locate покажет меньший diff; design default = отдельный store.
+- **Alt:** всё в `content.ts` — отвергнуто при apply.
 
 ### D7 — Editor UX
 

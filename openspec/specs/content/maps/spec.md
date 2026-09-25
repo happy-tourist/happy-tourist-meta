@@ -1,3 +1,5 @@
+# content/maps Specification
+
 ## Purpose
 
 UGC-карты поля 10×10 (старт / игровое / финиш / дыра): создание и paint-редактор, конфиг игроков×туристов, submit на модерацию с тредом автор↔staff, approve в общий список без коллекции; soft-unpublish и staff Edit после freeze автора. Без привязки к tourist-room.
@@ -6,40 +8,40 @@ UGC-карты поля 10×10 (старт / игровое / финиш / ды�
 
 | Scenario ID | Coverage |
 |-------------|----------|
-| SC-MAP-01 | pending |
-| SC-MAP-02 | pending |
-| SC-MAP-03 | pending |
-| SC-MAP-04 | pending |
-| SC-MAP-05 | pending |
-| SC-MAP-06 | pending |
-| SC-MAP-07 | pending |
-| SC-MAP-08 | pending |
-| SC-MAP-09 | pending |
-| SC-MAP-10 | pending |
-| SC-MAP-11 | pending |
-| SC-MAP-12 | pending |
-| SC-MAP-13 | pending |
-| SC-MAP-14 | pending |
-| SC-MAP-15 | pending |
-| SC-MAP-16 | pending |
-| SC-MAP-17 | pending |
-| SC-MAP-18 | pending |
-| SC-MAP-19 | pending |
-| SC-MAP-20 | pending |
-| SC-MAP-21 | pending |
-| SC-MAP-22 | pending |
-| SC-MAP-23 | pending |
-| SC-MAP-24 | pending |
-| SC-MAP-25 | pending |
-| SC-MAP-26 | pending |
-| SC-MAP-27 | pending |
-| SC-MAP-28 | pending |
-| SC-MAP-29 | pending |
-| SC-MAP-30 | pending |
+| SC-MAP-01 | covered (server mocha) |
+| SC-MAP-02 | covered (server mocha) |
+| SC-MAP-03 | covered (server mocha) |
+| SC-MAP-04 | covered (client vitest paint) |
+| SC-MAP-05 | covered (server mocha) |
+| SC-MAP-06 | covered (server mocha + client vitest) |
+| SC-MAP-07 | covered (server mocha + client vitest) |
+| SC-MAP-08 | covered (client vitest) |
+| SC-MAP-09 | covered (server mocha) |
+| SC-MAP-10 | covered (server mocha) |
+| SC-MAP-11 | covered (server mocha) |
+| SC-MAP-12 | covered (server mocha) |
+| SC-MAP-13 | covered (server mocha) |
+| SC-MAP-14 | covered (server mocha + client vitest) |
+| SC-MAP-15 | covered (server mocha) |
+| SC-MAP-16 | covered (server mocha) |
+| SC-MAP-17 | covered (server mocha + client vitest) |
+| SC-MAP-18 | covered (server mocha) |
+| SC-MAP-19 | covered (server mocha) |
+| SC-MAP-20 | covered (server mocha) |
+| SC-MAP-21 | covered (server mocha + client vitest) |
+| SC-MAP-22 | covered (server mocha) |
+| SC-MAP-23 | covered (server mocha) |
+| SC-MAP-24 | covered (server mocha + client vitest) |
+| SC-MAP-25 | covered (client vitest) |
+| SC-MAP-26 | covered (server mocha) |
+| SC-MAP-27 | covered (server mocha) |
+| SC-MAP-28 | covered (server mocha) |
+| SC-MAP-29 | covered (client vitest) |
+| SC-MAP-30 | covered (client vitest) |
 
 Related: moderation patterns — `content/packs`; roles — `support/roles`. Runtime board geometry — `game/board` (unchanged; maps not wired to rooms).
 
-## ADDED Requirements
+## Requirements
 
 ### Requirement: Verified user may create a map
 
