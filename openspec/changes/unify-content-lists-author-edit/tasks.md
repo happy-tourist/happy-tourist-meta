@@ -78,3 +78,12 @@
 - [x] 10.3 Map View: Edit в title row; author draft/pending/needs_revision → Edit с списка; verify SC-MAP-50/51 (vitest)
 - [x] 10.4 Live pack: never-live set row для автора → Edit; pack list add-task-set → live first; pack-level pending → Edit; verify SC-PACK-188…192 (vitest)
 - [x] 10.5 `npm test` + `npm run lint` + `npm run typecheck` в client — зелёные
+
+## 11. Client — crumbs offset, moderation chrome, narrow burger
+
+- [x] 11.1 Прочитать design D13 (rev) / D20 / D21, delta SC-BRAND-17…19, SC-PACK-193…195, SC-MAP-52; skills pages/styles/test
+- [x] 11.2 Перенести крошки в page/layout zone с header offset (`q-page-container`); verify SC-BRAND-17, SC-PACK-193, SC-MAP-52 (vitest: crumbs inside page-container)
+- [x] 11.3 Крошки на staff/author moderation routes (Lobby / Модерация [/ …]); verify SC-BRAND-18 (vitest)
+- [x] 11.4 Убрать «К наборам» с pack moderation + staff queue/detail (+ my-moderation); verify SC-PACK-194/195 (vitest)
+- [x] 11.5 Narrow + section nav: бургер справа; Acc/Theme/Logout в меню (не в toolbar); Game/auth без fold; verify SC-BRAND-14/19 + SC-BRAND-13 на wide (vitest)
+- [x] 11.6 `npm test` + `npm run lint` + `npm run typecheck` в client — зелёные

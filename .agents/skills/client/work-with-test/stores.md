@@ -16,7 +16,8 @@ live summary+drill-in / AddTaskSet chips), `ContentFollowUp5.test.ts`
 (SC-PACK-134…136 slot card text / `authorDisplayName` / Tasks `content.back`),
 `ContentPackTasksHints.test.ts` (SC-PACK-115/119 staff session + stable hints),
 `ContentModerationUx.test.ts` (SC-PACK-126 editor cascade CSS; SC-PACK-127 slot
-chips on staff hub + add-task-set; SC-PACK-128 add-task-set thread/status/reply),
+chips on staff hub + add-task-set; SC-PACK-128 add-task-set thread/status/reply;
+SC-PACK-194/195 no `content.catalogNav` on pack/staff/my-moderation pages),
 store `content.simplifyAcl.test.ts`; spy `client.http`, do not hit live server;
 cascade helpers + `isStaffEditSessionNavigation`: meta `work-with-stores/content.md`;
 unify follow-ups: `ContentUnifiedList.test.ts` (`openRequestType` pack→Edit /
@@ -30,8 +31,10 @@ ghost `pack-task-set-ghost-*` → add-task-set Edit SC-PACK-188…190),
 `maps.paint.test.ts` SC-MAP-04; errors via `mapsErrorI18nKey` → `maps.errors.*`;
 meta `work-with-stores/maps.md` — shared staff queue still mocked via `content`
 when testing type-badge / my-moderation map rows).
-App shell crumbs: `src/__tests__/AppHeaderChrome.test.ts` — breadcrumbs **not**
-inside elevated `q-header` (SC-BRAND-17 / SC-PACK-193 / SC-MAP-52).
+App shell crumbs: `src/__tests__/AppHeaderChrome.test.ts` — breadcrumbs **inside**
+`q-page-container` (not elevated `q-header`; SC-BRAND-17…18 / SC-PACK-193 / SC-MAP-52);
+narrow burger fold Acc/Theme/Logout (SC-BRAND-19). Moderation pages omit
+`content.catalogNav`: `ContentModerationUx` SC-PACK-194/195.
 
 ## Testing a page / component that uses a store
 

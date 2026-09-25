@@ -142,8 +142,10 @@ UX as the cards editor while the author’s `task_set` request is
 - **Editor:** `cardsReadOnly` when `editorKind === 'task_set_author'`; author may
   resubmit while own pending (incl. while staff holds take — SC-PACK-163).
   Cancel → keep working, list shows draft (not clear flags).
-- **Staff hub / request:** Take / Release; terminal actions require held take;
-  `moderationTakeHeldBy` + TTL. Staff Модерация entry is App header only.
+- **Staff hub / request / pack moderation / my-moderation:** Take / Release;
+  terminal actions require held take; `moderationTakeHeldBy` + TTL. Staff
+  Модерация entry is App header only. Pages omit `content.catalogNav` when
+  App breadcrumbs cover Lobby / Модерация (SC-PACK-194/195).
 - Support `change_pack` select: **in-catalog only** (`inCatalog !== false && hasLive`).
 - Cascade / slot chips / add-task-set thread / delete-card confirms — unchanged
   SC-PACK-126…136 contracts above.
@@ -165,4 +167,5 @@ UX as the cards editor while the author’s `task_set` request is
 - Pre-clearing `slot.answerCardId` before save; conflating soft-unpublish with **block**.
 - Releasing staff edit lock on cards↔tasks navigation (`isStaffEditSessionNavigation`).
 - Jumping `v-if` caption hints (SC-PACK-119).
-- Reviving page «К наборам» / live «Вернуться» when App breadcrumbs cover the path.
+- Reviving page «К наборам» / live «Вернуться» / moderation `catalogNav` when App
+  breadcrumbs cover the path (SC-PACK-181/182/194/195).

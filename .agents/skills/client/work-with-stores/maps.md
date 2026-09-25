@@ -64,7 +64,7 @@ HTTP in `maps` beyond cancel/preview helpers the editor already needs.
 - **Editor view:** author display + seat config; Enter Edit control in the
   **title row** (`map-view-edit`), not inside `map-view-meta` (SC-MAP-51);
   **no** paint tools / seat selects (SC-MAP-46/47). App breadcrumbs replace
-  «К картам» and sit **below** elevated header (SC-MAP-44/52).
+  «К картам» and sit **inside** `q-page-container` (SC-MAP-44/52 / SC-BRAND-17).
 - **Editor boot:** never-published or creator author-work
   (draft/pending/needs_revision) → Edit + lock; clean published → View (SC-MAP-46/49/50).
 - **Editor edit:** interactive preview + palette + seats; quiet autosave while
@@ -79,9 +79,9 @@ HTTP in `maps` beyond cancel/preview helpers the editor already needs.
 
 - Paint pure: `src/stores/__tests__/maps.paint.test.ts` (SC-MAP-04).
 - Pages/UI: `src/pages/__tests__/ContentMaps.test.ts` (list filters/statuses +
-  view meta / title-row Edit / author pending→Edit / crumbs below header /
+  view meta / title-row Edit / author pending→Edit / crumbs /
   cancel→draft SC-MAP-41…52 + SC-MAP-06…08, 14, 17, 21, 24–25, 29–36 + submit
-  starts gate). App crumbs outside header: `AppHeaderChrome` SC-MAP-52 /
+  starts gate). App crumbs inside `q-page-container`: `AppHeaderChrome` SC-MAP-52 /
   SC-BRAND-17.
 - Server twin: `test/zz-contentMaps.test.ts` (mocha) — do not mix stacks.
 

@@ -3,7 +3,8 @@ name: work-with-pages
 description: >-
   Use when creating or changing Vue page views under src/pages/*Page.vue, routes in
   src/router/routes.ts, router guards in src/router/index.ts, App.vue shell wiring
-  (section Packs/Maps/Support + staff Модерация; burger; breadcrumbs; session logout;
+  (section Packs/Maps/Support + staff Модерация; narrow burger rightmost + Acc/Theme/Logout
+  in menu SC-BRAND-19; crumbs inside q-page-container SC-BRAND-17…18; session logout;
   Game status + header-game-leave), hash-mode deep links, meta.guest / meta.requiresAuth /
   requiresStaff / requiresAdmin, or navigation between login, lobby (room list only —
   sections/logout in App header → content-catalog / content-maps), support/content/admin
@@ -11,7 +12,8 @@ description: >-
   redirect) + author re-edit + staff take + MapsList/MapEditor (view meta vs paint;
   crumbs replace «К картам»); pack/map editor/staff details in work-with-stores topic
   files; App brand logo (always-button ≥60px; Game leave / auth+other → lobby / lobby noop;
-  no page «В лобби» / list «К наборам» when crumbs cover path), productName/favicon, and
+  no page «В лобби» / list «К наборам» / moderation catalogNav when crumbs cover path),
+  productName/favicon, and
   game (top opponents presence, seated strip HUD row/2×2, budgets/end-turn icon on avatar,
   return strip icon no modal, push icons, nearest-center finish, grille trap/rescue +
   catapult land→overlay→fling + deferred grille drops + board-busy lock) in this Quasar
@@ -41,7 +43,7 @@ When the task is only about creating or wiring a page:
 1. Add the page as a single file `src/pages/<Name>Page.vue` (optional scoped `<style>` in the same file).
 2. Register a route in `src/router/routes.ts` with `path`, `name`, lazy `component`, and `meta` when needed.
 3. Do **not** enable filename-based routing — `quasar.config.ts` keeps `filenameBasedRouting: false`; routes stay manual.
-4. Keep the global shell in `App.vue` — `q-layout` → shared elevated `q-header` → **page-zone breadcrumbs** below header (packs/maps; SC-BRAND-17) → `q-page-container` → theme `q-banner` + `<router-view />`. Brand logo (≥60px height, `@/assets/brand/logo.png`) is always left as the **same** interactive `<button>` on every route (no bare `img` / decorative swap — SC-BRAND-09). Authenticated non-Game / non-auth: section links (Packs/Maps/Support + staff Модерация; narrow → burger) + account + theme + **session logout** (rightmost). On **Game**: centered match status; leave = logo click **and** right-side `header-game-leave` (same confirm / `leaveGame`) — **no** session logout, **no** section links, not a page-local game header. Logo click modes: auth → lobby; lobby → noop; Game → leave; other authenticated → lobby. Do **not** add page-level «В лобби» / list «К наборам» / «К картам» when breadcrumbs cover the path. Do not duplicate the theme toggle or section/logout toolbar per page.
+4. Keep the global shell in `App.vue` — `q-layout` → shared elevated `q-header` → `q-page-container` (first: **page-zone breadcrumbs** for packs/maps/staff|author moderation — SC-BRAND-17…18 / D13; then theme `q-banner` + `<router-view />`). Brand logo (≥60px height, `@/assets/brand/logo.png`) is always left as the **same** interactive `<button>` on every route (no bare `img` / decorative swap — SC-BRAND-09). Authenticated non-Game / non-auth **wide**: section links (Packs/Maps/Support + staff Модерация) + account + theme + **session logout** (rightmost). **Narrow** with section nav: burger **rightmost**; Packs/Maps/Support/Модерация **and** Acc/Theme/Logout **inside** that menu (SC-BRAND-14/19 / D21) — do **not** also show Acc/Theme/Logout as toolbar icons. On **Game**: centered match status; leave = logo click **and** right-side `header-game-leave` (same confirm / `leaveGame`) — **no** session logout, **no** section burger fold. Auth/login: no section burger; Theme stays in toolbar. Logo click modes: auth → lobby; lobby → noop; Game → leave; other authenticated → lobby. Do **not** add page-level «В лобби» / list «К наборам» / «К картам» when breadcrumbs cover the path (incl. pack/staff/my-moderation chrome — SC-PACK-194/195 / D20). Do not duplicate the theme toggle or section/logout toolbar per page.
 5. Prefer: `pages` → `stores` / `boot` / `components`. Keep Colyseus I/O in Pinia (`auth`, `theme`, `game`, `support`, `content`), not scattered across new pages.
 6. Wrap page content in Quasar `q-page` (match nearby pages).
 
@@ -66,7 +68,7 @@ From `src/router/routes.ts` (hash mode via `createWebHashHistory` when `vueRoute
 | `/admin/users` | `admin-users` | `AdminUsersPage` | `meta.requiresAuth` + `requiresAdmin` |
 | `/content/packs` | `content-catalog` | `ContentCatalogPage` | `meta.requiresAuth`; **unified packs list** (filters/statuses/star; staff soft-unpublish; **no** list-chrome staff «Модерация» — App header SC-PACK-184; published/`in_catalog` rows **no** status badge SC-PACK-185) |
 | `/content/collection` | `content-collection` | — | **redirect** → `content-catalog` (SC-PACK-164; do not revive collection page) |
-| `/content/my-moderation` | `content-my-moderation` | `ContentMyModerationPage` | `meta.requiresAuth`; deep-link/API retained; **no** non-staff header nav (use catalog filters) |
+| `/content/my-moderation` | `content-my-moderation` | `ContentMyModerationPage` | `meta.requiresAuth`; deep-link/API retained; **no** non-staff header nav (use catalog filters); **no** `catalogNav` (SC-PACK-194) |
 | `/content/maps` | `content-maps` | `MapsListPage` | `meta.requiresAuth`; list filters/statuses + Create; no collection; staff Модерация in App header (SC-MAP-43); published rows **no** badge (SC-MAP-45) |
 | `/content/maps/:id/edit` | `content-map-edit` | `MapEditorPage` | `meta.requiresAuth`; view = author+seats (no paint); edit = palette; breadcrumbs replace «К картам» (SC-MAP-44/46/47); staff `?staff=1` (blocked if author request open) |
 | `/content/packs/new` | `content-pack-new` | `ContentPackCreatePage` | `meta.requiresAuth`; create → working-copy editor; verify modal if ineligible |
@@ -74,10 +76,10 @@ From `src/router/routes.ts` (hash mode via `createWebHashHistory` when `vueRoute
 | `/content/packs/:id/edit` | `content-pack-edit` | `ContentPackEditorPage` | `meta.requiresAuth`; creator **or** `editorKind` author re-edit (`submitPack`) or staff (`staffSavePack` + lock session) |
 | `/content/packs/:id/add-task-set` | `content-pack-add-task-set` | `ContentPackAddTaskSetPage` | `meta.requiresAuth`; post-publish add-only new task set (**no** collection gate) |
 | `/content/packs/:id/tasks/:taskSetId` | `content-pack-tasks` | `ContentPackTasksPage` | `meta.requiresAuth`; nested task-set (unpublished / author / staff session) |
-| `/content/packs/:id/moderation` | `content-pack-moderation` | `ContentPackModerationPage` | `meta.requiresAuth`; author thread (also embedded on edit) |
-| `/content/staff` | `content-staff` | `ContentStaffPage` | `meta.requiresAuth` + `requiresStaff`; queue + **Take** (pack\|map) |
-| `/content/staff/requests/:id` | `content-staff-request` | `ContentStaffRequestPage` | `meta.requiresAuth` + `requiresStaff`; take before Approve / needs-revision / cancel |
-| `/content/staff/requests/:id/tasks` | `content-staff-request-tasks` | `ContentStaffTasksPage` | `meta.requiresAuth` + `requiresStaff`; redirect → request hub (legacy bookmark) |
+| `/content/packs/:id/moderation` | `content-pack-moderation` | `ContentPackModerationPage` | `meta.requiresAuth`; author thread (also embedded on edit); **no** `catalogNav` (SC-PACK-194) |
+| `/content/staff` | `content-staff` | `ContentStaffPage` | `meta.requiresAuth` + `requiresStaff`; queue + **Take** (pack\|map); **no** `catalogNav` (SC-PACK-195) |
+| `/content/staff/requests/:id` | `content-staff-request` | `ContentStaffRequestPage` | `meta.requiresAuth` + `requiresStaff`; take before Approve / needs-revision / cancel; **no** `catalogNav` (SC-PACK-195) |
+| `/content/staff/requests/:id/tasks` | `content-staff-request-tasks` | `ContentStaffTasksPage` | `meta.requiresAuth` + `requiresStaff`; redirect → request hub (legacy bookmark); **no** `catalogNav` |
 | `/game/:roomId` | `game` | `GamePage` | `meta.requiresAuth`; param `roomId` |
 | `/:catchAll(.*)*` | — | — | redirect → `/lobby`; keep last |
 
@@ -161,17 +163,18 @@ Every route renders inside:
         :aria-label="brandLogoAria" @click="onBrandLogoClick">
         <img :src="brandLogoUrl" alt="" class="brand-logo" />
       </button>
-      <!-- Off-Game: Packs / Maps / Support (+ staff Модерация); narrow → burger -->
+      <!-- Wide: Packs / Maps / Support (+ staff Модерация); Acc/Theme/Logout rightmost cluster -->
+      <!-- Narrow + section nav: burger rightmost; sections + Acc/Theme/Logout inside menu (SC-BRAND-19) -->
       <q-space />
       <div v-if="isGameRoute" class="text-subtitle1 text-center">{{ statusLabel }}</div>
       <q-space />
-      <!-- account + theme; Game → header-game-leave; else session logout rightmost -->
+      <!-- wide: account + theme; Game → header-game-leave; else session logout; narrow fold → burger -->
     </q-toolbar>
   </q-header>
-  <!-- SC-BRAND-17 / SC-PACK-193 / SC-MAP-52: crumbs below elevated header (page zone), not inside q-header -->
-  <div v-if="breadcrumbItems.length" class="app-breadcrumbs" data-test-id="app-breadcrumbs">…</div>
   <!-- Game leave confirm dialog lives here (not on GamePage) -->
   <q-page-container>
+    <!-- SC-BRAND-17 / SC-PACK-193 / SC-MAP-52: crumbs inside page-container offset zone (D13), not sibling above it -->
+    <div v-if="breadcrumbItems.length" class="app-breadcrumbs" data-test-id="app-breadcrumbs">…</div>
     <q-banner v-if="theme.error" …>{{ theme.error }}</q-banner>
     <router-view />
   </q-page-container>
@@ -182,7 +185,7 @@ Every route renders inside:
 
 Brand logo (`@/assets/brand/logo.png`, height ≥60px, `width: auto; object-fit: contain`) is always left as one interactive control. Click modes (`brandLogoMode`): **Game** → `leave` (`onExitClick` / confirm / `leaveGame`); **auth** routes (`login` / `forgot-password` / `confirm-email` / `reset-password`) → `toLobby` (`router.push({ name: 'lobby' })`; guest may bounce via `requiresAuth`); **lobby** → `noop` (same button, click ignored); other authenticated → `toLobby`. Aria: Game → `game.leave`; non-Game → `auth.backToLobby` (key kept for aria; no page «В лобби» buttons on Account/Support).
 
-**Shared header chrome (SC-BRAND-11…17 / SC-LEAVE-08…12):** to the right of the logo on authenticated non-Game / non-auth screens — Packs / Maps / Support (+ staff «Модерация»); narrow viewport → burger menu. Account + theme + **session logout** (logout rightmost) off-Game; on **Game** — centered match status, **right-side leave-from-room** (`header-game-leave`, same confirm as logo), **no** session logout and **no** section links. Breadcrumbs sit **below** the elevated `q-header` in the page/layout zone (`app-breadcrumbs` — SC-BRAND-17 / SC-PACK-193 / SC-MAP-52), not as a second row inside the blue header; live pack/tasks omit redundant «К наборам» / «Вернуться» when crumbs cover the path. Shared theme toggle + `theme.error` banner live here (`useThemeStore`). Account nav + once-per-session email-verify reminder modal (registered, `needsEmailVerification`; mark `sessionStorage` seen **when shown**) also live in `App.vue` — CTA to `/account`; do not claim mail was already sent (`client-work-with-auth`). On **Game** (`route.name === 'game'`): centered status from `useGameStore` (same branches as former page `statusLabel` — SC-PRESENCE-23). Leave confirm when seated ∧ `playing` ∧ `finishPlace === 0` ∧ `!timeExpired`, else immediate `leaveGame` → lobby (`work-with-rooms`). Document title: `package.json` `productName` = `Happy Tourist` (`index.html` `<%= productName %>`); favicon: only `favicon.ico` in `index.html` / `public/` (no scaffold PNG icon set). Wire theme restore with a stable multi-source watch — `watch([() => auth.ready, () => auth.user?.id, () => auth.user?.anonymous], …)` → `syncFromAuthUser` (registered → `GET /api/theme`, guest → `localStorage`) — not JWT `user.theme` alone, and not `watch(() => […])` (new array each run). Do **not** replace `auth.user` after GET (theme lives in the theme store; SC-THEME-10). Do not duplicate a layout wrapper, per-page theme control, page «В лобби», Lobby section toolbar, or page-local leave/status header when adding pages.
+**Shared header chrome (SC-BRAND-11…19 / SC-LEAVE-08…12):** to the right of the logo on authenticated non-Game / non-auth **wide** screens — Packs / Maps / Support (+ staff «Модерация») + account + theme + **session logout** (logout rightmost). **Narrow** with section nav: burger **rightmost**; menu = sections then Acc / Theme / Logout (no separate toolbar Acc/Theme/Logout — SC-BRAND-14/19). On **Game** — centered match status, **right-side leave-from-room** (`header-game-leave`, same confirm as logo), **no** session logout, **no** section burger fold. Auth/login: Theme in toolbar; no section burger. Breadcrumbs sit **inside** `q-page-container` (header offset zone; `app-breadcrumbs` — SC-BRAND-17…18 / SC-PACK-193 / SC-MAP-52 / D13), not inside the elevated header and not as a sibling between `</q-header>` and `<q-page-container>`; staff/author moderation crumbs Lobby / Модерация (SC-BRAND-18); live pack/tasks and moderation chrome omit redundant «К наборам» / «Вернуться» / `content.catalogNav` when crumbs cover the path (SC-PACK-194/195). Shared theme toggle + `theme.error` banner live here (`useThemeStore`). Account nav + once-per-session email-verify reminder modal (registered, `needsEmailVerification`; mark `sessionStorage` seen **when shown**) also live in `App.vue` — CTA to `/account`; do not claim mail was already sent (`client-work-with-auth`). On **Game** (`route.name === 'game'`): centered status from `useGameStore` (same branches as former page `statusLabel` — SC-PRESENCE-23). Leave confirm when seated ∧ `playing` ∧ `finishPlace === 0` ∧ `!timeExpired`, else immediate `leaveGame` → lobby (`work-with-rooms`). Document title: `package.json` `productName` = `Happy Tourist` (`index.html` `<%= productName %>`); favicon: only `favicon.ico` in `index.html` / `public/` (no scaffold PNG icon set). Wire theme restore with a stable multi-source watch — `watch([() => auth.ready, () => auth.user?.id, () => auth.user?.anonymous], …)` → `syncFromAuthUser` (registered → `GET /api/theme`, guest → `localStorage`) — not JWT `user.theme` alone, and not `watch(() => […])` (new array each run). Do **not** replace `auth.user` after GET (theme lives in the theme store; SC-THEME-10). Do not duplicate a layout wrapper, per-page theme control, page «В лобби», Lobby section toolbar, or page-local leave/status header when adding pages.
 
 ## Router Patterns
 
@@ -271,12 +274,12 @@ If an old path changes, keep a redirect in `routes.ts`:
 |--------|------|------------------------|
 | Auth | `LoginPage` / `ForgotPasswordPage` / `ConfirmEmailPage` / `ResetPasswordPage` / `AccountPage` | `stores/auth`; guest / public / requiresAuth; soft verify modal in App |
 | Theme (chrome Dark) | `App.vue` header | `stores/theme` + `boot/theme` |
-| Brand + section nav + breadcrumbs + Game leave + match status | `App.vue` elevated header (logo ≥60px; Packs/Maps/Support/Модерация) + page-zone crumbs below header (SC-BRAND-17); Game status + `header-game-leave` | logo `leave`/`toLobby`/noop; session logout off-Game; `stores/game` / `leaveGame`; `auth.backToLobby` aria-only |
+| Brand + section nav + breadcrumbs + Game leave + match status | `App.vue` elevated header (logo ≥60px; Packs/Maps/Support/Модерация; narrow burger rightmost + Acc/Theme/Logout in menu SC-BRAND-19) + crumbs **inside** `q-page-container` (SC-BRAND-17…18); Game status + `header-game-leave` | logo `leave`/`toLobby`/noop; session logout off-Game (wide toolbar / narrow menu); `stores/game` / `leaveGame`; `auth.backToLobby` aria-only |
 | Title / favicon | `package.json` + `index.html` + `public/favicon.ico` | `productName` = Happy Tourist; single `favicon.ico` link |
 | Lobby / rooms | `LobbyPage` | `stores/game.subscribeLobby`, create `{ maxSeats, grilleDensity, catapultDensity }` / join; **no** page section/logout chrome (App header → `content-catalog` / `content-maps` / support); `meta.requiresAuth` |
 | Support | `SupportPage` / `SupportTicketPage` / `SupportStaffPage` | `stores/support` HTTP; `change_pack` + catalog pack select; `requiresAuth`; staff uses `requiresStaff` + `auth.isStaff` |
-| Content packs | `ContentCatalogPage` (filters/star; **no** published badge; **no** list staff Модерация; row open: never-published / pack-level draft\|pending\|needs_revision → Edit; add-task-set-only → live first via `openRequestType`; SC-PACK-186/191/192) / `ContentMyModerationPage` (deep-link only) / `ContentPackPage` (breadcrumbs replace «К наборам»; set-row `moderationStatus` for set author+staff; `neverLive` ghost → add-task-set Edit SC-PACK-188…190; star; Edit gates; add-task-set) / `ContentPackCreatePage` / `ContentPackEditorPage` / `ContentPackAddTaskSetPage` / `ContentPackTasksPage` (live: no «Вернуться» — crumbs; editor keeps back-to-answers) / `ContentPackModerationPage` / `ContentStaffPage` / `ContentStaffRequestPage` / `ContentStaffTasksPage` | `stores/content`; cancel→draft; `TaskSet.moderationStatus` / `neverLive`; `openRequestType`; SC-PACK-148…193; staff `requiresStaff` |
-| Content maps | `MapsListPage` (author draft/pending/needs_revision → Edit SC-MAP-50; clean published → View) / `MapEditorPage` (title-row Edit SC-MAP-51; + `MapGridPreview`) | `stores/maps`; list no published badge; view-only meta vs paint; crumbs below header; cancel→draft; SC-MAP-41…52 |
+| Content packs | `ContentCatalogPage` (filters/star; **no** published badge; **no** list staff Модерация; row open: never-published / pack-level draft\|pending\|needs_revision → Edit; add-task-set-only → live first via `openRequestType`; SC-PACK-186/191/192) / `ContentMyModerationPage` (deep-link only; **no** `catalogNav` SC-PACK-194) / `ContentPackPage` (breadcrumbs replace «К наборам»; set-row `moderationStatus` for set author+staff; `neverLive` ghost → add-task-set Edit SC-PACK-188…190; star; Edit gates; add-task-set) / `ContentPackCreatePage` / `ContentPackEditorPage` / `ContentPackAddTaskSetPage` / `ContentPackTasksPage` (live: no «Вернуться» — crumbs; editor keeps back-to-answers) / `ContentPackModerationPage` (**no** `catalogNav`) / `ContentStaffPage` / `ContentStaffRequestPage` / `ContentStaffTasksPage` (**no** `catalogNav` SC-PACK-195) | `stores/content`; cancel→draft; `TaskSet.moderationStatus` / `neverLive`; `openRequestType`; SC-PACK-148…195; staff `requiresStaff` |
+| Content maps | `MapsListPage` (author draft/pending/needs_revision → Edit SC-MAP-50; clean published → View) / `MapEditorPage` (title-row Edit SC-MAP-51; + `MapGridPreview`) | `stores/maps`; list no published badge; view-only meta vs paint; crumbs inside `q-page-container`; cancel→draft; SC-MAP-41…52 |
 | Roles / admin | `AdminUsersPage` | `stores/support` admin HTTP; `requiresAdmin` + `auth.isAdmin` (server enforces) |
 | Game session | `GamePage` | `stores/game` `rejoinGame`/`sendMove`/`sendRescue`/`sendPush`/`sendReturnFromFinish`/`sendPeek`/`sendPeekAnswer`/`sendEndTurn`/`sendSay`; top presence + seated sticky `.game-hud` (own + strip row/2×2; no chip/`q-menu`); unfinished pieces + holes + grille overlays (`GRILLE_ANIM_MS=1000`; defer drop during catapult hops) + catapult land→overlay→fling (`CATAPULT_ANIM_MS=1000`, spectator parity, D13, board-busy lock) + trap/rescue/push + return strip icon (no modal) + all-jail modal + budgets beside avatar / end-turn icon on avatar + peek + finish nearest-center / timeout UX + dual rings + say top↓ / own↑; route param `roomId` (reconnect only — **not** shown in chrome); `meta.requiresAuth` |
 

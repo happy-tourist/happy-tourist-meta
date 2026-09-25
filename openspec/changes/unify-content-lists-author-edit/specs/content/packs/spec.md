@@ -48,7 +48,9 @@
 | SC-PACK-190 | covered (vitest) |
 | SC-PACK-191 | covered (vitest) |
 | SC-PACK-192 | covered (vitest) |
-| SC-PACK-193 | covered (vitest) |
+| SC-PACK-193 | covered (vitest) — strengthen: offset zone |
+| SC-PACK-194 | covered (vitest) |
+| SC-PACK-195 | covered (vitest) |
 
 Related: `content/maps`; `ui/branding` (header/crumbs); `game/leave`; roles — `support/roles`. Tourist-room wiring still out of scope.
 
@@ -289,7 +291,7 @@ When staff or the change author **cancels** an open moderation request (pack, ta
 
 ### Requirement: Breadcrumbs replace pack back affordances
 
-Content pack surfaces MUST show breadcrumbs **below** the shared elevated header chrome (page/layout zone — not inside the elevated header bar), e.g. Lobby / Packs / pack title / cards or task set. The live pack detail MUST NOT require a separate «К наборам» control when breadcrumbs provide that path. The live tasks drill-in MUST NOT require a separate «Вернуться» control when breadcrumbs provide return to the pack. Staff-only queue chrome MAY keep a distinct back-to-queue control.
+Content pack surfaces MUST show breadcrumbs **below** the shared elevated header chrome in the page/layout zone that receives header offset (not inside the elevated header bar, and not covered by the fixed header), e.g. Lobby / Packs / pack title / cards or task set. The live pack detail MUST NOT require a separate «К наборам» control when breadcrumbs provide that path. The live tasks drill-in MUST NOT require a separate «Вернуться» control when breadcrumbs provide return to the pack. Pack moderation thread, staff moderation queue/detail, and author my-moderation MUST NOT show a separate «К наборам» when breadcrumbs cover Lobby / Packs / Модерация. Staff moderation routes MUST show breadcrumbs (Lobby / Модерация [/ …]).
 
 #### Scenario [SC-PACK-180]: Breadcrumbs on pack live and tasks
 
@@ -313,7 +315,20 @@ Content pack surfaces MUST show breadcrumbs **below** the shared elevated header
 
 - **GIVEN** an authenticated user on a pack live or tasks route with breadcrumbs
 - **WHEN** the page renders
-- **THEN** breadcrumbs are outside the elevated shared header bar (below header chrome)
+- **THEN** breadcrumbs are outside the elevated shared header bar
+- **AND** breadcrumbs sit in the page/layout zone offset for the header (not covered by the fixed header)
+
+#### Scenario [SC-PACK-194]: Pack moderation has no «К наборам» when crumbs present
+
+- **GIVEN** an authenticated user on a pack moderation thread with breadcrumbs
+- **WHEN** the page renders
+- **THEN** a separate «К наборам» control is not shown
+
+#### Scenario [SC-PACK-195]: Staff moderation chrome has no «К наборам»
+
+- **GIVEN** an authenticated moderator or admin on the staff moderation queue or staff request detail with breadcrumbs
+- **WHEN** the page renders
+- **THEN** a separate «К наборам» control is not shown on that chrome
 
 ### Requirement: Staff moderation entry is not on packs list chrome
 

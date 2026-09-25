@@ -27,7 +27,7 @@
 | SC-MAP-49 | covered (vitest) |
 | SC-MAP-50 | covered (vitest) |
 | SC-MAP-51 | covered (vitest) |
-| SC-MAP-52 | covered (vitest) |
+| SC-MAP-52 | covered (vitest) — strengthen: offset zone |
 
 Related: `content/packs`; `ui/branding`. Tourist-room wiring still out of scope.
 
@@ -149,7 +149,7 @@ Moderator and admin MUST open the staff moderation queue from the shared applica
 
 ### Requirement: Maps breadcrumbs
 
-Maps section surfaces MUST show breadcrumbs **below** the shared elevated header chrome (e.g. Lobby / Maps / map title), consistent with packs chrome — not inside the elevated header bar.
+Maps section surfaces MUST show breadcrumbs **below** the shared elevated header chrome in the page/layout zone that receives header offset (e.g. Lobby / Maps / map title), consistent with packs chrome — not inside the elevated header bar and not covered by the fixed header.
 
 #### Scenario [SC-MAP-44]: Breadcrumbs on Maps list and editor
 
@@ -161,7 +161,8 @@ Maps section surfaces MUST show breadcrumbs **below** the shared elevated header
 
 - **GIVEN** an authenticated user on a Maps list or editor route with breadcrumbs
 - **WHEN** the page renders
-- **THEN** breadcrumbs are outside the elevated shared header bar (below header chrome)
+- **THEN** breadcrumbs are outside the elevated shared header bar
+- **AND** breadcrumbs sit in the page/layout zone offset for the header (not covered by the fixed header)
 
 ### Requirement: No in_catalog status badge on Maps list
 
