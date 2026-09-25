@@ -4,7 +4,8 @@ description: >-
   Use when changing server env vars, PM2, VPS deploy, GitHub Actions rsync, or
   DATABASE_URL for happy-tourist-server — AUTH_SALT / JWT_SECRET / SESSION_SECRET /
   GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET, SMTP_BZ_* / MAIL_FROM /
-  AUTH_BACKEND_URL / CLIENT_APP_URL / BOOTSTRAP_ADMIN_IDS, .env.development /
+  AUTH_BACKEND_URL / CLIENT_APP_URL / BOOTSTRAP_ADMIN_IDS /
+  DEFAULT_CONTENT_PACK_IDS, .env.development /
   .env.production, ecosystem.config.cjs, or .github/workflows/deploy.yml.
 ---
 
@@ -44,6 +45,7 @@ Deploy target: VPS under `/var/www/happy-tourist-server`, Node 22, PM2. Trigger:
 | `AUTH_BACKEND_URL` | Public API origin for confirm/reset links (`auth.backend_url`) | e.g. `http://localhost:2567` | `https://api.happy-tourist.ru` |
 | `CLIENT_APP_URL` | Client origin; mail SPA links `/#/confirm-email` + `/#/reset-password`; support create-ack/status → `/#/support/<id>`; SPA confirm → `#/lobby` | e.g. `http://localhost:9000` | `https://happy-tourist.ru` |
 | `BOOTSTRAP_ADMIN_IDS` | Comma-separated user ids promoted to admin on every start (idempotent) | empty or local ids | VPS `.env.production` (same DB as JWT userdata) |
+| `DEFAULT_CONTENT_PACK_IDS` | Comma-separated published pack ids auto-granted once (boot + create-user; sticky remove) | empty | VPS `.env.production` after pack is in-catalog |
 | `DATABASE_URL` | SQLite path for GameDatabase | `./game.db` | often `/var/www/happy-tourist-server/game.db` |
 | `NODE_ENV` | `development` / `production` (CORS, monitor/playground) | `development` | `production` (also set in PM2 `env`) |
 | `PORT` | Listen port | `2567` | `2567` (PM2 `env` + file) |

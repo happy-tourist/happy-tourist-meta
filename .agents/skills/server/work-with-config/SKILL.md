@@ -4,7 +4,8 @@ description: >-
   Use when adding, changing, reviewing, or debugging Colyseus server config:
   env loading (.env.${NODE_ENV}), secrets (AUTH_SALT / JWT_SECRET /
   SESSION_SECRET / GOOGLE_CLIENT_* / SMTP_BZ_* / MAIL_FROM /
-  AUTH_BACKEND_URL / CLIENT_APP_URL / BOOTSTRAP_ADMIN_IDS), DATABASE_URL /
+  AUTH_BACKEND_URL / CLIENT_APP_URL / BOOTSTRAP_ADMIN_IDS /
+  DEFAULT_CONTENT_PACK_IDS), DATABASE_URL /
   PORT / NODE_ENV, src/app.config.ts defineServer wiring (incl. support/admin
   routes + bootstrap), src/config/auth.ts OAuth + email flows (getRuntimeAuth /
   configureAuthEmailFlows), CORS (ALLOWED_ORIGIN, credentials), /health /hi,
@@ -84,6 +85,7 @@ From `.env.example`:
 | `AUTH_BACKEND_URL` | Public API origin → `auth.backend_url` (Google OAuth / API — **not** mail link base) |
 | `CLIENT_APP_URL` | Client origin; mail links → `/#/confirm-email` and `/#/reset-password`; support create-ack/status mail → `/#/support/<id>`; SPA confirm → lobby |
 | `BOOTSTRAP_ADMIN_IDS` | Comma-separated `colyseus_users.id`; on startup idempotent `ht_role='admin'` via `bootstrapAdminIds()` (env wins demotion) |
+| `DEFAULT_CONTENT_PACK_IDS` | Comma-separated `content_packs.id`; one-shot grant into every user’s collection (boot backfill + create-user); only live + in-catalog + not blocked; empty = no-op; no re-grant after remove (`src/lib/defaultContentPacks.ts`) |
 | `DATABASE_URL` | SQLite path (local `./game.db`; prod often under `/var/www/happy-tourist-server/game.db`) |
 | `NODE_ENV` | `development` / `production` — picks env file, CORS origin, monitor/playground |
 | `PORT` | Listen port (default `2567` via `@colyseus/tools` `listen`) |
@@ -96,7 +98,7 @@ Generate secrets locally with e.g. `openssl rand -base64 32`. Keep the same
 | Belongs in **env** | Belongs in **`app.config.ts`** |
 | --- | --- |
 | Secrets (`AUTH_SALT`, `JWT_SECRET`, `SESSION_SECRET`, `GOOGLE_CLIENT_*`, `SMTP_BZ_*`, `MAIL_FROM`) | `defineServer` shape: `database`, `rooms`, `routes`, `express`; auth email configure + thin `/api/auth/*` + `/api/support/*` + `/api/admin/*` |
-| Contour (`NODE_ENV`, `PORT`, `DATABASE_URL`, `AUTH_BACKEND_URL`, `CLIENT_APP_URL`, `BOOTSTRAP_ADMIN_IDS`) | CORS middleware order and headers; support table ensure + bootstrap admins + auto-close interval |
+| Contour (`NODE_ENV`, `PORT`, `DATABASE_URL`, `AUTH_BACKEND_URL`, `CLIENT_APP_URL`, `BOOTSTRAP_ADMIN_IDS`, `DEFAULT_CONTENT_PACK_IDS`) | CORS middleware order and headers; support table ensure + bootstrap admins + default-pack backfill + auto-close interval |
 | Anything that must change without a code change | `/health`, `/hi`, non-prod `monitor()` / `playground()` |
 | | Room name → room class mapping; `createEndpoint` paths |
 

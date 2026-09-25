@@ -11,6 +11,7 @@ description: >-
   (SPA JSON), CLIENT_APP_URL mail links, AUTH_SALT / JWT_SECRET / SESSION_SECRET
   / GOOGLE_CLIENT_*, users schema defaults + `htRole` (public `role` via
   onParseToken/onGenerateToken) + userdata `hasPassword`, BOOTSTRAP_ADMIN_IDS,
+  DEFAULT_CONTENT_PACK_IDS (create-user grant + boot backfill; not login),
   MyRoom.onAuth JWT.verify, register/login/anonymous/Google → JWT → room join,
   or auth userdata in onJoin for this Colyseus tourist server.
 ---
@@ -62,7 +63,7 @@ guards. Do not put game rules in `/auth/*` handlers.
 | Layer | Path | Role |
 |-------|------|------|
 | Server def | `src/app.config.ts` | `database: db` enables `@colyseus/auth` HTTP routes + user store; import `src/config/auth.ts`; call `configureAuthEmailFlows()` after DB auth defaults; thin `POST /api/auth/*` endpoints |
-| OAuth + email hooks | `src/config/auth.ts` | `getRuntimeAuth` / `getRuntimeJWT` / `getRuntimeHash`; Google `addProvider`; **no** `onSendEmailConfirmation`; `onEmailConfirmed` / `onForgotPassword` (rewrite mail links to SPA); wrap built-in `onOAuthProviderCallback` for Google `emailVerified`; `auth.backend_url` for OAuth only |
+| OAuth + email hooks | `src/config/auth.ts` | `getRuntimeAuth` / `getRuntimeJWT` / `getRuntimeHash`; Google `addProvider`; **no** `onSendEmailConfirmation`; `onEmailConfirmed` / `onForgotPassword` (rewrite mail links to SPA); wrap built-in `onOAuthProviderCallback` for Google `emailVerified` + one-shot default packs on **new** OAuth create; wrap email register + `onRegisterAnonymously` for default packs (**not** login / `onParseToken` / anon→email upgrade); `auth.backend_url` for OAuth only |
 | Mailer | `src/lib/mailer.ts` | `sendEmail(to, subject, html)` via smtp.bz only (`SMTP_BZ_*`, `MAIL_FROM`); host **`connect.smtp.bz`**; `secure` when port is **465 or 9465**; no Resend / `MAIL_PROVIDER`; `setSendEmailImpl` for tests |
 | Auth HTML | `html/` | Legacy Colyseus cwd templates may remain; confirm mail HTML is built inline; forgot rewrites `[LINK]` to SPA; product confirm/reset UX is **SPA + JSON** — do not treat API HTML pages as product |
 | DB init | `src/db/index.ts` | `GameDatabase` + `schemas: { users }` |
@@ -70,8 +71,9 @@ guards. Do not put game rules in `/auth/*` handlers.
 | Users schema | `src/db/schema.ts` | Extends `colyseus_users`: `displayName`, `rating`, `gamesPlayed`, `gamesWon`, nullable `theme`, `emailVerified` (default `false`), `htRole` (SQL `ht_role`, default `user`; **not** JS `role`) |
 | Role → userdata | `src/config/auth.ts` | `onParseToken` / `onGenerateToken` map `htRole` → public `role` (never leak `htRole` / passwordHash) |
 | Bootstrap admins | `src/lib/support.ts` + `.env` | `BOOTSTRAP_ADMIN_IDS` → idempotent `bootstrapAdminIds()` at express boot |
+| Default content packs | `src/lib/defaultContentPacks.ts` + `.env` | `DEFAULT_CONTENT_PACK_IDS` → one-shot `backfillDefaultPacksOnBoot` + `grantDefaultPacksToUser` on create (sticky remove; soft-fail) |
 | Room gate | `src/rooms/MyRoom.ts` | `static onAuth(token)` → `JWT.verify(token)` → userdata to `onJoin` (**soft** verify — no `emailVerified` gate) |
-| Secrets | `.env.example` / `.env.development` / `.env.production` | Auth + Google + mail (`SMTP_BZ_*`, `MAIL_FROM`) + `AUTH_BACKEND_URL` / `CLIENT_APP_URL` + `BOOTSTRAP_ADMIN_IDS` |
+| Secrets | `.env.example` / `.env.development` / `.env.production` | Auth + Google + mail (`SMTP_BZ_*`, `MAIL_FROM`) + `AUTH_BACKEND_URL` / `CLIENT_APP_URL` + `BOOTSTRAP_ADMIN_IDS` + `DEFAULT_CONTENT_PACK_IDS` |
 | HTTP auth | `/auth/*` (auto) | register / login / anonymous / OAuth + built-in forgot; product confirm/reset via `/api/auth/*` JSON |
 | CORS | `app.config.ts` `express` hook | Credentials + `Authorization` allowed; must stay first |
 | Tests | `test/` | Room JWT connect + `zz-authEmail.test.ts` + `support.test.ts` (SC-ROLE-* / SC-SUP-*; mock mailer); `keepLatestRequestListener` after multi-suite boot |

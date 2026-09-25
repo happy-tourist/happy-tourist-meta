@@ -24,7 +24,9 @@ description: >-
   SC-PACK-120…124 (`in_catalog` pack) + cascade-cancel open requests + mail
   SC-PACK-137…141 + task-set soft-hide SC-PACK-131 + preview live cards / authorDisplayName SC-PACK-134…135
   (`content_task_sets.in_catalog`; last-set 409); cascade; my-moderation +
-  needs_revision; mock mailer; ensureContentTables / setEmailVerifiedForTests).
+  needs_revision; mock mailer; ensureContentTables / setEmailVerifiedForTests;
+  default packs SC-PACK-142…147 in test/zz-defaultContentPacks.test.ts —
+  isolated `game.test.db` via test/setupEnv.ts).
   Core workflow: test plan (mocks/verify) → write test/*.test.ts → run npm test
   from server package root and fix failures. Do not invent Jest/babel patterns.
 trigger: slash
@@ -56,7 +58,7 @@ babel setups.
 | Piece | Role |
 |-------|------|
 | Script | `npm test` → `mocha -r tsx -r ./test/setupEnv.ts test/**.test.ts --exit --timeout 15000` |
-| Runner | mocha + `@types/mocha`; load TS via tsx; `setupEnv.ts` sets `COLYSEUS_TESTING=1` |
+| Runner | mocha + `@types/mocha`; load TS via tsx; `setupEnv.ts` sets `COLYSEUS_TESTING=1`, `DATABASE_URL=./game.test.db`, and deletes that SQLite (+ `-wal`/`-shm`) before the suite so mocha never touches developer `game.db` |
 | Harness | `@colyseus/testing`: `boot(appConfig)`, `cleanup()`, `shutdown()` |
 | Auth | `JWT` from `@colyseus/auth` — `JWT.sign` then `colyseus.sdk.auth.token`; email flows use runtime JWT helpers |
 | App under test | `import appConfig from "../src/app.config.js"` |
@@ -79,6 +81,7 @@ tests; fix failures before claiming done.
 | Auth profile (displayName + change-password) | `test/zz-authProfile.test.ts` — SC-PROFILE-01/02/04/05; bumpTokenVersion; reject no-password credential |
 | Support tickets + roles (SC-SUP-* / SC-ROLE-*) | `test/support.test.ts` — mock mailer; `ensureSupportTables` / `bootstrapAdminIds` / `setUserRoleForTests` / `runAutoClose`; cover create-ack (SC-SUP-21), staff `topic`/`status` filters (SC-SUP-22), author self-reply **no** status mail, admin list excludes anonymous + `emailVerified`, role POST response includes `emailVerified` (SC-ROLE-09); `change_pack` in-catalog only + soft-unpublished → `pack_not_in_catalog` (D5/D9); `keepLatestRequestListener` after boot |
 | Content packs (SC-PACK-*) | `test/zz-contentPacks.test.ts` — mock mailer; `ensureContentTables` / `setEmailVerifiedForTests` / `setUserRoleForTests`; cover catalog/collection, create+verify gate, working copy + unified submit SC-PACK-100…105, add-task-set SC-PACK-108…110, staff lock/save SC-PACK-111…113, author delete SC-PACK-114, soft-unpublish/republish SC-PACK-120…124 (`in_catalog` pack; keep live; ≠ block), pack unpublish cascade-cancel open requests + one RU mail/author without links SC-PACK-137…141 (manual cancel still no mail; republish does not restore), task-set soft-hide SC-PACK-131 (`POST /api/content/task-set/unpublish|republish`; last published → `last_published_task_set`), cascade save, my-moderation + staff pending\|needs_revision, block endpoints + mail links; `keepLatestRequestListener` after boot |
+| Default content packs (SC-PACK-142…147) | `test/zz-defaultContentPacks.test.ts` — helpers parse/eligible/grant/backfill; boot `backfillDefaultPacksOnBoot`; create-user grant (email/OAuth/anonymous, not upgrade/login); sticky remove vs `GET /collection`; ineligible skip; uses isolated `game.test.db` via `setupEnv.ts` |
 
 Mocha picks up `test/**.test.ts` via the npm script. Mirror room names under
 `test/` as rooms grow; keep relative imports to `../src/...`.

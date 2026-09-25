@@ -53,15 +53,15 @@ Sibling client: `../happy-tourist.github.io` (room type `tourist`, board + piece
 | Layer | Path | Role |
 |-------|------|------|
 | Entry | `src/index.ts` | `listen(app)` only |
-| Server wiring | `src/app.config.ts` | `defineServer`: `database`, `rooms`, `routes`, `express`; import auth config; `configureAuthEmailFlows` after DB boot; thin `POST /api/auth/*` + `/api/support/*` + `/api/content/*` + `/api/admin/*`; boot `ensureSupportTables` / `ensureContentTables` / `bootstrapAdminIds` / `startAutoCloseInterval` |
-| Auth config | `src/config/` | `auth.ts` — `getRuntimeAuth` / Google `addProvider` / email hooks; wrap OAuth callback for `emailVerified`; map `htRole` → userdata `role` |
-| Mailer / support / content / password policy | `src/lib/` | `mailer.ts` — smtp.bz `sendEmail` (+ test setter); `support.ts` — tickets/messages/roles/bootstrap/auto-close + `change_pack`/`pack_id` (**in-catalog** only) + create-ack mail + staff list filters + `setTicketStatus(..., { notify })` (HTTP stays thin); `content.ts` — working-copy draft CRUD + unified `submitPack`/approve + add-task-set + staff edit lock/save + soft-unpublish/republish pack + task-set (`in_catalog` on packs and sets; pack `unpublishPack` cascade-cancels open requests + one `notifyChangeAuthor` per author SC-PACK-137…141) + `previewPending` merges live `answerCards` for `task_set` (SC-PACK-134) + `authorDisplayName` on sets (SC-PACK-135) + needs-revision + `cascadeNormalizeTasks` (slot clear ≠ `answers_dirty`) + author delete + `listMyModerationPacks` / staff pending queue; migrate drop `content_user_drafts` + `ALTER` pack/set `in_catalog`; `passwordPolicy.ts` — shared ≥8 + lower/upper/digit/symbol (register wrap / JSON reset / change-password) |
+| Server wiring | `src/app.config.ts` | `defineServer`: `database`, `rooms`, `routes`, `express`; import auth config; `configureAuthEmailFlows` after DB boot; thin `POST /api/auth/*` + `/api/support/*` + `/api/content/*` + `/api/admin/*`; boot `ensureSupportTables` / `ensureContentTables` / `bootstrapAdminIds` / soft-fail `backfillDefaultPacksOnBoot` / `startAutoCloseInterval` |
+| Auth config | `src/config/` | `auth.ts` — `getRuntimeAuth` / Google `addProvider` / email hooks; wrap OAuth callback for `emailVerified` + one-shot default packs on new create; wrap anonymous/email register for default packs; map `htRole` → userdata `role` |
+| Mailer / support / content / password policy | `src/lib/` | `mailer.ts` — smtp.bz `sendEmail` (+ test setter); `support.ts` — tickets/messages/roles/bootstrap/auto-close + `change_pack`/`pack_id` (**in-catalog** only) + create-ack mail + staff list filters + `setTicketStatus(..., { notify })` (HTTP stays thin); `content.ts` — working-copy draft CRUD + unified `submitPack`/approve + add-task-set + staff edit lock/save + soft-unpublish/republish pack + task-set (`in_catalog` on packs and sets; pack `unpublishPack` cascade-cancels open requests + one `notifyChangeAuthor` per author SC-PACK-137…141) + `previewPending` merges live `answerCards` for `task_set` (SC-PACK-134) + `authorDisplayName` on sets (SC-PACK-135) + needs-revision + `cascadeNormalizeTasks` (slot clear ≠ `answers_dirty`) + author delete + `listMyModerationPacks` / staff pending queue; migrate drop `content_user_drafts` + `ALTER` pack/set `in_catalog`; `defaultContentPacks.ts` — `DEFAULT_CONTENT_PACK_IDS` parse/eligible/grant + per-pack boot backfill (re-export from `content.ts`); `passwordPolicy.ts` — shared ≥8 + lower/upper/digit/symbol (register wrap / JSON reset / change-password) |
 | Auth HTML | `html/` | Legacy Colyseus cwd templates; product confirm/reset UX is **SPA + JSON** (mail links via `CLIENT_APP_URL`) |
 | Database | `src/db/` | `GameDatabase` (`index.ts`) + Drizzle user schema (`schema.ts`; `htRole` + support table decls) |
 | Rooms | `src/rooms/` | Room handlers (`onCreate` / `onJoin` / `onDrop` / `onReconnect` / leave / dispose; `onMessage('move'|'ready'|'say')`) |
 | Schema | `src/rooms/schema/` | `@colyseus/schema` synced state (`phase` / `maxSeats` / `countdownRemaining` + legacy `started` + `seats` + `currentTurnSessionId`) |
 | Pure rules | `src/game/` | Authoritative move validate/apply (`touristMove.ts`) — no Colyseus I/O |
-| Tests | `test/` | mocha + `@colyseus/testing` (`*.test.ts`; auth email + theme + room + `support.test.ts` + `zz-contentPacks.test.ts`) |
+| Tests | `test/` | mocha + `@colyseus/testing` (`*.test.ts`; auth email + theme + room + `support.test.ts` + `zz-contentPacks.test.ts` + `zz-defaultContentPacks.test.ts`) |
 | Loadtest | `loadtest/` | `@colyseus/loadtest` scripts |
 | Deploy | `ecosystem.config.cjs`, `.github/workflows/` | PM2 + CI rsync |
 
@@ -74,7 +74,7 @@ Env templates: `.env.example`, `.env.development`, `.env.production` (do not com
 | **`index.ts`** | Process listen | Room logic, HTTP handlers, schema |
 | **`app.config.ts`** | Wire `database`, register rooms, thin `routes` / `express` (CORS first, health, auth email + support/content/admin endpoints, `configureAuthEmailFlows`, support + content table ensure); import `./config/auth.js` | Game rules, board mutation |
 | **`config/`** | OAuth + email confirm/forgot hooks (`getRuntimeAuth`, wrap OAuth for verified); userdata `role` mapping | Room gate, user schema, from-scratch OAuth callback |
-| **`lib/`** | Outbound mail (`mailer.ts` smtp.bz) + support helpers (`support.ts`) + content packs (`content.ts`) + password policy (`passwordPolicy.ts`) | Fat HTTP handlers, rooms |
+| **`lib/`** | Outbound mail (`mailer.ts` smtp.bz) + support helpers (`support.ts`) + content packs (`content.ts` + `defaultContentPacks.ts`) + password policy (`passwordPolicy.ts`) | Fat HTTP handlers, rooms |
 | **`db/`** | SQLite GameDatabase; extend `colyseus_users` with defaults (`htRole`); declare support + `content_*` tables | Room messages; inventing a second auth store |
 | **`rooms/`** | Auth gate (`onAuth`), seats, start phases/ready/countdown, reconnect grace, turn order (skip finished), `onMessage('move'|'ready'|'say')` + schema writes (move/ready/finish side-effects) / ephemeral broadcast (say) | Raw HTTP; client-trusted board; pure geometry tables (prefer `src/game/`) |
 | **`rooms/schema/`** | Sync fields (`phase` / `maxSeats` / `countdownRemaining` + `seats` → `touristId` + `pieces` (+ `finished`) + connectivity/`ready`/`finishPlace` + `currentTurnSessionId` + `nextFinishPlace`; legacy `started`) | Validation / rules / side effects |
@@ -214,6 +214,7 @@ src/lib/
 ├── mailer.ts          # smtp.bz sendEmail (+ setSendEmailImpl for tests)
 ├── support.ts         # tickets / roles / bootstrap helpers
 ├── content.ts         # content packs (ensureContentTables + working copy + submitPack/add-task-set + staff lock/save + soft-unpublish pack+set in_catalog + pack unpublish cascade-cancel open req + mail SC-PACK-137…141 + previewPending live cards + authorDisplayName + needs-revision + cascadeNormalize ≠ answers_dirty + author delete + listMyModeration/listPending)
+├── defaultContentPacks.ts  # DEFAULT_CONTENT_PACK_IDS parse/eligible/grant + per-pack boot backfill (SC-PACK-142…147; re-export from content.ts)
 └── passwordPolicy.ts  # shared product password policy (register / reset / change)
 
 html/           # legacy Colyseus cwd templates (not product SPA UX)
@@ -235,7 +236,9 @@ test/MyRoom.test.ts
 test/theme.test.ts
 test/zz-authEmail.test.ts
 test/zz-authProfile.test.ts
-test/setupEnv.ts
+test/zz-contentPacks.test.ts
+test/zz-defaultContentPacks.test.ts  # SC-PACK-142…147 DEFAULT_CONTENT_PACK_IDS
+test/setupEnv.ts                     # COLYSEUS_TESTING + isolated game.test.db wipe
 test/keepLatestRequestListener.ts
 loadtest/example.ts
 ecosystem.config.cjs
