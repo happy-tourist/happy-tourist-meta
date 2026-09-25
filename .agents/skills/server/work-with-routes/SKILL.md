@@ -128,12 +128,15 @@ For CORS / monitor details use `work-with-middleware` and `work-with-config`.
 | POST | `/api/content/task-set/delete` | `createEndpoint` | JWT + creator; delete task set from unpublished working copy |
 | GET | `/api/content/collection` | `createEndpoint` | JWT (incl. anonymous); own collection; **never** auto-grants `DEFAULT_CONTENT_PACK_IDS` (sticky remove — SC-PACK-145) |
 | POST | `/api/content/collection` \| `/remove` | `createEndpoint` | JWT; add/remove pack (manual re-add after sticky remove still works) |
-| GET | `/api/content/my-moderation` | `createEndpoint` | JWT; caller’s open requests (pending\|needs_revision) for author «На модерации» |
-| GET | `/api/content/staff/pending` | `createEndpoint` | JWT moderator\|admin; open pending\|needs_revision queue |
-| GET\|POST | `/api/content/staff/requests/:id` (+ `/approve` `/needs-revision` `/reject` `/cancel` `/messages`) | `createEndpoint` | JWT staff; GET = `previewPending` (for `task_set`/`tasks` merge live `answerCards` so slot labels resolve — SC-PACK-134; payload sets include `authorDisplayName` — SC-PACK-135); Approve → catalog live; needs-revision (alias `/reject`); cancel drops; no hard-reject |
+| GET | `/api/content/my-moderation` | `createEndpoint` | JWT; caller’s open requests (pending\|needs_revision) for author «На модерации» (pack **and** map) |
+| GET | `/api/content/staff/pending` | `createEndpoint` | JWT moderator\|admin; open pending\|needs_revision queue (pack **and** map; type badge) |
+| GET\|POST | `/api/content/staff/requests/:id` (+ `/approve` `/needs-revision` `/reject` `/cancel` `/messages`) | `createEndpoint` | JWT staff; GET = `previewPending` (packs: task_set merge live cards SC-PACK-134; maps: grid preview + `canApprove`); Approve → catalog live; needs-revision (alias `/reject`); cancel drops; no hard-reject |
+| GET\|POST | `/api/content/maps` | `createEndpoint` | JWT; list (in-catalog + author never-published + staff soft-unpublished) / create (verified non-anonymous) |
+| GET\|POST | `/api/content/maps/:id` (+ `/draft` `/submit` `/moderation` `/edit-lock` `/staff-edit` `/staff-save` `/unpublish` `/republish`) | `createEndpoint` | JWT; live/draft/submit/thread/lock/staff-save/soft-unpublish (cascade-cancel + RU mail SC-MAP-21…27) |
+| POST | `/api/content/map/delete` | `createEndpoint` | JWT + creator; hard-delete **never-approved** map |
 | GET | `/api/admin/users` | `createEndpoint` | JWT admin; **exclude** anonymous; include `emailVerified` (+ id/email/role/displayName) |
 
-**Content moderation mail:** deep-links prefer `#/content/packs/:id/edit` (working copy / staff edit) — **not** bare `#/content/packs/:id/moderation`.
+**Content moderation mail:** deep-links prefer `#/content/packs/:id/edit` (working copy / staff edit) — **not** bare `#/content/packs/:id/moderation`. Map mails deep-link `#/content/maps/:id/edit`.
 | POST | `/api/admin/users/:id/role` | `createEndpoint` | JWT admin; `{ role }`; **POST** (not PATCH); response user includes `emailVerified` (same as list) |
 | GET | `/health` | `express` hook | `{ status, uptime }` — deploy / monitor |
 | GET | `/hi` | `express` hook | Plain text smoke |

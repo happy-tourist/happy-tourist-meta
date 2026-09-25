@@ -22,7 +22,8 @@ description: >-
   `taskSetDifficultySummary` / `lastPublishedTaskSetHint`); staff Approve /
   needs-revision;
   no block UI; `content.errors.*` incl. `edit_locked` / `submit_need_task_sets` /
-  `pack_unpublished` / `last_published_task_set` — RU under en-US; support topic `change_pack`).
+  `pack_unpublished` / `last_published_task_set` — RU under en-US; support topic `change_pack`;
+  content maps `maps.*` (nav/list/editor/tools/unpublishConfirm/errors SC-MAP)).
 ---
 
 # Work With Localization

@@ -2,26 +2,23 @@
 name: work-with-stores
 description: >-
   Instructions for Pinia stores in the happy-tourist Vue 3 client:
-  setup vs options defineStore, auth vs game vs theme vs support vs content ownership, local page
-  state vs Pinia, Colyseus I/O in stores (budgets peeks∞ / finite steps,
-  removed-task holes, grille trap/rescue/push/return, catapult reveal keys,
-  D13 atomic `$patch` seats+revealing/broken, peek/end-turn), acceptHMRUpdate,
-  and Quasar pinia entry. Core in SKILL.md; content-pack working copy / unified
-  submit / add-task-set / staff lock+save / `isStaffEditSessionNavigation`
-  (SC-PACK-115…119) / cascade yellow + slot chips + add-task-set thread
-  (SC-PACK-126…128) / pack+set soft-unpublish + live drill-in + AddTaskSet chips
-  (SC-PACK-129…133) / authorDisplayName + slot text + Tasks `back` (SC-PACK-134…136)
-  details in content.md.
-  Use when adding, changing, reviewing, or debugging Pinia stores, shared
-  game/auth/theme/support/content state (incl. admin setUserRole merge /
-  emailVerified; support `change_pack` + packId), or page-to-store wiring.
+  setup vs options defineStore, auth vs game vs theme vs support vs content vs
+  maps ownership, local page state vs Pinia, Colyseus I/O in stores (budgets
+  peeks∞ / finite steps, removed-task holes, grille trap/rescue/push/return,
+  catapult reveal keys, D13 atomic `$patch` seats+revealing/broken, peek/end-turn),
+  acceptHMRUpdate, and Quasar pinia entry. Core in SKILL.md; content-pack details
+  in content.md; content-maps HTTP / paint / staff lock / soft-unpublish (SC-MAP)
+  in maps.md. Use when adding, changing, reviewing, or debugging Pinia stores,
+  shared game/auth/theme/support/content/maps state (incl. admin setUserRole
+  merge / emailVerified; support `change_pack` + packId; maps list/editor), or
+  page-to-store wiring.
 ---
 
 # Work With Stores
 
 Use this skill when deciding where state should live or when changing Pinia stores in the **happy-tourist client** (`happy-tourist.github.io`).
 
-This app uses **Pinia 4** with **five domain stores** (`auth`, `theme`, `game`, `support`, `content`) plus Quasar’s Pinia entry. Pages use Composition API (`<script setup>`) and call `useAuthStore()` / `useThemeStore()` / `useGameStore()` / `useSupportStore()` / `useContentStore()` directly — not Vuex `map*`.
+This app uses **Pinia 4** with **six domain stores** (`auth`, `theme`, `game`, `support`, `content`, `maps`) plus Quasar’s Pinia entry. Pages use Composition API (`<script setup>`) and call `useAuthStore()` / `useThemeStore()` / `useGameStore()` / `useSupportStore()` / `useContentStore()` / `useMapsStore()` directly — not Vuex `map*`.
 
 Skills for this client live under `.agents/skills/client/`. Runtime paths below are relative to this repo root.
 
@@ -34,11 +31,12 @@ src/stores/
   theme.ts          # setup store — Quasar Dark preference (guest local / registered HTTP)
   game.ts           # options store
   support.ts        # setup store — support tickets + staff queue + admin users HTTP
-  content.ts        # setup store — working copy + submitPack + add-task-set + staff lock + isStaffEditSessionNavigation; see content.md
+  content.ts        # setup store — pack working copy + submitPack + add-task-set + staff lock; see content.md
+  maps.ts           # setup store — content maps list/create/draft/submit/moderation/staff lock/soft-unpublish (SC-MAP)
   example-store.ts  # Quasar scaffold counter — unused by login/lobby/game
 ```
 
-Pinia is installed via Quasar store entry `src/stores/index.ts` (`createPinia()`). Domain stores import the Colyseus `client` from `@/boot/colyseus`. Prefer importing `use*Store` from `@/stores/auth` / `@/stores/theme` / `@/stores/game` / `@/stores/support` / `@/stores/content` in pages and router; keep Colyseus calls inside those stores.
+Pinia is installed via Quasar store entry `src/stores/index.ts` (`createPinia()`). Domain stores import the Colyseus `client` from `@/boot/colyseus`. Prefer importing `use*Store` from `@/stores/auth` / `@/stores/theme` / `@/stores/game` / `@/stores/support` / `@/stores/content` / `@/stores/maps` in pages and router; keep Colyseus calls inside those stores.
 
 ## Specialized Topics
 
@@ -47,7 +45,8 @@ Read the matching file in this folder when the change involves that area
 
 | Topic | File |
 |-------|------|
-| Content packs (`content` store: working copy, `submitPack`, add-task-set, staff lock/save, `isStaffEditSessionNavigation`, SC-PACK-115…119 UI contracts, cascade yellow, needs_revision) | [content.md](content.md) |
+| Content packs (`content` store: working copy, `submitPack`, add-task-set, staff lock/save, `isStaffEditSessionNavigation`, SC-PACK-115…119 UI contracts, cascade yellow, needs_revision; shared queue also lists type `map`) | [content.md](content.md) |
+| Content maps (`maps` store: list/create/draft/submit/paint helpers, staff lock/save, soft-unpublish, delete never-published; SC-MAP) | [maps.md](maps.md) |
 
 ### Store styles in this repo
 
@@ -57,12 +56,13 @@ Read the matching file in this folder when the change involves that area
 | `theme` | **Setup** (`defineStore('theme', () => { … })`) | Dark preference + `syncFromAuthUser` / `toggle`; registered GET restore + POST save |
 | `game` | **Options** (`defineStore('game', { state, getters, actions })`) | Clear room lifecycle, `this.*` mutations, private helpers `_enterRoom` / `_attachRoom` |
 | `support` | **Setup** (`defineStore('support', () => { … })`) | HTTP tickets/staff/admin via `client.http`; `change_pack` requires `packId` (SC-SUP-28); staff list passes `topic`/`status` query; admin list expects `emailVerified`; after `setUserRole` **merge** `{ …u, …updated }` so list-only fields survive if API omits them; `error` + page `q-banner` |
-| `content` | **Setup** (`defineStore('content', () => { … })`) | HTTP packs via `client.http`; working-copy draft / `submitPack` / add-task-set / staff `acquireEditLock`+`staffSavePack` / `isStaffEditSessionNavigation` / `needsRevisionRequest`; cascade yellow; open = pending\|needs_revision — details in [content.md](content.md) |
+| `content` | **Setup** (`defineStore('content', () => { … })`) | HTTP packs via `client.http`; working-copy draft / `submitPack` / add-task-set / staff `acquireEditLock`+`staffSavePack` / `isStaffEditSessionNavigation` / `needsRevisionRequest`; cascade yellow; open = pending\|needs_revision; shared my-moderation/staff queue also carries type `map` — details in [content.md](content.md) |
+| `maps` | **Setup** (`defineStore('maps', () => { … })`) | HTTP content maps via `client.http`; paint helpers + draft/submit/staff lock/soft-unpublish; errors via `mapsErrorI18nKey` → `maps.errors.*` — details in [maps.md](maps.md) |
 | `counter` (`example-store`) | Options | Scaffold only — do not extend for product features |
 
 **When to choose setup vs options**
 
-- Prefer **setup** when the store needs Vue composables heavily (`ref`/`computed`), long-lived subscriptions, readiness promises (`auth`, `theme`), or thin HTTP CRUD (`support`, `content`).
+- Prefer **setup** when the store needs Vue composables heavily (`ref`/`computed`), long-lived subscriptions, readiness promises (`auth`, `theme`), or thin HTTP CRUD (`support`, `content`, `maps`).
 - Prefer **options** when the domain is action-centric with shared mutable session state and imperative helpers (`game`).
 - Do not convert an existing store style without a concrete reason. Match the neighbor store’s style when extending the same domain.
 

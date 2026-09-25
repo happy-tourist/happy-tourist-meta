@@ -42,9 +42,9 @@ may also host copies later).
 | Layer | Path | Role |
 |-------|------|------|
 | Pages | `src/pages/*Page.vue` | Route-level screens; compose stores + Quasar + optional components |
-| Components | `src/components/` | Reusable widgets (e.g. `PasswordStrengthMeter.vue`; plus Quasar scaffold leftovers) |
+| Components | `src/components/` | Reusable widgets (e.g. `PasswordStrengthMeter.vue`, `MapGridPreview.vue`; plus Quasar scaffold leftovers) |
 | Lib | `src/lib/` | Pure helpers without Pinia/Colyseus I/O (`passwordPolicy.ts`, `passwordStrength.ts`) |
-| Stores | `src/stores/` | Pinia: `auth`, `theme`, `game`, `support`, `content` (+ unused scaffold `example-store`) |
+| Stores | `src/stores/` | Pinia: `auth`, `theme`, `game`, `support`, `content`, `maps` (+ unused scaffold `example-store`) |
 | Boot | `src/boot/` | Quasar boot: `theme`, `i18n`, `colyseus` (registered in `quasar.config.ts`; `framework.plugins: ['Dark']`) |
 | Router | `src/router/` | `routes.ts` + guards in `index.ts` (`filenameBasedRouting: false`) |
 | i18n | `src/i18n/` | Locale message trees (`en-US`) |
@@ -71,7 +71,7 @@ App.vue     →  layout + shared header (always-button brand logo ≥60px; theme
 
 Also normal:
 
-- Pages call Pinia actions (`useAuthStore`, `useGameStore`) and read store state.
+- Pages call Pinia actions (`useAuthStore`, `useGameStore`, `useMapsStore`, …) and read store state.
 - `App.vue` uses `useThemeStore` / `useAuthStore` for the shared theme toggle + brand logo nav, and on Game also `useGameStore` for leave (logo) + match status (not pages).
 - Router guards await `useAuthStore().whenReady()` then enforce `requiresAuth` / `guest`.
 - Quasar components used in templates without local imports (auto-import).
@@ -83,7 +83,7 @@ Also normal:
 | `components` → `pages` | Widgets stay page-agnostic |
 | `stores` → `pages` / `components` | Data layer must not import UI |
 | `boot` → `pages` / `components` | Boot is app setup only |
-| Scattering `client.*` across many components | Keep Colyseus I/O in `stores/auth`, `stores/theme`, `stores/game`, `stores/support` |
+| Scattering `client.*` across many components | Keep Colyseus I/O in `stores/auth`, `stores/theme`, `stores/game`, `stores/support`, `stores/content`, `stores/maps` |
 | Adding `blocks/` or `dialogs/` registry “like B2B” | This app has no those layers |
 
 ## Where New UI Belongs
@@ -92,7 +92,7 @@ Decide in this order:
 
 1. **New route / screen?** → `src/pages/<Name>Page.vue` + route in `src/router/routes.ts`
 2. **Reusable control used in 2+ pages or clearly generic?** → `src/components/<Name>.vue` (or small folder if peers do)
-3. **Auth / room / move / listing / theme preference logic?** → Pinia store (`stores/auth.ts`, `stores/theme.ts`, or `stores/game.ts`), not inline in the page beyond thin wiring
+3. **Auth / room / move / listing / theme preference / content packs / content maps logic?** → Pinia store (`stores/auth.ts`, `stores/theme.ts`, `stores/game.ts`, `stores/support.ts`, `stores/content.ts`, or `stores/maps.ts`), not inline in the page beyond thin wiring
 4. **App-wide plugin / SDK singleton / early Dark apply?** → Quasar boot file under `src/boot/` + register in `quasar.config.ts`
 5. **Page-local overlay / dialog?** → Keep in the page (or extract a component) with local `ref` / Quasar dialog props — **do not** invent a global dialogs registry. Exception: Game leave confirm lives in `App.vue` (shared shell), not `GamePage`.
 
@@ -128,7 +128,7 @@ Decide in this order:
 | Avoid | Prefer |
 |-------|--------|
 | Per-page theme toggle or theme HTTP | Shared `App.vue` header + `stores/theme` |
-| Colyseus `client.create` / `send` / `auth.*` / theme POST in a random component | `stores/auth`, `stores/theme`, or `stores/game` |
+| Colyseus `client.create` / `send` / `auth.*` / theme POST in a random component | `stores/auth`, `stores/theme`, `stores/game`, `stores/support`, `stores/content`, or `stores/maps` |
 | New `*View.vue` naming | `*Page.vue` |
 | `src/blocks/` or `src/dialogs/index` registry | Page-local UI or a plain component |
 | Empty layer folders “for later” | Add when the first file is needed |

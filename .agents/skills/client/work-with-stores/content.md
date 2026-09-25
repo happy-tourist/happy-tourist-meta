@@ -18,7 +18,9 @@ creator working-copy draft (`GET|PUT /api/content/packs/:id/draft`) / unified
 last published set → `last_published_task_set`). Open moderation =
 `pending`|`needs_revision` (no hard-reject). Map API codes with
 `contentErrorI18nKey` → `content.errors.*` (incl. `pack_unpublished`,
-`last_published_task_set`).
+`last_published_task_set`). Shared my-moderation / staff pending also list
+type `map` rows (`mapId`, optional `grid` / seats) — map CRUD stays in
+`stores/maps.ts` ([maps.md](maps.md)).
 
 **Removed (do not reintroduce):** personal drafts API, dual `submitAnswers` /
 `submitTasks`, `draftStale` / `rebaseDraft`, foreign-pending co-edit of full

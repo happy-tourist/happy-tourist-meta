@@ -14,7 +14,7 @@ description: >-
 
 # Work With Lobby
 
-Use this skill for the **lobby** in the happy-tourist tourist client (`happy-tourist.github.io`): live room list via built-in Colyseus `LobbyRoom`, create (with maxSeats + grilleDensity + catapultDensity) / join-by-id, then enter the game route. **No** primary «Играть» / `joinOrCreate` shortcut. Header also links to Support and content packs collection (`content-collection`; catalog from there).
+Use this skill for the **lobby** in the happy-tourist tourist client (`happy-tourist.github.io`): live room list via built-in Colyseus `LobbyRoom`, create (with maxSeats + grilleDensity + catapultDensity) / join-by-id, then enter the game route. **No** primary «Играть» / `joinOrCreate` shortcut. Header also links to Support, content packs collection (`content-collection`; catalog from there), and content maps (`content-maps`).
 
 Stack: Vue 3 `<script setup>`, Quasar 2, Pinia `useGameStore` / `useAuthStore`, `@colyseus/sdk` 0.18.
 
@@ -26,7 +26,7 @@ Sibling server: `../happy-tourist-server`. Coordinate room name (`tourist`), `lo
 
 | Topic | Pattern |
 |-------|---------|
-| Page | `src/pages/LobbyPage.vue` — route `/lobby`, `meta.requiresAuth`; header links Support + content packs (`content.nav` → `content-collection`) |
+| Page | `src/pages/LobbyPage.vue` — route `/lobby`, `meta.requiresAuth`; header links Support + content packs (`content.nav` → `content-collection`) + maps (`maps.nav` → `content-maps`) |
 | Store | `src/stores/game.ts` — `rooms`, `lobbyRoom`, `lobbyWanted`, `listing`, `error`, `subscribeLobby`, `unsubscribeLobby`, `createGame`, `joinGame`, `leaveGame` |
 | Room names | `TOURIST_ROOM = 'tourist'`; `LOBBY_ROOM = 'lobby'` |
 | Live list | `subscribeLobby` → `joinOrCreate('lobby', { filter: { name: TOURIST_ROOM } })` + handlers `rooms` / `+` / `-` |
@@ -66,7 +66,7 @@ Sibling server: `../happy-tourist-server`. Coordinate room name (`tourist`), `lo
 
 | Layer | Path | Role |
 |-------|------|------|
-| Page | `src/pages/LobbyPage.vue` | List UI, subscribe lifecycle, create-with-maxSeats + grilleDensity + catapultDensity modal / Join, Support + «Наборы»→collection, logout |
+| Page | `src/pages/LobbyPage.vue` | List UI, subscribe lifecycle, create-with-maxSeats + grilleDensity + catapultDensity modal / Join, Support + «Наборы»→collection + «Карты»→`content-maps`, logout |
 | Store | `src/stores/game.ts` | LobbyRoom subscribe + room enter / leave |
 | Auth | `src/stores/auth.ts` | `displayName`, `logout` |
 | Client | `src/boot/colyseus.ts` | Shared `Client` (`VITE_COLYSEUS_URL`) |

@@ -18,7 +18,12 @@ live summary+drill-in / AddTaskSet chips), `ContentFollowUp5.test.ts`
 `ContentModerationUx.test.ts` (SC-PACK-126 editor cascade CSS; SC-PACK-127 slot
 chips on staff hub + add-task-set; SC-PACK-128 add-task-set thread/status/reply),
 store `content.simplifyAcl.test.ts`; spy `client.http`, do not hit live server;
-cascade helpers + `isStaffEditSessionNavigation`: meta `work-with-stores/content.md`).
+cascade helpers + `isStaffEditSessionNavigation`: meta `work-with-stores/content.md`),
+`maps` (HTTP maps via `client.http`; paint helpers; pages
+`ContentMaps.test.ts` SC-MAP-06…08 / 14 / 17 / 21 / 24–25 / 29–30; store
+`maps.paint.test.ts` SC-MAP-04; errors via `mapsErrorI18nKey` → `maps.errors.*`;
+meta `work-with-stores/maps.md` — shared staff queue still mocked via `content`
+when testing type-badge / my-moderation map rows).
 
 ## Testing a page / component that uses a store
 

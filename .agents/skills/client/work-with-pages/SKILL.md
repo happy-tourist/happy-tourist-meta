@@ -52,7 +52,7 @@ From `src/router/routes.ts` (hash mode via `createWebHashHistory` when `vueRoute
 | `/forgot-password` | `forgot-password` | `ForgotPasswordPage` | `meta.guest`; request reset mail |
 | `/confirm-email` | `confirm-email` | `ConfirmEmailPage` | **public** (no `guest` — logged-in confirm must run); auto JSON on mount → lobby |
 | `/reset-password` | `reset-password` | `ResetPasswordPage` | **public**; SPA form → JSON → login |
-| `/lobby` | `lobby` | `LobbyPage` | `meta.requiresAuth`; Support + «Наборы» → `content-collection` |
+| `/lobby` | `lobby` | `LobbyPage` | `meta.requiresAuth`; Support + «Наборы» → `content-collection` + «Карты» → `content-maps` |
 | `/account` | `account` | `AccountPage` | `meta.requiresAuth`; cabinet (registered only — anonymous → lobby) |
 | `/support` | `support` | `SupportPage` | `meta.requiresAuth`; create + own list (topic `change_pack` + catalog pack select title/description) |
 | `/support/staff` | `support-staff` | `SupportStaffPage` | `meta.requiresAuth` + `requiresStaff` |
@@ -60,7 +60,9 @@ From `src/router/routes.ts` (hash mode via `createWebHashHistory` when `vueRoute
 | `/admin/users` | `admin-users` | `AdminUsersPage` | `meta.requiresAuth` + `requiresAdmin` |
 | `/content/packs` | `content-catalog` | `ContentCatalogPage` | `meta.requiresAuth`; public = in-catalog live; staff also soft-unpublished + unpublish/republish + confirm SC-PACK-139 (nav → collection; «На модерации» hidden for staff) |
 | `/content/collection` | `content-collection` | `ContentCollectionPage` | `meta.requiresAuth`; own collection (Edit unpublished creator **or** staff; staff pack unpublish/republish + confirm warns open requests cancelled SC-PACK-129/139; **no** row add-task-set; trash/`delete` + confirm; soft-unpublished gray non-nav for non-staff; hide Edit if `blocked`; **no** row `:to`) |
-| `/content/my-moderation` | `content-my-moderation` | `ContentMyModerationPage` | `meta.requiresAuth`; author «На модерации» (non-staff; `listMyModeration`; pending\|needs_revision → Edit) |
+| `/content/my-moderation` | `content-my-moderation` | `ContentMyModerationPage` | `meta.requiresAuth`; author «На модерации» (non-staff; `listMyModeration`; pending\|needs_revision → Edit; pack **or** map rows) |
+| `/content/maps` | `content-maps` | `MapsListPage` | `meta.requiresAuth`; approved in-catalog (+ author own never-published; staff soft-unpublished); Create map; no collection |
+| `/content/maps/:id/edit` | `content-map-edit` | `MapEditorPage` | `meta.requiresAuth`; paint editor / thread / staff `?staff=1` lock session |
 | `/content/packs/new` | `content-pack-new` | `ContentPackCreatePage` | `meta.requiresAuth`; create → working-copy editor; verify modal if ineligible |
 | `/content/packs/:id` | `content-pack` | `ContentPackPage` | `meta.requiresAuth`; live view (staff Edit + lock + unpublish/republish; add-task-set beside «Задания» when verified+inCollection+in-catalog; collect when `inCatalog !== false`) |
 | `/content/packs/:id/edit` | `content-pack-edit` | `ContentPackEditorPage` | `meta.requiresAuth`; creator working copy (`submitPack`) or staff live/working edit (`staffSavePack` + lock session cards↔tasks; no Submit) |
@@ -73,7 +75,7 @@ From `src/router/routes.ts` (hash mode via `createWebHashHistory` when `vueRoute
 | `/game/:roomId` | `game` | `GamePage` | `meta.requiresAuth`; param `roomId` |
 | `/:catchAll(.*)*` | — | — | redirect → `/lobby`; keep last |
 
-Deep links on GitHub Pages use the hash form: `/#/lobby`, `/#/account`, `/#/support`, `/#/content/packs`, `/#/content/staff`, `/#/admin/users`, `/#/forgot-password`, `/#/confirm-email`, `/#/reset-password`, `/#/game/<roomId>`, `/#/login`.
+Deep links on GitHub Pages use the hash form: `/#/lobby`, `/#/account`, `/#/support`, `/#/content/packs`, `/#/content/maps`, `/#/content/staff`, `/#/admin/users`, `/#/forgot-password`, `/#/confirm-email`, `/#/reset-password`, `/#/game/<roomId>`, `/#/login`.
 
 ## Page Component
 
@@ -91,12 +93,15 @@ src/pages/
 |-- SupportTicketPage.vue
 |-- SupportStaffPage.vue
 |-- AdminUsersPage.vue
+|-- MapsListPage.vue
+|-- MapEditorPage.vue
 `-- GamePage.vue
 ```
 
 - Use `<script setup lang="ts">`.
 - Path alias: `@/` → `src/`.
 - Root element: `q-page` (optionally with Quasar utility classes like nearby pages).
+- Shared map grid chrome: `components/MapGridPreview.vue` (list mini-preview, editor paint surface, staff request preview).
 
 Placeholder when UI is unspecified:
 
@@ -255,9 +260,10 @@ If an old path changes, keep a redirect in `routes.ts`:
 | Theme (chrome Dark) | `App.vue` header | `stores/theme` + `boot/theme` |
 | Brand + Game leave + match status | `App.vue` header (always-button logo ≥60px; status on Game) | logo `leave`/`toLobby`/noop; `stores/game` status / `leaveGame`; confirm in App; `auth.backToLobby` aria-only |
 | Title / favicon | `package.json` + `index.html` + `public/favicon.ico` | `productName` = Happy Tourist; single `favicon.ico` link |
-| Lobby / rooms | `LobbyPage` | `stores/game.subscribeLobby`, create `{ maxSeats, grilleDensity, catapultDensity }` / join; Support + «Наборы» → collection; `meta.requiresAuth` |
+| Lobby / rooms | `LobbyPage` | `stores/game.subscribeLobby`, create `{ maxSeats, grilleDensity, catapultDensity }` / join; Support + «Наборы» → collection + «Карты» → `content-maps`; `meta.requiresAuth` |
 | Support | `SupportPage` / `SupportTicketPage` / `SupportStaffPage` | `stores/support` HTTP; `change_pack` + catalog pack select; `requiresAuth`; staff uses `requiresStaff` + `auth.isStaff` |
-| Content packs | `ContentCatalogPage` (staff unpublish/republish + confirm SC-PACK-139) / `ContentCollectionPage` (Edit unpublished creator/staff; staff unpublish/republish + confirm SC-PACK-139; soft-unpublished gray; **no** row add-task-set; trash; no row `:to`) / `ContentMyModerationPage` / `ContentPackPage` (staff Edit+lock; pack+set unpublish/republish; pack confirm SC-PACK-139; set summary + drill-in + `taskSetLabelFrom`; add-task-set beside «Задания») / `ContentPackCreatePage` / `ContentPackEditorPage` (working copy `submitPack` / staff `staffSavePack` session; set soft-hide; **cascade-gap-outline CSS**; `taskSetLabelFrom`) / `ContentPackAddTaskSetPage` (slot **card text** chips + open-request status/thread/reply + rounded answer chips) / `ContentPackTasksPage` (live drill-in; heading `taskSetLabelFrom`; back `content.back` not pack title; task yellow + slot card text; set unpublish inside Edit) / `ContentPackModerationPage` / `ContentStaffPage` / `ContentStaffRequestPage` (Approve / needs-revision; slot **card text**; `taskSetLabelFrom`; **no** unpublish; no block UI) / `ContentStaffTasksPage` (→ hub) | `stores/content` HTTP; working copy + unified submit + add-task-set + staff lock session + pack/set soft-unpublish (`inCatalog`); cascadeGap*; `authorDisplayName`; SC-PACK-126…136; `requiresAuth`; create/edit need verified non-anonymous; staff `requiresStaff` |
+| Content packs | `ContentCatalogPage` (staff unpublish/republish + confirm SC-PACK-139) / `ContentCollectionPage` (Edit unpublished creator/staff; staff unpublish/republish + confirm SC-PACK-139; soft-unpublished gray; **no** row add-task-set; trash; no row `:to`) / `ContentMyModerationPage` (pack **or** map rows → editor) / `ContentPackPage` (staff Edit+lock; pack+set unpublish/republish; pack confirm SC-PACK-139; set summary + drill-in + `taskSetLabelFrom`; add-task-set beside «Задания») / `ContentPackCreatePage` / `ContentPackEditorPage` (working copy `submitPack` / staff `staffSavePack` session; set soft-hide; **cascade-gap-outline CSS**; `taskSetLabelFrom`) / `ContentPackAddTaskSetPage` (slot **card text** chips + open-request status/thread/reply + rounded answer chips) / `ContentPackTasksPage` (live drill-in; heading `taskSetLabelFrom`; back `content.back` not pack title; task yellow + slot card text; set unpublish inside Edit) / `ContentPackModerationPage` / `ContentStaffPage` (type badge pack\|map) / `ContentStaffRequestPage` (Approve / needs-revision; pack slots **or** `MapGridPreview` map branch; `taskSetLabelFrom`; **no** unpublish; no block UI) / `ContentStaffTasksPage` (→ hub) | `stores/content` HTTP; working copy + unified submit + add-task-set + staff lock session + pack/set soft-unpublish (`inCatalog`); cascadeGap*; `authorDisplayName`; SC-PACK-126…136; shared queue type `map`; `requiresAuth`; create/edit need verified non-anonymous; staff `requiresStaff` |
+| Content maps | `MapsListPage` / `MapEditorPage` (+ `MapGridPreview`) | `stores/maps` HTTP; paint 10×10 + players×tourists; staff `?staff=1` lock; soft-unpublish confirm; no collection; SC-MAP; lobby «Карты» |
 | Roles / admin | `AdminUsersPage` | `stores/support` admin HTTP; `requiresAdmin` + `auth.isAdmin` (server enforces) |
 | Game session | `GamePage` | `stores/game` `rejoinGame`/`sendMove`/`sendRescue`/`sendPush`/`sendReturnFromFinish`/`sendPeek`/`sendPeekAnswer`/`sendEndTurn`/`sendSay`; top presence + seated sticky `.game-hud` (own + strip row/2×2; no chip/`q-menu`); unfinished pieces + holes + grille overlays (`GRILLE_ANIM_MS=1000`; defer drop during catapult hops) + catapult land→overlay→fling (`CATAPULT_ANIM_MS=1000`, spectator parity, D13, board-busy lock) + trap/rescue/push + return strip icon (no modal) + all-jail modal + budgets beside avatar / end-turn icon on avatar + peek + finish nearest-center / timeout UX + dual rings + say top↓ / own↑; route param `roomId` (reconnect only — **not** shown in chrome); `meta.requiresAuth` |
 
