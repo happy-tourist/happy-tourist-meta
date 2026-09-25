@@ -5,9 +5,9 @@ description: >-
   schema, colyseus_users extensions, DATABASE_URL / game.db paths, profile
   fields (displayName, rating, gamesPlayed, gamesWon, theme, emailVerified,
   htRole), support_tickets / support_messages, or content_* pack tables
-  (incl. pack/task-set `in_catalog`; open moderation `pending`|`needs_revision`;
-  pack unpublish cascade → `cancelled` SC-PACK-137…141) in
-  happy-tourist-server so built-in /auth/register and /auth/login keep working.
+  (favorites; moderation `taken_by`/`taken_at`; pack/task-set `in_catalog`;
+  open moderation `pending`|`needs_revision`; pack unpublish cascade SC-PACK-137…141)
+  in happy-tourist-server so built-in /auth/register and /auth/login keep working.
 ---
 
 # Work With Database
@@ -50,7 +50,7 @@ These are **profile** fields (display name, rating, games played/won, UI theme, 
 
 ### Content pack tables (custom, not SchemaSet)
 
-`content_packs`, `content_pack_revisions`, `content_answer_cards`, `content_task_sets`, `content_tasks`, `content_task_slots`, `content_pack_collections`, `content_moderation_requests`, `content_moderation_messages` — declared in `src/db/schema.ts`, created at boot by `ensureContentTables()` in `src/lib/content.ts` (migrate/drop `content_user_drafts`; `ALTER` for `working_revision_id` / `edit_locked_by` / `edit_locked_at` / pack `in_catalog` / **task-set** `in_catalog`). Single creator **working copy** until first catalog approve (`working_revision_id`). Soft-hide **pack**: `content_packs.in_catalog` (default false; set true on first Approve / republish; false on staff pack unpublish; live revision retained). Soft-hide **task set**: `content_task_sets.in_catalog` (default true; migrate existing → true; independent of pack flag; reject unpublishing last published set — SC-PACK-131). Moderation request `type` `pack`|`task_set`|`map` (legacy answers|tasks migrated; maps use `map_id` + empty `pack_id`); **open** = `pending`|`needs_revision` (no hard-reject); staff pack `unpublishPack` cascade sets open rows to `cancelled` (SC-PACK-137…141; task-set unpublish does not). Staff exclusive edit lock columns on `content_packs`. Cascade slot clears from card content/delete (`cascadeNormalizeTasks`) MUST NOT count as tasksChanging under `answers_dirty`. Author delete unpublished pack/task-set (hard-delete published/soft-unpublished set out of scope). Live vs working: public GETs return approved **in-catalog** live snapshot; staff may GET soft-unpublished packs; unpublished working copy via `/draft` for creator only. Collection membership (`content_pack_collections`) may be seeded once via `DEFAULT_CONTENT_PACK_IDS` (`src/lib/defaultContentPacks.ts` — boot backfill + create-user; sticky remove; never grant on `GET /collection` / login). Not SchemaSet / not room state.
+`content_packs`, `content_pack_revisions`, `content_answer_cards`, `content_task_sets`, `content_tasks`, `content_task_slots`, `content_pack_collections` (legacy), `content_pack_favorites` (star), `content_moderation_requests` (+ `taken_by` / `taken_at`), `content_moderation_messages` — declared in `src/db/schema.ts`, created at boot by `ensureContentTables()` in `src/lib/content.ts` (migrate/drop `content_user_drafts`; `ALTER` for `working_revision_id` / `edit_locked_*` / pack+set `in_catalog` / moderation take columns). Working copy via `working_revision_id` (incl. post-publish author re-edit). Soft-hide pack/set via `in_catalog`. Moderation `type` `pack`|`task_set`|`map`; **open** = `pending`|`needs_revision`; staff take TTL = edit lock. Favorites ≠ collection. Legacy `content_pack_collections` retained; **DEFAULT_CONTENT_PACK_IDS grants retired** (SC-PACK-170). Not SchemaSet / not room state.
 
 ### Content map tables (custom, not SchemaSet)
 

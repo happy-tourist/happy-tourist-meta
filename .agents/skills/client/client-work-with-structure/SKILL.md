@@ -5,7 +5,10 @@ description: >-
   (*Page.vue), components, Pinia stores, Quasar boot files, dependency
   direction between layers, or deciding whether new UI belongs in pages vs
   components vs stores vs App shell (always-button brand logo ≥60px; Game leave via logo + status;
-  auth→lobby; theme; no page «В лобби»; content packs working copy + add-task-set beside «Задания» + staff Edit lock session + soft-unpublish pack+set/`inCatalog` + confirm on unpublish + live summary/drill-in + AddTaskSet chips (SC-PACK-126…136) + trash/click isolation (no row `:to`; soft-unpublished gray; hide Edit if `blocked`) / author «На модерации» (hidden for staff) / cascade yellow + Editor/Tasks `cascade-gap-outline` CSS / slot chips on question lists / add-task-set status+thread / author delete unpublished / staff needs_revision / no block UI). No blocks/
+  auth→lobby; theme; no page «В лобби»; unified packs list + favorites + author
+  re-edit + staff take + maps list filters; pack/map details in work-with-stores
+  topics; soft-unpublish/`inCatalog`; cascade/slot chips SC-PACK-126…136; no
+  collection-first UX; no non-staff my-moderation nav; no block UI). No blocks/
   or dialogs/ registry layers.
 ---
 

@@ -8,22 +8,19 @@ description: >-
   labels, game rescue / returnAffordance / pushAffordance / all-jail modals
   (no touristChipAria; no returnConfirm*), support topics/statuses/guest
   warning / staff filters / emailUnverified / rate-limit errors / roles (RU
-  under en-US), and content packs `content.*` («Набор карточек»; working-copy /
+  under en-US), and content packs `content.*` (unified list filters/statuses/
+  favorites `filter*` / `favorite*` / `statusInCatalog` / `statusDraft` /
+  `emptyFiltered`; take/release `takeModeration*` / `moderationTaken` /
+  `staffEditBlockedAuthorRequest` / `submitHintTaskSetAuthor`; working-copy /
   unified submit / `addTaskSet*`; `staffEditSubtitle` / `tasksSaveHint` /
-  `questionNeedsSlot` (tooltip / reserved hints, not jumping captions);
-  `myModeration*`; `statuses.needs_revision`; `taskSetStatusMarks.pending` /
-  `needs_revision` (UI label — not `rejected`); `moderationThread` / `reply` /
-  `sendReply` / `emptyThread` / `authorStaff` / `authorYou` / `authorUser`;
-  `slotEmpty` / `slotFilled`; `taskSetLabelFrom` / `back` (SC-PACK-135/136);
-  `deleteCardConfirm` / `deleteCardConfirmPublished` by hasLive; cascade yellow;
-  collection trash + author delete unpublished; staff soft-unpublish/republish
-  (`unpublish` / `republish` / `unpublishedByStaff` / `unpublishConfirm*` warns
-  open requests cancelled SC-PACK-139 / `unpublishTaskSetConfirm*` /
-  `taskSetDifficultySummary` / `lastPublishedTaskSetHint`); staff Approve /
-  needs-revision;
-  no block UI; `content.errors.*` incl. `edit_locked` / `submit_need_task_sets` /
-  `pack_unpublished` / `last_published_task_set` — RU under en-US; support topic `change_pack`;
-  content maps `maps.*` (nav/list/editor/tools/unpublishConfirm/errors SC-MAP)).
+  `questionNeedsSlot`; `myModeration*` (page retained, nav hidden non-staff);
+  `statuses.needs_revision`; `taskSetStatusMarks.*`; `moderationThread` /
+  slot chips / `taskSetLabelFrom` / `back`; delete-card confirms; cascade;
+  soft-unpublish confirms SC-PACK-139; `content.errors.*` incl.
+  `author_request_open` / `moderation_taken` / `moderation_take_required` /
+  `edit_locked` / `pack_unpublished` / `last_published_task_set` — RU under
+  en-US; support topic `change_pack`; content maps `maps.*` (filters/statuses /
+  `staffEditBlockedAuthorRequest` / unpublishConfirm / errors SC-MAP)).
 ---
 
 # Work With Localization

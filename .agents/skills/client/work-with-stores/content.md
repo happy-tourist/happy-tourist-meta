@@ -1,31 +1,43 @@
 # Content pack store (`stores/content.ts`)
 
 Read with the [core stores skill](SKILL.md) when changing pack HTTP, working
-copy, add-task-set, staff lock/save, or cascade yellow. Pages: `Content*` under
-`work-with-pages`.
+copy, add-task-set, staff lock/save, favorites, moderation take, or cascade
+yellow. Pages: `Content*` under `work-with-pages`.
 
 ## Ownership
 
-Setup store `content` owns catalog / collection (trash confirm) /
-`listMyModeration` / live (`inCollection`; patch membership on collect/remove) /
-creator working-copy draft (`GET|PUT /api/content/packs/:id/draft`) / unified
-`submitPack` / add-task-set load+save+submit / staff `acquireEditLock` +
-`staffSavePack` + release / helper `isStaffEditSessionNavigation` /
-`needsRevisionRequest` + `cancelRequest` +
-`approveRequest` / author delete unpublished / staff `unpublishPack` +
-`republishPack` (pack soft-hide `inCatalog`; SC-PACK-120…125 / 129) /
-`unpublishTaskSet` + `republishTaskSet` (set soft-hide; SC-PACK-131/132; reject
-last published set → `last_published_task_set`). Open moderation =
-`pending`|`needs_revision` (no hard-reject). Map API codes with
-`contentErrorI18nKey` → `content.errors.*` (incl. `pack_unpublished`,
-`last_published_task_set`). Shared my-moderation / staff pending also list
-type `map` rows (`mapId`, optional `grid` / seats) — map CRUD stays in
-`stores/maps.ts` ([maps.md](maps.md)).
+Setup store `content` owns:
 
-**Removed (do not reintroduce):** personal drafts API, dual `submitAnswers` /
-`submitTasks`, `draftStale` / `rebaseDraft`, foreign-pending co-edit of full
-pack. **Staff soft-unpublish/republish of pack and task set is in scope**
-(D9 / D13) — not the same as product **block**; not hard-delete of sets.
+- Unified packs list `listCatalog` → `GET /api/content/packs` (caller-facing
+  `moderationStatus`, `isMine` / `isContributor` / `isFavorite`; SC-PACK-148…153)
+- Favorites `starPack` / `unstarPack` → `POST …/favorite` \| `/unfavorite`
+  (SC-PACK-154; registered non-anonymous; in-catalog only)
+- Legacy collection HTTP (`listCollection` / add/remove) — **product UI removed**;
+  route `content-collection` redirects to catalog (SC-PACK-164); do not rebuild
+  collection-first UX
+- `listMyModeration` / staff pending / preview (pack **and** map rows)
+- Staff take / release `takeModerationRequest` / `releaseModerationRequest`
+  (TTL = `CONTENT_LOCK_TTL_MS` 5 min; helper `moderationTakeHeldBy`; SC-PACK-161…163)
+- Live pack detail (`isFavorite`, `moderationStatus`; legacy `inCollection` ignored for ACL)
+- Creator / task-set-author working copy (`editorKind`: `creator` \|
+  `task_set_author`) incl. **post-publish re-edit** via moderation (SC-PACK-156…159)
+- Unified `submitPack` / add-task-set load+save+submit
+- Edit lock `acquireEditLock` + heartbeat + release — **authors and staff**
+  (staff blocked while open author request → `author_request_open`; SC-PACK-157)
+- Staff `staffSavePack` + `isStaffEditSessionNavigation`
+- Soft-unpublish pack/set (`inCatalog`; SC-PACK-120…132 / 139)
+- Cascade yellow helpers (`cascadeGap*`)
+
+Open moderation = `pending`|`needs_revision`. Map API codes with
+`contentErrorI18nKey` → `content.errors.*` (incl. `author_request_open`,
+`moderation_taken`, `moderation_take_required`, `pack_unpublished`,
+`last_published_task_set`).
+
+**Removed product paths (do not reintroduce):** collection-first lobby/nav,
+collect/uncollect on live pack, default-grant membership gates for add-task-set
+(`not_in_collection`), non-staff «На модерации» header nav (SC-PACK-166 — filters
+cover author pending/drafts). **Staff soft-unpublish remains in scope** — not
+block.
 
 ## Cascade yellow (SC-PACK-81 / D43–D46; SC-PACK-126)
 
@@ -46,17 +58,14 @@ Every task/question list row MUST show answer slot chips (filled / empty):
 `ContentPackAddTaskSetPage`. Live pack page (`ContentPackPage`) shows **set
 summary rows** only (count + difficulty 1/2/3) — slots appear after drill-in
 (SC-PACK-130). Pattern: dense `q-chip` per slot + `slotEmpty` when no slots.
-A filled slot MUST show the answer card’s text (not a generic «заполнен» when
-the card resolves). For staff `task_set` preview, server merges live
-`answerCards` into `previewPending` (SC-PACK-134). Add-task-set answer
-**picker** tiles MUST be rounded `q-chip` like Tasks (SC-PACK-133), not
-rectangular `q-btn`.
+A filled slot MUST show the answer card’s text. For staff `task_set` preview,
+server merges live `answerCards` into `previewPending` (SC-PACK-134). Add-task-set
+answer **picker** tiles MUST be rounded `q-chip` (SC-PACK-133).
 
 ## Task-set author label + Tasks back (SC-PACK-135 / 136)
 
-`TaskSet.authorDisplayName` (displayName else email local-part) drives
-`content.taskSetLabelFrom` on live / editor / staff hub / Tasks heading.
-Live drill-in back uses `content.back` («Вернуться»), not pack title;
+`TaskSet.authorDisplayName` drives `content.taskSetLabelFrom` on live / editor /
+staff hub / Tasks heading. Live drill-in back uses `content.back` («Вернуться»);
 editor keeps `content.backToAnswers`.
 
 ## Add-task-set moderation thread (SC-PACK-128)
@@ -64,54 +73,53 @@ editor keeps `content.backToAnswers`.
 `ContentPackAddTaskSetPage` MUST show open-request status
 (`taskSetStatusMarks.pending` | `needs_revision`) and the same thread + reply
 UX as the cards editor while the author’s `task_set` request is
-`pending`|`needs_revision`. Load via `loadModeration` / `postModerationMessage`
-(prefer not inventing a parallel messages payload). Hide the thread block when
-there is no open own request (fresh create / foreign pending).
+`pending`|`needs_revision`.
 
-## ACL surfaces (simplify-content-pack-editing)
+## ACL surfaces (unify-content-lists-author-edit)
 
 | Surface | Who | Store / route |
 |---------|-----|----------------|
-| Unpublished editor | creator | `loadDraft` / `saveDraft` / `submitPack` → `content-pack-edit` |
-| Published non-staff | verified + inCollection + in-catalog | add-task-set only → `content-pack-add-task-set` |
-| Soft-unpublished non-staff | any | collection gray row only; no live/Edit; trash OK |
-| Staff Edit | moderator\|admin | `acquireEditLock` → `loadStaffEdit` / `staffSavePack` (no Submit); includes soft-unpublished |
-| Staff soft-unpublish pack | staff | `unpublishPack` / `republishPack` (catalog + **collection** + live; confirm warns open requests will be cancelled — SC-PACK-139; server cascade SC-PACK-137…141; SC-PACK-129) |
-| Staff soft-unpublish set | staff | `unpublishTaskSet` / `republishTaskSet` (Editor/live row + inside Tasks; confirm on unpublish; disable last published; SC-PACK-131/132) |
-| Staff queue | staff | `approveRequest` / `needsRevisionRequest` (`/needs-revision`); **no** pack/set unpublish |
+| Unified packs list | any auth | `listCatalog` → `content-catalog`; filters all/moderation/drafts/mine/favorites (identity-only filters disabled for guests) |
+| Star / unstar | registered non-anonymous | `starPack` / `unstarPack` on in-catalog rows + detail |
+| Unpublished / draft editor | creator | `loadDraft` / `saveDraft` / `submitPack` → `content-pack-edit` |
+| Post-publish pack Edit | pack creator (non-staff) | acquire lock → working copy; `editorKind=creator`; submit reopens moderation |
+| Post-publish task-set Edit | set `authorUserId` (not pack creator) | lock + draft; `editorKind=task_set_author`; cards read-only; only own sets |
+| Add-task-set | verified non-anonymous + in-catalog | **no** collection membership (SC-PACK-164) → `content-pack-add-task-set` |
+| Soft-unpublished non-staff | any | list badge / no live; trash OK for never-approved |
+| Staff Edit | staff, **no** open author request | `acquireEditLock` → `loadStaffEdit` / `staffSavePack`; else disabled + `staffEditBlockedAuthorRequest` |
+| Staff soft-unpublish | staff | `unpublishPack` / `republishPack` / task-set twins + confirms |
+| Staff queue | staff | **take** before approve/needs_revision/cancel; take badge when held by other |
 
 ## UI contracts
 
-- Collection: Edit for unpublished creator or staff; **no** row add-task-set (SC-PACK-118); trash + click isolation (no row `:to`); «На модерации» nav hidden for staff (SC-PACK-116); soft-unpublished (`hasLive && inCatalog === false`) row gray + «Снято с публикации», non-navigating for non-staff, trash remains (SC-PACK-121/125); **staff** pack unpublish/republish on row with confirm (`unpublishConfirm` / SC-PACK-139) (SC-PACK-129).
-- Catalog: staff see soft-unpublished with badge + «Опубликовать снова»; public list hides them (server); staff «Снять с публикации» + confirm (`content.unpublishConfirm` warns open moderation requests will be cancelled — SC-PACK-139) on in-catalog rows (SC-PACK-120/129).
-- Live: staff Edit (+ lock) including soft-unpublished pack; staff pack + **task-set** unpublish/republish (pack confirm same `unpublishConfirm` / SC-PACK-139; set uses `unpublishTaskSetConfirm*` — no pack-request cascade); set **summary rows** + drill-in (SC-PACK-130); soft-unpublished set gray / no enter for non-staff (SC-PACK-132); non-staff add-task-set **beside «Задания»** only while in-catalog (SC-PACK-117); no full Edit for non-staff after publish (SC-PACK-53/106); non-staff deep-link → `pack_unpublished` / empty (SC-PACK-122).
-- Staff Edit session: cards↔tasks keep lock / `staffEditTarget`; tasks persist → `staffSavePack`; unlock only on leave Edit (SC-PACK-115). Helper: `isStaffEditSessionNavigation`.
+- **Catalog (= primary «Наборы»):** Lobby + headers → `content-catalog` (not
+  collection). Filters + status badges (`moderationStatus`). Star on in-catalog
+  rows (stop click isolation). Draft/no-live row → edit route. Staff unpublish/
+  republish + confirm SC-PACK-139. **No** non-staff my-moderation nav
+  (SC-PACK-166); staff keep queue link.
+- **Collection route:** redirect only (`content-collection` → `content-catalog`).
+  Do not revive `ContentCollectionPage` as primary.
+- **Live detail:** favorite star; author Edit (creator) / set-row Edit (task-set
+  author); staff Edit gated by open author request; add-task-set beside «Задания»
+  when verified+in-catalog (**not** `inCollection`); no Collect button.
+- **Editor:** `cardsReadOnly` when `editorKind === 'task_set_author'`; author may
+  resubmit while own pending (incl. while staff holds take — SC-PACK-163).
+- **Staff hub / request:** Take / Release; terminal actions require held take;
+  `moderationTakeHeldBy` + TTL.
 - Support `change_pack` select: **in-catalog only** (`inCatalog !== false && hasLive`).
-- Editor hints: tooltips / reserved space — no jumping `v-if` captions (SC-PACK-119).
-- Cascade yellow: `cascade-gap-outline` CSS on **Editor task-set rows** and Tasks task rows (SC-PACK-126).
-- Slot chips on every question list (staff hub, add-task-set, tasks / live drill-in) (SC-PACK-127); not inline on live summary (SC-PACK-130).
-- Add-task-set: status + moderation thread + reply while open request (SC-PACK-128); answer picker = rounded chips (SC-PACK-133).
-- Delete-card confirm: `deleteCardConfirmPublished` iff `pack.hasLive`.
-- Status labels: prefer `content.statuses.needs_revision` / `taskSetStatusMarks.needs_revision` (keep `rejected` alias in i18n for legacy rows).
-- No block/unblock UI (block ≠ soft-unpublish).
+- Cascade / slot chips / add-task-set thread / delete-card confirms — unchanged
+  SC-PACK-126…136 contracts above.
+- No block/unblock UI.
 
 ## Anti-patterns
 
-- Pre-clearing `slot.answerCardId` before save.
-- Showing editable card/task lists to non-staff on published packs.
-- Staff Submit-for-moderation control on own staff edits.
-- Calling removed draftStale / dual-submit APIs; conflating soft-unpublish with **block**.
-- Letting non-staff navigate/Edit soft-unpublished packs or soft-unpublished task sets or open them via deep-link.
-- Unpublishing the only published task set (client must disable; server 409 `last_published_task_set`).
-- Unpublishing pack/set without confirm; requiring confirm on republish.
-- Showing pack/set unpublish in staff moderation queue.
-- Expanding all task questions inline on live (use summary + drill-in; SC-PACK-130).
-- Releasing staff edit lock on cards↔tasks navigation (use `isStaffEditSessionNavigation`; unlock only when leaving the Edit session).
-- Jumping `v-if` caption hints for submit / questionNeedsSlot / tasksSave (use `q-tooltip` or always-reserved caption; SC-PACK-119).
-- Header add-task-set on live pack or row playlist_add on collection (place beside «Задания»; SC-PACK-117/118).
-- Showing «На модерации» nav to staff (SC-PACK-116).
-- Offering soft-unpublished packs in Support `change_pack` select.
-- Applying `cascade-gap-outline` class on Editor without the matching scoped CSS (SC-PACK-126).
-- Question lists without slot chips on staff hub / add-task-set / tasks drill-in (SC-PACK-127).
-- Add-task-set amend without status + moderation thread while open (SC-PACK-128).
-- Rectangular `q-btn` answer tiles on AddTaskSet (use `q-chip`; SC-PACK-133).
+- Rebuilding collection-first nav / Collect on live / gating add-task-set on
+  `inCollection` or `not_in_collection`.
+- Showing non-staff «На модерации» header nav (use filters instead).
+- Staff Edit while author request open (must show blocked + tooltip / 409
+  `author_request_open`).
+- Approve / needs_revision / cancel without staff take (`moderation_take_required`).
+- Letting task-set author edit answer cards or foreign sets.
+- Pre-clearing `slot.answerCardId` before save; conflating soft-unpublish with **block**.
+- Releasing staff edit lock on cards↔tasks navigation (`isStaffEditSessionNavigation`).
+- Jumping `v-if` caption hints (SC-PACK-119).

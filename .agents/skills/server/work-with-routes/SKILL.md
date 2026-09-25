@@ -4,7 +4,11 @@ description: >-
   Use when adding, changing, or reviewing HTTP routes on the happy-tourist
   Colyseus server: createRouter / createEndpoint in app.config.ts, Express
   hook handlers (/health, /hi), auth /auth/*, theme, support tickets, content
-  packs (/api/content/* working-copy draft + unified `POST …/submit` + add-task-set + edit-lock/staff-save + needs-revision + cascadeNormalize ≠ false `answers_dirty` + author delete unpublished + staff soft-unpublish/republish pack (`inCatalog`; unpublish cascade-cancels open requests + RU email SC-PACK-137…141) + task-set soft-hide (`POST …/task-set/unpublish|republish`) + staff `previewPending` live cards / `authorDisplayName` (SC-PACK-134…135) + GET my-moderation + staff pending queue; `GET /collection` never auto-grants DEFAULT_CONTENT_PACK_IDS; block endpoints retained; drop dual submit/rebase/stale), admin roles, or Colyseus room listing /rooms/:roomName.
+  packs (/api/content/* unified list + favorites + working-copy / author re-edit +
+  unified submit + add-task-set **no** collection gate + edit-lock for authors+staff +
+  staff take/release + soft-unpublish pack/set + my-moderation + staff queue; collection
+  HTTP legacy only; DEFAULT_CONTENT_PACK_IDS grants retired SC-PACK-170; block endpoints
+  retained), admin roles, or Colyseus room listing /rooms/:roomName.
   Keep HTTP thin — game logic belongs in rooms.
 ---
 
@@ -111,28 +115,30 @@ For CORS / monitor details use `work-with-middleware` and `work-with-config`.
 | GET | `/api/support/staff/tickets` | `createEndpoint` | JWT moderator\|admin; query `topic` (optional), `status`=`open`\|`closed`\|`all` (default `open`); cap ~50 **after** filter |
 | POST | `/api/support/tickets/:id/take` | `createEndpoint` | JWT staff; take into `in_progress` |
 | POST | `/api/support/tickets/:id/status` | `createEndpoint` | JWT staff; `{ status }` |
-| GET | `/api/content/packs` | `createEndpoint` | JWT; public = live + `inCatalog`; staff also see soft-unpublished (SC-PACK-120); helpers in `src/lib/content.ts` |
-| POST | `/api/content/packs` | `createEndpoint` | JWT + non-anonymous + `emailVerified` (DB); create pack + working copy into author collection |
-| GET | `/api/content/packs/:id` | `createEndpoint` | JWT; live snapshot + `inCollection` + `inCatalog`; non-staff soft-unpublished → `pack_unpublished` (SC-PACK-122) |
-| POST | `/api/content/packs/:id/unpublish` \| `/republish` | `createEndpoint` | JWT staff; soft-hide / restore pack catalog without moderation (SC-PACK-120/123); keep `liveRevisionId`; **unpublish** cascade-cancels open requests (`pending`\|`needs_revision`) + one RU email/author without links (SC-PACK-137…141; early re-unpublish no-op; republish does not restore; task-set unpublish does **not** cascade) |
-| POST | `/api/content/task-set/unpublish` \| `/republish` | `createEndpoint` | JWT staff; soft-hide / restore **task set** (`in_catalog` on `content_task_sets`; SC-PACK-131/132); body `{ packId, taskSetId }`; unpublish last published set → 409 `last_published_task_set` |
-| GET\|POST | `/api/content/packs/:id/draft` | `createEndpoint` | JWT + creator; unpublished working copy only (SC-PACK-100/101); `putDraft` compares `tasksStructuralKey` **after** `cascadeNormalizeTasks` — slot clear ≠ `answers_dirty` |
-| POST | `/api/content/packs/:id/submit` | `createEndpoint` | JWT + creator; unified first-publish (≥2 cards, ≥1 task set) |
-| GET\|PUT\|POST | `/api/content/packs/:id/add-task-set` (+ `/submit`) | `createEndpoint` | JWT + verified collector; new task set only (SC-PACK-108…110) |
-| GET\|POST | `/api/content/packs/:id/edit-lock` | `createEndpoint` | JWT staff; lock status / acquire (SC-PACK-113) |
-| POST | `/api/content/packs/:id/edit-unlock` | `createEndpoint` | JWT staff; release lock |
-| GET\|POST | `/api/content/packs/:id/staff-edit` \| `/staff-save` | `createEndpoint` | JWT staff + lock; load / direct live/working save (SC-PACK-111) |
+| GET | `/api/content/packs` | `createEndpoint` | JWT; unified list — in-catalog + caller drafts/pending + staff soft-unpublished; rows carry `moderationStatus` / `isMine` / `isFavorite` (SC-PACK-148…153) |
+| POST | `/api/content/packs` | `createEndpoint` | JWT + non-anonymous + `emailVerified` (DB); create pack + working copy |
+| GET | `/api/content/packs/:id` | `createEndpoint` | JWT; live snapshot + `isFavorite` + `inCatalog` (+ legacy `inCollection`); non-staff soft-unpublished → `pack_unpublished` |
+| POST | `/api/content/packs/:id/favorite` \| `/unfavorite` | `createEndpoint` | JWT registered non-anonymous; star/unstar in-catalog pack (SC-PACK-154) |
+| POST | `/api/content/packs/:id/unpublish` \| `/republish` | `createEndpoint` | JWT staff; soft-hide / restore pack catalog; unpublish cascade-cancels open requests + RU email SC-PACK-137…141 |
+| POST | `/api/content/task-set/unpublish` \| `/republish` | `createEndpoint` | JWT staff; soft-hide / restore **task set**; last published → 409 `last_published_task_set` |
+| GET\|POST | `/api/content/packs/:id/draft` | `createEndpoint` | JWT + creator **or** task-set author; working copy incl. post-publish re-edit (`editorKind`); staff → `author_request_open` when author request open |
+| POST | `/api/content/packs/:id/submit` | `createEndpoint` | JWT + author; unified submit / resubmit (may stay pending while staff holds take) |
+| GET\|PUT\|POST | `/api/content/packs/:id/add-task-set` (+ `/submit`) | `createEndpoint` | JWT + verified; **no** collection membership required (SC-PACK-164) |
+| GET\|POST | `/api/content/packs/:id/edit-lock` | `createEndpoint` | JWT author **or** staff; acquire/status (TTL 5 min); staff blocked if author request open |
+| POST | `/api/content/packs/:id/edit-unlock` | `createEndpoint` | JWT lock holder; release |
+| GET\|POST | `/api/content/packs/:id/staff-edit` \| `/staff-save` | `createEndpoint` | JWT staff + lock; load / direct save |
 | GET\|POST | `/api/content/packs/:id/moderation` (+ `/messages`) | `createEndpoint` | JWT; author ↔ staff thread |
 | POST | `/api/content/packs/:id/block` \| `/unblock` | `createEndpoint` | JWT moderator\|admin (retained; client UI hidden) |
-| POST | `/api/content/pack/delete` | `createEndpoint` | JWT + creator; hard-delete **unpublished** pack (SC-PACK-114) |
+| POST | `/api/content/pack/delete` | `createEndpoint` | JWT + creator; hard-delete **unpublished** pack |
 | POST | `/api/content/task-set/delete` | `createEndpoint` | JWT + creator; delete task set from unpublished working copy |
-| GET | `/api/content/collection` | `createEndpoint` | JWT (incl. anonymous); own collection; **never** auto-grants `DEFAULT_CONTENT_PACK_IDS` (sticky remove — SC-PACK-145) |
-| POST | `/api/content/collection` \| `/remove` | `createEndpoint` | JWT; add/remove pack (manual re-add after sticky remove still works) |
-| GET | `/api/content/my-moderation` | `createEndpoint` | JWT; caller’s open requests (pending\|needs_revision) for author «На модерации» (pack **and** map) |
-| GET | `/api/content/staff/pending` | `createEndpoint` | JWT moderator\|admin; open pending\|needs_revision queue (pack **and** map; type badge) |
-| GET\|POST | `/api/content/staff/requests/:id` (+ `/approve` `/needs-revision` `/reject` `/cancel` `/messages`) | `createEndpoint` | JWT staff; GET = `previewPending` (packs: task_set merge live cards SC-PACK-134; maps: grid preview + `canApprove`); Approve → catalog live; needs-revision (alias `/reject`); cancel drops; no hard-reject |
-| GET\|POST | `/api/content/maps` | `createEndpoint` | JWT; list (in-catalog + author never-published + staff soft-unpublished) / create (verified non-anonymous) |
-| GET\|POST | `/api/content/maps/:id` (+ `/draft` `/submit` `/moderation` `/edit-lock` `/staff-edit` `/staff-save` `/unpublish` `/republish`) | `createEndpoint` | JWT; live/draft/submit/thread/lock/staff-save/soft-unpublish (cascade-cancel + RU mail SC-MAP-21…27) |
+| GET | `/api/content/collection` | `createEndpoint` | JWT; **legacy** membership list (product UI removed; no auto-grant) |
+| POST | `/api/content/collection` \| `/remove` | `createEndpoint` | JWT; legacy add/remove (do not rebuild product collection UX) |
+| GET | `/api/content/my-moderation` | `createEndpoint` | JWT; caller’s open requests (pack **and** map) |
+| GET | `/api/content/staff/pending` | `createEndpoint` | JWT staff; open queue (pack **and** map) + `takenBy`/`takenAt` |
+| POST | `/api/content/staff/requests/:id/take` \| `/release` | `createEndpoint` | JWT staff; take-to-moderate / release (TTL = edit lock; SC-PACK-161…163 / SC-MAP-38/39) |
+| GET\|POST | `/api/content/staff/requests/:id` (+ `/approve` `/needs-revision` `/reject` `/cancel` `/messages`) | `createEndpoint` | JWT staff; terminal actions require held take (`moderation_take_required`); GET = `previewPending` |
+| GET\|POST | `/api/content/maps` | `createEndpoint` | JWT; list with `moderationStatus` / `authorRequestOpen` / create |
+| GET\|POST | `/api/content/maps/:id` (+ `/draft` `/submit` `/moderation` `/edit-lock` `/staff-edit` `/staff-save` `/unpublish` `/republish`) | `createEndpoint` | JWT; author re-edit + staff lock gated by open author request; soft-unpublish cascade SC-MAP |
 | POST | `/api/content/map/delete` | `createEndpoint` | JWT + creator; hard-delete **never-approved** map |
 | GET | `/api/admin/users` | `createEndpoint` | JWT admin; **exclude** anonymous; include `emailVerified` (+ id/email/role/displayName) |
 

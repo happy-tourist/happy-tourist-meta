@@ -54,8 +54,8 @@ Sibling client: `../happy-tourist.github.io` (room type `tourist`, board + piece
 |-------|------|------|
 | Entry | `src/index.ts` | `listen(app)` only |
 | Server wiring | `src/app.config.ts` | `defineServer`: `database`, `rooms`, `routes`, `express`; import auth config; `configureAuthEmailFlows` after DB boot; thin `POST /api/auth/*` + `/api/support/*` + `/api/content/*` + `/api/admin/*`; boot `ensureSupportTables` / `ensureContentTables` / `bootstrapAdminIds` / soft-fail `backfillDefaultPacksOnBoot` / `startAutoCloseInterval` |
-| Auth config | `src/config/` | `auth.ts` — `getRuntimeAuth` / Google `addProvider` / email hooks; wrap OAuth callback for `emailVerified` + one-shot default packs on new create; wrap anonymous/email register for default packs; map `htRole` → userdata `role` |
-| Mailer / support / content / password policy | `src/lib/` | `mailer.ts` — smtp.bz `sendEmail` (+ test setter); `support.ts` — tickets/messages/roles/bootstrap/auto-close + `change_pack`/`pack_id` (**in-catalog** only) + create-ack mail + staff list filters + `setTicketStatus(..., { notify })` (HTTP stays thin); `content.ts` — working-copy draft CRUD + unified `submitPack`/approve + add-task-set + staff edit lock/save + soft-unpublish/republish pack + task-set (`in_catalog` on packs and sets; pack `unpublishPack` cascade-cancels open requests + one `notifyChangeAuthor` per author SC-PACK-137…141) + `previewPending` merges live `answerCards` for `task_set` (SC-PACK-134) + `authorDisplayName` on sets (SC-PACK-135) + needs-revision + `cascadeNormalizeTasks` (slot clear ≠ `answers_dirty`) + author delete + `listMyModerationPacks` / staff pending queue (map rows delegate to `contentMaps`); `contentMaps.ts` — map tables ensure + draft/submit/approve/needs_revision/soft-unpublish cascade-cancel + staff lock/save + author delete (SC-MAP; no collection); migrate drop `content_user_drafts` + `ALTER` pack/set `in_catalog`; `defaultContentPacks.ts` — `DEFAULT_CONTENT_PACK_IDS` parse/eligible/grant + per-pack boot backfill (re-export from `content.ts`); `passwordPolicy.ts` — shared ≥8 + lower/upper/digit/symbol (register wrap / JSON reset / change-password) |
+| Auth config | `src/config/` | `auth.ts` — Google/email hooks; create-user still calls grant helper (**no-op** SC-PACK-170); `htRole` → userdata `role` |
+| Mailer / support / content / password policy | `src/lib/` | `mailer.ts`; `support.ts`; `content.ts` — unified list + favorites + author re-edit + staff take + working copy/submit + soft-unpublish + my-moderation/staff queue; `contentMaps.ts` — map list statuses + author re-edit + soft-unpublish; `defaultContentPacks.ts` — parse/eligible; grant/backfill **no-ops** (SC-PACK-170); `passwordPolicy.ts` |
 | Auth HTML | `html/` | Legacy Colyseus cwd templates; product confirm/reset UX is **SPA + JSON** (mail links via `CLIENT_APP_URL`) |
 | Database | `src/db/` | `GameDatabase` (`index.ts`) + Drizzle user schema (`schema.ts`; `htRole` + support + content pack/map table decls) |
 | Rooms | `src/rooms/` | Room handlers (`onCreate` / `onJoin` / `onDrop` / `onReconnect` / leave / dispose; `onMessage('move'|'ready'|'say')`) |
@@ -214,7 +214,7 @@ src/lib/
 ├── mailer.ts          # smtp.bz sendEmail (+ setSendEmailImpl for tests)
 ├── support.ts         # tickets / roles / bootstrap helpers
 ├── content.ts         # content packs (ensureContentTables + working copy + submitPack/add-task-set + staff lock/save + soft-unpublish pack+set in_catalog + pack unpublish cascade-cancel open req + mail SC-PACK-137…141 + previewPending live cards + authorDisplayName + needs-revision + cascadeNormalize ≠ answers_dirty + author delete + listMyModeration/listPending)
-├── defaultContentPacks.ts  # DEFAULT_CONTENT_PACK_IDS parse/eligible/grant + per-pack boot backfill (SC-PACK-142…147; re-export from content.ts)
+├── defaultContentPacks.ts  # DEFAULT_CONTENT_PACK_IDS parse/eligible; grant/backfill no-ops (SC-PACK-170; re-export from content.ts)
 └── passwordPolicy.ts  # shared product password policy (register / reset / change)
 
 html/           # legacy Colyseus cwd templates (not product SPA UX)
@@ -237,7 +237,7 @@ test/theme.test.ts
 test/zz-authEmail.test.ts
 test/zz-authProfile.test.ts
 test/zz-contentPacks.test.ts
-test/zz-defaultContentPacks.test.ts  # SC-PACK-142…147 DEFAULT_CONTENT_PACK_IDS
+test/zz-defaultContentPacks.test.ts  # SC-PACK-170 DEFAULT_CONTENT_PACK_IDS grants retired
 test/setupEnv.ts                     # COLYSEUS_TESTING + isolated game.test.db wipe
 test/keepLatestRequestListener.ts
 loadtest/example.ts

@@ -5,8 +5,10 @@ description: >-
   src/router/routes.ts, router guards in src/router/index.ts, App.vue shell wiring,
   hash-mode deep links, meta.guest / meta.requiresAuth / requiresStaff / requiresAdmin,
   or navigation between login, lobby (create maxSeats + grilleDensity + catapultDensity;
-  Support + «Наборы»→collection), support/content/admin pages (single ticket Close via canClose; form lazy-rules reset; support `change_pack` + catalog pack select),
-  content working-copy editor + add-task-set page (beside «Задания», not header/collection row) + staff Edit lock session cards↔tasks (`isStaffEditSessionNavigation`) + unified submit / staff save + staff soft-unpublish/republish pack+set (`inCatalog`; pack confirm warns open requests cancelled SC-PACK-139; collection controls SC-PACK-129) + live set summary + drill-in (SC-PACK-130) + author «На модерации» (hidden for staff) + stable tooltip/reserved hints (no jumping captions) + cascade/hasLive confirm + `cascade-gap-outline` on Editor **and** Tasks (SC-PACK-126) + slot chips on question lists / drill-in (SC-PACK-127) + add-task-set status/thread/reply (SC-PACK-128) + AddTaskSet rounded answer chips (SC-PACK-133) + slot card text / `taskSetLabelFrom` / Tasks `back` (SC-PACK-134…136) + collection trash/click isolation (no row `:to`; soft-unpublished gray) + author delete unpublished + staff queue pending\|needs_revision / no block UI, App brand logo (always-button ≥60px; Game leave / auth+other → lobby / lobby noop;
+  Support + «Наборы»→`content-catalog` + «Карты»→`content-maps`), support/content/admin pages,
+  unified packs list (filters/statuses/favorites; collection route redirects) + author re-edit +
+  staff take + MapsList filters/statuses; pack/map editor/staff details in work-with-stores
+  topic files; App brand logo (always-button ≥60px; Game leave / auth+other → lobby / lobby noop;
   no page «В лобби»), productName/favicon, and game (top opponents presence, seated
   strip HUD row/2×2, budgets/end-turn icon on avatar, return strip icon no modal, push icons,
   nearest-center finish, grille trap/rescue + catapult land→overlay→fling + deferred grille drops + board-busy lock) in this Quasar Vue 3 client.
@@ -52,25 +54,25 @@ From `src/router/routes.ts` (hash mode via `createWebHashHistory` when `vueRoute
 | `/forgot-password` | `forgot-password` | `ForgotPasswordPage` | `meta.guest`; request reset mail |
 | `/confirm-email` | `confirm-email` | `ConfirmEmailPage` | **public** (no `guest` — logged-in confirm must run); auto JSON on mount → lobby |
 | `/reset-password` | `reset-password` | `ResetPasswordPage` | **public**; SPA form → JSON → login |
-| `/lobby` | `lobby` | `LobbyPage` | `meta.requiresAuth`; Support + «Наборы» → `content-collection` + «Карты» → `content-maps` |
+| `/lobby` | `lobby` | `LobbyPage` | `meta.requiresAuth`; Support + «Наборы» → `content-catalog` + «Карты» → `content-maps` |
 | `/account` | `account` | `AccountPage` | `meta.requiresAuth`; cabinet (registered only — anonymous → lobby) |
 | `/support` | `support` | `SupportPage` | `meta.requiresAuth`; create + own list (topic `change_pack` + catalog pack select title/description) |
 | `/support/staff` | `support-staff` | `SupportStaffPage` | `meta.requiresAuth` + `requiresStaff` |
 | `/support/:id` | `support-ticket` | `SupportTicketPage` | `meta.requiresAuth`; thread (`packId` when change_pack) |
 | `/admin/users` | `admin-users` | `AdminUsersPage` | `meta.requiresAuth` + `requiresAdmin` |
-| `/content/packs` | `content-catalog` | `ContentCatalogPage` | `meta.requiresAuth`; public = in-catalog live; staff also soft-unpublished + unpublish/republish + confirm SC-PACK-139 (nav → collection; «На модерации» hidden for staff) |
-| `/content/collection` | `content-collection` | `ContentCollectionPage` | `meta.requiresAuth`; own collection (Edit unpublished creator **or** staff; staff pack unpublish/republish + confirm warns open requests cancelled SC-PACK-129/139; **no** row add-task-set; trash/`delete` + confirm; soft-unpublished gray non-nav for non-staff; hide Edit if `blocked`; **no** row `:to`) |
-| `/content/my-moderation` | `content-my-moderation` | `ContentMyModerationPage` | `meta.requiresAuth`; author «На модерации» (non-staff; `listMyModeration`; pending\|needs_revision → Edit; pack **or** map rows) |
-| `/content/maps` | `content-maps` | `MapsListPage` | `meta.requiresAuth`; approved in-catalog (+ author own never-published; staff soft-unpublished); Create map; no collection |
-| `/content/maps/:id/edit` | `content-map-edit` | `MapEditorPage` | `meta.requiresAuth`; paint editor / thread / staff `?staff=1` lock session |
+| `/content/packs` | `content-catalog` | `ContentCatalogPage` | `meta.requiresAuth`; **unified packs list** (filters/statuses/star; staff soft-unpublish; **no** non-staff my-moderation nav SC-PACK-166) |
+| `/content/collection` | `content-collection` | — | **redirect** → `content-catalog` (SC-PACK-164; do not revive collection page) |
+| `/content/my-moderation` | `content-my-moderation` | `ContentMyModerationPage` | `meta.requiresAuth`; deep-link/API retained; **no** non-staff header nav (use catalog filters) |
+| `/content/maps` | `content-maps` | `MapsListPage` | `meta.requiresAuth`; list filters/statuses + Create; no collection |
+| `/content/maps/:id/edit` | `content-map-edit` | `MapEditorPage` | `meta.requiresAuth`; paint / author re-edit / staff `?staff=1` (blocked if author request open) |
 | `/content/packs/new` | `content-pack-new` | `ContentPackCreatePage` | `meta.requiresAuth`; create → working-copy editor; verify modal if ineligible |
-| `/content/packs/:id` | `content-pack` | `ContentPackPage` | `meta.requiresAuth`; live view (staff Edit + lock + unpublish/republish; add-task-set beside «Задания» when verified+inCollection+in-catalog; collect when `inCatalog !== false`) |
-| `/content/packs/:id/edit` | `content-pack-edit` | `ContentPackEditorPage` | `meta.requiresAuth`; creator working copy (`submitPack`) or staff live/working edit (`staffSavePack` + lock session cards↔tasks; no Submit) |
-| `/content/packs/:id/add-task-set` | `content-pack-add-task-set` | `ContentPackAddTaskSetPage` | `meta.requiresAuth`; post-publish add-only new task set (SC-PACK-107/108) |
-| `/content/packs/:id/tasks/:taskSetId` | `content-pack-tasks` | `ContentPackTasksPage` | `meta.requiresAuth`; nested task-set (unpublished / staff session + staff-save) |
+| `/content/packs/:id` | `content-pack` | `ContentPackPage` | `meta.requiresAuth`; live + star + author/staff Edit gates + add-task-set beside «Задания» (verified+in-catalog; **no** collect) |
+| `/content/packs/:id/edit` | `content-pack-edit` | `ContentPackEditorPage` | `meta.requiresAuth`; creator **or** `editorKind` author re-edit (`submitPack`) or staff (`staffSavePack` + lock session) |
+| `/content/packs/:id/add-task-set` | `content-pack-add-task-set` | `ContentPackAddTaskSetPage` | `meta.requiresAuth`; post-publish add-only new task set (**no** collection gate) |
+| `/content/packs/:id/tasks/:taskSetId` | `content-pack-tasks` | `ContentPackTasksPage` | `meta.requiresAuth`; nested task-set (unpublished / author / staff session) |
 | `/content/packs/:id/moderation` | `content-pack-moderation` | `ContentPackModerationPage` | `meta.requiresAuth`; author thread (also embedded on edit) |
-| `/content/staff` | `content-staff` | `ContentStaffPage` | `meta.requiresAuth` + `requiresStaff`; open queue pending\|needs_revision |
-| `/content/staff/requests/:id` | `content-staff-request` | `ContentStaffRequestPage` | `meta.requiresAuth` + `requiresStaff`; Approve / needs-revision; no block UI |
+| `/content/staff` | `content-staff` | `ContentStaffPage` | `meta.requiresAuth` + `requiresStaff`; queue + **Take** (pack\|map) |
+| `/content/staff/requests/:id` | `content-staff-request` | `ContentStaffRequestPage` | `meta.requiresAuth` + `requiresStaff`; take before Approve / needs-revision / cancel |
 | `/content/staff/requests/:id/tasks` | `content-staff-request-tasks` | `ContentStaffTasksPage` | `meta.requiresAuth` + `requiresStaff`; redirect → request hub (legacy bookmark) |
 | `/game/:roomId` | `game` | `GamePage` | `meta.requiresAuth`; param `roomId` |
 | `/:catchAll(.*)*` | — | — | redirect → `/lobby`; keep last |
