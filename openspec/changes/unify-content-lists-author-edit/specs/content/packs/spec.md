@@ -1,6 +1,6 @@
-# content/packs — delta: unified list, favorites, author re-edit, moderation take, set statuses, cancel→draft, crumbs
+# content/packs — delta: unified list, favorites, author re-edit, moderation take, set statuses, cancel→draft, crumbs, ghost add-task-set, author draft→Edit
 
-Базовый канон: `openspec/specs/content/packs/spec.md`. Change: коллекция→единый список, избранное, author re-edit, take; follow-up: статусы сетов внутри пака, cancel→draft, крошки/без лишних back, staff из шапки (`ui/branding`).
+Базовый канон: `openspec/specs/content/packs/spec.md`. Change: коллекция→единый список, избранное, author re-edit, take; follow-up: статусы сетов без fan-out, ghost never-live set для автора, author draft→Edit, крошки под elevated header, staff из шапки (`ui/branding`).
 
 ## Traceability
 
@@ -42,6 +42,13 @@
 | SC-PACK-184 | covered (vitest) |
 | SC-PACK-185 | covered (vitest) |
 | SC-PACK-186 | covered (vitest) |
+| SC-PACK-187 | covered (mocha) |
+| SC-PACK-188 | covered (mocha/vitest) |
+| SC-PACK-189 | covered (mocha/vitest) |
+| SC-PACK-190 | covered (vitest) |
+| SC-PACK-191 | covered (vitest) |
+| SC-PACK-192 | covered (vitest) |
+| SC-PACK-193 | covered (vitest) |
 
 Related: `content/maps`; `ui/branding` (header/crumbs); `game/leave`; roles — `support/roles`. Tourist-room wiring still out of scope.
 
@@ -210,7 +217,7 @@ Non-staff users MUST NOT be shown a separate «На модерации» navigat
 
 ### Requirement: Task-set rows show moderation status for set author and staff
 
-On the live pack surface task-set list, each task set MUST show a moderation status distinguishing at least: live/published without open author work; open **pending**; open **needs_revision**; and author **draft** (working edits not in an open request, including after Cancel). The **author of that task set** and **staff** (moderator|admin) MUST see these marks for that set. The pack creator MUST NOT see another user’s task-set moderation marks solely by being pack `createdBy`. Other non-staff users MUST NOT see foreign set moderation marks.
+On the live pack surface task-set list, each **visible** task set MUST show a moderation status distinguishing at least: live/published without open author work; open **pending**; open **needs_revision**; and author **draft** (working edits not in an open request, including after Cancel). An open request MUST mark **only** the task set(s) that belong to that request (matched via the request revision payload / set identity among that author’s sets). The system MUST NOT apply one author’s open status to every live task set sharing that author’s user id. The **author of that task set** and **staff** (moderator|admin) MUST see these marks on **already-live** sets under open re-edit. The pack creator MUST NOT see another user’s task-set moderation marks solely by being pack `createdBy`. Other non-staff users MUST NOT see foreign set moderation marks. Never-live add-task-set visibility is specified separately (set author only).
 
 #### Scenario [SC-PACK-171]: Set author sees pending on live set row
 
@@ -232,9 +239,17 @@ On the live pack surface task-set list, each task set MUST show a moderation sta
 
 #### Scenario [SC-PACK-174]: Staff sees set moderation marks
 
-- **GIVEN** pack P with task set S under open pending moderation and staff S1
+- **GIVEN** pack P with already-live task set S under open pending moderation and staff S1
 - **WHEN** S1 views the live pack task-set list
 - **THEN** S shows a pending status indication
+
+#### Scenario [SC-PACK-187]: Open status does not fan out to sibling live sets
+
+- **GIVEN** published pack P with live task sets S0 and S1 both authored by U
+- **AND** an open needs_revision (or pending) request that covers only S1 (e.g. re-edit or add of S1)
+- **WHEN** U opens the live pack task-set list
+- **THEN** S1 shows the open status
+- **AND** S0 MUST NOT show pending or needs_revision solely because U authored both
 
 ### Requirement: Cancel returns author work to draft on the unified list
 
@@ -274,7 +289,7 @@ When staff or the change author **cancels** an open moderation request (pack, ta
 
 ### Requirement: Breadcrumbs replace pack back affordances
 
-Content pack surfaces MUST show breadcrumbs under the shared header (e.g. Lobby / Packs / pack title / cards or task set). The live pack detail MUST NOT require a separate «К наборам» control when breadcrumbs provide that path. The live tasks drill-in MUST NOT require a separate «Вернуться» control when breadcrumbs provide return to the pack. Staff-only queue chrome MAY keep a distinct back-to-queue control.
+Content pack surfaces MUST show breadcrumbs **below** the shared elevated header chrome (page/layout zone — not inside the elevated header bar), e.g. Lobby / Packs / pack title / cards or task set. The live pack detail MUST NOT require a separate «К наборам» control when breadcrumbs provide that path. The live tasks drill-in MUST NOT require a separate «Вернуться» control when breadcrumbs provide return to the pack. Staff-only queue chrome MAY keep a distinct back-to-queue control.
 
 #### Scenario [SC-PACK-180]: Breadcrumbs on pack live and tasks
 
@@ -293,6 +308,12 @@ Content pack surfaces MUST show breadcrumbs under the shared header (e.g. Lobby 
 - **GIVEN** an authenticated user on live tasks drill-in with breadcrumbs
 - **WHEN** the page renders
 - **THEN** a separate «Вернуться» control is not shown
+
+#### Scenario [SC-PACK-193]: Pack breadcrumbs sit below elevated header
+
+- **GIVEN** an authenticated user on a pack live or tasks route with breadcrumbs
+- **WHEN** the page renders
+- **THEN** breadcrumbs are outside the elevated shared header bar (below header chrome)
 
 ### Requirement: Staff moderation entry is not on packs list chrome
 
@@ -330,11 +351,51 @@ Choosing a never-published pack from the packs list MUST open the pack editor (E
 - **WHEN** A chooses P from the packs list
 - **THEN** the pack editor (Edit) opens
 
+### Requirement: Never-live add-task-set appears for set author on live task-set list
+
+While set author U has a **never-live** task set in an add-task-set cycle (open **pending** or **needs_revision**, or author **draft** after Cancel with retained working), the live pack task-set list for U MUST include that set as a row with the same status vocabulary as the unified packs list (pending / needs_revision / draft). Non-authors (including pack `createdBy` and staff viewing live) MUST NOT see that never-live row; staff review that work via the staff moderation queue. Activating the never-live row MUST open **Edit** (add-task-set amend surface).
+
+#### Scenario [SC-PACK-188]: Set author sees never-live set with needs_revision
+
+- **GIVEN** published pack P with live set S0 and set author U’s never-live add-task-set S1 under open needs_revision
+- **WHEN** U opens the live pack task-set list
+- **THEN** S1 appears as a row with needs_revision status
+- **AND** S0 remains available without falsely inheriting needs_revision solely from S1’s request (see SC-PACK-187)
+
+#### Scenario [SC-PACK-189]: Others do not see never-live set on live list
+
+- **GIVEN** the same pack P and never-live S1 for U, and non-author viewer V (pack creator or another user or staff on live)
+- **WHEN** V opens the live pack task-set list
+- **THEN** S1 MUST NOT appear as a never-live row for V
+
+#### Scenario [SC-PACK-190]: Never-live set row opens Edit
+
+- **GIVEN** set author U sees never-live set S1 on the live pack task-set list
+- **WHEN** U activates that row
+- **THEN** Edit (add-task-set amend) opens
+
+### Requirement: Packs list open routing for author work vs add-task-set
+
+Choosing a pack from the packs list MUST open **Edit** when the caller’s author-facing state for that pack is never-published or pack-level **draft / pending / needs_revision**. When the caller’s only open work on an in-catalog pack is an **add-task-set** request (or never-live set draft), choosing the pack MUST open the **live** pack surface (answers and task-set list) first — not the add-task-set editor directly. Clean in-catalog packs without author-facing draft/pending/needs_revision MUST open live browse.
+
+#### Scenario [SC-PACK-191]: Packs list with open add-task-set opens live first
+
+- **GIVEN** in-catalog pack P and set author U with an open add-task-set request on P (and no pack-level never-published draft for U as pack editor)
+- **WHEN** U chooses P from the packs list
+- **THEN** the live pack surface opens (answers / task-set list)
+- **AND** the add-task-set Edit surface does not open solely from that pack-row choice
+
+#### Scenario [SC-PACK-192]: Pack-level pending opens Edit from list
+
+- **GIVEN** creator A has pack P with author-facing pending or needs_revision for pack-level content (or never-published draft)
+- **WHEN** A chooses P from the packs list
+- **THEN** the pack editor (Edit) opens
+
 ## MODIFIED Requirements
 
 ### Requirement: Client surfaces — split editor, collection-first, autosave
 
-The client MUST expose a **unified packs list** as the primary lobby entry into the packs section (with create, filters, favorites star, status badges for pending/needs_revision/draft/unpublished only — **not** an in_catalog badge, and row→live/editor without stealing action clicks). There MUST NOT be a collection list as the primary entry; collect/remove-from-collection affordances MUST NOT be offered. A separate non-staff «На модерации» page MUST NOT be required — open author items MUST be reachable via the **on moderation** list filter. Staff MUST retain the staff moderation queue. Live pack view MUST be available for in-catalog packs without collection membership; **Edit** follows author / task-set-author / staff rules in this change. Never-published packs MUST open Edit directly from the list. Cards editor, tasks / add-task-set, three-phase status vocabulary, cascade yellow, slot chips, quiet autosave, and delete-card confirm copy MUST remain as in the base capability except where membership/collection is removed.
+The client MUST expose a **unified packs list** as the primary lobby entry into the packs section (with create, filters, favorites star, status badges for pending/needs_revision/draft/unpublished only — **not** an in_catalog badge, and row→live/editor without stealing action clicks). There MUST NOT be a collection list as the primary entry; collect/remove-from-collection affordances MUST NOT be offered. A separate non-staff «На модерации» page MUST NOT be required — open author items MUST be reachable via the **on moderation** list filter. Staff MUST retain the staff moderation queue. Live pack view MUST be available for in-catalog packs without collection membership; **Edit** follows author / task-set-author / staff rules in this change. Never-published and pack-level author draft/pending/needs_revision MUST open Edit from the list; open **add-task-set** only MUST open live first then the never-live set row → Edit. Cards editor, tasks / add-task-set, three-phase status vocabulary, cascade yellow, slot chips, quiet autosave, and delete-card confirm copy MUST remain as in the base capability except where membership/collection is removed.
 
 #### Scenario [SC-PACK-81]: Yellow highlight on task and task set after cascade
 

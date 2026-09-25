@@ -4,12 +4,14 @@ description: >-
   Use when planning or writing Vue 3 / Quasar unit tests for the happy-tourist
   client (pages, components, Pinia stores, lib helpers): Vitest +
   @vue/test-utils, q-form rules, auth/theme/game/support/content/maps stores
-  (my-moderation / cascadeGap* / hasLive confirm / simplify ACL SC-PACK-100…185 /
-  unified list `ContentUnifiedList` + favorites `content.favorites` + author
-  edit/take `ContentAuthorEditTake` / lobby packs entry `LobbyPacksEntry` /
+  (my-moderation / cascadeGap* / hasLive confirm / simplify ACL SC-PACK-100…193 /
+  unified list `ContentUnifiedList` (`openRequestType` live-first SC-PACK-191/192) +
+  favorites `content.favorites` + author edit/take `ContentAuthorEditTake`
+  (`neverLive` ghost SC-PACK-188…190) / lobby packs entry `LobbyPacksEntry` /
   soft-unpublish `ContentSoftUnpublish` / follow-up 4–5 / `ContentModerationUx` /
-  `ContentMaps` + `maps.paint` SC-MAP / App header chrome `AppHeaderChrome` in
-  `src/__tests__/` / SupportChangePack SC-SUP-27…29), Colyseus client.auth / client.http / room I/O spies, store error +
+  `ContentMaps` + `maps.paint` SC-MAP-41…52 / App header chrome `AppHeaderChrome`
+  (crumbs **outside** elevated header SC-BRAND-17) in `src/__tests__/` /
+  SupportChangePack SC-SUP-27…29), Colyseus client.auth / client.http / room I/O spies, store error +
   q-banner, vue-i18n / router. Harness live (`vitest.config.ts`, `test/setup.ts`,
   `npm test`). Core in SKILL.md; topics: forms.md, stores.md, colyseus.md,
   errors.md, plugins.md, composables.md, provide-inject.md.

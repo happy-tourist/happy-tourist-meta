@@ -12,6 +12,7 @@
 | SC-BRAND-14 | covered (vitest) |
 | SC-BRAND-15 | covered (vitest) |
 | SC-BRAND-16 | covered (vitest) |
+| SC-BRAND-17 | covered (vitest) |
 
 Related: `content/packs`, `content/maps`, `game/leave`, `ui/theme`.
 
@@ -67,10 +68,17 @@ The Lobby screen MUST NOT be the only place that exposes Packs / Maps / Support 
 
 ### Requirement: Breadcrumbs under shared header
 
-On content packs and maps routes (list, detail, editor, tasks as applicable), the client MUST show breadcrumbs under the shared header that include Lobby and the section root (Packs or Maps) and the current entity when applicable.
+On content packs and maps routes (list, detail, editor, tasks as applicable), the client MUST show breadcrumbs **below** the shared elevated header chrome (page/layout zone). Breadcrumbs MUST include Lobby and the section root (Packs or Maps) and the current entity when applicable. Breadcrumbs MUST NOT render as a second row **inside** the elevated header bar where link colors blend into the header background.
 
 #### Scenario [SC-BRAND-16]: Breadcrumbs under header on pack route
 
 - **GIVEN** an authenticated user on a pack detail or tasks route
 - **WHEN** the page renders
 - **THEN** breadcrumbs appear under the shared header with a path including Lobby and Packs
+
+#### Scenario [SC-BRAND-17]: Breadcrumbs outside elevated header bar
+
+- **GIVEN** an authenticated user on a packs or maps content route with breadcrumbs
+- **WHEN** the page renders
+- **THEN** breadcrumbs are not inside the elevated shared header bar
+- **AND** breadcrumbs sit below that header chrome in the page/layout zone

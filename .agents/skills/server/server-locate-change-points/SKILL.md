@@ -125,7 +125,7 @@ Use these rules to pick the layer before naming files.
 | Auth email + password policy | `test/zz-authEmail.test.ts` |
 | Auth profile (displayName / change-password) | `test/zz-authProfile.test.ts` |
 | Support tickets + roles | `test/support.test.ts` (incl. SC-SUP-27/28 `change_pack`) |
-| Content packs (SC-PACK-*) | `test/zz-contentPacks.test.ts` — mock mailer; `ensureContentTables` / `setEmailVerifiedForTests`; working copy + unified submit SC-PACK-100…105; add-task-set SC-PACK-108…110; staff lock/save SC-PACK-111…113; author delete SC-PACK-114; soft-unpublish pack SC-PACK-120…124; cascade-cancel open requests + mail SC-PACK-137…141; task-set soft-hide SC-PACK-131 (`last_published_task_set`); SC-PACK-134…135 preview/authorDisplayName; cascade save; my-moderation + staff pending\|needs_revision; cancel→draft / set marks / fingerprint SC-PACK-171…179 |
+| Content packs (SC-PACK-*) | `test/zz-contentPacks.test.ts` — mock mailer; `ensureContentTables` / `setEmailVerifiedForTests`; working copy + unified submit SC-PACK-100…105; add-task-set SC-PACK-108…110; staff lock/save SC-PACK-111…113; author delete SC-PACK-114; soft-unpublish pack SC-PACK-120…124; cascade-cancel open requests + mail SC-PACK-137…141; task-set soft-hide SC-PACK-131 (`last_published_task_set`); SC-PACK-134…135 preview/authorDisplayName; cascade save; my-moderation + staff pending\|needs_revision; cancel→draft / set marks / fingerprint SC-PACK-171…179; fan-out fix + neverLive ghost SC-PACK-187…189 |
 | Multi-client join pressure | `loadtest/example.ts` (`joinOrCreate`; `--room` / `--numClients`) |
 
 ## Domain Hotspots

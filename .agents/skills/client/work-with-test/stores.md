@@ -18,13 +18,20 @@ live summary+drill-in / AddTaskSet chips), `ContentFollowUp5.test.ts`
 `ContentModerationUx.test.ts` (SC-PACK-126 editor cascade CSS; SC-PACK-127 slot
 chips on staff hub + add-task-set; SC-PACK-128 add-task-set thread/status/reply),
 store `content.simplifyAcl.test.ts`; spy `client.http`, do not hit live server;
-cascade helpers + `isStaffEditSessionNavigation`: meta `work-with-stores/content.md`),
+cascade helpers + `isStaffEditSessionNavigation`: meta `work-with-stores/content.md`;
+unify follow-ups: `ContentUnifiedList.test.ts` (`openRequestType` pack→Edit /
+task_set→live SC-PACK-191/192; cancel→draft; no published badge),
+`ContentAuthorEditTake.test.ts` (author Edit/take + set marks + `neverLive`
+ghost `pack-task-set-ghost-*` → add-task-set Edit SC-PACK-188…190),
 `maps` (HTTP maps via `client.http`; paint helpers; pages
-`ContentMaps.test.ts` SC-MAP-06…08 / 14 / 17 / 21 / 24–25 / 29–30 / 41…47
-  (cancel→draft, view meta, crumbs, no published badge); store
+`ContentMaps.test.ts` SC-MAP-06…08 / 14 / 17 / 21 / 24–25 / 29–30 / 41…52
+  (cancel→draft, view meta, title-row Edit SC-MAP-51, author pending→Edit
+  SC-MAP-50, no published badge); store
 `maps.paint.test.ts` SC-MAP-04; errors via `mapsErrorI18nKey` → `maps.errors.*`;
 meta `work-with-stores/maps.md` — shared staff queue still mocked via `content`
 when testing type-badge / my-moderation map rows).
+App shell crumbs: `src/__tests__/AppHeaderChrome.test.ts` — breadcrumbs **not**
+inside elevated `q-header` (SC-BRAND-17 / SC-PACK-193 / SC-MAP-52).
 
 ## Testing a page / component that uses a store
 

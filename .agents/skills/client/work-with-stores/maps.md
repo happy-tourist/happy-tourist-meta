@@ -58,9 +58,15 @@ HTTP in `maps` beyond cancel/preview helpers the editor already needs.
   **published / `in_catalog` rows show no badge** (SC-MAP-45); mini
   `MapGridPreview` + author + `players×tourists`; Create at top; **no** collect;
   **no** list-chrome staff «Модерация» (SC-MAP-43 — App header).
-- **Editor view:** author display + seat config; optional Enter Edit; **no**
-  paint tools / seat selects (SC-MAP-46/47). Breadcrumbs replace «К картам»
-  (SC-MAP-44).
+  Row open: never-published → Edit without `?edit` (SC-MAP-49); author
+  draft/pending/needs_revision on a live map → Edit with `query.edit=1`
+  (SC-MAP-50); clean published → View-first (SC-MAP-46). Staff stays View-first.
+- **Editor view:** author display + seat config; Enter Edit control in the
+  **title row** (`map-view-edit`), not inside `map-view-meta` (SC-MAP-51);
+  **no** paint tools / seat selects (SC-MAP-46/47). App breadcrumbs replace
+  «К картам» and sit **below** elevated header (SC-MAP-44/52).
+- **Editor boot:** never-published or creator author-work
+  (draft/pending/needs_revision) → Edit + lock; clean published → View (SC-MAP-46/49/50).
 - **Editor edit:** interactive preview + palette + seats; quiet autosave while
   creator-editable; **author may re-edit published** via lock + draft → moderation
   (mirrors packs); staff `?staff=1` lock session when no open author request
@@ -73,8 +79,10 @@ HTTP in `maps` beyond cancel/preview helpers the editor already needs.
 
 - Paint pure: `src/stores/__tests__/maps.paint.test.ts` (SC-MAP-04).
 - Pages/UI: `src/pages/__tests__/ContentMaps.test.ts` (list filters/statuses +
-  view meta / crumbs / cancel→draft SC-MAP-41…47 + SC-MAP-06…08, 14, 17, 21,
-  24–25, 29–36 + submit starts gate).
+  view meta / title-row Edit / author pending→Edit / crumbs below header /
+  cancel→draft SC-MAP-41…52 + SC-MAP-06…08, 14, 17, 21, 24–25, 29–36 + submit
+  starts gate). App crumbs outside header: `AppHeaderChrome` SC-MAP-52 /
+  SC-BRAND-17.
 - Server twin: `test/zz-contentMaps.test.ts` (mocha) — do not mix stacks.
 
 See meta `work-with-test` / `work-with-pages` / `work-with-localization` (`maps.*`).

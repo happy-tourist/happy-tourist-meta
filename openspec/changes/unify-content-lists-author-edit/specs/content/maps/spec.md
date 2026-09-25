@@ -25,6 +25,9 @@
 | SC-MAP-47 | covered (vitest) |
 | SC-MAP-48 | covered (vitest) |
 | SC-MAP-49 | covered (vitest) |
+| SC-MAP-50 | covered (vitest) |
+| SC-MAP-51 | covered (vitest) |
+| SC-MAP-52 | covered (vitest) |
 
 Related: `content/packs`; `ui/branding`. Tourist-room wiring still out of scope.
 
@@ -146,13 +149,19 @@ Moderator and admin MUST open the staff moderation queue from the shared applica
 
 ### Requirement: Maps breadcrumbs
 
-Maps section surfaces MUST show breadcrumbs under the shared header (e.g. Lobby / Maps / map title) consistent with packs chrome.
+Maps section surfaces MUST show breadcrumbs **below** the shared elevated header chrome (e.g. Lobby / Maps / map title), consistent with packs chrome — not inside the elevated header bar.
 
 #### Scenario [SC-MAP-44]: Breadcrumbs on Maps list and editor
 
 - **GIVEN** an authenticated user on the Maps list or map editor
 - **WHEN** the page renders
 - **THEN** breadcrumbs include a path back toward Lobby and Maps
+
+#### Scenario [SC-MAP-52]: Map breadcrumbs sit below elevated header
+
+- **GIVEN** an authenticated user on a Maps list or editor route with breadcrumbs
+- **WHEN** the page renders
+- **THEN** breadcrumbs are outside the elevated shared header bar (below header chrome)
 
 ### Requirement: No in_catalog status badge on Maps list
 
@@ -166,11 +175,11 @@ Published in-catalog maps MUST appear on the Maps list without an «В ката�
 
 ### Requirement: Published map opens View without paint tools
 
-Choosing a published / in-catalog map MUST open a **View** surface first. View MUST show the author and players×tourists (and MAY show a read-only grid preview). View MUST NOT show map paint-tool controls or other bottom edit chrome. **Edit** MUST be available from the Maps list row and from inside View; activating Edit acquires the exclusive edit lock and enters edit mode. While a user holds a non-expired edit lock, another eligible editor MUST NOT acquire it.
+Choosing a **clean** published / in-catalog map (no author-facing draft / pending / needs_revision for the caller) MUST open a **View** surface first. View MUST show the author and players×tourists (and MAY show a read-only grid preview). View MUST NOT show map paint-tool controls or other bottom edit chrome. **Edit** MUST be available from the Maps list row and from inside View in the **title row** (same placement pattern as pack live Edit); activating Edit acquires the exclusive edit lock and enters edit mode. While a user holds a non-expired edit lock, another eligible editor MUST NOT acquire it.
 
 #### Scenario [SC-MAP-46]: Published map row opens View without tools
 
-- **GIVEN** an in-catalog map M
+- **GIVEN** an in-catalog map M with no author-facing draft/pending/needs_revision for the caller
 - **WHEN** a user chooses M from the Maps list (row open, not Edit)
 - **THEN** View opens
 - **AND** paint-tool controls are not shown
@@ -188,6 +197,12 @@ Choosing a published / in-catalog map MUST open a **View** surface first. View M
 - **THEN** edit mode opens under E’s exclusive lock
 - **AND** paint tools are available to E as allowed by edit rules
 
+#### Scenario [SC-MAP-51]: View Edit control is in the title row
+
+- **GIVEN** eligible editor E is on View for in-catalog map M
+- **WHEN** View renders
+- **THEN** the Edit control appears in the title/actions row (not below author/seats meta alone)
+
 ### Requirement: Never-published map opens Edit directly
 
 Choosing a never-published map from the Maps list MUST open Edit directly (not View-first).
@@ -195,6 +210,16 @@ Choosing a never-published map from the Maps list MUST open Edit directly (not V
 #### Scenario [SC-MAP-49]: Never-published map row opens Edit
 
 - **GIVEN** creator A has never-published map M
+- **WHEN** A chooses M from the Maps list
+- **THEN** Edit opens (not View-first)
+
+### Requirement: Author map draft or open moderation opens Edit
+
+Choosing a map from the Maps list when the caller’s author-facing status is **draft**, **pending**, or **needs_revision** MUST open **Edit** directly (not View-first), including after Cancel-to-draft and while open moderation is in progress.
+
+#### Scenario [SC-MAP-50]: Author pending map opens Edit from list
+
+- **GIVEN** creator A has map M with author-facing pending or needs_revision (or draft after cancel)
 - **WHEN** A chooses M from the Maps list
 - **THEN** Edit opens (not View-first)
 

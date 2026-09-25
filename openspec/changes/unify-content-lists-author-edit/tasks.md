@@ -63,3 +63,18 @@
 - [x] 8.3 Never-published pack/map из списка → сразу Edit; verify SC-PACK-186, SC-MAP-49 (vitest)
 - [x] 8.4 Published map: row → View без paint tools (автор + players×tourists); Edit с списка и из View + lock; verify SC-MAP-46…48 (vitest)
 - [x] 8.5 Pack live browsing без strip-down (как сейчас); `npm test` + lint + typecheck — зелёные
+
+## 9. Server — set status fan-out fix + never-live set rows
+
+- [x] 9.1 Прочитать design D10 (rev) / D19, delta SC-PACK-187…190; skills `server-locate-change-points`, `work-with-routes`; сверить `withTaskSetModerationStatuses`
+- [x] 9.2 Open request status только на сетах заявки (revision/identity), не fan-out по `changeAuthorId`; verify SC-PACK-187 (mocha)
+- [x] 9.3 Live pack payload: never-live add-task-set rows для set author (pending/needs_revision/draft); не для других/staff на live; verify SC-PACK-188…189 (mocha)
+- [x] 9.4 `npm test` в `../happy-tourist-server` — зелёный на SC блока 9
+
+## 10. Client — crumbs below header; map Edit top; ghost set; draft→Edit
+
+- [x] 10.1 Прочитать design D13/D17–D19, delta SC-PACK-190…193, SC-MAP-50…52, SC-BRAND-17; skills pages/stores/styles/test
+- [x] 10.2 Крошки ниже elevated `q-header` (packs + maps); verify SC-BRAND-17, SC-PACK-193, SC-MAP-52 (vitest)
+- [x] 10.3 Map View: Edit в title row; author draft/pending/needs_revision → Edit с списка; verify SC-MAP-50/51 (vitest)
+- [x] 10.4 Live pack: never-live set row для автора → Edit; pack list add-task-set → live first; pack-level pending → Edit; verify SC-PACK-188…192 (vitest)
+- [x] 10.5 `npm test` + `npm run lint` + `npm run typecheck` в client — зелёные

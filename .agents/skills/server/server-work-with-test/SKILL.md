@@ -25,7 +25,9 @@ description: >-
   SC-PACK-137…141 + task-set soft-hide SC-PACK-131 + preview live cards / authorDisplayName SC-PACK-134…135
   (`content_task_sets.in_catalog`; last-set 409); cascade; my-moderation +
   needs_revision; cancel keeps working → list draft + per-set moderationStatus
-  SC-PACK-171…179; mock mailer; ensureContentTables / setEmailVerifiedForTests;
+  SC-PACK-171…179; open marks by request-set identity (no authorId fan-out) +
+  set-author `neverLive` ghost on live SC-PACK-187…189; list `openRequestType`;
+  mock mailer; ensureContentTables / setEmailVerifiedForTests;
   default packs SC-PACK-170 (grants retired) in test/zz-defaultContentPacks.test.ts;
   content maps in test/zz-contentMaps.test.ts — SC-MAP-01…28 create/list/submit/
   staff queue type map / soft-unpublish cascade-cancel + mail / room create ignores maps /
@@ -84,7 +86,7 @@ tests; fix failures before claiming done.
 | Auth email flows (confirm / forgot / change-email / cooldown / password policy on register+reset) | `test/zz-authEmail.test.ts` — mock `setSendEmailImpl`; `clearConfirmSendCooldownForTests`; `keepLatestRequestListener` after boot; cover SC-AUTH-08 / SC-RESET-09 / SC-AUTH-10 where asserted |
 | Auth profile (displayName + change-password) | `test/zz-authProfile.test.ts` — SC-PROFILE-01/02/04/05; bumpTokenVersion; reject no-password credential |
 | Support tickets + roles (SC-SUP-* / SC-ROLE-*) | `test/support.test.ts` — mock mailer; `ensureSupportTables` / `bootstrapAdminIds` / `setUserRoleForTests` / `runAutoClose`; cover create-ack (SC-SUP-21), staff `topic`/`status` filters (SC-SUP-22), author self-reply **no** status mail, admin list excludes anonymous + `emailVerified`, role POST response includes `emailVerified` (SC-ROLE-09); `change_pack` in-catalog only + soft-unpublished → `pack_not_in_catalog` (D5/D9); `keepLatestRequestListener` after boot |
-| Content packs (SC-PACK-*) | `test/zz-contentPacks.test.ts` — unified list/statuses/favorites/author re-edit/staff take + working copy/submit + soft-unpublish cascade + add-task-set **no** collection gate; mock mailer; `keepLatestRequestListener` |
+| Content packs (SC-PACK-*) | `test/zz-contentPacks.test.ts` — unified list/statuses/`openRequestType`/favorites/author re-edit/staff take + working copy/submit + soft-unpublish cascade + add-task-set **no** collection gate + set marks without authorId fan-out + `neverLive` ghost SC-PACK-187…189; mock mailer; `keepLatestRequestListener` |
 | Content maps (SC-MAP-*) | `test/zz-contentMaps.test.ts` — list statuses + author re-edit + staff take + soft-unpublish |
 | Default content packs (SC-PACK-170) | `test/zz-defaultContentPacks.test.ts` — parse/eligible remain; grant/backfill/create-user **do not** auto-grant collections |
 | Content maps (SC-MAP-*) | `test/zz-contentMaps.test.ts` — mock mailer; `ensureContentTables` (pulls `ensureContentMapTables`); cover create+verify gate SC-MAP-01…03, seats clamp SC-MAP-05, list visibility SC-MAP-06/07, submit starts gate SC-MAP-09…13, shared staff queue type badge + approve/needs_revision SC-MAP-14…18, author delete SC-MAP-19/20, soft-unpublish cascade-cancel + mail SC-MAP-21…27, room create ignores maps SC-MAP-28, cancel keeps working → list draft SC-MAP-41/42; `keepLatestRequestListener` after boot |

@@ -3,7 +3,8 @@ name: work-with-styles
 description: >-
   Use when adding, changing, reviewing, or debugging Vue 3 / Quasar 2 styles in
   the happy-tourist client: Quasar Dark plugin + theme boot/store, App.vue
-  header toggle + always-button brand logo ≥60px CSS, guest localStorage vs
+  header toggle + always-button brand logo ≥60px CSS + page-zone
+  `.app-breadcrumbs` below elevated header (SC-BRAND-17), guest localStorage vs
   registered GET/POST /api/theme (restore ≠ JWT-only), muted chrome text,
   quasar.variables.scss tokens, app.scss, page scoped CSS (especially GamePage
   board gap/radius 2 + `.tile--removed` holes + grille overlay drop/rise via
@@ -41,6 +42,7 @@ boots `theme` before `i18n` / `colyseus`. Theme tokens live in
 | Quasar Dark (runtime) | Chrome light / dark / device `auto` | `quasar.config.ts` plugin + `boot/theme.ts` + `stores/theme.ts` |
 | Shared header toggle | Explicit light ↔ dark on all pages | `App.vue` `q-header` |
 | Brand logo chrome | ≥60px height `logo.png` left (always-button); scoped `.brand-logo` / `.brand-logo-control` | `App.vue` + `src/assets/brand/logo.png` |
+| Page-zone breadcrumbs | `.app-breadcrumbs` below elevated `q-header` (not inside header bar; page bg) — SC-BRAND-17 | `App.vue` scoped |
 | Quasar theme Sass variables | Brand/palette tokens (`$primary`, `$negative`, …) | `src/css/quasar.variables.scss` |
 | Global app CSS | App-wide rules (e.g. `.text-muted` for dark-friendly chrome) | `src/css/app.scss` |
 | Quasar extras | Roboto font + Material Icons | `quasar.config.ts` → `extras` |

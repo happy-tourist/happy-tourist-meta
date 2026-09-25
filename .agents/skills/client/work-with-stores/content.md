@@ -9,7 +9,8 @@ yellow. Pages: `Content*` under `work-with-pages`.
 Setup store `content` owns:
 
 - Unified packs list `listCatalog` → `GET /api/content/packs` (caller-facing
-  `moderationStatus`, `isMine` / `isContributor` / `isFavorite`; SC-PACK-148…153)
+  `moderationStatus`, `openRequestType` `pack`|`task_set` for list routing
+  SC-PACK-191/192, `isMine` / `isContributor` / `isFavorite`; SC-PACK-148…153)
 - Favorites `starPack` / `unstarPack` → `POST …/favorite` \| `/unfavorite`
   (SC-PACK-154; registered non-anonymous; in-catalog only)
 - Legacy collection HTTP (`listCollection` / add/remove) — **product UI removed**;
@@ -30,7 +31,10 @@ Setup store `content` owns:
 - Cancel open request keeps working copy → author-facing `moderationStatus`
   `draft` on pack + catalog row (SC-PACK-175…179 / D11); hard-delete removes
   from `catalog` too (SC-PACK-177)
-- Per-set `TaskSet.moderationStatus` from live/draft payloads (SC-PACK-171…174)
+- Per-set `TaskSet.moderationStatus` from live/draft payloads (SC-PACK-171…174,
+  187 — open marks only on request sets, not authorId fan-out)
+- Never-live add-task-set ghost rows: `TaskSet.neverLive` for set author only
+  on live pack (D19 / SC-PACK-188…190); row → `content-pack-add-task-set` Edit
 
 Open moderation = `pending`|`needs_revision`. Map API codes with
 `contentErrorI18nKey` → `content.errors.*` (incl. `author_request_open`,
@@ -73,12 +77,27 @@ staff hub / Tasks heading. Live drill-in **omits** page «Вернуться» w
 breadcrumbs cover the path (SC-PACK-182); editor keeps `content.backToAnswers`.
 Live pack page also omits «К наборам» (SC-PACK-181 — crumbs).
 
-## Per-set moderation marks (SC-PACK-171…174)
+## Per-set moderation marks (SC-PACK-171…174 / 187)
 
 `TaskSet.moderationStatus` (`pending` | `needs_revision` | `draft` | `live` |
 `null`) appears on live/editor payloads for **that set's author and staff
 only** — pack creator MUST NOT see foreign set marks solely as `createdBy`.
-`ContentPackPage` shows badges for pending / needs_revision / draft (not `live`).
+Open status applies **only** to sets belonging to the open request (revision /
+lineage match — not fan-out by `changeAuthorId`). `ContentPackPage` shows
+badges for pending / needs_revision / draft (not `live`).
+
+## Never-live add-task-set ghost (SC-PACK-188…190)
+
+Live pack payload may include `TaskSet.neverLive === true` rows for the **set
+author only** (pending / needs_revision / draft after cancel). Staff and other
+users do not see ghosts on live (queue for staff). Activating the ghost row
+opens add-task-set Edit (amend), not live tasks drill-in.
+
+## Packs list open routing (SC-PACK-186 / 191 / 192)
+
+`ContentPackSummary.openRequestType`: `pack` → list row opens Edit; `task_set`
+→ live first (ghost row then Edit). Never-published / pack-level draft → Edit.
+Clean in-catalog → live.
 
 ## Add-task-set moderation thread (SC-PACK-128)
 
@@ -107,16 +126,19 @@ UX as the cards editor while the author’s `task_set` request is
 - **Catalog (= primary «Наборы»):** App header / Lobby crumbs → `content-catalog`
   (not collection). Filters + status badges for draft / pending / needs_revision /
   unpublished only — **published / `in_catalog` rows show no badge** (SC-PACK-148/
-  185). Star on in-catalog rows (stop click isolation). Draft/no-live row → edit
-  route. Staff unpublish/republish + confirm SC-PACK-139. **No** list-chrome staff
+  185). Star on in-catalog rows (stop click isolation). Row open: never-published
+  or pack-level author draft/pending/needs_revision → edit; add-task-set-only
+  (`openRequestType === 'task_set'`) → live first (SC-PACK-191); clean → live.
+  Staff unpublish/republish + confirm SC-PACK-139. **No** list-chrome staff
   «Модерация» (SC-PACK-184 — App header); **no** non-staff my-moderation nav
   (SC-PACK-166).
 - **Collection route:** redirect only (`content-collection` → `content-catalog`).
   Do not revive `ContentCollectionPage` as primary.
 - **Live detail:** breadcrumbs replace «К наборам»; favorite star; author Edit
   (creator) / set-row Edit (task-set author); set-row `moderationStatus` badges
-  for set author+staff; staff Edit gated by open author request; add-task-set
-  beside «Задания» when verified+in-catalog (**not** `inCollection`); no Collect.
+  for set author+staff; `neverLive` ghost → add-task-set Edit; staff Edit gated
+  by open author request; add-task-set beside «Задания» when verified+in-catalog
+  (**not** `inCollection`); no Collect.
 - **Editor:** `cardsReadOnly` when `editorKind === 'task_set_author'`; author may
   resubmit while own pending (incl. while staff holds take — SC-PACK-163).
   Cancel → keep working, list shows draft (not clear flags).

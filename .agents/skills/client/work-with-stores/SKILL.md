@@ -7,9 +7,11 @@ description: >-
   peeks∞ / finite steps, removed-task holes, grille trap/rescue/push/return,
   catapult reveal keys, D13 atomic `$patch` seats+revealing/broken, peek/end-turn),
   acceptHMRUpdate, and Quasar pinia entry. Core in SKILL.md; content-pack details
-  in content.md (unified packs list + favorites + author re-edit + staff take);
-  content-maps HTTP / paint / list statuses / staff lock / soft-unpublish (SC-MAP)
-  in maps.md. Use when adding, changing, reviewing, or debugging Pinia stores,
+  in content.md (unified packs list + `openRequestType` + favorites + author
+  re-edit + staff take + `neverLive` ghost sets);
+  content-maps HTTP / paint / list statuses / author pending→Edit / title-row
+  Edit / staff lock / soft-unpublish (SC-MAP-41…52) in maps.md. Use when adding,
+  changing, reviewing, or debugging Pinia stores,
   shared game/auth/theme/support/content/maps state (incl. admin setUserRole
   merge / emailVerified; support `change_pack` + packId; maps list/editor), or
   page-to-store wiring.
@@ -46,8 +48,8 @@ Read the matching file in this folder when the change involves that area
 
 | Topic | File |
 |-------|------|
-| Content packs (`content` store: unified list + favorites + working copy / `editorKind` author re-edit, `submitPack`, add-task-set, staff take + lock/save, cascade yellow; shared queue type `map`) | [content.md](content.md) |
-| Content maps (`maps` store: list statuses/filters, create/draft/submit/paint, author re-edit, staff lock/save, soft-unpublish; SC-MAP) | [maps.md](maps.md) |
+| Content packs (`content` store: unified list + `openRequestType` + favorites + working copy / `editorKind` author re-edit, `submitPack`, add-task-set, staff take + lock/save, cascade yellow, set marks without fan-out, `neverLive` ghost; shared queue type `map`) | [content.md](content.md) |
+| Content maps (`maps` store: list statuses/filters + author work→Edit, create/draft/submit/paint, title-row Edit, staff lock/save, soft-unpublish; SC-MAP-41…52) | [maps.md](maps.md) |
 
 ### Store styles in this repo
 

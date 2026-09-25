@@ -115,9 +115,9 @@ For CORS / monitor details use `work-with-middleware` and `work-with-config`.
 | GET | `/api/support/staff/tickets` | `createEndpoint` | JWT moderator\|admin; query `topic` (optional), `status`=`open`\|`closed`\|`all` (default `open`); cap ~50 **after** filter |
 | POST | `/api/support/tickets/:id/take` | `createEndpoint` | JWT staff; take into `in_progress` |
 | POST | `/api/support/tickets/:id/status` | `createEndpoint` | JWT staff; `{ status }` |
-| GET | `/api/content/packs` | `createEndpoint` | JWT; unified list — in-catalog + caller drafts/pending + staff soft-unpublished; rows carry `moderationStatus` / `isMine` / `isFavorite` (SC-PACK-148…153); **caller working≠live → `draft`** even when in-catalog (SC-PACK-175…179) |
+| GET | `/api/content/packs` | `createEndpoint` | JWT; unified list — in-catalog + caller drafts/pending + staff soft-unpublished; rows carry `moderationStatus` / `openRequestType` (`pack`\|`task_set` SC-PACK-191/192) / `isMine` / `isFavorite` (SC-PACK-148…153); **caller working≠live → `draft`** even when in-catalog (SC-PACK-175…179) |
 | POST | `/api/content/packs` | `createEndpoint` | JWT + non-anonymous + `emailVerified` (DB); create pack + working copy |
-| GET | `/api/content/packs/:id` | `createEndpoint` | JWT; live snapshot + `isFavorite` + `inCatalog` + per-set `moderationStatus` for set author/staff (SC-PACK-171…174); legacy `inCollection`; non-staff soft-unpublished → `pack_unpublished` |
+| GET | `/api/content/packs/:id` | `createEndpoint` | JWT; live snapshot + `isFavorite` + `inCatalog` + per-set `moderationStatus` for set author/staff (SC-PACK-171…174, 187 — no authorId fan-out) + set-author-only `neverLive` ghost rows (SC-PACK-188…189); legacy `inCollection`; non-staff soft-unpublished → `pack_unpublished` |
 | POST | `/api/content/packs/:id/favorite` \| `/unfavorite` | `createEndpoint` | JWT registered non-anonymous; star/unstar in-catalog pack (SC-PACK-154) |
 | POST | `/api/content/packs/:id/unpublish` \| `/republish` | `createEndpoint` | JWT staff; soft-hide / restore pack catalog; unpublish cascade-cancels open requests + RU email SC-PACK-137…141 |
 | POST | `/api/content/task-set/unpublish` \| `/republish` | `createEndpoint` | JWT staff; soft-hide / restore **task set**; last published → 409 `last_published_task_set` |
