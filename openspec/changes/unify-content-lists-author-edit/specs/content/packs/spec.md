@@ -1,6 +1,6 @@
-# content/packs — delta: unified list, favorites, author re-edit, moderation take, set statuses, cancel→draft, crumbs, ghost add-task-set, author draft→Edit
+# content/packs — delta: unified list, favorites, author re-edit, moderation take, set statuses, cancel→draft, crumbs, ghost add-task-set, author draft→Edit, cancel add-task-set draft restore
 
-Базовый канон: `openspec/specs/content/packs/spec.md`. Change: коллекция→единый список, избранное, author re-edit, take; follow-up: статусы сетов без fan-out, ghost never-live set для автора, author draft→Edit, крошки под elevated header, staff из шапки (`ui/branding`).
+Базовый канон: `openspec/specs/content/packs/spec.md`. Change: коллекция→единый список, избранное, author re-edit, take; follow-up: статусы сетов без fan-out, ghost never-live set для автора, author draft→Edit, крошки под elevated header, staff из шапки (`ui/branding`); FIX: cancel never-live add-task-set restores Edit draft payload.
 
 ## Traceability
 
@@ -34,7 +34,7 @@
 | SC-PACK-176 | covered (mocha/vitest) |
 | SC-PACK-177 | covered (mocha/vitest) |
 | SC-PACK-178 | covered (mocha/vitest) |
-| SC-PACK-179 | covered (mocha/vitest) |
+| SC-PACK-179 | covered (mocha/vitest) — strengthen: add-task-set GET |
 | SC-PACK-180 | covered (vitest) |
 | SC-PACK-181 | covered (vitest) |
 | SC-PACK-182 | covered (vitest) |
@@ -51,6 +51,8 @@
 | SC-PACK-193 | covered (vitest) — strengthen: offset zone |
 | SC-PACK-194 | covered (vitest) |
 | SC-PACK-195 | covered (vitest) |
+| SC-PACK-196 | covered (mocha) |
+| SC-PACK-197 | covered (mocha) |
 
 Related: `content/maps`; `ui/branding` (header/crumbs); `game/leave`; roles — `support/roles`. Tourist-room wiring still out of scope.
 
@@ -257,6 +259,8 @@ On the live pack surface task-set list, each **visible** task set MUST show a mo
 
 When staff or the change author **cancels** an open moderation request (pack, task_set, or equivalent pack content cycle), the system MUST keep the working copy edits and MUST NOT treat Cancel as hard-delete. For the change author, the affected entity MUST appear as **draft** on the unified packs list (including the drafts filter) so they can open Edit and submit again. Other users MUST continue to see the last approved **live** catalog snapshot when one exists. If the author **hard-deletes** the unpublished entity, it MUST be removed (not shown as draft). Soft-unpublish cascade cancel of open requests MUST keep working edits and follow the same author-draft visibility rules for those authors.
 
+For a **never-live add-task-set** cycle, Cancel MUST keep the request revision payload. Opening the add-task-set Edit surface after Cancel MUST load that retained snapshot (task sets with questions and slots), not an empty task-set list. The author MUST be able to amend and submit again from that restored draft.
+
 #### Scenario [SC-PACK-175]: Staff cancel yields author draft on list
 
 - **GIVEN** author A has an open pending pack or task_set request on entity E and staff who has taken the request
@@ -288,6 +292,20 @@ When staff or the change author **cancels** an open moderation request (pack, ta
 - **GIVEN** set author U had an open task_set request on pack P that was cancelled (staff or U)
 - **WHEN** U opens the packs list and/or the live pack task-set list
 - **THEN** U can reach the retained working edits as draft (list and/or set-row draft mark)
+
+#### Scenario [SC-PACK-196]: Cancelled never-live add-task-set Edit restores submitted snapshot
+
+- **GIVEN** verified user U submitted a never-live add-task-set on in-catalog pack P with at least two tasks and filled slots
+- **AND** that request was cancelled (by U or by staff after take)
+- **WHEN** U opens the add-task-set Edit surface for P (GET draft)
+- **THEN** the draft includes the same task questions and slot answer references that were submitted
+- **AND** the draft MUST NOT be an empty task-set list solely because the request is cancelled
+
+#### Scenario [SC-PACK-197]: After cancel add-task-set author can amend and resubmit retained draft
+
+- **GIVEN** set author U has a cancelled never-live add-task-set draft restored on Edit for pack P
+- **WHEN** U amends a question and submits again
+- **THEN** a new or resumed open pending task_set request exists carrying the amended content
 
 ### Requirement: Breadcrumbs replace pack back affordances
 

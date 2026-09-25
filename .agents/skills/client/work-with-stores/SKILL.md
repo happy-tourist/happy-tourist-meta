@@ -48,7 +48,7 @@ Read the matching file in this folder when the change involves that area
 
 | Topic | File |
 |-------|------|
-| Content packs (`content` store: unified list + `openRequestType` + favorites + working copy / `editorKind` author re-edit, `submitPack`, add-task-set, staff take + lock/save, cascade yellow, set marks without fan-out, `neverLive` ghost; shared queue type `map`) | [content.md](content.md) |
+| Content packs (`content` store: unified list + `openRequestType` + favorites + working copy / `editorKind` author re-edit, `submitPack`, add-task-set, staff take + lock/save, cascade yellow, set marks without fan-out, `neverLive` ghost + cancel→restore draft D22; shared queue type `map`) | [content.md](content.md) |
 | Content maps (`maps` store: list statuses/filters + author work→Edit, create/draft/submit/paint, title-row Edit, staff lock/save, soft-unpublish; SC-MAP-41…52) | [maps.md](maps.md) |
 
 ### Store styles in this repo

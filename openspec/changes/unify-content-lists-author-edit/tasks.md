@@ -87,3 +87,10 @@
 - [x] 11.4 Убрать «К наборам» с pack moderation + staff queue/detail (+ my-moderation); verify SC-PACK-194/195 (vitest)
 - [x] 11.5 Narrow + section nav: бургер справа; Acc/Theme/Logout в меню (не в toolbar); Game/auth без fold; verify SC-BRAND-14/19 + SC-BRAND-13 на wide (vitest)
 - [x] 11.6 `npm test` + `npm run lint` + `npm run typecheck` в client — зелёные
+
+## 12. Server — cancel add-task-set restores Edit draft
+
+- [x] 12.1 Прочитать design D22, delta SC-PACK-196/197 (+ strengthen 175/179); skills `server-locate-change-points`, `work-with-routes`; сверить `getAddTaskSet` vs `neverLiveAuthorTaskSets`
+- [x] 12.2 `getAddTaskSet`: при отсутствии open request грузить retained cancelled task_set revision (те же правила supersede, что ghost); verify SC-PACK-196 (mocha)
+- [x] 12.3 `putAddTaskSet` / `submitAddTaskSet`: reuse cancelled revision id когда open нет; amend + resubmit; verify SC-PACK-197 (mocha)
+- [x] 12.4 `npm test` в `../happy-tourist-server` — зелёный на SC блока 12; client smoke только если store ломается на restored draft

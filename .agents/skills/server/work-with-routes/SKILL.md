@@ -5,7 +5,8 @@ description: >-
   Colyseus server: createRouter / createEndpoint in app.config.ts, Express
   hook handlers (/health, /hi), auth /auth/*, theme, support tickets, content
   packs (/api/content/* unified list + favorites + working-copy / author re-edit +
-  unified submit + add-task-set **no** collection gate + edit-lock for authors+staff +
+  unified submit + add-task-set **no** collection gate + cancel never-live restore
+  D22 SC-PACK-196/197 + edit-lock for authors+staff +
   staff take/release + soft-unpublish pack/set + my-moderation + staff queue; collection
   HTTP legacy only; DEFAULT_CONTENT_PACK_IDS grants retired SC-PACK-170; block endpoints
   retained), admin roles, or Colyseus room listing /rooms/:roomName.
@@ -123,7 +124,7 @@ For CORS / monitor details use `work-with-middleware` and `work-with-config`.
 | POST | `/api/content/task-set/unpublish` \| `/republish` | `createEndpoint` | JWT staff; soft-hide / restore **task set**; last published → 409 `last_published_task_set` |
 | GET\|POST | `/api/content/packs/:id/draft` | `createEndpoint` | JWT + creator **or** task-set author; working copy incl. post-publish re-edit (`editorKind`); set `moderationStatus` on payload; staff → `author_request_open` when author request open |
 | POST | `/api/content/packs/:id/submit` | `createEndpoint` | JWT + author; unified submit / resubmit (may stay pending while staff holds take) |
-| GET\|PUT\|POST | `/api/content/packs/:id/add-task-set` (+ `/submit`) | `createEndpoint` | JWT + verified; **no** collection membership required (SC-PACK-164) |
+| GET\|PUT\|POST | `/api/content/packs/:id/add-task-set` (+ `/submit`) | `createEndpoint` | JWT + verified; **no** collection membership required (SC-PACK-164); after Cancel of never-live cycle GET restores retained revision `taskSets` (same selection as `neverLive` ghost); put/submit reuse cancelled revision id (D22 / SC-PACK-196/197) |
 | GET\|POST | `/api/content/packs/:id/edit-lock` | `createEndpoint` | JWT author **or** staff; acquire/status (TTL 5 min); staff blocked if author request open |
 | POST | `/api/content/packs/:id/edit-unlock` | `createEndpoint` | JWT lock holder; release |
 | GET\|POST | `/api/content/packs/:id/staff-edit` \| `/staff-save` | `createEndpoint` | JWT staff + lock; load / direct save |
