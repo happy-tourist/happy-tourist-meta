@@ -2,16 +2,16 @@
 
 | Scenario ID | Coverage |
 |-------------|----------|
-| SC-PIECE-01 | modified (variable pcs, no sides) |
-| SC-PIECE-02 | modified (kinds unique; pcs count) |
-| SC-PIECE-03 | modified (map starts, distance) |
-| SC-PIECE-04 | modified |
-| SC-PIECE-09 | modified (N-slot strip) |
-| SC-PIECE-18 | modified |
-| SC-PIECE-25 | modified (all-jail without sides) |
-| SC-PIECE-50 | pending (server mocha — distance spawn) |
-| SC-PIECE-51 | pending (server mocha — touristsPerPlayer count) |
-| SC-PIECE-52 | pending (client UX — strip slot count) |
+| SC-PIECE-01 | covered (variable pcs, no sides) |
+| SC-PIECE-02 | covered (kinds unique; pcs count) |
+| SC-PIECE-03 | covered (map starts) |
+| SC-PIECE-04 | covered |
+| SC-PIECE-09 | covered (N-slot strip) |
+| SC-PIECE-18 | covered |
+| SC-PIECE-25 | covered (revised — floor+random all-jail) |
+| SC-PIECE-50 | covered (revised — min-distance floor + random) |
+| SC-PIECE-51 | covered (touristsPerPlayer count) |
+| SC-PIECE-52 | covered (client UX — strip slot count) |
 
 Related: map capacity — `lobby/rooms`; layout — `game/board`; strip HUD — `game/presence`.
 
@@ -53,7 +53,7 @@ While the start phase is `waiting` and fewer seated players exist than maxSeats,
 
 ### Requirement: Materialize pieces when playing begins
 
-When the start phase transitions from `countdown` to `playing`, the server SHALL place exactly `touristsPerPlayer` pieces for every seated player that does not yet have pieces, choosing free **start** cells from the map snapshot. Placement MUST maximize distance among that seat’s own pieces as far as free start cells allow (greedy nearest-first among remaining starts is acceptable). Opponent pieces MAY occupy any remaining free starts; own-piece separation is the primary rule. No two pieces in the room MAY share the same cell. Every client MUST observe those pieces in synced state as phase becomes `playing`.
+When the start phase transitions from `countdown` to `playing`, the server SHALL place exactly `touristsPerPlayer` pieces for every seated player that does not yet have pieces, choosing free **start** cells from the map snapshot. Placement MUST follow the **min-distance floor + uniform random** rule in the added spawn requirement (not a deterministic maximize-only greedy). Opponent pieces MAY occupy any remaining free starts; own-piece separation under that floor is the primary rule. Unused free start cells of the map MAY remain empty. No two pieces in the room MAY share the same cell. Every client MUST observe those pieces in synced state as phase becomes `playing`.
 
 #### Scenario [SC-PIECE-18]: Waiting seats receive pieces at playing
 
@@ -105,7 +105,7 @@ On narrow viewports the strip MAY wrap or shrink slots so the own avatar cluster
 
 ### Requirement: All-jail places one piece per side on free starts
 
-On all-jail reset for a seat, each of that seat’s pieces MUST be placed on a free start cell of the map snapshot, choosing free starts to maximize distance among that seat’s own pieces as at materialize. Pieces MUST be free (not trapped) after placement. Side identities MUST NOT be used.
+On all-jail reset for a seat, each of that seat’s pieces MUST be placed on a free start cell of the map snapshot using the **same min-distance floor + uniform random** rule as materialize. Pieces MUST be free (not trapped) after placement. Side identities MUST NOT be used.
 
 #### Scenario [SC-PIECE-25]: Reset uses each side’s free start cells
 
@@ -114,18 +114,28 @@ On all-jail reset for a seat, each of that seat’s pieces MUST be placed on a f
 - **THEN** both pieces occupy distinct free map start cells
 - **AND** none share a cell with another unfinished piece
 - **AND** none remain trapped
+- **AND** placement follows the same floor+random rule as materialize
 
 ## ADDED Requirements
 
-### Requirement: Own pieces maximize mutual distance at materialize
+### Requirement: Own pieces use min-distance floor and random among feasible starts
 
-When materializing multiple pieces for one seat, the server MUST prefer free start-cell pairs/sets that maximize distance among that seat’s own pieces.
+When materializing (or all-jail resetting) multiple pieces for one seat on free map start cells, the server MUST:
 
-#### Scenario [SC-PIECE-50]: Own pieces maximize mutual distance
+1. Let `maxPair` be the maximum Chebyshev distance between any two currently free start cells available for placement.
+2. Let `floor` start at `ceil(maxPair / 2)`.
+3. Sequentially pick each next own piece cell by taking the free starts whose minimum Chebyshev distance to already chosen **own** cells for this seat is ≥ `floor`, choosing **uniformly at random** among those candidates.
+4. If no candidate exists at the current `floor`, decrease `floor` by 1 and retry until a cell can be chosen (down to `floor = 0`, which allows any remaining free start).
 
-- **GIVEN** a map snapshot with at least four free start cells and touristsPerPlayer=2 for one seated player at materialize
+The placement MUST NOT be a deterministic maximize-only greedy that always yields the same corner pair when ties exist. Across repeated materializes with the same free-start set and `touristsPerPlayer ≥ 2`, outcomes MAY differ.
+
+#### Scenario [SC-PIECE-50]: Own pieces keep a distance floor then randomize
+
+- **GIVEN** a map snapshot with at least four free start cells whose maxPair Chebyshev distance is 6 and touristsPerPlayer=2 for one seated player at materialize
 - **WHEN** the server places that seat’s two pieces
-- **THEN** the two cells are a pair of free starts that maximizes distance between them among available free starts at placement time (ties MAY break arbitrarily)
+- **THEN** the Chebyshev distance between the two cells is at least `ceil(6 / 2) = 3` when such a pair exists among free starts
+- **AND** the chosen pair is not required to be a unique maximum-distance pair
+- **AND** a later independent materialize with the same free starts MAY select a different pair that still meets the floor
 
 #### Scenario [SC-PIECE-51]: Piece count follows touristsPerPlayer
 

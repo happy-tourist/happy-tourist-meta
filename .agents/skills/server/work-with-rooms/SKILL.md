@@ -5,8 +5,9 @@ description: >-
   the happy-tourist tourist server: MyRoom lifecycle (onAuth / onCreate /
   onJoin / onDrop / onReconnect / onLeave / onDispose), tourist reconnect grace
   vs LobbyRoom fire-and-forget, room registration in app.config (lobby +
-  tourist + enableRealtimeListing), mapId/packId/taskSetIds + grilleDensity +
-  catapultDensity create options (maxSeats from map.players) / waiting-only seating /
+  tourist + enableRealtimeListing), mapId/packId/taskSetIds + maxSeats
+  (1…map.players; omit → min(2, map.players)) + grilleDensity +
+  catapultDensity create options / waiting-only seating /
   deferred pieces / seat connectivity / start phase, consented leave clears that
   seat’s holding grilles (SC-PIECE-28; onDrop does not), onDispose cancels paced
   trap pipeline + clearTurnDeadline, JWT room gate, or aligning room name with
@@ -54,7 +55,7 @@ client create({ mapId, packId, taskSetIds, grilleDensity?, catapultDensity? }) /
         │  returns userdata → onJoin(…, auth)
         ▼
   onCreate(options)        ← async once per room instance
-        │  setState; loadRoomContentSnapshot(options) → maxSeats=map.players + grid + pack
+        │  setState; loadRoomContentSnapshot(options) → maxSeats=chosen≤map.players + grid + pack
         │  + grilleDensity + catapultDensity (few/medium/many, default medium each)
         │  refreshMetadata({ title, status, maxSeats, seats, mapGrid, packTitle, … })
         │  onMessage('move'|'rescue'|'push'|'returnFromFinish'|'peek'|'peekPlace'|'peekSubmit'|…|'ready'|'say')
@@ -86,7 +87,7 @@ client create({ mapId, packId, taskSetIds, grilleDensity?, catapultDensity? }) /
 | Hook | Do here | Don't |
 |------|---------|--------|
 | `static onAuth` | `JWT.verify(token)`; return userdata | Trust client-supplied identity without JWT |
-| `onCreate` | `setState`; **async** `loadRoomContentSnapshot(options)` → `maxSeats` from map.players + `grid` + pack; parse `grilleDensity`/`catapultDensity` (room-private); `phase=waiting`; `refreshMetadata` (incl. mapGrid/pack labels); register `move`/`rescue`/`push`/`returnFromFinish`/`peek`/`peekPlace`/`peekSubmit`/…/`ready`/`say`; do **not** set `maxClients = maxSeats` | Mutate board from HTTP; revive maxSeats-only create |
+| `onCreate` | `setState`; **async** `loadRoomContentSnapshot(options)` → parse `maxSeats` (`1…map.players`; omit → `min(2, map.players)`; invalid → reject) + `grid` + pack; parse `grilleDensity`/`catapultDensity` (room-private); `phase=waiting`; `refreshMetadata` (incl. mapGrid/pack labels + chosen maxSeats); register `move`/`rescue`/`push`/`returnFromFinish`/`peek`/`peekPlace`/`peekSubmit`/…/`ready`/`say`; do **not** set `maxClients = maxSeats` | Mutate board from HTTP; force `maxSeats = map.players` without host choice |
 | `onJoin` | Assign seat only while `phase === 'waiting'` and under `maxSeats`; unique `touristId`; pieces deferred until `playing`; online connectivity; `ready=false`; `timeExpired=false`; maybe start countdown when full | Cap the room with `maxClients`; seat during `countdown`/`playing`; invent pieces in waiting |
 | `onDrop` | Seated: mark offline + `allowReconnection(client, 30)`; hold seat/pieces; do not cancel countdown; do **not** pause turn deadline | Treat unexpected drop as immediate seat delete; grace for spectators or LobbyRoom |
 | `onReconnect` | Restore seat online (`connected=true`, `reconnectUntil=0`) | Re-assign a new seat / touristId |
@@ -109,7 +110,7 @@ export class MyRoom extends Room<{ state: MyRoomState }> {
 
   async onCreate(options: any) {
     this.setState(new MyRoomState());
-    // await loadRoomContentSnapshot(options) → maxSeats=map.players, grid, packTitle, …
+    // await loadRoomContentSnapshot(options) → maxSeats=chosen≤map.players, grid, packTitle, …
     this.state.phase = "waiting";
     this.refreshMetadata(); // title / status / maxSeats / seats / mapGrid / packTitle / …
     this.onMessage("move", …);
@@ -166,7 +167,7 @@ Align with client Pinia expectations:
 
 | Concern | Target |
 |---------|--------|
-| Capacity | No `maxClients = maxSeats`; seated ≤ `maxSeats` (2\|3\|4) via seats check; spectators may join |
+| Capacity | No `maxClients = maxSeats`; seated ≤ `maxSeats` (`1…4`, chosen ≤ map.players) via seats check; spectators may join |
 | Seats | Unique `touristId` 1…4; pieces deferred until `playing` (`touristsPerPlayer` pieces by pieceId on free start cells — see `work-with-game`); **new seat only while `phase === 'waiting'`** and under maxSeats |
 | Connectivity | `connected` + `reconnectUntil` on Seat (D2); online at assign; `timeExpired` for solo budget lock |
 | Start | `phase` waiting → countdown → playing (+ materialize + turn deadline); full table or all-ready underfilled; legacy `started` mirrors `phase === 'playing'` |

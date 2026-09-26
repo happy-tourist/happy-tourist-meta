@@ -5,8 +5,9 @@
 | SC-PRESENCE-30 | covered (client vitest — focus control placement) |
 | SC-PRESENCE-31 | covered (client vitest — focuses nearest actionable) |
 | SC-PRESENCE-32 | covered (client vitest — hidden when none actionable) |
+| SC-PRESENCE-33 | covered (client — say above focus without overlap) |
 
-Related: strip / selection — `game/pieces`; peek/move availability — `game/board` / `game/move`; end-turn — existing presence end-turn requirement.
+Related: strip / selection — `game/pieces`; peek/move availability — `game/board` / `game/move`; end-turn — existing presence end-turn requirement; say corners — main `game/presence` / `game/say`.
 
 ## ADDED Requirements
 
@@ -32,3 +33,14 @@ While the local user is a seated current-turn player in phase `playing` and at l
 - **GIVEN** it is the local user’s turn and no own unfinished free piece has a legal move, peek, rescue, push, or return
 - **WHEN** the own presence chrome is shown
 - **THEN** the focus control is not available as an enabled action
+
+### Requirement: Say affordance sits above the focus control
+
+On the local seated user’s own presence avatar, when both the say send affordance and the focus control are visible, the say control MUST be placed **higher** on the avatar (closer to the top edge / farther from the vertical center than the focus control) so the two hit areas do not overlap. End-turn remains on the right edge below focus. This does not change say whitelist or `game/say` message rules.
+
+#### Scenario [SC-PRESENCE-33]: Say is above focus without overlap
+
+- **GIVEN** it is the local seated user’s multiplayer turn with say available and at least one actionable own tourist (focus visible)
+- **WHEN** the own presence chrome is shown
+- **THEN** the say affordance is vertically above the focus control
+- **AND** the two circular hit areas do not overlap

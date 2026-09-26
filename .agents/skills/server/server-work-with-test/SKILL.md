@@ -200,12 +200,13 @@ Verify JWT room connect:
 
 Verify seating / pieces (SC-PIECE):
 - First join (waiting): seat has touristId 1…4 and **no pieces** until playing
-- After enter playing / `forcePlaying`: exactly four pieces on N/E/S/W start cells
+- After enter playing / `forcePlaying`: `touristsPerPlayer` pieces on free map starts via `pickMinDistanceFloorRandomStarts` (floor+random; not N/E/S/W sides; SC-PIECE-50)
 - Two seats: unique touristId; no shared (row,col) among any pieces after materialize
 - Fill maxSeats → further joiner is spectator; leave while under maxSeats reopens seat **only in waiting**; join in countdown/playing is spectator (SC-PIECE-19)
 
-Verify start / capacity (SC-START):
-- createRoom("tourist", { maxSeats: 2|3|4 }) → state + metadata.maxSeats; invalid → 2
+Verify start / capacity (SC-START / SC-LOBBY-22):
+- create via mapId/packId/taskSetIds + `maxSeats` (`1…map.players`; omit → `min(2, map.players)`; invalid/out-of-range → reject `invalid_max_seats`)
+- metadata.maxSeats = chosen capacity; metadata.players may still mirror map snapshot
 - metadata.seats = occupied seated count (not clients)
 - Full table while waiting → countdown (COUNTDOWN_SECONDS) → playing (+ materialize + turn deadline)
 - Underfilled ≥2: all ready → same countdown; solo ready rejected
@@ -313,13 +314,13 @@ Always use `createRoom("tourist", …)` matching `app.config.ts`. Include lobby 
 
 Canonical coverage lives in `test/MyRoom.test.ts`:
 
-- First join → exactly four pieces on sides N/E/S/W on that side’s start cells; `connected=true`, `reconnectUntil=0`, `ready=false`.
+- First join (waiting) → seat+kind only, **no pieces**; on enter playing → `touristsPerPlayer` pieces on free map starts via `pickMinDistanceFloorRandomStarts` (SC-PIECE-50); `connected=true`, `reconnectUntil=0`, `ready=false`.
 - Unique `touristId` among seats; no shared cell among any pieces in the room.
 - Fill `maxSeats` → further joiners are spectators; leave while under maxSeats reopens a seat **only in waiting**; join in countdown/playing is spectator (SC-PIECE-19); leave/grace in playing does not reopen (SC-PIECE-08/14/21).
-- Start: create `{ maxSeats }`; full table or all-ready underfilled → countdown → playing (SC-START-*).
+- Start: create `{ mapId, packId, taskSetIds, maxSeats? }` (omit → min(2, map.players); invalid → reject); full table or all-ready underfilled → countdown → playing (SC-START-*).
 - Unexpected drop → hold seat for `RECONNECT_GRACE_SECONDS` (SC-PIECE-11…14); `reconnect(token)` restores online; grace timeout removes; empty seated → dispose with spectators (SC-PIECE-15); connectivity sync (SC-PIECE-16).
 
-Helpers in that file (`assertFourPiecesOnSides`, `listPieces`, `allRoomPieces`, `unexpectedDrop`, `assertOfflineGrace`, `forcePlaying`, `waitForPhase`)
+Helpers in that file (`listPieces`, `allRoomPieces`, `unexpectedDrop`, `assertOfflineGrace`, `forcePlaying`, `waitForPhase`, `placePiece`, `touristCreateOptionsForTests`)
 are the preferred assertion style — extend them rather than inventing a parallel
 seat-flat `side`/`row`/`col` model. Grace-timeout / countdown cases may need `this.timeout(…)` above the default 15s.
 

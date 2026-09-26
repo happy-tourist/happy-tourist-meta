@@ -1,6 +1,6 @@
 ## Context
 
-См. `proposal.md` — Why. Сейчас `tourist` room: hardcoded `TOURIST_LAYOUT` / client `LAYOUT`, create options только `maxSeats` + grille/catapult density, peeks = private stub Correct/Wrong + bag 28/14/6, pcs всегда 4 со side N/E/S/W. Content maps/packs живут в HTTP CMS и явно «не wired». Решения explore D1–D22 зафиксированы в specs delta.
+См. `proposal.md` — Why / follow-up. Первая волна (snapshot map+pack, deck/peek, pieces без sides, lobby create/listing, focus) уже в runtime. Follow-up уточняет create capacity, spawn randomness и мелкий UX.
 
 Пакеты: **server** (`happy-tourist-server`) + **client** (`happy-tourist.github.io`). Контракт room name `tourist` согласованно.
 
@@ -8,75 +8,91 @@
 
 **Goals:**
 - Snapshot map + pack answers + selected task sets в room на create
-- Динамический board/pcs/spawn; task deck → bind; shared peek + server order check
-- Lobby create/listing UX; HUD focus control
+- `maxSeats` выбирает хост в диапазоне `1…map.players`
+- Spawn/all-jail: min-distance floor + uniform random (хаос при сохранении разнесённости)
+- Lobby create/listing UX; HUD focus; say не перекрывает focus
 - Убрать hardcoded layout и stub peek из runtime path
 
 **Non-Goals:**
 - Shop / покупка тайла; отдельное theme-поле у task set; смешение packs; CMS redesign
+- Отдельный выбор touristsPerPlayer вне карты
 
 ## Decisions
 
 ### D1. Snapshot at create (не live join к CMS)
 
-Room на `onCreate` читает live map + pack/task sets из GameDatabase / content helpers и кладёт **immutable snapshot** в room memory (+ минимальные synced поля для lobby/UI: grid string, players, touristsPerPlayer, pack title, set labels, flipped cell→taskId, difficulty digit).
+Room на `onCreate` читает live map + pack/task sets из GameDatabase / content helpers и кладёт **immutable snapshot** в room memory (+ минимальные synced поля для lobby/UI: grid string, touristsPerPlayer, pack title, set labels, flipped cell→taskId, difficulty digit).
 
 **Альтернатива:** подгружать CMS на каждый peek — отвергнуто (unpublish mid-game, latency).
 
-### D2. Create options shape
+### D2. Create options shape (revised)
 
-`client.create('tourist', { mapId, packId, taskSetIds: string[], grilleDensity, catapultDensity })`. Server выставляет `maxSeats = map.players`. Убрать отдельный maxSeats из UI.
+`client.create('tourist', { mapId, packId, taskSetIds: string[], maxSeats, grilleDensity, catapultDensity })`.
 
-### D3. Piece identity без side
+- Server: `maxSeats` MUST быть целым `1…map.players` (из snapshot карты); иначе reject. Default на client UI: **`min(2, map.players)`** после выбора карты (на карте с `players=1` — только 1).
+- `touristsPerPlayer` и grid — только из map snapshot (не из options).
+- Listing metadata `maxSeats` / occupied = **выбранная** ёмкость комнаты (если карта на 4, а create выбрал 2 → в списке максимум 2).
 
-Убрать `side` из piece schema / strip index; piece id = seat-local index `0..touristsPerPlayer-1`. Strip и move/peek/rescue/push/return адресуют piece by id. All-jail и materialize — greedy max-min distance на free starts карты.
+**Альтернатива (отвергнута в первой волне, возвращена частично):** всегда `maxSeats = map.players` — хост не мог играть на меньшем столе.
 
-**Альтернатива:** сохранять фиктивные стороны — отвергнуто (карты произвольные).
+### D3. Piece identity без side + spawn A (revised)
+
+Убрать `side` из piece schema / strip index; piece id = seat-local index `0..touristsPerPlayer-1`.
+
+**Spawn / all-jail (алгоритм A):** среди free start cells карты:
+
+1. Вычислить `maxPair` = максимальное Chebyshev-расстояние между любыми двумя free starts.
+2. `floor = ceil(maxPair / 2)`.
+3. Жадно набирать `touristsPerPlayer` клеток: на каждом шаге кандидаты = free starts, у которых min-distance к уже выбранным **своим** ≥ `floor`; взять **uniform random** среди кандидатов; занять клетку.
+4. Если кандидатов нет — `floor -= 1` и повторить шаг 3, пока `floor ≥ 0` (при 0 — любой оставшийся free start).
+
+Opponent pieces занимают остальные free starts по тому же правилу для следующего seat. Незанятые старты карты остаются пустыми — ок.
+
+**Альтернативы:** жёсткий greedy max-min (детерминированные углы) — отвергнуто follow-up; чистый random без floor — отвергнуто (свои могут встать рядом).
 
 ### D4. Peek protocol (shared)
 
-- Synced: `peekSession` (seatId, cell, taskId, slotPlacements[]) или broadcast messages `peekOpen` / `peekPlace` / `peekSubmit` / `peekClose` видны всем.
-- Private budgets остаются private.
+- Synced: peek session + place/submit; private budgets private.
 - Fresh open: −1 peek; flipped open: 0 cost, allowed at peeks=0.
 - Submit: server compares ordered answer card ids to task slots.
 
 ### D5. Lobby metadata
 
-Metadata room listing: map preview grid (или compact string), capacity, pack/set labels — через Colyseus room metadata / lobby filter fields already used for seats.
+Map preview grid, **room** capacity (`maxSeats` × touristsPerPlayer или occupied/`maxSeats` + tourists copy), pack/set labels — через Colyseus room metadata.
 
-### D6. Client layers
+### D6. Client create UX (revised)
 
-- `LobbyPage` create modal: map picker → capacity; pack → multi-check sets; densities.
-- `game` store: create options; peek place/submit; focus action helper.
-- `GamePage` / board: render snapshot grid, flipped digits, shared modal.
-- Presence chrome: circular focus between say and end-turn.
-- Maps/content stores: list in-catalog for pickers (reuse existing HTTP).
+- Map picker: ёмкость карты видна в option caption; **не** дублировать той же строкой под закрытым селектом.
+- После выбора карты — seats control `1…map.players`, default `min(2, map.players)`.
+- Pack → multi-check published sets; если опубликован ровно **один** set — сразу отметить его.
+- Densities без изменений.
 
 ### D7. Server layers
 
-- `MyRoom.onCreate`: validate map/pack/sets published; snapshot; set maxClients/maxSeats.
-- `touristMove` / board helpers: layout from snapshot; deck; bind map; remove fixed bag / START_CELLS sides.
-- Schema: grid, touristsPerPlayer, cellBindings, peekSession; pieces without side.
-- Messages: extend peek*; add peekPlace.
-- Tests: mocha for create reject, bind, order check, flipped free peek, distance spawn.
+- `MyRoom.onCreate`: validate map/pack/sets + `maxSeats`; snapshot; metadata.
+- `pickGreedyMaxDistanceStarts` → заменить / расширить на floor+random helper; materialize + all-jail.
+- Schema / peek / pieces without side — как в первой волне.
 
-### Prerequisites (из explore — закрыты)
+### D8. Say vs focus spacing
 
-D1–D22 приняты пользователем; блокеров нет. Assumption: «nearest actionable» = минимальное манхэттенское расстояние от текущего selection (или от центра доски, если нет selection); ties — меньший piece index.
+Say affordance на own avatar MUST сидеть **выше** по вертикали (дальше от центра / ближе к верхнему краю), чтобы hit-area не пересекалась с focus (между say и end-turn). Pure CSS + при необходимости лёгкий сдвиг focus вниз.
+
+### Prerequisites
+
+Explore follow-up закрыт: seats ≤ map; spawn A; listing = chosen max; auto-check; say up. «Nearest actionable» для focus — без изменений (Manhattan / ties → меньший piece index).
 
 ## Risks / Trade-offs
 
 | Risk | Mitigation |
 |------|------------|
-| Ломаются тесты/skills, завязанные на 4 pcs + sides | Обновить server/client tests и piece addressing одним PR-порядком: server contract → client |
-| Большой pack answers в модалке | Принято (D16); модерация CMS |
-| Lobby metadata size (full grid) | Компактная grid string 100 chars уже у maps |
-| maxSeats=1 auto countdown | Уже full-table path; проверить solo peeks infinite не включается ошибочно при 1 из 1 until others leave — при одном seated после start это и есть solo rules |
+| Floor `ceil(maxPair/2)` слишком жёсткий / мягкий на кривых картах | Понижение floor; после playtest можно подкрутить константу без смены контракта «floor+random» |
+| Ломаются тесты на детерминированный max-pair spawn | Переписать SC-PIECE-50 на инварианты (min distance ≥ floor при наличии кандидатов; не соседство при достаточном числе стартов) |
+| Client без `maxSeats` в options | Server reject; deploy client+server вместе для follow-up |
 
 ## Migration Plan
 
-1. Deploy server accepting new create options (reject legacy maxSeats-only creates).
-2. Deploy client create modal + board/peek.
-3. Rollback: revert client first (old client cannot create); server may keep rejecting old options.
+1. Server: принимать `maxSeats` ≤ map.players; новый spawn; старый client без seats picker может слать отсутствующий maxSeats — либо default `min(2, map.players)` на server, либо reject (предпочтительно **default** `min(2, map.players)` если поле omitted, для мягкого перехода).
+2. Client: seats picker + UX polish + say CSS.
+3. Rollback: client first.
 
-Чеклист реализации — `tasks.md`.
+Чеклист — `tasks.md` (блок 8 = follow-up).

@@ -106,6 +106,7 @@ export default {
     pack: 'Набор карточек',
     taskSets: 'Наборы заданий',
     mapCapacity: '{players}×{tourists}',
+    maxSeats: 'Число мест',
     emptyMaps: 'Нет опубликованных карт',
     emptyPacks: 'Нет опубликованных наборов',
     emptyTaskSets: 'Нет опубликованных наборов заданий',

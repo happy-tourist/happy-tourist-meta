@@ -222,7 +222,8 @@ Board UI is custom CSS Grid (not Quasar widgets). Keep selectors local and class
 | `.presence-place-badge` / `.ready-affordance` | Top-left corners (SC-PRESENCE-14) |
 | `.presence-budgets` / `.budget-counter` / `.budget-fall` | Own steps/peeks **beside** own avatar (SC-PRESENCE-15…16); `.budget-fall` ≈ **2 s** (keep CSS in sync with `BUDGET_FALL_MS` / SC-PRESENCE-20); not on opponents; end-turn is **not** here |
 | `.peek-affordance` / `.rescue-affordance` / `.push-affordance` | Top-center above piece (same family as `.return-affordance`; SC-BOARD-13 / SC-MOVE-74/77) |
-| `.say-affordance` | Top-right on own marker; hit-area ≥ ~32 CSS px (glyph may be smaller); z-index above rings/avatar (SC-SAY-07 / SC-SAY-15) |
+| `.say-affordance` | Own marker top-right, raised (`top: -32px`) so hit-area does not overlap focus (SC-SAY-07 / SC-SAY-15 / SC-PRESENCE-33); hit-area ≥ ~32 CSS px (glyph may be smaller); z-index above rings/avatar |
+| `.focus-affordance` | Own marker between say and end-turn (`top: 32%`, `translateY(-50%)`, `right: -8px`, 36px hit — SC-PRESENCE-30/33); see `work-with-game-board/focus.md` |
 | `.say-bubble` / `.say-picker` | Presence comic bubbles + picker; chrome follows Dark via `body.body--dark` overrides (not tile fills) |
 | `.say-bubbles--top` | Top-row markers: bubbles grow **down** toward the board |
 | `.say-bubbles--bottom` | Own bottom marker: bubbles grow **up** toward the board |

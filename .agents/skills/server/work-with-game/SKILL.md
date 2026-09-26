@@ -37,10 +37,10 @@ Constants: `RECONNECT_GRACE_SECONDS = 30`, `COUNTDOWN_SECONDS = 5`, `TURN_BUDGET
 
 ## Seating (shipped — game/pieces + game/start)
 
-- Create options: `{ maxSeats: 2|3|4, grilleDensity?: 'few'|'medium'|'many', catapultDensity?: 'few'|'medium'|'many' }` (`maxSeats` invalid → **2**; either density invalid/omit → **medium**). Synced `state.maxSeats`; both densities are room-private until seed.
+- Create options: `{ mapId, packId, taskSetIds, maxSeats?: 1…map.players, grilleDensity?: 'few'|'medium'|'many', catapultDensity?: 'few'|'medium'|'many' }` (`maxSeats` omit → **`min(2, map.players)`**; invalid/out-of-range → reject; either density invalid/omit → **medium**). Synced `state.maxSeats`; both densities are room-private until seed.
 - New seat **only** while `phase === 'waiting'` and `seats.size < maxSeats`: unique `touristId` 1…4, `connected=true`, `reconnectUntil=0`, `ready=false`, `finishPlace=0`, `timeExpired=false`.
 - Join during `countdown` or `playing` → spectator (no seat/kind/pieces), even if capacity is free after leave/grace.
-- **Pieces deferred:** in `waiting`/`countdown` — seat+kind only (no pieces). On enter `playing` — `materializePiecesForAllSeats()` (`touristsPerPlayer` pieces keyed by pieceId on free start cells).
+- **Pieces deferred:** in `waiting`/`countdown` — seat+kind only (no pieces). On enter `playing` — `materializePiecesForAllSeats()` (`touristsPerPlayer` pieces keyed by pieceId on free start cells via `pickMinDistanceFloorRandomStarts` — min-distance floor + uniform random among own; SC-PIECE-50 / design D3; not deterministic greedy max-pair).
 - When `seats.size === maxSeats` while waiting: further joiners are spectators. No `maxClients = maxSeats`.
 - Metadata for lobby: `{ title, status, maxSeats, seats }` — `seats` = occupied seated count (not `clients`).
 - Assign only in Room lifecycle — client never invents seats. Reconnect within grace is not a new seat.
@@ -99,7 +99,7 @@ Behavior:
 - `rescue` `{ pieceId }`: own trapped + Chebyshev-1 free own piece + steps≥1 → −1 step; clear trapped + holding grille; then paced pipeline if a catapult remains.
 - `push` `{ pusherSide, targetSessionId, targetSide, row, col }`: own free pusher + free adj target → far-side dest; −1 step; relocate **target only**; land side-effects like move (paced pipeline on target). Reject trapped pusher/target, hole, occupied, bad geometry. Solo = multi.
 - `returnFromFinish` `{ pieceId, row, col }`: `finishPlace===0` + finished piece + legal center-ring cell → −1 step; unfinish onto cell → paced pipeline.
-- All-jail (4 trapped): free pieces; clear 4 holding grilles; place on free starts per side; keep turn/steps/timer; private `allJailWarning` to that seat only.
+- All-jail (all pieces trapped): free pieces; clear holding grilles; re-place on free starts via the same `pickMinDistanceFloorRandomStarts` rule as materialize (SC-PIECE-25/50); keep turn/steps/timer; private `allJailWarning` to that seat only.
 - `peek` `{ pieceId }` → shared peek session; reject if trapped; bind deck task on first open; flipped re-peek free. `peekPlace`/`peekSubmit` → peeker places chips / validates order; Correct +difficulty + remove tile; Incorrect KEEP.
 - `endTurn` (no payload): multi only; open peek → force incorrect KEEP first; then `advanceTurn` (+1/+1 next).
 - Auto-end (multi): advance only if no legal move **and not** (peeks≥1 ∧ unfinished on live `*`) **and not** legal rescue/return/push (SC-MOVE-38/47/62/73).
@@ -117,7 +117,7 @@ Behavior:
 ## Move Rules (shipped — D2 / D3 + game/finish + steps + grilles)
 
 - Message: `room.send('move', { pieceId, row, col })`. **No** separate `finish` message. Also `rescue` / `push` / `returnFromFinish` / `peekPlace` / `peekSubmit`.
-- Pure module `src/game/touristMove.ts`: playable = start + task + center; **landing on `removedKeys` rejected**; stand/leave from hole OK; Chebyshev distance === 1; occupancy = unfinished (incl. trapped); reject move if piece `trapped`; helpers `hasLegalMove(..., removedKeys)` / `hasLegalPeek(removedKeys)` / `farSideCell` / `validateTouristPush` / `hasLegalPush` + grille/catapult density + fling helpers.
+- Pure module `src/game/touristMove.ts` (+ `boardGeometry.ts`): playable = start + task + center; **landing on `removedKeys` rejected**; stand/leave from hole OK; Chebyshev distance === 1; occupancy = unfinished (incl. trapped); reject move if piece `trapped`; helpers `hasLegalMove(..., removedKeys)` / `hasLegalPeek(removedKeys)` / `farSideCell` / `validateTouristPush` / `hasLegalPush` + `pickMinDistanceFloorRandomStarts` (spawn) + grille/catapult density + fling helpers. Deprecated alias `pickGreedyMaxDistanceStarts` → floor+random.
 - `MyRoom.onMessage('move')`: require `phase === 'playing'` + seated + `finishPlace === 0` + `!timeExpired` + current turn + `steps > 0` → validate (holes not landable; not trapped) → update `row`/`col`; always `steps--` + `sendBudgets`; if target is center → `piece.finished=true`; else start paced trap pipeline; when seat’s 4th piece finishes → assign `finishPlace = nextFinishPlace++` then advance; else **do not** advance solely because move succeeded — run auto-end / solo step-loss (deferred if pipeline active). Reject → no state change.
 - Finished / time-expired seat may still `say`; cannot move/peek/rescue/push/return. Finished seats count toward `maxSeats` until leave/grace.
 - Player end-turn via `endTurn`; also auto-end and timeout. No draughts `{ from, to }` encoding.
@@ -138,7 +138,7 @@ Behavior:
 | Synced state | `phase`, `maxSeats`, `countdownRemaining`, `started` (legacy), `seats` Map → `touristId` + `pieces` (+ `finished`/`trapped`; may be empty pre-playing) + connectivity + `ready` + `finishPlace` + `timeExpired`, `currentTurnSessionId`, `turnUntil`, `turnBudgetSeconds`, `nextFinishPlace`, `removedTaskKeys`, `holdingGrilleKeys`, `revealingCatapultKeys`, `brokenCatapultKeys` |
 | Messages | `move`/`rescue`/`push`/`returnFromFinish`/`peek` with **pieceId**; `peekPlace`/`peekSubmit` shared Q&A; `endTurn`/`ready`/`say` via store |
 | Private | Server → owner `budgets` `{ steps, peeks, infinite` (peeks∞ only)`, peekedThisTurn }`; `allJailWarning` `{}`; peek session mostly schema-synced |
-| Create | `{ maxSeats, grilleDensity?: 'few'\|'medium'\|'many', catapultDensity?: 'few'\|'medium'\|'many' }` (both default medium) |
+| Create | `{ mapId, packId, taskSetIds, maxSeats?, grilleDensity?: 'few'\|'medium'\|'many', catapultDensity?: 'few'\|'medium'\|'many' }` (maxSeats omit → min(2, map.players); densities default medium) |
 | Say (ephemeral) | `say` `{ presetId: hello\|luck }` → broadcast; readiness preset only via `ready` — see `work-with-messages` |
 | Reconnect | Colyseus token; client `localStorage` + `reconnect` then `joinById`; resend `budgets` on reclaim |
 | Presence / hints | Client-only chrome (own counters + end-turn + eye); selection + red targets local to current-turn client |

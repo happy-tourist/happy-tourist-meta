@@ -4,8 +4,8 @@ description: >-
   Guides live lobby room list via LobbyRoom subscribe/unsubscribe, quiet
   resubscribe after drop (no reconnect hold / no reservation noise), leave
   policy before enter tourist, create-with-mapId/packId/taskSetIds +
-  grilleDensity + catapultDensity modal (few/medium/many → server 12/22/35%
-  seed each; maxSeats from map.players) / join-by-id (no Play shortcut), and
+  maxSeats (1…map.players) + grilleDensity + catapultDensity modal
+  (few/medium/many → server 12/22/35% seed each) / join-by-id (no Play shortcut), and
   navigation to /game/:roomId in the happy-tourist tourist client. Use when
   changing LobbyPage, game.subscribeLobby / unsubscribeLobby / createGame /
   joinGame, LOBBY_ROOM / TOURIST_ROOM listing, lobby loading flags, game.error
@@ -15,7 +15,7 @@ description: >-
 
 # Work With Lobby
 
-Use this skill for the **lobby** in the happy-tourist tourist client (`happy-tourist.github.io`): live room list via built-in Colyseus `LobbyRoom`, create (map + pack/task sets + grilleDensity + catapultDensity; capacity from map) / join-by-id, then enter the game route. **No** primary «Играть» / `joinOrCreate` shortcut. Packs / Maps / Support / staff «Модерация» / account / session logout live in the **shared App header** (SC-BRAND-11…15) — LobbyPage MUST NOT duplicate that toolbar.
+Use this skill for the **lobby** in the happy-tourist tourist client (`happy-tourist.github.io`): live room list via built-in Colyseus `LobbyRoom`, create (map + seats ≤ map.players + pack/task sets + grilleDensity + catapultDensity) / join-by-id, then enter the game route. **No** primary «Играть» / `joinOrCreate` shortcut. Packs / Maps / Support / staff «Модерация» / account / session logout live in the **shared App header** (SC-BRAND-11…15) — LobbyPage MUST NOT duplicate that toolbar.
 
 Stack: Vue 3 `<script setup>`, Quasar 2, Pinia `useGameStore` / `useAuthStore`, `@colyseus/sdk` 0.18.
 
@@ -34,7 +34,7 @@ Sibling server: `../happy-tourist-server`. Coordinate room name (`tourist`), `lo
 | SDK auto-reconnect | After join: `lobby.reconnection.enabled = false` (avoid reservation churn) |
 | Drop while on Lobby | Clear `lobbyRoom`; if `lobbyWanted` → `_quietResubscribeLobby` (no user-facing reservation text) |
 | Leave lobby | `unsubscribeLobby` after successful tourist connect (`_enterRoom`); also on LobbyPage unmount and `leaveGame` / logout |
-| Create | Modal: **map** picker (capacity from map.players × touristsPerPlayer) + **pack** + multi-check published task sets + **grille**/ **catapult** density few/medium/many (default medium; server seeds **12/22/35%**) → `createGame({ mapId, packId, taskSetIds, grilleDensity, catapultDensity })` → `client.create(TOURIST_ROOM, …)` — **no** separate maxSeats picker |
+| Create | Modal: **map** picker (players × tourists in option caption only — SC-LOBBY-29) + **maxSeats** radios `1…map.players` (default `min(2, map.players)` — SC-LOBBY-28) + **pack** + multi-check published sets (exactly one → auto-check — SC-LOBBY-30) + **grille**/ **catapult** density few/medium/many (default medium; server seeds **12/22/35%**) → `createGame({ mapId, packId, taskSetIds, maxSeats, grilleDensity, catapultDensity })` → `client.create(TOURIST_ROOM, …)` |
 | Join by id | List row / «Войти» → `joinGame(roomId)` → `client.joinById(roomId)` |
 | Capacity caption | `metadata.seats` / `metadata.maxSeats` as `occupied/maxSeats` (not `clients`/`maxClients`); also map preview + pack/set labels from metadata |
 | Play shortcut | **Removed** — do not restore «Играть» / bare `joinOrCreate` without product request |
@@ -54,7 +54,7 @@ Sibling server: `../happy-tourist-server`. Coordinate room name (`tourist`), `lo
 | Quiet-resubscribe on drop while `lobbyWanted` | Surface `seat reservation expired` / `FAILED_TO_RECONNECT` as listing `error` |
 | Mount → `subscribeLobby`; unmount → `unsubscribeLobby` | Leave lobby WS open after navigate to game or login |
 | Call `unsubscribeLobby` after successful `tourist` connect (`_enterRoom`); keep lobby on failed enter | Keep lobby + tourist sockets both live on GamePage |
-| Create modal → `createGame({ mapId, packId, taskSetIds, grilleDensity, catapultDensity })`; list click → `joinGame(roomId)` | Invent parallel enter helpers; restore «Играть» / bare `joinOrCreate`; revive maxSeats-only create |
+| Create modal → `createGame({ mapId, packId, taskSetIds, maxSeats, grilleDensity, catapultDensity })`; list click → `joinGame(roomId)` | Invent parallel enter helpers; restore «Играть» / bare `joinOrCreate`; force maxSeats = map.players without picker |
 | Navigate to `/game/:roomId` only after a successful enter | Stay on lobby with a live room and no route change |
 | Bind listing loading / `creating` / `joining` | Leave buttons clickable during connect |
 | Join busy-lock: early-return if `joining`; disable rows / non-clickable while joining (SC-LOBBY-19) | Allow double-join from row + button |
@@ -67,14 +67,14 @@ Sibling server: `../happy-tourist-server`. Coordinate room name (`tourist`), `lo
 
 | Layer | Path | Role |
 |-------|------|------|
-| Page | `src/pages/LobbyPage.vue` | List UI, subscribe lifecycle, create modal (map + pack + task sets + densities) / Join; maps/content pickers; sections/logout → App header |
+| Page | `src/pages/LobbyPage.vue` | List UI, subscribe lifecycle, create modal (map + maxSeats + pack + task sets + densities) / Join; maps/content pickers; sections/logout → App header |
 | Store | `src/stores/game.ts` | LobbyRoom subscribe + room enter / leave (`createGame({ mapId, packId, taskSetIds, … })`) |
 | Maps / content | `src/stores/maps.ts` / `src/stores/content.ts` | In-catalog maps + published packs/sets for create pickers |
 | Auth | `src/stores/auth.ts` | `displayName`, `logout` |
 | Client | `src/boot/colyseus.ts` | Shared `Client` (`VITE_COLYSEUS_URL`) |
 | Route | `src/router/routes.ts` | `/lobby` → name `lobby`; `/game/:roomId` → name `game` |
 
-List row shape (`RoomAvailable<GameRoomMeta>`): `roomId`, `clients`, `maxClients` (raw Colyseus), plus product metadata `metadata?.title`, `metadata?.status` (`waiting` \| `playing` \| `finished`), `metadata?.seats`, `metadata?.maxSeats`, optional `mapGrid` / `mapPlayers` / `mapTourists` / `packTitle` / `taskSetLabels` (SC-LOBBY-25/26). Capacity caption uses **metadata seats/maxSeats**; also show map mini-preview + pack/set caption when present.
+List row shape (`RoomAvailable<GameRoomMeta>`): `roomId`, `clients`, `maxClients` (raw Colyseus), plus product metadata `metadata?.title`, `metadata?.status` (`waiting` \| `playing` \| `finished`), `metadata?.seats`, `metadata?.maxSeats`, optional `mapGrid` / `players` (map snapshot) / `touristsPerPlayer` / `packTitle` / `taskSetLabels` (SC-LOBBY-25/26). Capacity caption / map×tourists preview uses **room `metadata.maxSeats`** (chosen at create), not map `players` when they differ; also show map mini-preview + pack/set caption when present.
 
 ## Live list — `subscribeLobby` / `unsubscribeLobby`
 
@@ -161,7 +161,7 @@ No `setInterval`. Returning to `/lobby` remounts and resubscribes (SC-LOBBY-06).
 
 | UI | Page handler | Store | SDK |
 |----|--------------|-------|-----|
-| «Создать игру» → modal confirm | `onConfirmCreate` | `createGame({ mapId, packId, taskSetIds, grilleDensity, catapultDensity })` | `create(TOURIST_ROOM, { mapId, packId, taskSetIds, grilleDensity, catapultDensity })` |
+| «Создать игру» → modal confirm | `onConfirmCreate` | `createGame({ mapId, packId, taskSetIds, maxSeats, grilleDensity, catapultDensity })` | `create(TOURIST_ROOM, { mapId, packId, taskSetIds, maxSeats, grilleDensity, catapultDensity })` |
 | List row / «Войти» | `onJoin(roomId)` | `joinGame(roomId)` | `joinById(roomId)` |
 
 All go through `_enterRoom`: clear prior tourist room → connect → `_attachRoom` → `unsubscribeLobby` on success → return `Room`. Page then navigates:
@@ -203,19 +203,21 @@ Reset page refs in `finally`. Store clears `listing` in `finally` of subscribe.
 ### Create with map + pack + task sets + densities
 
 ```ts
-createMapId.value = ''; // required — capacity from map.players
-createPackId.value = '';
-createTaskSetIds.value = [];
+createMapId.value = null; // required — seats picker appears after map select
+createMaxSeats.value = 2; // default min(2, map.players) on map select (SC-LOBBY-28)
+createPackId.value = null;
+createTaskSetIds.value = []; // exactly one published set → auto-check (SC-LOBBY-30)
 createGrilleDensity.value = 'medium'; // few | medium | many
 createCatapultDensity.value = 'medium';
 createModalOpen.value = true;
-// on confirm (validate map/pack/≥1 task set):
+// on confirm (validate map/pack/≥1 task set/maxSeats 1…map.players):
 creating.value = true;
 try {
   const room = await game.createGame({
     mapId: createMapId.value,
     packId: createPackId.value,
     taskSetIds: createTaskSetIds.value,
+    maxSeats: createMaxSeats.value,
     grilleDensity: createGrilleDensity.value,
     catapultDensity: createCatapultDensity.value,
   });
@@ -240,7 +242,7 @@ await router.push({ name: 'game', params: { roomId } });
 2. `lobby.reconnection.enabled = false`; no lobby token in storage.
 3. Drop while `lobbyWanted` → quiet resubscribe; filter reservation / reconnect noise from `game.error`.
 4. Lobby mounts subscribe; unmount / logout / successful enter unsubscribe lobby WS; failed enter keeps subscription.
-5. Create modal → `createGame({ mapId, packId, taskSetIds, grilleDensity, catapultDensity })`; join listed → `joinGame(roomId)`; **no** Play / bare `joinOrCreate` UI; **no** separate maxSeats picker.
+5. Create modal → `createGame({ mapId, packId, taskSetIds, maxSeats, grilleDensity, catapultDensity })`; join listed → `joinGame(roomId)`; **no** Play / bare `joinOrCreate` UI; seats picker `1…map.players` (not map.players-only capacity).
 6. Capacity caption uses `metadata.seats`/`metadata.maxSeats`; list may show map preview + pack/set labels.
 7. Successful enter navigates to `/game/:roomId` (route name `game`) with no active lobby subscription.
 8. `listing` / `creating` / `joining` / `pickersLoading` bound; cleared in `finally`.

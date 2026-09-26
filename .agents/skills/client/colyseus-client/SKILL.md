@@ -243,7 +243,7 @@ room.onStateChange((state) => {
   this.sessionId = room.sessionId;
   this.phase = parsePhase(s.phase);
   this.started = this.phase === 'playing';
-  this.maxSeats = /* 2|3|4 from s.maxSeats */;
+  this.maxSeats = /* integer 1…4 from s.maxSeats; else 2 */;
   this.countdownRemaining = /* floor of s.countdownRemaining */;
   this.currentTurnSessionId =
     typeof s.currentTurnSessionId === 'string' ? s.currentTurnSessionId : '';

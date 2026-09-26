@@ -45,3 +45,12 @@
 
 - [x] 7.1 Server: `npm run lint` (если есть), `npm test`, `npm run build`
 - [x] 7.2 Client: `npm run lint`, `npm run typecheck`, `npm test`, `npm run build`
+
+## 8. Follow-up — seats ≤ map, spawn A, create/HUD polish
+
+- [x] 8.1 Server: парсить `maxSeats` в create (`1…map.players`; omit → `min(2, map.players)`); metadata listing = выбранный maxSeats; mocha SC-LOBBY-22/25 (revised)
+- [x] 8.2 Server: заменить greedy max-pair на min-distance floor + uniform random (design D3 / SC-PIECE-50/25); materialize + all-jail; mocha; `npm test`
+- [x] 8.3 Client: seats picker `1…map.players`, default `min(2, map.players)`; `createGame` передаёт `maxSeats`; listing capacity от room maxSeats (SC-LOBBY-22/25/28)
+- [x] 8.4 Client: убрать дубль caption под map select (SC-LOBBY-29); авточек единственного published set (SC-LOBBY-30)
+- [x] 8.5 Client: поднять say выше focus без overlap (SC-PRESENCE-33); vitest; `npm test`
+- [x] 8.6 Verify: server `npm test` + `npm run build`; client `npm run lint` + `npm run typecheck` + `npm test` + `npm run build`

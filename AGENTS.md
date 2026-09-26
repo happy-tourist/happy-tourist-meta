@@ -29,7 +29,7 @@
 ## Работа с OpenSpec
 
 - **task** — schema по умолчанию `spec-driven` (proposal → specs → design → tasks).
-- Типичный Cursor chat workflow: `/opsx-explore` → `/opsx-propose` → review → `/opsx-apply` → `/opsx-sync` → `/opsx-archive`.
+- Типичный Cursor chat workflow: `/opsx-explore` → `prepare-changes` (если scope широкий) → `/opsx-propose` → review → `/opsx-apply` → `/opsx-sync` → `/opsx-archive`.
 
 ## Работа с Git
 
@@ -39,7 +39,7 @@
 
 ## Skills (discovery)
 
-- OpenSpec / workspace (этот репозиторий): `.agents/skills/` (`openspec-*`, [`align-code`](.agents/skills/align-code/SKILL.md), [`check-changes`](.agents/skills/check-changes/SKILL.md), [`commit`](.agents/skills/commit/SKILL.md), [`implement-change`](.agents/skills/implement-change/SKILL.md), [`end-implement-change`](.agents/skills/end-implement-change/SKILL.md))
+- OpenSpec / workspace (этот репозиторий): `.agents/skills/` (`openspec-*`, [`align-code`](.agents/skills/align-code/SKILL.md), [`check-changes`](.agents/skills/check-changes/SKILL.md), [`prepare-changes`](.agents/skills/prepare-changes/SKILL.md), [`commit`](.agents/skills/commit/SKILL.md), [`implement-change`](.agents/skills/implement-change/SKILL.md), [`end-implement-change`](.agents/skills/end-implement-change/SKILL.md))
 - Client-wide (meta): [`.agents/skills/client/`](.agents/skills/client/) — runtime UI: `../happy-tourist.github.io/`
 - Server-wide (meta): [`.agents/skills/server/`](.agents/skills/server/) — runtime Colyseus: `../happy-tourist-server/`
 

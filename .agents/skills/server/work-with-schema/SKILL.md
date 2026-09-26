@@ -98,7 +98,7 @@ export const MyRoomState = schema(
   {
     started: t.boolean().default(false),
     phase: t.string().default("waiting"),
-    maxSeats: t.uint8().default(2), // from map.players at create
+    maxSeats: t.uint8().default(2), // chosen 1…map.players at create (omit → min(2, map.players))
     countdownRemaining: t.uint8().default(0),
     seats: t.map(Seat),
     currentTurnSessionId: t.string().default(""),
@@ -134,7 +134,7 @@ export const MyRoomState = schema(
 | Field | Meaning |
 |-------|---------|
 | `phase` | `waiting` \| `countdown` \| `playing` — **primary** start gate |
-| `maxSeats` | Table capacity from **map.players** at create (may be 1…4) |
+| `maxSeats` | Table capacity chosen at create (`1…map.players`; omit → `min(2, map.players)`) |
 | `grid` / `touristsPerPlayer` / `packTitle` | Immutable create snapshot (map + pack chrome) |
 | `countdownRemaining` | Authoritative second 5…1 while countdown; else 0 |
 | `started` | Legacy mirror of `phase === 'playing'`; client prefers `phase` |

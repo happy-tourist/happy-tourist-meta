@@ -1,4 +1,4 @@
-# Focus nearest actionable (SC-PRESENCE-30/31/32)
+# Focus nearest actionable (SC-PRESENCE-30/31/32/33)
 
 Read this when changing the focus control on the own avatar or nearest-actionable selection.
 
@@ -7,10 +7,11 @@ Read this when changing the focus control on the own avatar or nearest-actionabl
 | Piece | Behavior |
 |-------|----------|
 | Affordance | Icon `center_focus_strong` on own avatar (between say and end-turn) when `canShowFocusControl` — own turn, playing, actionable unfinished non-trapped pieces exist. Aria: `game.focusActionable`. |
+| Layout vs say | Say is **above** focus without hit-area overlap (SC-PRESENCE-33): `.say-affordance` `top: -32px`; `.focus-affordance` `top: 32%` + `translateY(-50%)` on the 96px marker (36px hit circles stay ≥36px apart). |
 | Algorithm | `src/lib/focusActionable.ts` — Manhattan from current selection (or `BOARD_CENTER` 4.5,4.5 if none); ties → smaller seat piece index. |
 | Click | `pickNearestActionablePieceId` → set local selection to that `pieceId` (same as strip/board select). |
 
 ## Do / Don't
 
-- Do: keep pure helper in `lib/focusActionable`; page wires candidates from own unfinished non-trapped pieces.
-- Don't: put focus geometry in Pinia; invent a server message for focus.
+- Do: keep pure helper in `lib/focusActionable`; page wires candidates from own unfinished non-trapped pieces; keep say/focus CSS spacing when moving affordances.
+- Don't: put focus geometry in Pinia; invent a server message for focus; stack say and focus so 36px hit areas overlap.

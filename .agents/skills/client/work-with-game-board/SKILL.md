@@ -112,7 +112,8 @@ Sync-driven markers (SC-PRESENCE-01…25 / redesign-game-hud phase 2). Page read
 | Room id | **Never** show `roomId` (or truncated id) in Game chrome (SC-PRESENCE-24) |
 | Finish place | Seat `finishPlace > 0` → numeric badge at **top-left** of marker (SC-PRESENCE-14) |
 | Ready | Own marker only, **top-left** when `canSendReady` (does not overlap finish by phase) |
-| Say affordance | Own online marker only, **top-right** (SC-PRESENCE-14 / SC-SAY-07); never on opponents / spectators |
+| Say affordance | Own online marker only, **top-right raised** (`top: -32px`) above focus (SC-PRESENCE-14 / SC-SAY-07 / SC-PRESENCE-33); never on opponents / spectators |
+| Focus affordance | Own marker between say and end-turn (`top: 32%`); see [focus.md](focus.md) |
 | Own budgets | Own seated marker only while `playing`: **vertical stack to the right of** avatar (`.presence-budgets`); steps (always number) + peeks (∞ when `budgetsInfinite` = solo peeks∞); never on opponents / spectators (SC-PRESENCE-15/16) |
 | +N anim | Local fall animation when finite `steps`/`peeks` increase (multi grant +1/+1, solo become-current +1 step only, peek Correct reward); steps always; peeks skipped while peeks∞; duration ≈ **2 s** (`BUDGET_FALL_MS` + CSS) — page-local, no sync event (SC-PRESENCE-20 / SC-MOVE-50) |
 | End-turn | Icon-only `skip_next` **right-center** on own avatar when `canSendEndTurn` → `sendEndTurn` immediately (no dialog / no visible label); **not** in budgets row; **no** `.end-turn-dock`; hide in solo; keep `.presence-slot--own` gap ≥ end-turn hit so icon does not cover budgets (SC-PRESENCE-17/18/25) |
@@ -133,7 +134,7 @@ Inside `.presence-marker` (96×96 = outer ring, `position: relative`), **three s
 <img class="presence-avatar" :src="touristSrc(touristId)" alt="" />
 ```
 
-CSS: outer ring `position: absolute; inset: 0; z-index: 0`; inner ring absolute centered (`top/left: 50%`, `transform: translate(-50%, -50%)`, `z-index: 1`); avatar `position: relative; z-index: 2` (**72×72**). Rings and avatar use `pointer-events: none` so affordances / marker clicks pass through. Finish badge / ready (top-left), say (top-right), and end-turn (right-center) sit above with `z-index: 3+` (say/end-turn higher, `pointer-events: auto`). Say / end-turn hit-area ≥ ~32 CSS px (icon glyph may be smaller — SC-SAY-15 / SC-PRESENCE-17).
+CSS: outer ring `position: absolute; inset: 0; z-index: 0`; inner ring absolute centered (`top/left: 50%`, `transform: translate(-50%, -50%)`, `z-index: 1`); avatar `position: relative; z-index: 2` (**72×72**). Rings and avatar use `pointer-events: none` so affordances / marker clicks pass through. Finish badge / ready (top-left), say (top-right raised above focus), focus (between say and end-turn), and end-turn (right-center) sit above with `z-index: 3+` (say/focus/end-turn higher, `pointer-events: auto`). Say / focus / end-turn hit-area ≥ ~32 CSS px (icon glyph may be smaller — SC-SAY-15 / SC-PRESENCE-17/33).
 
 Layout shell: `q-page.game-page` column — **board scroll region** (flex; includes top presence + board) → sticky bottom `.game-hud` when seated (`position: sticky; bottom: 0`; `container-type` / `container-name: game-hud` for strip CQ). Inside HUD: `.game-hud__scroll` (`overflow-x: auto`, `overflow-y: visible`, `pointer-events: none`) → `.game-hud__bar--seated` (`overflow: visible`, `pointer-events: auto`, own marker + strip). Do **not** put `overflow-x: auto` on the same box as the markers (browsers force Y clip and hide say chrome — SC-SAY-15). Do **not** put all markers in the bottom bar, reintroduce chip/`q-menu`, labeled end-turn dock, or leave opponents in the HUD.
 
