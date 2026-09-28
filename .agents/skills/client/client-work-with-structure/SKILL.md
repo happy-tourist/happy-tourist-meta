@@ -7,7 +7,8 @@ description: >-
   components vs stores vs App shell (always-button brand logo ≥60px; Game leave via logo + status;
   auth→lobby; theme; no page «В лобби»; unified packs list + favorites + author
   re-edit + staff take + maps list filters; pack/map details in work-with-stores
-  topics; soft-unpublish/`inCatalog`; cascade/slot chips SC-PACK-126…136; no
+  topics; soft-unpublish/`inCatalog`; cascade/slot chips SC-PACK-126…136; pack
+  answers/tasks CSV via `lib/packContentCsv` + `PackTasksCsvControls` SC-PACK-210…218; no
   collection-first UX; no non-staff my-moderation nav; no block UI). No blocks/
   or dialogs/ registry layers.
 ---
@@ -45,8 +46,8 @@ may also host copies later).
 | Layer | Path | Role |
 |-------|------|------|
 | Pages | `src/pages/*Page.vue` | Route-level screens; compose stores + Quasar + optional components |
-| Components | `src/components/` | Reusable widgets (e.g. `PasswordStrengthMeter.vue`, `MapGridPreview.vue`; plus Quasar scaffold leftovers) |
-| Lib | `src/lib/` | Pure helpers without Pinia/Colyseus I/O (`passwordPolicy.ts`, `passwordStrength.ts`) |
+| Components | `src/components/` | Reusable widgets (e.g. `PasswordStrengthMeter.vue`, `MapGridPreview.vue`, `PackTasksCsvControls.vue`; plus Quasar scaffold leftovers) |
+| Lib | `src/lib/` | Pure helpers without Pinia/Colyseus I/O (`passwordPolicy.ts`, `passwordStrength.ts`, `packContentCsv.ts` — `;` CSV answers/tasks + `downloadCsvText`) |
 | Stores | `src/stores/` | Pinia: `auth`, `theme`, `game`, `support`, `content`, `maps` (+ unused scaffold `example-store`) |
 | Boot | `src/boot/` | Quasar boot: `theme`, `i18n`, `colyseus` (registered in `quasar.config.ts`; `framework.plugins: ['Dark']`) |
 | Router | `src/router/` | `routes.ts` + guards in `index.ts` (`filenameBasedRouting: false`) |
@@ -239,7 +240,7 @@ Registered in `quasar.config.ts` boot array: `theme`, `i18n`, `colyseus` (+ `fra
 | Lobby / rooms | `LobbyPage` | `stores/game.subscribeLobby` / create `{ maxSeats, grilleDensity, catapultDensity }` / join |
 | Game session | `GamePage` | `stores/game` room attach + seats / grilles / catapults / top + seated-HUD presence / say / strip + rescue/push + return strip icon (no modal); soft-drop gated by `consentedLeaving` |
 | Game leave + match status | `App.vue` header (logo **and** `header-game-leave`; status on Game) | `stores/game` `leaveGame` + status / phase getters |
-| Content packs | `ContentCatalogPage` (staff unpublish/republish + confirm) / `ContentCollectionPage` (Edit unpublished creator/staff; staff unpublish/republish + confirm; soft-unpublished gray; **no** row add-task-set; trash; no row `:to`) / `ContentMyModerationPage` / `ContentPackPage` (staff Edit+lock; pack+set unpublish/republish; set summary + drill-in + `taskSetLabelFrom`; add-task-set beside «Задания») / `ContentPackCreatePage` / `ContentPackEditorPage` (set soft-hide; `cascade-gap-outline`; `taskSetLabelFrom`) / `ContentPackAddTaskSetPage` (slot card text + thread + rounded chips) / `ContentPackTasksPage` (live drill-in; `taskSetLabelFrom` heading; `content.back`; slot card text; set unpublish inside Edit) / `ContentPackModerationPage` / `ContentStaffPage` / `ContentStaffRequestPage` (Approve / needs-revision; slot card text + `taskSetLabelFrom`; **no** unpublish; no block UI) / `ContentStaffTasksPage` (→ hub) | `stores/content` HTTP (`client.http`); working copy + `submitPack` + add-task-set + staff lock session + soft-unpublish pack+set (`unpublishPack`/`republishPack`/`unpublishTaskSet`/`republishTaskSet`, `inCatalog`) + cascadeGap* + `authorDisplayName` + SC-PACK-126…136 + needs_revision |
+| Content packs | `ContentCatalogPage` (staff unpublish/republish + confirm) / `ContentCollectionPage` (Edit unpublished creator/staff; staff unpublish/republish + confirm; soft-unpublished gray; **no** row add-task-set; trash; no row `:to`) / `ContentMyModerationPage` / `ContentPackPage` (staff Edit+lock; pack+set unpublish/republish; set summary + drill-in + `taskSetLabelFrom`; add-task-set beside «Задания») / `ContentPackCreatePage` / `ContentPackEditorPage` (set soft-hide; `cascade-gap-outline`; `taskSetLabelFrom`; answers CSV SC-PACK-210…212) / `ContentPackAddTaskSetPage` (slot card text + thread + rounded chips; tasks CSV via `PackTasksCsvControls`) / `ContentPackTasksPage` (live drill-in; `taskSetLabelFrom` heading; `content.back`; slot card text; set unpublish inside Edit; tasks CSV) / `ContentPackModerationPage` / `ContentStaffPage` / `ContentStaffRequestPage` (Approve / needs-revision; slot card text + `taskSetLabelFrom`; **no** unpublish; no block UI) / `ContentStaffTasksPage` (→ hub) | `stores/content` HTTP (`client.http`); working copy + `submitPack` + add-task-set + staff lock session + soft-unpublish pack+set (`unpublishPack`/`republishPack`/`unpublishTaskSet`/`republishTaskSet`, `inCatalog`) + cascadeGap* + `authorDisplayName` + SC-PACK-126…136 + needs_revision; CSV parse/serialize in `lib/packContentCsv` (no new HTTP) |
 | Support | `SupportPage` / `SupportTicketPage` / `SupportStaffPage` | `stores/support` |
 | Brand / title / favicon | `App.vue` + `package.json` / `index.html` / `public/favicon.ico` | `assets/brand/logo.png`; `productName` Happy Tourist; single favicon |
 | Shell | `App.vue` | layout + sections + crumbs + theme + logout / Game leave+status + `router-view` |

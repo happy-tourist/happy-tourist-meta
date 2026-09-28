@@ -11,6 +11,7 @@ description: >-
   lobby create wire `LobbyCreateWire` / game board wire `GameBoardWire` /
   presence focus `GamePresenceFocus` / `boardGeometry` + `focusActionable` lib tests /
   game peek `game.boardPeek` / soft-unpublish `ContentSoftUnpublish` / follow-up 4–5 / `ContentModerationUx` /
+  pack answers/tasks CSV `packContentCsv` / `PackTasksCsvControls` / `ContentPackEditorCsv` SC-PACK-210…218 /
   `ContentMaps` + `maps.paint` SC-MAP-41…52 / App header chrome `AppHeaderChrome`
   (crumbs **inside** `q-page-container` SC-BRAND-17…18; narrow burger fold SC-BRAND-19) in `src/__tests__/` /
   SupportChangePack SC-SUP-27…29), Colyseus client.auth / client.http / room I/O spies, store error +
@@ -53,7 +54,7 @@ area (do not load every file at once):
 | Colyseus `client.auth` / `client.http` / room I/O | [colyseus.md](colyseus.md) |
 | Store `error` + `q-banner` / loading flags | [errors.md](errors.md) |
 | i18n (`$t` / `useI18n`), router, Quasar stubs | [plugins.md](plugins.md) |
-| Lib helpers / pure functions (`passwordPolicy`, …) | [composables.md](composables.md) |
+| Lib helpers / pure functions (`passwordPolicy`, `packContentCsv`, …) | [composables.md](composables.md) |
 | provide / inject | [provide-inject.md](provide-inject.md) |
 
 ## Bootstrap (harness already in client)

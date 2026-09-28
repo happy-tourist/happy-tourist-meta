@@ -4,15 +4,17 @@ description: >-
   Plans OpenSpec scope before propose: usually one change (that is normal —
   do not split by default). Splits into the fewest changes only when needed,
   each with a verifiable result and work bullets, grounded in skills and the
-  happy-tourist codebase. Flags work outside the current stack that requires
-  studying which tool fits. Use when the user runs prepare-changes, prepare
-  change(s), asks to slice scope before propose, or worries a request is too
-  big for one OpenSpec change.
+  happy-tourist codebase. Report = preliminary plan + optional out-of-stack
+  tool gaps only (no developer-decision questionnaires). Use when the user
+  runs prepare-changes, prepare change(s), asks to slice scope before propose,
+  or worries a request is too big for one OpenSpec change.
 ---
 
 # Prepare Changes — разбиение запроса на проверяемые OpenSpec changes
 
 Скилл **только анализирует и предлагает план** — не создаёт OpenSpec change, не пишет proposal/specs/design/tasks, не правит runtime-код.
+
+**Содержимое отчёта:** предварительный план Change’ев (+ проверяемые результаты) и при необходимости блок **⛔ вне стека**. Без таблиц «решений разработчика» и опросников по продуктовым дефолтам.
 
 ## Норма: один change
 
@@ -38,7 +40,7 @@ description: >-
 2. **Проверяемый результат обязателен.** Если срез нельзя проверить сам по себе (ломает игру / полуконтракт без UI / UI без сервера) — это не отдельный change, а часть соседнего или другой срез.
 3. **Мало срезов лучше многих.** Если всё же дробишь: 2 типично, 3 редко, 4+ почти никогда. Не дробить по слоям «сначала schema, потом messages, потом UI» без самостоятельной ценности.
 4. **Client+server одной фичи** обычно **один** change (вертикальный срез), не два репо-ченджа.
-5. **Не invent scope.** Опираться на skills, specs, код; неизвестное — в вопросы / ⛔ блокеры, не в выдуманные срезы.
+5. **Не invent scope.** Опираться на skills, specs, код. Неясности продукта/UX **не** разворачивать в таблицу «решений разработчика» — зафиксировать разумный default в «Делает» / «Не делает (out of scope)» или оставить на propose; не выдумывать лишние срезы.
 6. **Вне стека = стоп-сигнал, не Change N.** Если часть запроса **нельзя** сделать в текущем стеке проекта (Vue/Quasar/Pinia/Colyseus/Drizzle/SQLite и канон skills/deps) — **явно подсветить**: нужно **изучить**, какой инструмент (lib / сервис / провайдер) подходит. Не прятать это в пункты работ и не предлагать «возьмём X» без изучения человеком.
 
 ## Когда РЕАЛЬНО дробить (иначе — один)
@@ -77,7 +79,7 @@ description: >-
 
 - [`client-locate-change-points`](../client/client-locate-change-points/SKILL.md)
 - [`server-locate-change-points`](../server/server-locate-change-points/SKILL.md)
-- [`openspec-explore`](../openspec-explore/SKILL.md) — только для ⛔ developer decision; prepare сам не входит в explore-stance
+- [`openspec-explore`](../openspec-explore/SKILL.md) — при необходимости уточнить идею; prepare сам не входит в explore-stance и **не** копирует из explore таблицы «решений разработчика»
 
 ## Workflow
 
@@ -171,7 +173,9 @@ Prepare-Changes Progress:
 
 ### 6. Отчёт — стоп
 
-Выдать отчёт по шаблону ниже. **Не** вызывать `openspec-propose` / `openspec new change`, пока пользователь не согласится с планом (или не попросит сразу propose для Change 1). Если есть открытые T*/⛔ по in-scope — **не** рекомендовать propose для затронутого куска.
+Выдать отчёт по шаблону ниже: **только предварительный план + (при наличии) ⛔ вне стека.** Без секций «решения разработчика», списков D*/вопросов-блокеров и мини-explore.
+
+**Не** вызывать `openspec-propose` / `openspec new change`, пока пользователь не согласится с планом (или не попросит сразу propose для Change 1). Если есть открытые T* (вне стека) по in-scope — **не** рекомендовать propose для затронутого куска.
 
 ## Шаблон отчёта
 
@@ -225,12 +229,8 @@ Prepare-Changes Progress:
 **Пока открыто:** не propose/apply для этого куска.
 **Можно параллельно:** Change’ы по части запроса, которая уже в стеке (если ортогональна).
 
-## ⛔ Прочие решения разработчика (если есть, не про инструмент)
-| ID | Вопрос | Почему блокер | Что нужно |
-|----|--------|---------------|-----------|
-
 ## Рекомендуемый порядок
-1. Закрыть T*/⛔ (изучить и выбрать инструмент) **или** вынести в out of scope
+1. Если есть T* — изучить/выбрать инструмент **или** вынести в out of scope
 2. Согласовать план Change’ев
 3. `openspec-propose` для Change 1 → implement → verify/archive
 4. Затем Change 2 …
@@ -238,17 +238,18 @@ Prepare-Changes Progress:
 
 Если вердикт «один change» — секция плана содержит **только Change 1**; не выдумывать пустые Change 2 «на будущее». **Не извиняться** за один change и не предлагать «можно ещё порезать» без запроса пользователя.
 Если есть T* — в вердикте явно: «часть / всё вне стека до изучения инструмента».
+**Не** добавлять в отчёт таблицы/секции «решения разработчика», «открытые вопросы», D*-блокеры — это зона explore/propose, не prepare.
 
 ## Связь с другими скиллами
 
 | После prepare | Skill |
 |---------------|--------|
-| Уточнить идею / блокеры | [`openspec-explore`](../openspec-explore/SKILL.md) |
+| Уточнить идею (по желанию пользователя) | [`openspec-explore`](../openspec-explore/SKILL.md) |
 | Создать артефакты **одного** согласованного change | [`openspec-propose`](../openspec-propose/SKILL.md) |
 | Реализация | [`implement-change`](../implement-change/SKILL.md) / [`openspec-apply-change`](../openspec-apply-change/SKILL.md) |
 | Проверка | [`openspec-verify-change`](../openspec-verify-change/SKILL.md) |
 
-Prepare **не** заменяет explore (мышление) и **не** заменяет propose (артефакты). Он только режет scope на shippable куски.
+Prepare **не** заменяет explore (мышление) и **не** заменяет propose (артефакты). Он только режет scope на shippable куски и флагует внестековые инструменты.
 
 ## Guardrails
 
@@ -260,4 +261,5 @@ Prepare **не** заменяет explore (мышление) и **не** зам�
 - **Не** стремиться разбивать: один change — норма; несколько — только по жёсткой причине из таблицы
 - **Не** маскировать «нужна новая lib/сервис» под пункт работ Change N — только блок **⛔ Вне стека — нужно изучить инструмент**
 - **Не** навязывать конкретный инструмент как решение, пока человек не изучил и не подтвердил
-- Блокеры без канона в проекте — формат ⛔; не маскировать под «Change N разберётся»
+- Внестековые пробелы без канона в проекте — формат ⛔ T*; не маскировать под «Change N разберётся»
+- **Не** писать в отчёте «решения разработчика» / D*-таблицы / опросники по UX-дефолтам — только план и (при необходимости) ⛔ вне стека

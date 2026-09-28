@@ -18,6 +18,10 @@ live summary+drill-in / AddTaskSet chips), `ContentFollowUp5.test.ts`
 `ContentModerationUx.test.ts` (SC-PACK-126 editor cascade CSS; SC-PACK-127 slot
 chips on staff hub + add-task-set; SC-PACK-128 add-task-set thread/status/reply;
 SC-PACK-194/195 no `content.catalogNav` on pack/staff/my-moderation pages),
+pack CSV SC-PACK-210…218: `src/lib/__tests__/packContentCsv.test.ts`,
+`src/components/__tests__/PackTasksCsvControls.test.ts`,
+`src/pages/__tests__/ContentPackEditorCsv.test.ts` (page-local import banners —
+not `content.error`),
 store `content.simplifyAcl.test.ts`; spy `client.http`, do not hit live server;
 cascade helpers + `isStaffEditSessionNavigation`: meta `work-with-stores/content.md`;
 unify follow-ups: `ContentUnifiedList.test.ts` (`openRequestType` pack→Edit /

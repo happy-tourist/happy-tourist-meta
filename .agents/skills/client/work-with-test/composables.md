@@ -3,8 +3,10 @@
 Use with the [core test skill](SKILL.md) when the unit under test is a pure
 helper under `src/lib/` or a small composable — not a `.vue` page.
 
-Examples in this client: `passwordPolicy.ts`, `passwordStrength.ts`, and any
-future board math helpers that stay client-side.
+Examples in this client: `passwordPolicy.ts`, `passwordStrength.ts`,
+`packContentCsv.ts` (semicolon answers/tasks dialect SC-PACK-210…218; colocated
+`src/lib/__tests__/packContentCsv.test.ts`), and any future board math helpers
+that stay client-side.
 
 ## How to invoke
 
