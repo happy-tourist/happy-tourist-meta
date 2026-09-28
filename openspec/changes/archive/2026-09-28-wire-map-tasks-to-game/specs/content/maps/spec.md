@@ -3,8 +3,8 @@
 | Scenario ID | Coverage |
 |-------------|----------|
 | SC-MAP-28 | removed (superseded — maps wired at create) |
-| SC-MAP-60 | pending (server mocha — soft-unpublished reject) |
-| SC-MAP-61 | pending (server mocha — create uses live map) |
+| SC-MAP-60 | covered (server mocha — soft-unpublished reject) |
+| SC-MAP-61 | covered (server mocha — create uses live map) |
 
 Related: room create — `lobby/rooms`; runtime board — `game/board`.
 

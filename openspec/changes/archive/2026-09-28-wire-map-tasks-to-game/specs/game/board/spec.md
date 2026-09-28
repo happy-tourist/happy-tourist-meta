@@ -7,15 +7,15 @@
 | SC-BOARD-08 | removed (superseded by Q&A peek) |
 | SC-BOARD-09 | removed (superseded by Q&A peek) |
 | SC-BOARD-10 | modified (fresh vs flipped peeks) |
-| SC-BOARD-40 | pending (server mocha — layout from map) |
-| SC-BOARD-41 | pending (server mocha — deck bind) |
-| SC-BOARD-42 | pending (server mocha + client — flipped digit public) |
-| SC-BOARD-43 | pending (server mocha — correct ordered slots) |
-| SC-BOARD-44 | pending (server mocha — wrong keeps bind) |
-| SC-BOARD-45 | pending (server mocha — flipped free peek at 0) |
-| SC-BOARD-46 | pending (client UX — shared modal) |
-| SC-BOARD-47 | pending (server mocha — leave mid-peek keeps bind) |
-| SC-BOARD-48 | pending (server mocha — cycle deck) |
+| SC-BOARD-40 | covered (server mocha — layout from map) |
+| SC-BOARD-41 | covered (server mocha — deck bind) |
+| SC-BOARD-42 | covered (server mocha + client — flipped digit public) |
+| SC-BOARD-43 | covered (server mocha — correct ordered slots) |
+| SC-BOARD-44 | covered (server mocha — wrong keeps bind) |
+| SC-BOARD-45 | covered (server mocha — flipped free peek at 0) |
+| SC-BOARD-46 | covered (client UX — shared modal) |
+| SC-BOARD-47 | covered (server mocha — leave mid-peek keeps bind) |
+| SC-BOARD-48 | covered (server mocha — cycle deck) |
 
 Related: create snapshot — `lobby/rooms`; piece count — `game/pieces`; peeks budget — `game/move`; stub removal — `content/packs`.
 

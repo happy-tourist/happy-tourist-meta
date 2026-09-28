@@ -35,7 +35,7 @@ UGC-карты поля 10×10 (старт / игровое / финиш / ды�
 | SC-MAP-25 | covered (client vitest) |
 | SC-MAP-26 | covered (server mocha) |
 | SC-MAP-27 | covered (server mocha) |
-| SC-MAP-28 | covered (server mocha) |
+| SC-MAP-28 | removed (superseded — maps wired at create) |
 | SC-MAP-29 | covered (client vitest) |
 | SC-MAP-30 | covered (client vitest) |
 | SC-MAP-31 | covered (mocha) |
@@ -60,8 +60,10 @@ UGC-карты поля 10×10 (старт / игровое / финиш / ды�
 | SC-MAP-50 | covered (vitest) |
 | SC-MAP-51 | covered (vitest) |
 | SC-MAP-52 | covered (vitest) — strengthen: offset zone |
+| SC-MAP-60 | covered (server mocha — soft-unpublished reject) |
+| SC-MAP-61 | covered (server mocha — create uses live map) |
 
-Related: moderation patterns — `content/packs`; roles — `support/roles`; branding chrome — `ui/branding`. Runtime board geometry — `game/board` (unchanged; maps not wired to rooms).
+Related: room create — `lobby/rooms`; runtime board — `game/board`. Moderation patterns — `content/packs`; roles — `support/roles`; branding chrome — `ui/branding`.
 
 ## Requirements
 
@@ -294,16 +296,22 @@ When the change author is a non-anonymous user with an email, the system MUST se
 - **THEN** A receives exactly one Russian email stating soft-unpublish and cancellation
 - **AND** the email contains no URL
 
-### Requirement: Maps are not used by tourist rooms in this capability
+### Requirement: In-catalog maps drive tourist room create
 
-Creating, approving, or listing maps MUST NOT change tourist-room create options, synced board layout, or move validation. The authoritative play layout remains the existing fixed tourist board until a later capability wires map selection.
+A new `tourist` room create MUST accept an in-catalog map id and snapshot that map’s live grid and seat config (`players`, `touristsPerPlayer`) into the room per `lobby/rooms` / `game/board` / `game/pieces`. Soft-unpublished or never-published maps MUST NOT be usable for new creates. Creating, approving, or listing maps MUST NOT by itself mutate an already-running room’s snapshot.
 
-#### Scenario [SC-MAP-28]: Room create ignores content maps
+#### Scenario [SC-MAP-61]: Room create applies an in-catalog map
 
-- **GIVEN** one or more approved maps exist
-- **WHEN** a user creates a tourist room
-- **THEN** the room still uses the fixed tourist layout
-- **AND** no map id is required or applied
+- **GIVEN** an approved in-catalog map M
+- **WHEN** a user creates a tourist room selecting M with valid task sets
+- **THEN** the room’s play layout and capacity come from M’s live snapshot
+- **AND** a map id is required at create
+
+#### Scenario [SC-MAP-60]: Soft-unpublished map cannot create a room
+
+- **GIVEN** map M is soft-unpublished
+- **WHEN** a user attempts to create a tourist room selecting M
+- **THEN** the system rejects create
 
 ### Requirement: Maps UI chrome and errors
 

@@ -4,8 +4,8 @@
 |-------------|----------|
 | SC-PACK-32 | covered (unchanged — difficulty stored) |
 | SC-PACK-33 | modified (packs feed peeks) |
-| SC-PACK-200 | pending (server mocha — published sets in create) |
-| SC-PACK-201 | pending (server mocha — soft-unpublished set excluded) |
+| SC-PACK-200 | covered (server mocha — published sets in create) |
+| SC-PACK-201 | covered (server mocha — soft-unpublished set excluded) |
 
 Related: create picker — `lobby/rooms`; peek Q&A — `game/board`. Difficulty remains the peek step reward (`SC-PACK-32`).
 
@@ -21,7 +21,7 @@ Task difficulty values `1`, `2`, and `3` MUST be persisted with each task as the
 - **WHEN** the task is later retrieved
 - **THEN** the stored difficulty is `2`
 
-#### Scenario [SC-PACK-33]: Peek stub behavior unchanged
+#### Scenario [SC-PACK-33]: Peek uses pack task content
 
 - **GIVEN** this capability is deployed and an in-catalog pack has a published task set selected at room create
 - **WHEN** a player opens a peek in that tourist room

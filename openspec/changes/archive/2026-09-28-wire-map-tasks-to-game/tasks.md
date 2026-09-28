@@ -2,7 +2,7 @@
 
 - [x] 1.1 Прочитать `design.md`, delta `lobby/rooms` + `content/maps` + `content/packs`; skills `server-locate-change-points`, `work-with-rooms`, `work-with-config` / content helpers — зафиксировать точки врезки create options
 - [x] 1.2 Расширить `MyRoom.onCreate`: парсить `mapId`, `packId`, `taskSetIds[]`, densities; загружать live in-catalog map + published sets; отклонять soft-unpublished / missing (SC-LOBBY-22/27, SC-MAP-60/61, SC-PACK-200/201)
-- [x] 1.3 Снапшотить grid, players, touristsPerPlayer, tasks (question/difficulty/slots), pack answers; `maxSeats = players`; metadata для lobby (preview, capacity, set labels) — SC-LOBBY-25/26
+- [x] 1.3 Снапшотить grid, players, touristsPerPlayer, tasks (question/difficulty/slots), pack answers; metadata для lobby (preview, capacity, set labels) — SC-LOBBY-25/26; выбранный `maxSeats` ≤ map.players — follow-up 8.1
 - [x] 1.4 Mocha: create success/reject paths с теми же SC-ID; `npm test` в server
 
 ## 2. Server — board layout, deck, peek
@@ -23,7 +23,7 @@
 ## 4. Client — create & lobby listing
 
 - [x] 4.1 Skills `client-locate-change-points`, `work-with-lobby`, `work-with-pages`, `work-with-stores`, `work-with-localization`; delta `lobby/rooms`
-- [x] 4.2 Create modal: map picker + capacity; pack + multi-check published sets; densities; убрать maxSeats picker (SC-LOBBY-21…24/27)
+- [x] 4.2 Create modal: map picker + capacity в options; pack + multi-check published sets; densities (SC-LOBBY-21…24/27); seats picker `1…map.players` — follow-up 8.3
 - [x] 4.3 `createGame` options → server; listing row: map preview, capacity, pack/set labels (SC-LOBBY-25/26)
 - [x] 4.4 Vitest SC-LOBBY-*; `npm test` в client
 

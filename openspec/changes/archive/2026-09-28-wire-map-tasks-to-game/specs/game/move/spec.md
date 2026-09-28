@@ -3,8 +3,8 @@
 | Scenario ID | Coverage |
 |-------------|----------|
 | SC-MOVE-39 | modified (content peek, not stub reward-only) |
-| SC-MOVE-94 | pending (server mocha — flipped peek no spend) |
-| SC-MOVE-95 | pending (server mocha — auto-end considers flipped free peek) |
+| SC-MOVE-94 | covered (server mocha — flipped peek no spend) |
+| SC-MOVE-95 | covered (server mocha — auto-end considers flipped free peek) |
 
 Related: peek modal / bind — `game/board`; budgets — existing private steps/peeks requirements.
 

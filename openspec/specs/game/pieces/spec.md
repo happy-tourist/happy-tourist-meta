@@ -8,15 +8,15 @@
 
 | Scenario ID | Coverage |
 |-------------|----------|
-| SC-PIECE-01 | covered (server mocha — kind without pieces in waiting) |
-| SC-PIECE-02 | covered-by-reuse (server mocha — unique kinds) |
-| SC-PIECE-03 | covered (server mocha — spawn only on playing materialize) |
-| SC-PIECE-04 | covered (server mocha — second seat cells after materialize) |
+| SC-PIECE-01 | covered (variable pcs, no sides) |
+| SC-PIECE-02 | covered (kinds unique; pcs count) |
+| SC-PIECE-03 | covered (map starts) |
+| SC-PIECE-04 | covered |
 | SC-PIECE-05 | covered (server mocha — full table seat without pieces until playing) |
 | SC-PIECE-06 | covered-by-reuse (server mocha — spectator) |
 | SC-PIECE-07 | covered (server mocha — leave in waiting reopens) |
 | SC-PIECE-08 | covered (server mocha — leave in playing does NOT reopen) |
-| SC-PIECE-09 | covered (client full strip in bottom HUD — row or 2×2) |
+| SC-PIECE-09 | covered (N-slot strip) |
 | SC-PIECE-10 | covered-by-reuse (client UX — spectator no strip) |
 | SC-PIECE-11 | covered (server mocha — unexpected hold before start) |
 | SC-PIECE-12 | covered (server mocha — unexpected hold after start) |
@@ -25,67 +25,70 @@
 | SC-PIECE-15 | covered (server mocha — zero seated disposes room) |
 | SC-PIECE-16 | covered (server mocha — sync offline + deadline) |
 | SC-PIECE-17 | covered (client hasOwnPieces gate — no board pieces before playing) |
-| SC-PIECE-18 | covered (server mocha — materialize on playing) |
+| SC-PIECE-18 | covered |
 | SC-PIECE-19 | covered (server mocha — playing join is spectator) |
 | SC-PIECE-20 | covered-by-reuse (server mocha — dispose) |
 | SC-PIECE-21 | covered (server mocha — finished occupancy; no reopen after leave in playing) |
 | SC-PIECE-22 | covered (client — localStorage token restores seat after browsing session end) |
 | SC-PIECE-23 | covered (client — missing/invalid token = fresh joinById; seat only if waiting + capacity) |
 | SC-PIECE-24 | covered (server mocha — trapped sync) |
-| SC-PIECE-25 | covered (server mocha — all-jail one per side) |
+| SC-PIECE-25 | covered (revised — floor+random all-jail) |
 | SC-PIECE-26 | covered (server mocha — occupancy while trapped) |
 | SC-PIECE-27 | covered (client UX — trapped piece still on board) |
 | SC-PIECE-28 | covered (server mocha — leave clears holding) |
 | SC-PIECE-31 | covered (client UX — grille on strip slots when trapped) |
 | SC-PIECE-32 | covered (client UX — strip row vs 2×2 by width) |
+| SC-PIECE-50 | covered (revised — min-distance floor + random) |
+| SC-PIECE-51 | covered (touristsPerPlayer count) |
+| SC-PIECE-52 | covered (client UX — strip slot count) |
 
-Related: phase transition — `game/start`; turn timers — `game/move`; finish occupancy — `game/finish`; trap/rescue/all-jail — `game/move`; grille clear — `game/board`; bottom HUD — `game/presence`.
+Related: map capacity — `lobby/rooms`; layout — `game/board`; strip HUD — `game/presence`; phase transition — `game/start`; turn timers — `game/move`; finish occupancy — `game/finish`; trap/rescue/all-jail — `game/move`; grille clear — `game/board`.
 
 ## Requirements
 
 ### Requirement: Four pieces per seated player
 
-While the start phase is `waiting` and fewer seated players exist than maxSeats, when an authenticated client joins, the server SHALL assign that client a unique tourist kind from `1`…`4` not used by any current seat and MUST NOT place pieces yet; pieces for those seats are created when playing begins per the materialize requirement. All four pieces of the same player MUST use that player’s tourist kind. The assignment MUST be synchronized to all clients in the room. New seats MUST NOT be assigned while the phase is `countdown` or `playing` (see spectators requirement).
+While the start phase is `waiting` and fewer seated players exist than maxSeats, when an authenticated client joins, the server SHALL assign that client a unique tourist kind from `1`…`4` not used by any current seat and MUST NOT place pieces yet; pieces for those seats are created when playing begins per the materialize requirement. The number of pieces per seated player MUST equal the room map snapshot’s **touristsPerPlayer** (integer 1…4). All pieces of the same player MUST use that player’s tourist kind. Pieces MUST NOT use board side identities `N`/`E`/`S`/`W`. The assignment MUST be synchronized to all clients in the room. New seats MUST NOT be assigned while the phase is `countdown` or `playing` (see spectators requirement).
 
 #### Scenario [SC-PIECE-01]: First join receives four pieces on all sides
 
-- **GIVEN** a tourist room in phase `waiting` that has no seated players and has free seat capacity
+- **GIVEN** a tourist room in phase `waiting` that has no seated players, free seat capacity, and map touristsPerPlayer=2
 - **WHEN** an authenticated client joins the room
 - **THEN** the client is assigned exactly one tourist kind from `1`…`4`
 - **AND** the client has a seat with no pieces yet in synced state
-- **AND** when the phase later becomes `playing`, that seat has exactly four pieces, one on each side `N`, `E`, `S`, and `W`
+- **AND** when the phase later becomes `playing`, that seat has exactly two pieces on distinct free start cells of the map snapshot
 - **AND** every client in the room observes those pieces after materialize
+- **AND** those pieces MUST NOT carry side identities N/E/S/W
 
 #### Scenario [SC-PIECE-02]: Tourist kinds stay unique among players
 
 - **GIVEN** a tourist room in phase `waiting` that already has one or more seated players and still has free seat capacity
 - **WHEN** another authenticated client joins and receives a seat
 - **THEN** the new tourist kind is not equal to any currently seated player’s kind
-- **AND** when pieces exist for that seat, all four of the new player’s pieces use that same new kind
+- **AND** when pieces exist for that seat, all of the new player’s pieces use that same new kind
 
 #### Scenario [SC-PIECE-03]: Start cells lie on the assigned side and stay free
 
 - **GIVEN** a tourist room that is materializing pieces at playing start for seated players
-- **WHEN** seats are assigned pieces on the four sides
-- **THEN** each piece’s row and column match a start cell of that piece’s side on the agreed tourist layout
+- **WHEN** seats are assigned pieces on map start cells
+- **THEN** each piece’s row and column match a start cell of the map snapshot
 - **AND** no two pieces in the room share the same row and column
 
 #### Scenario [SC-PIECE-04]: Second player uses remaining cells on each side
 
 - **GIVEN** a tourist room that entered `playing` with two seated players who received seats during `waiting`
 - **WHEN** pieces are materialized for both seats
-- **THEN** each player has one piece on each side `N`, `E`, `S`, and `W`
-- **AND** none of the second player’s cells equal any cell occupied by the first player
+- **THEN** none of the second player’s cells equal any cell occupied by the first player
 
 ### Requirement: Materialize pieces when playing begins
 
-When the start phase transitions from `countdown` to `playing`, the server SHALL place exactly four pieces for every seated player that does not yet have pieces — one on each board side `N`, `E`, `S`, and `W` — choosing start cells uniformly at random among free start cells of each side, using that seat’s already assigned tourist kind. Every client MUST observe those pieces in synced state as phase becomes `playing`.
+When the start phase transitions from `countdown` to `playing`, the server SHALL place exactly `touristsPerPlayer` pieces for every seated player that does not yet have pieces, choosing free **start** cells from the map snapshot. Placement MUST follow the **min-distance floor + uniform random** rule in the added spawn requirement (not a deterministic maximize-only greedy). Opponent pieces MAY occupy any remaining free starts; own-piece separation under that floor is the primary rule. Unused free start cells of the map MAY remain empty. No two pieces in the room MAY share the same cell. Every client MUST observe those pieces in synced state as phase becomes `playing`.
 
 #### Scenario [SC-PIECE-18]: Waiting seats receive pieces at playing
 
 - **GIVEN** a tourist room that completed countdown with two or more seated players who had tourist kinds but no pieces during `waiting`/`countdown`
 - **WHEN** the synchronized phase becomes `playing`
-- **THEN** each of those seats has exactly four pieces, one per side
+- **THEN** each of those seats has exactly touristsPerPlayer pieces on free map start cells
 - **AND** no two pieces in the room share the same cell
 - **AND** every client observes those pieces
 
@@ -217,21 +220,21 @@ After a seated player successfully enters a tourist room, the client MUST persis
 
 ### Requirement: Board pieces and personal four-slot strip
 
-All clients in the room SHALL see all current unfinished pieces on the Game board at their synced cells, using the tourist image for each piece’s kind. While a seated player has no pieces yet (phase `waiting` or `countdown`), no pieces for that seat MUST appear on the board. Finished pieces MUST NOT be rendered on the board (see `game/finish`). A seated client SHALL see a personal four-slot strip once their four pieces exist, corresponding one-to-one to that client’s four pieces by side (same kind image per side). That strip MUST appear inside the bottom Game HUD panel (`game/presence`) beside the seated user’s own presence/budgets cluster and MUST NOT use a separate caption label such as «Мои туристы».
+All clients in the room SHALL see all current unfinished pieces on the Game board at their synced cells, using the tourist image for each piece’s kind. While a seated player has no pieces yet (phase `waiting` or `countdown`), no pieces for that seat MUST appear on the board. Finished pieces MUST NOT be rendered on the board (see `game/finish`). A seated client SHALL see a personal strip of exactly `touristsPerPlayer` slots once their pieces exist, corresponding one-to-one to that client’s pieces (same kind image). That strip MUST appear inside the bottom Game HUD panel (`game/presence`) beside the seated user’s own presence/budgets cluster and MUST NOT use a separate caption label such as «Мои туристы».
 
-The strip MUST present four interactive slots (not a compact status-only chip and not a picker menu). Slot order for a **2×2** layout MUST be **N, E** on the top row and **W, S** on the bottom row; for a **single row** layout MUST be **N, E, W, S** left-to-right. Each slot MUST reflect status: finish indicator when finished (`game/finish`); grille presentation when the piece is trapped. Until pieces exist, the seated client MUST NOT be shown the strip. The strip MUST remain visible for finished seats. The chrome MUST NOT show other players’ tourists. A spectator MUST NOT be shown that personal strip.
+The strip MUST present interactive slots (not a compact status-only chip and not a picker menu). Each slot MUST reflect status: finish indicator when finished (`game/finish`); grille presentation when the piece is trapped. Until pieces exist, the seated client MUST NOT be shown the strip. The strip MUST remain visible for finished seats. The chrome MUST NOT show other players’ tourists. A spectator MUST NOT be shown that personal strip.
 
 Activating an unfinished non-trapped slot MUST select that piece for move UX while applicable (`game/move`). Finished and trapped pieces MUST NOT be used for move selection (finished return flow is `game/finish`). Board piece click MUST still select without opening any menu. The Game UI MUST NOT use a picker menu opened from a compact chip.
 
-On viewports / HUD widths where a single row of four slots plus the own avatar cluster cannot fit without horizontal scrolling as the primary layout (target content width about **320** CSS pixels, preferably about **300**), the strip MUST use the **2×2** grid with slot size **smaller than** the own presence avatar image box. When width allows, the strip MUST use a single horizontal row of four slots.
+On narrow viewports the strip MAY wrap or shrink slots so the own avatar cluster plus strip fit without relying on horizontal scrolling as the primary UX.
 
 #### Scenario [SC-PIECE-09]: Seated client sees own four-slot strip
 
-- **GIVEN** the user is on the Game screen as a seated player with four pieces of one kind
+- **GIVEN** the user is on the Game screen as a seated player with touristsPerPlayer=3 pieces of one kind
 - **WHEN** the game UI is shown
-- **THEN** the bottom HUD panel shows four personal tourist slots after the user’s own presence/budgets cluster
+- **THEN** the bottom HUD panel shows three personal tourist slots after the user’s own presence/budgets cluster
 - **AND** no compact chip-only chrome and no tourist picker menu are required to select a piece
-- **AND** no separate «Мои туристы» (or equivalent) caption labels that strip
+- **AND** no separate «Мои туристы» caption labels that strip
 - **AND** the strip does not display other players’ tourist kinds
 
 #### Scenario [SC-PIECE-10]: Spectator sees pieces but no strip
@@ -250,10 +253,10 @@ On viewports / HUD widths where a single row of four slots plus the own avatar c
 
 #### Scenario [SC-PIECE-32]: Narrow width uses 2×2 strip
 
-- **GIVEN** the seated user views Game at about 320 CSS pixels content width (or narrower about 300)
+- **GIVEN** the seated user views Game at about 320 CSS pixels content width (or narrower about 300) with touristsPerPlayer=4
 - **WHEN** the bottom HUD with own avatar and personal strip is shown
-- **THEN** the four tourist slots are laid out as a 2×2 grid with slots smaller than the own avatar image
-- **AND** the own avatar cluster plus strip fit without relying on horizontal scrolling as the primary UX
+- **THEN** the tourist slots are laid out so the own avatar cluster plus strip fit without relying on horizontal scrolling as the primary UX
+- **AND** when four slots are present they MAY use a 2×2 grid with slots smaller than the own avatar image
 
 ### Requirement: Trap grille mirrored on personal tourist chrome
 
@@ -306,15 +309,48 @@ For move validation occupancy, a trapped unfinished piece MUST block its cell th
 
 ### Requirement: All-jail places one piece per side on free starts
 
-On all-jail reset for a seat, each of that seat’s four pieces MUST be placed on a start cell of its own side identity (`N`/`E`/`S`/`W`), chosen uniformly at random among start cells of that side that are not occupied by any unfinished piece after clearing that seat’s previous cells. Pieces MUST be free (not trapped) after placement.
+On all-jail reset for a seat, each of that seat’s pieces MUST be placed on a free start cell of the map snapshot using the **same min-distance floor + uniform random** rule as materialize. Pieces MUST be free (not trapped) after placement. Side identities MUST NOT be used.
 
 #### Scenario [SC-PIECE-25]: Reset uses each side’s free start cells
 
-- **GIVEN** a seated player triggers all-jail reset
-- **WHEN** the server places the four pieces
-- **THEN** the `N` piece is on a free North start cell, `E` on East, `S` on South, and `W` on West
-- **AND** none of the four share a cell with another unfinished piece
-- **AND** none of the four remain trapped
+- **GIVEN** a seated player triggers all-jail reset with touristsPerPlayer=2
+- **WHEN** the server places the pieces
+- **THEN** both pieces occupy distinct free map start cells
+- **AND** none share a cell with another unfinished piece
+- **AND** none remain trapped
+- **AND** placement follows the same floor+random rule as materialize
+
+### Requirement: Own pieces use min-distance floor and random among feasible starts
+
+When materializing (or all-jail resetting) multiple pieces for one seat on free map start cells, the server MUST:
+
+1. Let `maxPair` be the maximum Chebyshev distance between any two currently free start cells available for placement.
+2. Let `floor` start at `ceil(maxPair / 2)`.
+3. Sequentially pick each next own piece cell by taking the free starts whose minimum Chebyshev distance to already chosen **own** cells for this seat is ≥ `floor`, choosing **uniformly at random** among those candidates.
+4. If no candidate exists at the current `floor`, decrease `floor` by 1 and retry until a cell can be chosen (down to `floor = 0`, which allows any remaining free start).
+
+The placement MUST NOT be a deterministic maximize-only greedy that always yields the same corner pair when ties exist. Across repeated materializes with the same free-start set and `touristsPerPlayer ≥ 2`, outcomes MAY differ.
+
+#### Scenario [SC-PIECE-50]: Own pieces keep a distance floor then randomize
+
+- **GIVEN** a map snapshot with at least four free start cells whose maxPair Chebyshev distance is 6 and touristsPerPlayer=2 for one seated player at materialize
+- **WHEN** the server places that seat’s two pieces
+- **THEN** the Chebyshev distance between the two cells is at least `ceil(6 / 2) = 3` when such a pair exists among free starts
+- **AND** the chosen pair is not required to be a unique maximum-distance pair
+- **AND** a later independent materialize with the same free starts MAY select a different pair that still meets the floor
+
+#### Scenario [SC-PIECE-51]: Piece count follows touristsPerPlayer
+
+- **GIVEN** a room whose map snapshot has touristsPerPlayer=3 and two seated players who waited without pieces
+- **WHEN** phase becomes `playing`
+- **THEN** each of those seats has exactly three pieces
+- **AND** no piece carries a side identity N/E/S/W
+
+#### Scenario [SC-PIECE-52]: Strip slot count follows touristsPerPlayer
+
+- **GIVEN** touristsPerPlayer=1 for the local seated user with pieces materialized
+- **WHEN** the bottom HUD strip is shown
+- **THEN** exactly one personal tourist slot is shown
 
 ### Requirement: Permanent leave clears that seat’s holding grilles
 

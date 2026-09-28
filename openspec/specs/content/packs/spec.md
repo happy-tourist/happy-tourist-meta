@@ -46,8 +46,8 @@ UGC-наборы (**набор карточек** + задания): одна р
 | SC-PACK-29 | covered |
 | SC-PACK-30 | covered |
 | SC-PACK-31 | covered |
-| SC-PACK-32 | covered |
-| SC-PACK-33 | covered (unchanged; peek stub not touched) |
+| SC-PACK-32 | covered (unchanged — difficulty stored) |
+| SC-PACK-33 | covered (modified — packs feed peeks) |
 | SC-PACK-34 | covered |
 | SC-PACK-35 | covered |
 | SC-PACK-36 | covered |
@@ -183,6 +183,10 @@ UGC-наборы (**набор карточек** + задания): одна р
 | SC-PACK-195 | covered (vitest) |
 | SC-PACK-196 | covered (mocha) |
 | SC-PACK-197 | covered (mocha) |
+| SC-PACK-200 | covered (server mocha — published sets in create) |
+| SC-PACK-201 | covered (server mocha — soft-unpublished set excluded) |
+
+Related: create picker — `lobby/rooms`; peek Q&A — `game/board`. Difficulty remains the peek step reward (`SC-PACK-32`).
 
 ## Requirements
 
@@ -723,7 +727,7 @@ The client MUST expose a **unified packs list** as the primary lobby entry into 
 
 ### Requirement: Difficulty is stored for future peek rewards
 
-Task difficulty values `1`, `2`, and `3` MUST be persisted with each task as the intended future peek step reward. This capability MUST NOT change tourist-room peek runtime behavior in this change (board rewards remain as specified in `game/board`).
+Task difficulty values `1`, `2`, and `3` MUST be persisted with each task as the peek step reward when that task is bound and answered correctly in a tourist room (`game/board`). This capability’s CMS rules for storing difficulty MUST remain. Tourist-room peek MUST use published pack task content (question, ordered slots, answer cards) instead of the legacy stub Correct/Wrong controls.
 
 #### Scenario [SC-PACK-32]: Difficulty is stored on the task
 
@@ -731,12 +735,30 @@ Task difficulty values `1`, `2`, and `3` MUST be persisted with each task as the
 - **WHEN** the task is later retrieved
 - **THEN** the stored difficulty is `2`
 
-#### Scenario [SC-PACK-33]: Peek stub behavior unchanged
+#### Scenario [SC-PACK-33]: Peek uses pack task content
 
-- **GIVEN** this capability is deployed
-- **WHEN** a player opens a peek in a tourist room
-- **THEN** peek still uses the existing stub correct/incorrect controls from `game/board`
-- **AND** pack tasks are not required to answer the peek
+- **GIVEN** this capability is deployed and an in-catalog pack has a published task set selected at room create
+- **WHEN** a player opens a peek in that tourist room
+- **THEN** the peek uses that pack’s task question and answer slots per `game/board`
+- **AND** the legacy stub-only Correct/Wrong modal without content MUST NOT be the sole peek UI
+
+### Requirement: Only published task sets are playable at create
+
+Create-game MUST offer only **published** (not soft-unpublished) task sets of an in-catalog pack. Soft-unpublished task sets MUST NOT appear in the create picker and MUST NOT be accepted in create options. The room MUST snapshot the selected sets’ tasks and the pack’s answer cards at create so later CMS edits do not change an in-progress match.
+
+#### Scenario [SC-PACK-200]: Published set is selectable at create
+
+- **GIVEN** in-catalog pack P with published task set S
+- **WHEN** a user opens create-game and selects P
+- **THEN** S appears in the task-set picker
+
+#### Scenario [SC-PACK-201]: Soft-unpublished set is not selectable
+
+- **GIVEN** in-catalog pack P with soft-unpublished task set S2 and published set S1
+- **WHEN** a user opens create-game and selects P
+- **THEN** S1 appears
+- **AND** S2 does not appear
+- **AND** create options referencing S2 are rejected by the server
 
 ### Requirement: Author may delete unpublished pack or task set
 
