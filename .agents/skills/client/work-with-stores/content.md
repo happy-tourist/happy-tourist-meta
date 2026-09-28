@@ -71,8 +71,19 @@ Every task/question list row MUST show answer slot chips (filled / empty):
 summary rows** only (count + difficulty 1/2/3) — slots appear after drill-in
 (SC-PACK-130). Pattern: dense `q-chip` per slot + `slotEmpty` when no slots.
 A filled slot MUST show the answer card’s text. For staff `task_set` preview,
-server merges live `answerCards` into `previewPending` (SC-PACK-134). Add-task-set
-answer **picker** tiles MUST be rounded `q-chip` (SC-PACK-133).
+server merges live `answerCards` into `previewPending` (SC-PACK-134).
+
+## Playing-card chrome (SC-PACK-222…224)
+
+Wherever the UI lists pack **answer cards** or **tasks** (editor, add-task-set,
+tasks drill-in, live pack answers, staff request preview, **and** slot pickers),
+render `PackAnswerCardTile` / `PackTaskTile` inside a wrapping `.pack-card-grid`
+(`app.scss`). Slot **values** on a task row stay `q-chip` (above); the answer
+**picker** beside slots is `PackAnswerCardTile` (selectable), **not** `q-chip`
+(SC-PACK-133 superseded for picker chrome by SC-PACK-222…224). Edit/delete only
+when editable; body click is not edit. CSV import/export is client-only
+(`lib/packContentCsv` + `PackCsvImportDialog` / `PackTasksCsvControls`) — not
+store HTTP.
 
 ## Task-set author label + Tasks back (SC-PACK-135 / 136 / 182)
 
@@ -159,8 +170,8 @@ UX as the cards editor while the author’s `task_set` request is
   Модерация entry is App header only. Pages omit `content.catalogNav` when
   App breadcrumbs cover Lobby / Модерация (SC-PACK-194/195).
 - Support `change_pack` select: **in-catalog only** (`inCatalog !== false && hasLive`).
-- Cascade / slot chips / add-task-set thread / delete-card confirms — unchanged
-  SC-PACK-126…136 contracts above.
+- Cascade / slot chips / playing-card tiles / add-task-set thread / delete-card
+  confirms — SC-PACK-126…136 + SC-PACK-222…224 contracts above.
 - No block/unblock UI.
 
 ## Anti-patterns

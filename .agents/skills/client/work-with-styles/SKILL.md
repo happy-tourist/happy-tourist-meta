@@ -14,9 +14,10 @@ description: >-
   top presence + sticky seated `.game-hud` presence/ring/avatar + strip
   row/narrow 2×2 + chrome grille + budgets beside avatar + end-turn icon
   right-center + peek/rescue/push top-center + say bubbles top↓/own↑), content
-  pack `.cascade-gap-outline` (Editor task-set + Tasks rows; SC-PACK-126), Quasar
-  utility classes, Material Icons / Roboto, or color props on Quasar
-  components.
+  pack `.cascade-gap-outline` (Editor task-set + Tasks rows; SC-PACK-126) +
+  global `.pack-card-grid` wrap for `PackAnswerCardTile` / `PackTaskTile`
+  (SC-PACK-222…224), Quasar utility classes, Material Icons / Roboto, or color
+  props on Quasar components.
 ---
 
 # Work With Styles
@@ -189,6 +190,16 @@ Class `cascade-gap-outline` marks cleared answer slots after cascade normalize.
 Do not use `bg-warning` row fill. Applying the class without this scoped CSS
 is a hard defect. Contracts: meta `work-with-stores/content.md`.
 
+### Pack playing-card grid (`app.scss` + tile components)
+
+Answer/task lists use global wrap class `.pack-card-grid` (`display: flex;
+flex-wrap: wrap; gap: 0.75rem`) in `src/css/app.scss`. Tile chrome lives in
+scoped styles on `PackAnswerCardTile.vue` / `PackTaskTile.vue` (split halves,
+short answer when no description, difficulty top-left on tasks, edit/delete
+top-right when editable). Do **not** reintroduce list `q-chip` for answer/task
+bodies or slot pickers — keep `q-chip` only for slot **values** on a task row.
+Contracts: meta `work-with-stores/content.md` (Playing-card chrome).
+
 ### Tourist board (`GamePage.vue`)
 
 Board UI is custom CSS Grid (not Quasar widgets). Keep selectors local and class-driven:
@@ -332,3 +343,6 @@ Prefer the login → lobby → game flow for new UI (dead `pages/index*` scaffol
   this repo keeps page styles in the SFC.
 - Binding `cascade-gap-outline` on Editor/Tasks without matching scoped
   `outline: 2px solid var(--q-warning)` (SC-PACK-126).
+- Rendering pack answer/task lists or slot pickers as `q-chip` / plain rows
+  instead of `PackAnswerCardTile` / `PackTaskTile` in `.pack-card-grid`
+  (SC-PACK-222…224).

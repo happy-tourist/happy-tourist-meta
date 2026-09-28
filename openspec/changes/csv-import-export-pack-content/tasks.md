@@ -21,3 +21,22 @@
 ## 4. Client — verify package
 
 - [x] 4.1 `npm run lint`, `npm run typecheck`, `npm test`, `npm run build` в `../happy-tourist.github.io`
+
+## 5. Client — CSV import modal (D6′)
+
+- [x] 5.1 Skills `work-with-pages`, `work-with-localization`, `client-work-with-errors`, `work-with-test`; design D6′; SC-PACK-218/219/220/221
+- [x] 5.2 Answers: Import → `q-dialog` с примером формата `ответ;абзац1;абзац2;…` + выбор файла; ошибка внутри модалки; успех закрывает; Export disabled при 0 cards (SC-PACK-218/219/221)
+- [x] 5.3 Tasks (`PackTasksCsvControls`): та же модалка с примером `вопрос;сложность;слот…`; Export disabled при 0 tasks; убрать page-banner как primary path ошибок импорта (SC-PACK-218/220/221)
+- [x] 5.4 i18n format hints; vitest modal smoke; `npm test`
+
+## 6. Client — playing-card chrome (D11)
+
+- [x] 6.1 Skills `work-with-pages`, `work-with-styles`, `client-work-with-structure`, `work-with-localization`, `work-with-test`; design D11; SC-PACK-222…224
+- [x] 6.2 Shared answer-card tile: rounded, split content|description; empty description → shorter rectangle; description overflow → scroll; pencil+delete top-right when editable
+- [x] 6.3 Shared task tile: rounded, split question|slots; difficulty top-left; pencil+delete top-right when editable
+- [x] 6.4 Wire tiles on editor lists (Add form stays above grid), slot picker, live pack/tasks views, staff moderation views (SC-PACK-222…224)
+- [x] 6.5 Vitest component/page smoke где практично; `npm test`
+
+## 7. Client — verify package (follow-up)
+
+- [x] 7.1 `npm run lint`, `npm run typecheck`, `npm test`, `npm run build` в `../happy-tourist.github.io`
