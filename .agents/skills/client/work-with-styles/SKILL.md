@@ -15,8 +15,8 @@ description: >-
   row/narrow 2×2 + chrome grille + budgets beside avatar + end-turn icon
   right-center + peek/rescue/push top-center + say bubbles top↓/own↑), content
   pack `.cascade-gap-outline` (Editor task-set + Tasks rows; SC-PACK-126) +
-  global `.pack-card-grid` wrap for `PackAnswerCardTile` / `PackTaskTile`
-  (SC-PACK-222…224), Quasar utility classes, Material Icons / Roboto, or color
+  global `.pack-card-grid` wrap for `PackAnswerCardTile` / `PackTaskTile` /
+  `PackListCardTile` (SC-PACK-222…229), Quasar utility classes, Material Icons / Roboto, or color
   props on Quasar components.
 ---
 
@@ -194,11 +194,15 @@ is a hard defect. Contracts: meta `work-with-stores/content.md`.
 
 Answer/task lists use global wrap class `.pack-card-grid` (`display: flex;
 flex-wrap: wrap; gap: 0.75rem`) in `src/css/app.scss`. Tile chrome lives in
-scoped styles on `PackAnswerCardTile.vue` / `PackTaskTile.vue` (split halves,
-short answer when no description, difficulty top-left on tasks, edit/delete
-top-right when editable). Do **not** reintroduce list `q-chip` for answer/task
-bodies or slot pickers — keep `q-chip` only for slot **values** on a task row.
-Contracts: meta `work-with-stores/content.md` (Playing-card chrome).
+scoped styles on `PackAnswerCardTile.vue` / `PackTaskTile.vue` (fixed px:
+answer **100×200** without description / **200×200** with splitter; task
+**200×200**; explicit light/dark `--pack-tile-*` contrast — not
+`--q-card-background` alone; difficulty top-left on tasks; edit/delete
+top-right when editable). Catalog packs + task-set lists use
+`PackListCardTile.vue` (**100×200**; status top; star TL; Edit TR). Do **not**
+reintroduce list `q-chip` for answer/task bodies or slot pickers — keep
+`q-chip` only for slot **values** on a task row. Contracts: meta
+`work-with-stores/content.md` (Playing-card chrome); SC-PACK-222…229.
 
 ### Tourist board (`GamePage.vue`)
 

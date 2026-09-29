@@ -73,12 +73,16 @@ summary rows** only (count + difficulty 1/2/3) — slots appear after drill-in
 A filled slot MUST show the answer card’s text. For staff `task_set` preview,
 server merges live `answerCards` into `previewPending` (SC-PACK-134).
 
-## Playing-card chrome (SC-PACK-222…224)
+## Playing-card chrome (SC-PACK-222…229)
 
 Wherever the UI lists pack **answer cards** or **tasks** (editor, add-task-set,
 tasks drill-in, live pack answers, staff request preview, **and** slot pickers),
 render `PackAnswerCardTile` / `PackTaskTile` inside a wrapping `.pack-card-grid`
-(`app.scss`). Slot **values** on a task row stay `q-chip` (above); the answer
+(`app.scss`). Fixed sizes: answer **100×200** (no description) / **200×200**
+(with description + splitter); task **200×200**; explicit light/dark tile
+contrast (SC-PACK-225…227). Catalog packs and live/editor **task-set** lists use
+`PackListCardTile` **100×200** (status top, star TL, Edit TR — SC-PACK-228/229).
+Slot **values** on a task row stay `q-chip` (above); the answer
 **picker** beside slots is `PackAnswerCardTile` (selectable), **not** `q-chip`
 (SC-PACK-133 superseded for picker chrome by SC-PACK-222…224). Edit/delete only
 when editable; body click is not edit. CSV import/export is client-only
@@ -92,7 +96,7 @@ staff hub / Tasks heading. Live drill-in **omits** page «Вернуться» w
 breadcrumbs cover the path (SC-PACK-182); editor keeps `content.backToAnswers`.
 Live pack page also omits «К наборам» (SC-PACK-181 — crumbs).
 
-## Per-set moderation marks (SC-PACK-171…174 / 187)
+## Per-set moderation marks (SC-PACK-171…174 / 187 / 230)
 
 `TaskSet.moderationStatus` (`pending` | `needs_revision` | `draft` | `live` |
 `null`) appears on live/editor payloads for **that set's author and staff
@@ -100,6 +104,12 @@ only** — pack creator MUST NOT see foreign set marks solely as `createdBy`.
 Open status applies **only** to sets belonging to the open request (revision /
 lineage match — not fan-out by `changeAuthorId`). `ContentPackPage` shows
 badges for pending / needs_revision / draft (not `live`).
+
+**Staff false draft (SC-PACK-230 / D14):** after direct `staff-save`, server
+omits author-facing `draft` for staff viewers without an open author request
+(and clears twin working when safe). Client trusts payload marks — do **not**
+locally invent “working≠live → draft” for staff. Keep showing `pending` /
+`needs_revision` when the server sends them.
 
 ## Never-live add-task-set ghost (SC-PACK-188…190) + cancel restore (D22)
 

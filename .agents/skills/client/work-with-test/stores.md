@@ -22,7 +22,8 @@ pack CSV SC-PACK-210…224: `src/lib/__tests__/packContentCsv.test.ts`,
 `src/components/__tests__/PackTasksCsvControls.test.ts`,
 `src/pages/__tests__/ContentPackEditorCsv.test.ts` (import modal + in-modal errors —
 not `content.error`), tile smoke `PackAnswerCardTile` / `PackTaskTile` /
-`ContentPackPlayingCards`,
+`ContentPackPlayingCards` + sizes/contrast SC-PACK-225…227 + catalog/task-set
+`PackListCardTile` / `ContentPackListCards` SC-PACK-228/229,
 store `content.simplifyAcl.test.ts`; spy `client.http`, do not hit live server;
 cascade helpers + `isStaffEditSessionNavigation`: meta `work-with-stores/content.md`;
 unify follow-ups: `ContentUnifiedList.test.ts` (`openRequestType` pack→Edit /
@@ -30,14 +31,14 @@ task_set→live SC-PACK-191/192; cancel→draft; no published badge),
 `ContentAuthorEditTake.test.ts` (author Edit/take + set marks + `neverLive`
 ghost `pack-task-set-ghost-*` → add-task-set Edit SC-PACK-188…190),
 `maps` (HTTP maps via `client.http`; paint helpers; pages
-`ContentMaps.test.ts` SC-MAP-06…08 / 14 / 17 / 21 / 24–25 / 29–30 / 41…52
+`ContentMaps.test.ts` SC-MAP-06…08 / 14 / 17 / 21 / 24–25 / 29–30 / 41…54
   (cancel→draft, view meta, title-row Edit SC-MAP-51, author pending→Edit
-  SC-MAP-50, no published badge); store
+  SC-MAP-50, paint race SC-MAP-53, palette under SC-MAP-54, no published badge); store
 `maps.paint.test.ts` SC-MAP-04; errors via `mapsErrorI18nKey` → `maps.errors.*`;
 meta `work-with-stores/maps.md` — shared staff queue still mocked via `content`
 when testing type-badge / my-moderation map rows).
 App shell crumbs: `src/__tests__/AppHeaderChrome.test.ts` — breadcrumbs **inside**
-`q-page-container` (not elevated `q-header`; SC-BRAND-17…18 / SC-PACK-193 / SC-MAP-52);
+`q-page-container` (not elevated `q-header`; SC-BRAND-17…20 / SC-PACK-193 / SC-MAP-52);
 narrow burger fold Acc/Theme/Logout (SC-BRAND-19). Moderation pages omit
 `content.catalogNav`: `ContentModerationUx` SC-PACK-194/195.
 

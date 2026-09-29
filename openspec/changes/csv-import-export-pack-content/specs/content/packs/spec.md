@@ -17,8 +17,14 @@
 | SC-PACK-222 | covered (`PackAnswerCardTile` + page surfaces) |
 | SC-PACK-223 | covered (`PackTaskTile` + page surfaces) |
 | SC-PACK-224 | covered (editable tiles + live/staff/picker chrome) |
+| SC-PACK-225 | covered (`PackAnswerCardTile` sizes vitest) |
+| SC-PACK-226 | covered (`PackTaskTile` sizes vitest) |
+| SC-PACK-227 | covered (`PackAnswerCardTile` / `PackTaskTile` contrast vitest) |
+| SC-PACK-228 | covered (`PackListCardTile` + `ContentPackListCards`) |
+| SC-PACK-229 | covered (`PackListCardTile` + `ContentPackListCards`) |
+| SC-PACK-230 | covered (server mocha staff draft) |
 
-Related: answer/task model and «tasks need cards» gate — main `content/packs` (SC-PACK-04, SC-PACK-34). This change adds CSV import/export on editor surfaces, Quasar import modal UX, and playing-card presentation on all pack surfaces that show answers/tasks.
+Related: answer/task model and «tasks need cards» gate — main `content/packs` (SC-PACK-04, SC-PACK-34). This change adds CSV import/export on editor surfaces, Quasar import modal UX, playing-card presentation, fixed tile sizes/contrast, catalog + task-set card grids, and staff draft status fix.
 
 ## ADDED Requirements
 
@@ -124,7 +130,7 @@ Choosing CSV import MUST open an in-app modal that shows a short example of the 
 
 ### Requirement: Playing-card presentation for answer cards and tasks
 
-Wherever the client shows a list or selectable set of pack **answer cards** or **tasks** (cards editor, task editors, slot picker, live pack/tasks view, staff moderation views), each item MUST be rendered as a rounded playing-card tile in a wrapping row. An answer card tile MUST split into an upper half for content and a lower half for description; when description is empty the tile MUST be a shorter rectangle (approximately half height) without an empty lower half. A task tile MUST split into an upper half for the question and a lower half for answer slots (resolved content texts); task difficulty MUST appear at the **top-left** of the tile. On surfaces where the item is editable, edit (pencil) and delete controls MUST appear at the **top-right**; changing content MUST be available through the edit control, not by treating a body click as edit. Add/create forms MUST remain above the card grid. When description text overflows the lower half, that half MUST scroll internally rather than unbounded grow of the row.
+Wherever the client shows a list or selectable set of pack **answer cards** or **tasks** (cards editor, task editors, slot picker, live pack/tasks view, staff moderation views), each item MUST be rendered as a rounded playing-card tile in a wrapping row. An answer card tile MUST split into an upper half for content and a lower half for description; when description is empty the tile MUST be a **100×200** rectangle without an empty lower half; when description is present the tile MUST be **200×200** with a clear splitter between halves. A task tile MUST be **200×200**, split into an upper half for the question and a lower half for answer slots (resolved content texts); task difficulty MUST appear at the **top-left** of the tile. Tile background and foreground (including edit/delete icons) MUST remain readable in both light and dark application themes. On surfaces where the item is editable, edit (pencil) and delete controls MUST appear at the **top-right**; changing content MUST be available through the edit control, not by treating a body click as edit. Add/create forms MUST remain above the card grid. When description text overflows the lower half, that half MUST scroll internally rather than unbounded grow of the row.
 
 #### Scenario [SC-PACK-222]: Answer cards render as split playing-card tiles
 
@@ -149,3 +155,58 @@ Wherever the client shows a list or selectable set of pack **answer cards** or *
 - **THEN** editable tiles show pencil and delete at the top-right
 - **AND** live and staff views use the same playing-card chrome without edit/delete when not editable
 - **AND** slot picker surfaces use the same answer-card chrome for selection
+
+#### Scenario [SC-PACK-225]: Answer tiles use fixed 100×200 or 200×200 sizes
+
+- **GIVEN** a surface listing an answer card without description and an answer card with description
+- **WHEN** the user views those tiles
+- **THEN** the card without description is 100 CSS pixels wide and 200 CSS pixels tall
+- **AND** the card with description is 200 CSS pixels wide and 200 CSS pixels tall with a splitter between content and description
+
+#### Scenario [SC-PACK-226]: Task tiles are 200×200
+
+- **GIVEN** a surface listing tasks
+- **WHEN** the user views a task tile
+- **THEN** the tile is 200 CSS pixels wide and 200 CSS pixels tall
+
+#### Scenario [SC-PACK-227]: Answer and task tiles stay readable in dark theme
+
+- **GIVEN** the application is in dark theme
+- **WHEN** the user views answer and task playing-card tiles including editable pencil controls
+- **THEN** tile text and edit controls remain visible against the tile background
+- **AND** the tile MUST NOT present light text on an unresolved white card background
+
+### Requirement: Pack catalog and task-set lists use fixed card tiles
+
+The unified packs **catalog** list and the **task-set** lists on the live pack and cards-editor surfaces MUST render each pack or task set as a rounded card in a wrapping row with fixed size **100×200** CSS pixels. Each card MUST show moderation/status chrome at the **top** when a status badge applies. On the catalog, a favorites star MUST appear at the **top-left**. An Edit affordance, when available for that row, MUST appear at the **top-right** only (not on the left). The card body MUST show a truncated pack title or task-set label. Existing open/navigation and soft-unpublish rules MUST remain; star and Edit MUST NOT be stolen by accidental whole-row navigation races beyond current list behavior.
+
+#### Scenario [SC-PACK-228]: Catalog packs render as 100×200 cards
+
+- **GIVEN** an authenticated user on the packs catalog with at least one pack row
+- **WHEN** the user views the list
+- **THEN** each pack is shown as a 100×200 card
+- **AND** a favorites star control is at the top-left
+- **AND** Edit when available is at the top-right
+- **AND** status chrome when applicable appears at the top
+- **AND** the body shows a truncated pack title
+
+#### Scenario [SC-PACK-229]: Task-set lists render as 100×200 cards
+
+- **GIVEN** a live pack or cards editor surface with one or more task sets
+- **WHEN** the user views the task-set list
+- **THEN** each task set is shown as a 100×200 card
+- **AND** status chrome when applicable appears at the top
+- **AND** Edit when available is at the top-right
+- **AND** the body shows a truncated task-set label
+
+### Requirement: Staff do not see false draft after direct staff save
+
+When a moderator or admin saves pack content through the staff direct-save path (no moderation queue), task-set and pack moderation marks shown to that staff viewer MUST NOT report author-facing **draft** solely because a retained working copy still differs from live. Open author **pending** or **needs_revision** marks MUST still appear when an author request is open. After staff direct-save, staff MUST see sets as live/published for status purposes unless a real open author request applies.
+
+#### Scenario [SC-PACK-230]: Staff save does not leave draft badge for staff
+
+- **GIVEN** a published in-catalog pack with no open author moderation request
+- **AND** a staff editor who holds the edit lock and saves changes via staff direct-save
+- **WHEN** that staff viewer then sees the pack or its task-set status marks
+- **THEN** the client does not show a draft / needs-moderation status for those sets solely due to working≠live
+- **AND** the saved content remains live for non-staff viewers per existing staff-save rules

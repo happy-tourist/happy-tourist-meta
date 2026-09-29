@@ -6,7 +6,8 @@ description: >-
   hook handlers (/health, /hi), auth /auth/*, theme, support tickets, content
   packs (/api/content/* unified list + favorites + working-copy / author re-edit +
   unified submit + add-task-set **no** collection gate + cancel never-live restore
-  D22 SC-PACK-196/197 + edit-lock for authors+staff +
+  D22 SC-PACK-196/197 + edit-lock for authors+staff + staff-save twin working clear /
+  staff omit false draft SC-PACK-230 +
   staff take/release + soft-unpublish pack/set + my-moderation + staff queue; collection
   HTTP legacy only; DEFAULT_CONTENT_PACK_IDS grants retired SC-PACK-170; block endpoints
   retained), admin roles, or Colyseus room listing /rooms/:roomName.
@@ -118,7 +119,7 @@ For CORS / monitor details use `work-with-middleware` and `work-with-config`.
 | POST | `/api/support/tickets/:id/status` | `createEndpoint` | JWT staff; `{ status }` |
 | GET | `/api/content/packs` | `createEndpoint` | JWT; unified list — in-catalog + caller drafts/pending + staff soft-unpublished; rows carry `moderationStatus` / `openRequestType` (`pack`\|`task_set` SC-PACK-191/192) / `isMine` / `isFavorite` (SC-PACK-148…153); **caller working≠live → `draft`** even when in-catalog (SC-PACK-175…179) |
 | POST | `/api/content/packs` | `createEndpoint` | JWT + non-anonymous + `emailVerified` (DB); create pack + working copy |
-| GET | `/api/content/packs/:id` | `createEndpoint` | JWT; live snapshot + `isFavorite` + `inCatalog` + per-set `moderationStatus` for set author/staff (SC-PACK-171…174, 187 — no authorId fan-out) + set-author-only `neverLive` ghost rows (SC-PACK-188…189); legacy `inCollection`; non-staff soft-unpublished → `pack_unpublished` |
+| GET | `/api/content/packs/:id` | `createEndpoint` | JWT; live snapshot + `isFavorite` + `inCatalog` + per-set `moderationStatus` for set author/staff (SC-PACK-171…174, 187 — no authorId fan-out; **staff omit working≠live `draft` without open author request — SC-PACK-230**) + set-author-only `neverLive` ghost rows (SC-PACK-188…189); legacy `inCollection`; non-staff soft-unpublished → `pack_unpublished` |
 | POST | `/api/content/packs/:id/favorite` \| `/unfavorite` | `createEndpoint` | JWT registered non-anonymous; star/unstar in-catalog pack (SC-PACK-154) |
 | POST | `/api/content/packs/:id/unpublish` \| `/republish` | `createEndpoint` | JWT staff; soft-hide / restore pack catalog; unpublish cascade-cancels open requests + RU email SC-PACK-137…141 |
 | POST | `/api/content/task-set/unpublish` \| `/republish` | `createEndpoint` | JWT staff; soft-hide / restore **task set**; last published → 409 `last_published_task_set` |
@@ -127,7 +128,7 @@ For CORS / monitor details use `work-with-middleware` and `work-with-config`.
 | GET\|PUT\|POST | `/api/content/packs/:id/add-task-set` (+ `/submit`) | `createEndpoint` | JWT + verified; **no** collection membership required (SC-PACK-164); after Cancel of never-live cycle GET restores retained revision `taskSets` (same selection as `neverLive` ghost); put/submit reuse cancelled revision id (D22 / SC-PACK-196/197) |
 | GET\|POST | `/api/content/packs/:id/edit-lock` | `createEndpoint` | JWT author **or** staff; acquire/status (TTL 5 min); staff blocked if author request open |
 | POST | `/api/content/packs/:id/edit-unlock` | `createEndpoint` | JWT lock holder; release |
-| GET\|POST | `/api/content/packs/:id/staff-edit` \| `/staff-save` | `createEndpoint` | JWT staff + lock; load / direct save |
+| GET\|POST | `/api/content/packs/:id/staff-edit` \| `/staff-save` | `createEndpoint` | JWT staff + lock; load / direct save; staff-save clears twin working when safe (SC-PACK-230) |
 | GET\|POST | `/api/content/packs/:id/moderation` (+ `/messages`) | `createEndpoint` | JWT; author ↔ staff thread |
 | POST | `/api/content/packs/:id/block` \| `/unblock` | `createEndpoint` | JWT moderator\|admin (retained; client UI hidden) |
 | POST | `/api/content/pack/delete` | `createEndpoint` | JWT + creator; hard-delete **unpublished** pack |

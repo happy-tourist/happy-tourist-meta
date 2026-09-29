@@ -40,3 +40,41 @@
 ## 7. Client — verify package (follow-up)
 
 - [x] 7.1 `npm run lint`, `npm run typecheck`, `npm test`, `npm run build` в `../happy-tourist.github.io`
+
+## 8. Client — tile sizes + dark contrast (D12)
+
+- [x] 8.1 Skills `work-with-styles`, `work-with-pages`, `work-with-test`; design D12; SC-PACK-225/226/227
+- [x] 8.2 `PackAnswerCardTile`: 100×200 without description; 200×200 with description + splitter; explicit light/dark bg + text + edit icon colors
+- [x] 8.3 `PackTaskTile`: 200×200; same contrast rules
+- [x] 8.4 Vitest size/contrast smoke; `npm test`
+
+## 9. Client — catalog + task-set cards 100×200 (D13)
+
+- [x] 9.1 Skills `work-with-pages`, `work-with-structure`, `work-with-localization`, `work-with-test`; design D13; SC-PACK-228/229
+- [x] 9.2 Catalog packs: card grid 100×200 — status top, star top-left, Edit top-right only, truncated title
+- [x] 9.3 Live + editor task-set lists: same 100×200 card chrome (status top, Edit right, truncated label); preserve soft-unpublish / open rules
+- [x] 9.4 Vitest page smoke; `npm test`
+
+## 10. Server/Client — staff false draft (D14)
+
+- [x] 10.1 Skills `server-work-with-structure` / `work-with-routes` / `work-with-database` as needed + client content skills; design D14; SC-PACK-230
+- [x] 10.2 After staff-save: sync working↔live **or** omit draft status for staff without open author request; keep pending/needs_revision
+- [x] 10.3 Mocha and/or vitest SC-PACK-230; `npm test` in touched repo(s)
+
+## 11. Client — map paint race + editor layout (D15–D16)
+
+- [x] 11.1 Skills `work-with-pages`, `work-with-stores` (+ maps), `work-with-styles`, `work-with-test`; design D15–D16; SC-MAP-53/54
+- [x] 11.2 Block paint / anti-stale save apply so rapid paints are not lost (SC-MAP-53)
+- [x] 11.3 Board-comparable editor field; palette tiles under map with labels under tiles (SC-MAP-54)
+- [x] 11.4 Vitest; `npm test`
+
+## 12. Client — Lobby breadcrumb (D17)
+
+- [x] 12.1 Skills `work-with-pages`, `work-with-test`; design D17; SC-BRAND-20
+- [x] 12.2 Lobby crumb navigates to lobby from packs/maps/moderation trails
+- [x] 12.3 Vitest App breadcrumbs; `npm test`
+
+## 13. Verify packages (follow-up 2)
+
+- [x] 13.1 Client: `npm run lint`, `npm run typecheck`, `npm test`, `npm run build`
+- [x] 13.2 Server (если трогали D14): `npm test`, `npm run build`

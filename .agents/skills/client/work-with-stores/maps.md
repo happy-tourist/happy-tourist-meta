@@ -68,8 +68,11 @@ HTTP in `maps` beyond cancel/preview helpers the editor already needs.
   «К картам» and sit **inside** `q-page-container` (SC-MAP-44/52 / SC-BRAND-17).
 - **Editor boot:** never-published or creator author-work
   (draft/pending/needs_revision) → Edit + lock; clean published → View (SC-MAP-46/49/50).
-- **Editor edit:** interactive preview + palette + seats; quiet autosave while
-  creator-editable; **author may re-edit published** via lock + draft → moderation
+- **Editor edit:** board-comparable field + under-map paint tiles with labels
+  under each tool (SC-MAP-54); interactive preview + seats; quiet autosave while
+  creator-editable — **block paint while save in flight** and **anti-stale**
+  skip applying older save echoes (SC-MAP-53; `flushAutosave` waits in-flight
+  before Submit); **author may re-edit published** via lock + draft → moderation
   (mirrors packs); staff `?staff=1` lock session when no open author request
   (else blocked tooltip `maps.staffEditBlockedAuthorRequest`). Cancel → draft,
   keep working (do not `clearWorkingFlags`).
@@ -81,9 +84,9 @@ HTTP in `maps` beyond cancel/preview helpers the editor already needs.
 - Paint pure: `src/stores/__tests__/maps.paint.test.ts` (SC-MAP-04).
 - Pages/UI: `src/pages/__tests__/ContentMaps.test.ts` (list filters/statuses +
   view meta / title-row Edit / author pending→Edit / crumbs /
-  cancel→draft SC-MAP-41…52 + SC-MAP-06…08, 14, 17, 21, 24–25, 29–36 + submit
-  starts gate). App crumbs inside `q-page-container`: `AppHeaderChrome` SC-MAP-52 /
-  SC-BRAND-17.
+  cancel→draft SC-MAP-41…54 + SC-MAP-06…08, 14, 17, 21, 24–25, 29–36 + submit
+  starts gate + paint race / palette under). App crumbs inside `q-page-container`:
+  `AppHeaderChrome` SC-MAP-52 / SC-BRAND-17…20.
 - Server twin: `test/zz-contentMaps.test.ts` (mocha) — do not mix stacks.
 
 See meta `work-with-test` / `work-with-pages` / `work-with-localization` (`maps.*`).
