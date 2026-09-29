@@ -195,14 +195,16 @@ is a hard defect. Contracts: meta `work-with-stores/content.md`.
 Answer/task lists use global wrap class `.pack-card-grid` (`display: flex;
 flex-wrap: wrap; gap: 0.75rem`) in `src/css/app.scss`. Tile chrome lives in
 scoped styles on `PackAnswerCardTile.vue` / `PackTaskTile.vue` (fixed px:
-answer **100×200** without description / **200×200** with splitter; task
-**200×200**; explicit light/dark `--pack-tile-*` contrast — not
-`--q-card-background` alone; difficulty top-left on tasks; edit/delete
-top-right when editable). Catalog packs + task-set lists use
-`PackListCardTile.vue` (**100×200**; status top; star TL; Edit TR). Do **not**
-reintroduce list `q-chip` for answer/task bodies or slot pickers — keep
-`q-chip` only for slot **values** on a task row. Contracts: meta
-`work-with-stores/content.md` (Playing-card chrome); SC-PACK-222…229.
+answer **150×200** without description / **300×200** with **vertical** splitter;
+task **300×200**; ~×2 type; explicit light/dark `--pack-tile-*` contrast — not
+`--q-card-background` alone; difficulty top-left on tasks; Edit/Delete as
+bottom full-width **text** buttons when editable). Catalog packs + task-set
+lists use `PackListCardTile.vue` (**150×200**; status top; star TL; catalog
+description; bottom text actions). Maps list uses `MapListCardTile.vue` (mini
+preview top, capacity, bottom text actions — SC-MAP-55). Do **not** reintroduce
+list `q-chip` for answer/task bodies or slot pickers — keep `q-chip` only for
+slot **values** on a task row. Contracts: meta `work-with-stores/content.md`
+(Playing-card chrome); SC-PACK-222…229.
 
 ### Tourist board (`GamePage.vue`)
 
@@ -350,3 +352,10 @@ Prefer the login → lobby → game flow for new UI (dead `pages/index*` scaffol
 - Rendering pack answer/task lists or slot pickers as `q-chip` / plain rows
   instead of `PackAnswerCardTile` / `PackTaskTile` in `.pack-card-grid`
   (SC-PACK-222…224).
+- Reverting answer/task tiles to **100×200 / 200×200**, horizontal splitters,
+  top-right icon Edit/`#trailing`, or catalog cards without description /
+  bottom text actions (SC-PACK-222…229).
+- Reintroducing `PackCsvImportDialog` / import-modal chrome for CSV — use the
+  framed Export/Import panel + direct file picker (SC-PACK-218/221).
+- Rendering maps list as plain `q-item` + tiny preview instead of
+  `MapListCardTile` in `.pack-card-grid` (SC-MAP-55).

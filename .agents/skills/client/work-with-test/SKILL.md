@@ -11,8 +11,8 @@ description: >-
   lobby create wire `LobbyCreateWire` / game board wire `GameBoardWire` /
   presence focus `GamePresenceFocus` / `boardGeometry` + `focusActionable` lib tests /
   game peek `game.boardPeek` / soft-unpublish `ContentSoftUnpublish` / follow-up 4–5 / `ContentModerationUx` /
-  pack answers/tasks CSV `packContentCsv` / `PackCsvImportDialog` / `PackTasksCsvControls` / `ContentPackEditorCsv` + tile smoke `PackAnswerCardTile` / `PackTaskTile` / `PackListCardTile` / `ContentPackPlayingCards` / `ContentPackListCards` SC-PACK-210…229 /
-  `ContentMaps` + `maps.paint` SC-MAP-41…54 / App header chrome `AppHeaderChrome`
+  pack answers/tasks CSV `packContentCsv` / framed panel / `PackTasksCsvControls` / `ContentPackEditorCsv` + tile smoke `PackAnswerCardTile` / `PackTaskTile` / `PackListCardTile` / `MapListCardTile` / `ContentPackPlayingCards` / `ContentPackListCards` SC-PACK-210…229 /
+  `ContentMaps` + `maps.paint` SC-MAP-41…56 / App header chrome `AppHeaderChrome`
   (SC-BRAND-17…20) /
   (crumbs **inside** `q-page-container` SC-BRAND-17…18; narrow burger fold SC-BRAND-19) in `src/__tests__/` /
   SupportChangePack SC-SUP-27…29), Colyseus client.auth / client.http / room I/O spies, store error +

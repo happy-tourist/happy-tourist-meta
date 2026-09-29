@@ -78,16 +78,18 @@ server merges live `answerCards` into `previewPending` (SC-PACK-134).
 Wherever the UI lists pack **answer cards** or **tasks** (editor, add-task-set,
 tasks drill-in, live pack answers, staff request preview, **and** slot pickers),
 render `PackAnswerCardTile` / `PackTaskTile` inside a wrapping `.pack-card-grid`
-(`app.scss`). Fixed sizes: answer **100×200** (no description) / **200×200**
-(with description + splitter); task **200×200**; explicit light/dark tile
-contrast (SC-PACK-225…227). Catalog packs and live/editor **task-set** lists use
-`PackListCardTile` **100×200** (status top, star TL, Edit TR — SC-PACK-228/229).
-Slot **values** on a task row stay `q-chip` (above); the answer
-**picker** beside slots is `PackAnswerCardTile` (selectable), **not** `q-chip`
-(SC-PACK-133 superseded for picker chrome by SC-PACK-222…224). Edit/delete only
-when editable; body click is not edit. CSV import/export is client-only
-(`lib/packContentCsv` + `PackCsvImportDialog` / `PackTasksCsvControls`) — not
-store HTTP.
+(`app.scss`). Fixed sizes: answer **150×200** (no description) / **300×200**
+(with description + **vertical** splitter); task **300×200** (vertical split;
+slot chips in a row); explicit light/dark tile contrast (SC-PACK-225…227).
+Catalog packs and live/editor **task-set** lists use `PackListCardTile`
+**150×200** (status top, star TL, truncated description on catalog, **bottom**
+full-width text actions — SC-PACK-228/229). Slot **values** on a task row stay
+`q-chip` (above); the answer **picker** beside slots is `PackAnswerCardTile`
+(selectable), **not** `q-chip` (SC-PACK-133 superseded for picker chrome by
+SC-PACK-222…224). Edit/delete only when editable (bottom text buttons); body
+click is not edit. CSV import/export is client-only (`lib/packContentCsv` +
+framed Export/Import panel on editor / `PackTasksCsvControls`; Import opens the
+file picker directly — no `PackCsvImportDialog`) — not store HTTP.
 
 ## Task-set author label + Tasks back (SC-PACK-135 / 136 / 182)
 

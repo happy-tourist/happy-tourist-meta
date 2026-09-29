@@ -56,8 +56,9 @@ HTTP in `maps` beyond cancel/preview helpers the editor already needs.
 
 - **List:** filters all / moderation / drafts / mine (identity-only disabled for
   guests); badges for draft / pending / needs_revision / unpublished only —
-  **published / `in_catalog` rows show no badge** (SC-MAP-45); mini
-  `MapGridPreview` + author + `players×tourists`; Create at top; **no** collect;
+  **published / `in_catalog` rows show no badge** (SC-MAP-45); card grid via
+  `MapListCardTile` — mini `MapGridPreview` top, author + `players×tourists`,
+  bottom full-width text actions (SC-MAP-55); Create at top; **no** collect;
   **no** list-chrome staff «Модерация» (SC-MAP-43 — App header).
   Row open: never-published → Edit without `?edit` (SC-MAP-49); author
   draft/pending/needs_revision on a live map → Edit with `query.edit=1`
@@ -69,9 +70,11 @@ HTTP in `maps` beyond cancel/preview helpers the editor already needs.
 - **Editor boot:** never-published or creator author-work
   (draft/pending/needs_revision) → Edit + lock; clean published → View (SC-MAP-46/49/50).
 - **Editor edit:** board-comparable field + under-map paint tiles with labels
-  under each tool (SC-MAP-54); interactive preview + seats; quiet autosave while
-  creator-editable — **block paint while save in flight** and **anti-stale**
-  skip applying older save echoes (SC-MAP-53; `flushAutosave` waits in-flight
+  under each tool (SC-MAP-54); **centered** editor column (field + palette +
+  seats) with usable-width seat selects (SC-MAP-56); interactive preview +
+  seats; quiet autosave while creator-editable — **block paint while save in
+  flight** and **anti-stale** skip applying older save echoes (SC-MAP-53;
+  `flushAutosave` waits in-flight
   before Submit); **author may re-edit published** via lock + draft → moderation
   (mirrors packs); staff `?staff=1` lock session when no open author request
   (else blocked tooltip `maps.staffEditBlockedAuthorRequest`). Cancel → draft,
@@ -83,10 +86,10 @@ HTTP in `maps` beyond cancel/preview helpers the editor already needs.
 
 - Paint pure: `src/stores/__tests__/maps.paint.test.ts` (SC-MAP-04).
 - Pages/UI: `src/pages/__tests__/ContentMaps.test.ts` (list filters/statuses +
-  view meta / title-row Edit / author pending→Edit / crumbs /
-  cancel→draft SC-MAP-41…54 + SC-MAP-06…08, 14, 17, 21, 24–25, 29–36 + submit
-  starts gate + paint race / palette under). App crumbs inside `q-page-container`:
-  `AppHeaderChrome` SC-MAP-52 / SC-BRAND-17…20.
+  `MapListCardTile` SC-MAP-55 + view meta / title-row Edit / author pending→Edit /
+  crumbs / cancel→draft / centered seats SC-MAP-56 + SC-MAP-41…54 + SC-MAP-06…08,
+  14, 17, 21, 24–25, 29–36 + submit starts gate + paint race / palette under).
+  App crumbs inside `q-page-container`: `AppHeaderChrome` SC-MAP-52 / SC-BRAND-17…20.
 - Server twin: `test/zz-contentMaps.test.ts` (mocha) — do not mix stacks.
 
 See meta `work-with-test` / `work-with-pages` / `work-with-localization` (`maps.*`).

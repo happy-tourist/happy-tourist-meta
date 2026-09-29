@@ -10,27 +10,27 @@
 | SC-PACK-215 | covered (`packContentCsv` + `PackTasksCsvControls`) |
 | SC-PACK-216 | covered (`PackTasksCsvControls`) |
 | SC-PACK-217 | covered (shared `PackTasksCsvControls` on both task pages) |
-| SC-PACK-218 | covered (`PackCsvImportDialog` + `PackTasksCsvControls` / editor) |
+| SC-PACK-218 | covered (framed CSV panel + `PackTasksCsvControls` / `ContentPackEditorCsv`) |
 | SC-PACK-219 | covered (`ContentPackEditorCsv`) |
 | SC-PACK-220 | covered (`PackTasksCsvControls`) |
-| SC-PACK-221 | covered (`PackCsvImportDialog` + editor / tasks controls) |
-| SC-PACK-222 | covered (`PackAnswerCardTile` + page surfaces) |
-| SC-PACK-223 | covered (`PackTaskTile` + page surfaces) |
-| SC-PACK-224 | covered (editable tiles + live/staff/picker chrome) |
-| SC-PACK-225 | covered (`PackAnswerCardTile` sizes vitest) |
-| SC-PACK-226 | covered (`PackTaskTile` sizes vitest) |
-| SC-PACK-227 | covered (`PackAnswerCardTile` / `PackTaskTile` contrast vitest) |
-| SC-PACK-228 | covered (`PackListCardTile` + `ContentPackListCards`) |
-| SC-PACK-229 | covered (`PackListCardTile` + `ContentPackListCards`) |
+| SC-PACK-221 | covered (Import → file picker; framed controls) |
+| SC-PACK-222 | covered (`PackAnswerCardTile` vertical split) |
+| SC-PACK-223 | covered (`PackTaskTile` chips row) |
+| SC-PACK-224 | covered (bottom full-width text Edit/Delete) |
+| SC-PACK-225 | covered (150×200 / 300×200 answer sizes) |
+| SC-PACK-226 | covered (task 300×200) |
+| SC-PACK-227 | covered (contrast tokens) |
+| SC-PACK-228 | covered (`PackListCardTile` catalog 150×200 + description) |
+| SC-PACK-229 | covered (task-set 150×200 + bottom actions) |
 | SC-PACK-230 | covered (server mocha staff draft) |
 
-Related: answer/task model and «tasks need cards» gate — main `content/packs` (SC-PACK-04, SC-PACK-34). This change adds CSV import/export on editor surfaces, Quasar import modal UX, playing-card presentation, fixed tile sizes/contrast, catalog + task-set card grids, and staff draft status fix.
+Related: answer/task model and «tasks need cards» gate — main `content/packs`. This change adds CSV import/export, framed CSV panel UX, playing-card presentation (sizes/split/actions), catalog + task-set cards, and staff draft status fix.
 
 ## ADDED Requirements
 
 ### Requirement: CSV answer import and export on cards editor
 
-On the **cards pack** editing surface (answer cards), a verified editor who MAY edit cards MUST be able to **export** the current draft answer cards as a CSV download and **import** a CSV that **appends** new answer cards to the end of the draft (existing cards MUST NOT be replaced or re-ordered by import). Each non-empty CSV line MUST represent one answer card. The field separator MUST be the semicolon character `;` with **no** quoting/escaping dialect: every `;` splits fields. The first field MUST be the card content; any following fields MUST be description paragraphs joined into the card description with newline separators. Empty description fields MUST yield an empty description. Import MUST respect the same read-only / blocked-pack rules as manual card edits: when cards are not editable, import MUST be unavailable. Export MUST be unavailable when there are zero draft answer cards. After a successful import the import modal MUST close; on failure the client MUST show an error **inside the import modal** and MUST NOT append partial cards from that file.
+On the **cards pack** editing surface (answer cards), a verified editor who MAY edit cards MUST be able to **export** the current draft answer cards as a CSV download and **import** a CSV that **appends** new answer cards to the end of the draft (existing cards MUST NOT be replaced or re-ordered by import). Each non-empty CSV line MUST represent one answer card. The field separator MUST be the semicolon character `;` with **no** quoting/escaping dialect: every `;` splits fields. The first field MUST be the card content; any following fields MUST be description paragraphs joined into the card description with newline separators. Empty description fields MUST yield an empty description. Import MUST respect the same read-only / blocked-pack rules as manual card edits: when cards are not editable, import MUST be unavailable. Export MUST be unavailable when there are zero draft answer cards. On import failure the client MUST show an error **inside the CSV controls frame** and MUST NOT append partial cards from that file.
 
 #### Scenario [SC-PACK-210]: Export answers downloads semicolon CSV
 
@@ -62,7 +62,7 @@ On the **cards pack** editing surface (answer cards), a verified editor who MAY 
 
 ### Requirement: CSV task import and export on task editing surfaces
 
-On the **add-task-set** surface and on the **task-set editor** surface for an existing set, a verified editor who MAY edit that set’s tasks MUST be able to **export** the **current** task set as CSV and **import** a CSV that **appends** tasks to that set. Each non-empty CSV line MUST represent one task: `question;difficulty;slotText1;slotText2;…` with `;` as separator and no escaping. The `difficulty` field MUST be `1`, `2`, or `3` when present and valid; when empty or not a valid difficulty the imported task MUST use difficulty `1`. Each slot text after difficulty MUST resolve to an answer card in the **current answer context** by exact match on that card’s content text (first match when duplicates exist). The answer context for add-task-set MUST be the pack’s live answer cards; for the creator task-set editor MUST be the pack draft answer cards. Export MUST cover only the task set being edited; the download name MUST use the pack title and a numeric set index. Export MUST be unavailable when the current set has zero tasks. After successful import the import modal MUST close; on failure the client MUST show an error **inside the import modal** and MUST NOT append tasks from that file.
+On the **add-task-set** surface and on the **task-set editor** surface for an existing set, a verified editor who MAY edit that set’s tasks MUST be able to **export** the **current** task set as CSV and **import** a CSV that **appends** tasks to that set. Each non-empty CSV line MUST represent one task: `question;difficulty;slotText1;slotText2;…` with `;` as separator and no escaping. The `difficulty` field MUST be `1`, `2`, or `3` when present and valid; when empty or not a valid difficulty the imported task MUST use difficulty `1`. Each slot text after difficulty MUST resolve to an answer card in the **current answer context** by exact match on that card’s content text (first match when duplicates exist). The answer context for add-task-set MUST be the pack’s live answer cards; for the creator task-set editor MUST be the pack draft answer cards. Export MUST cover only the task set being edited; the download name MUST use the pack title and a numeric set index. Export MUST be unavailable when the current set has zero tasks. On import failure the client MUST show an error **inside the CSV controls frame** and MUST NOT append tasks from that file.
 
 #### Scenario [SC-PACK-213]: Export tasks downloads current set CSV
 
@@ -78,24 +78,20 @@ On the **add-task-set** surface and on the **task-set editor** surface for an ex
 - **AND** the answer context has cards whose content texts include every slot text in the CSV
 - **WHEN** the user imports a valid tasks CSV with M non-empty lines
 - **THEN** M tasks are appended to the current set
-- **AND** each imported task’s slots reference the matched answer cards by identity
-- **AND** empty or invalid difficulty fields become difficulty `1`
 
-#### Scenario [SC-PACK-215]: Import tasks blocked when slot answers are missing
+#### Scenario [SC-PACK-215]: Import tasks rejects whole file when slot answers are missing
 
-- **GIVEN** a verified editor on add-task-set or task-set editor with a non-empty answer context
-- **AND** a tasks CSV that references at least one slot text not present as any answer card content
-- **WHEN** the user imports that CSV
-- **THEN** the import is rejected for the whole file
-- **AND** the client reports which answer texts are missing
-- **AND** the current task set is unchanged
+- **GIVEN** a verified editor on a task editing surface with a non-empty answer context
+- **WHEN** the user imports a tasks CSV that references a slot text absent from the answer context
+- **THEN** the client refuses the entire import
+- **AND** lists the missing answer texts
+- **AND** the working task set is unchanged
 
-#### Scenario [SC-PACK-216]: Task import unavailable without answer cards
+#### Scenario [SC-PACK-216]: Task import unavailable without answer context
 
-- **GIVEN** a verified editor on add-task-set or task-set editor whose answer context has zero answer cards
-- **WHEN** the user views task import controls
-- **THEN** task import is disabled or omitted with guidance that answers are required first
-- **AND** no tasks are appended
+- **GIVEN** a task editing surface whose answer context has zero answer cards
+- **WHEN** the user views task CSV import
+- **THEN** task import is disabled or omitted
 
 #### Scenario [SC-PACK-217]: Task CSV controls on both task surfaces
 
@@ -109,94 +105,95 @@ On the **add-task-set** surface and on the **task-set editor** surface for an ex
 - **WHEN** the user views export controls for tasks
 - **THEN** task export is disabled or omitted
 
-### Requirement: CSV import uses a format modal with in-modal failure feedback
+### Requirement: CSV controls use a framed panel with format hint and inline errors
 
-Choosing CSV import MUST open an in-app modal that shows a short example of the CSV format for that surface (answers: `content;paragraph1;paragraph2;…`; tasks: `question;difficulty;slot1;slot2;…`) and a control to pick a file. On successful parse and apply the modal MUST close. When import is impossible (including missing answer texts for tasks, or unreadable file), the client MUST present the error **inside that modal**, MUST leave the draft unchanged for that attempt, and MUST keep the modal open so the user can retry or dismiss. Empty question or empty slot columns MAY still be loaded; existing submit minima and empty-slot rules continue to block moderation submit until the editor fixes them manually. Export MUST NOT require this modal: it MUST download immediately when enabled.
+On surfaces that expose CSV import/export, Export and Import MUST appear together inside a shared visual frame. Below those controls the client MUST show a short CSV format recommendation for that surface (answers: `content;paragraph1;paragraph2;…`; tasks: `question;difficulty;slot1;slot2;…`). The client MUST NOT attach a tooltip to Import as the primary format/help path. Activating Import (when enabled) MUST open the system file picker **immediately** without an intermediate in-app modal. When import fails, the client MUST present the error **inside that frame**, MUST leave the draft unchanged for that attempt, and MUST keep the frame visible so the user can retry. Empty question or empty slot columns MAY still be loaded; existing submit minima and empty-slot rules continue to block moderation submit until the editor fixes them manually. Export MUST download immediately when enabled.
 
-#### Scenario [SC-PACK-218]: Failed task import keeps modal feedback and draft unchanged
+#### Scenario [SC-PACK-218]: Failed task import keeps framed feedback and draft unchanged
 
 - **GIVEN** a task CSV import that cannot be applied because required answer texts are missing
-- **WHEN** the user selects that file from the import modal
-- **THEN** the client shows that import is not possible and lists the missing answers inside the modal
+- **WHEN** the user selects that file after activating Import
+- **THEN** the client shows that import is not possible and lists the missing answers inside the CSV controls frame
 - **AND** the working task set is unchanged
-- **AND** the import modal remains available
+- **AND** no import modal is required for that feedback
 
-#### Scenario [SC-PACK-221]: Import opens format modal before file pick
+#### Scenario [SC-PACK-221]: Import opens the system file picker directly
 
 - **GIVEN** a verified editor for whom CSV import is available
 - **WHEN** the user activates Import
-- **THEN** an in-app modal opens showing a short CSV format example for that surface
-- **AND** the modal offers a control to choose a file
+- **THEN** the system file picker opens without an intermediate format modal
+- **AND** the CSV format recommendation remains visible in the framed controls
 
 ### Requirement: Playing-card presentation for answer cards and tasks
 
-Wherever the client shows a list or selectable set of pack **answer cards** or **tasks** (cards editor, task editors, slot picker, live pack/tasks view, staff moderation views), each item MUST be rendered as a rounded playing-card tile in a wrapping row. An answer card tile MUST split into an upper half for content and a lower half for description; when description is empty the tile MUST be a **100×200** rectangle without an empty lower half; when description is present the tile MUST be **200×200** with a clear splitter between halves. A task tile MUST be **200×200**, split into an upper half for the question and a lower half for answer slots (resolved content texts); task difficulty MUST appear at the **top-left** of the tile. Tile background and foreground (including edit/delete icons) MUST remain readable in both light and dark application themes. On surfaces where the item is editable, edit (pencil) and delete controls MUST appear at the **top-right**; changing content MUST be available through the edit control, not by treating a body click as edit. Add/create forms MUST remain above the card grid. When description text overflows the lower half, that half MUST scroll internally rather than unbounded grow of the row.
+Wherever the client shows a list or selectable set of pack **answer cards** or **tasks** (cards editor, task editors, slot picker, live pack/tasks view, staff moderation views), each item MUST be rendered as a rounded playing-card tile in a wrapping row. An answer card tile MUST use a **vertical** splitter: content on one side and description on the other when description is present; when description is empty the tile MUST be **150×200** without an empty description half; when description is present the tile MUST be **300×200**. A task tile MUST be **300×200** with a **vertical** splitter between question and slots; filled slot answers MUST appear **side by side** as filled slot chips (not a vertical stack of lines); task difficulty MUST appear at the **top-left**. Content/question/slot type MUST be roughly twice the previous body size so tiles remain readable at these widths. Tile background and foreground MUST remain readable in both light and dark themes. On surfaces where the item is editable, Edit and Delete MUST appear as **full-width text buttons stacked at the bottom** of the tile (not icon buttons in a corner). Changing content MUST be available through Edit, not by treating a body click as edit. Add/create forms MUST remain above the card grid. Overflow text MUST scroll inside its half rather than unbounded grow of the row.
 
-#### Scenario [SC-PACK-222]: Answer cards render as split playing-card tiles
+#### Scenario [SC-PACK-222]: Answer cards render as vertically split playing-card tiles
 
 - **GIVEN** a surface that lists answer cards including one with description and one without
 - **WHEN** the user views the list
 - **THEN** each card is a rounded tile in a wrapping row
-- **AND** the card with description shows content above and description below
-- **AND** the card without description is a shorter rectangle without an empty description half
-- **AND** long description text scrolls inside the lower half
+- **AND** the card with description shows content and description side by side with a vertical splitter
+- **AND** the card without description is a 150×200 rectangle without an empty description half
+- **AND** long description text scrolls inside its half
 
-#### Scenario [SC-PACK-223]: Tasks render as split tiles with difficulty and slots
+#### Scenario [SC-PACK-223]: Tasks render as vertically split tiles with horizontal slot chips
 
 - **GIVEN** a surface that lists tasks with difficulty and filled slots
 - **WHEN** the user views the list
-- **THEN** each task is a rounded tile with the question in the upper half and slot answer texts in the lower half
+- **THEN** each task is a rounded 300×200 tile with the question and slots on either side of a vertical splitter
+- **AND** filled slot answers appear side by side as chips
 - **AND** difficulty is shown at the top-left of the tile
 
-#### Scenario [SC-PACK-224]: Editable tiles expose pencil and delete; same chrome on picker live and staff
+#### Scenario [SC-PACK-224]: Editable tiles expose bottom full-width text Edit and Delete
 
 - **GIVEN** an editable cards or tasks editor and a read-only live or staff view of the same kind of items
 - **WHEN** the user compares those surfaces
-- **THEN** editable tiles show pencil and delete at the top-right
-- **AND** live and staff views use the same playing-card chrome without edit/delete when not editable
+- **THEN** editable tiles show Edit and Delete as stacked full-width text buttons at the bottom
+- **AND** live and staff views use the same playing-card chrome without Edit/Delete when not editable
 - **AND** slot picker surfaces use the same answer-card chrome for selection
 
-#### Scenario [SC-PACK-225]: Answer tiles use fixed 100×200 or 200×200 sizes
+#### Scenario [SC-PACK-225]: Answer tiles use fixed 150×200 or 300×200 sizes
 
 - **GIVEN** a surface listing an answer card without description and an answer card with description
 - **WHEN** the user views those tiles
-- **THEN** the card without description is 100 CSS pixels wide and 200 CSS pixels tall
-- **AND** the card with description is 200 CSS pixels wide and 200 CSS pixels tall with a splitter between content and description
+- **THEN** the card without description is 150 CSS pixels wide and 200 CSS pixels tall
+- **AND** the card with description is 300 CSS pixels wide and 200 CSS pixels tall with a vertical splitter between content and description
 
-#### Scenario [SC-PACK-226]: Task tiles are 200×200
+#### Scenario [SC-PACK-226]: Task tiles are 300×200
 
 - **GIVEN** a surface listing tasks
 - **WHEN** the user views a task tile
-- **THEN** the tile is 200 CSS pixels wide and 200 CSS pixels tall
+- **THEN** the tile is 300 CSS pixels wide and 200 CSS pixels tall
 
 #### Scenario [SC-PACK-227]: Answer and task tiles stay readable in dark theme
 
 - **GIVEN** the application is in dark theme
-- **WHEN** the user views answer and task playing-card tiles including editable pencil controls
+- **WHEN** the user views answer and task playing-card tiles including editable Edit controls
 - **THEN** tile text and edit controls remain visible against the tile background
 - **AND** the tile MUST NOT present light text on an unresolved white card background
 
 ### Requirement: Pack catalog and task-set lists use fixed card tiles
 
-The unified packs **catalog** list and the **task-set** lists on the live pack and cards-editor surfaces MUST render each pack or task set as a rounded card in a wrapping row with fixed size **100×200** CSS pixels. Each card MUST show moderation/status chrome at the **top** when a status badge applies. On the catalog, a favorites star MUST appear at the **top-left**. An Edit affordance, when available for that row, MUST appear at the **top-right** only (not on the left). The card body MUST show a truncated pack title or task-set label. Existing open/navigation and soft-unpublish rules MUST remain; star and Edit MUST NOT be stolen by accidental whole-row navigation races beyond current list behavior.
+The unified packs **catalog** list and the **task-set** lists on the live pack and cards-editor surfaces MUST render each pack or task set as a rounded card in a wrapping row with fixed size **150×200** CSS pixels. Each card MUST show moderation/status chrome at the **top** when a status badge applies. On the catalog, a favorites star MUST appear at the **top-left**; the top-right MUST NOT host Edit. Action controls that apply to the card (Edit, soft-unpublish, republish, and similar) MUST appear at the **bottom** as stacked full-width **text** buttons. The catalog card body MUST show a truncated pack title and a truncated pack **description**. Task-set card bodies MUST show a truncated task-set label. Existing open/navigation and soft-unpublish rules MUST remain.
 
-#### Scenario [SC-PACK-228]: Catalog packs render as 100×200 cards
+#### Scenario [SC-PACK-228]: Catalog packs render as 150×200 cards with description
 
-- **GIVEN** an authenticated user on the packs catalog with at least one pack row
+- **GIVEN** an authenticated user on the packs catalog with at least one pack row that has a description
 - **WHEN** the user views the list
-- **THEN** each pack is shown as a 100×200 card
+- **THEN** each pack is shown as a 150×200 card
 - **AND** a favorites star control is at the top-left
-- **AND** Edit when available is at the top-right
 - **AND** status chrome when applicable appears at the top
-- **AND** the body shows a truncated pack title
+- **AND** the body shows a truncated pack title and truncated description
+- **AND** Edit when available is a bottom full-width text control (not top-right)
 
-#### Scenario [SC-PACK-229]: Task-set lists render as 100×200 cards
+#### Scenario [SC-PACK-229]: Task-set lists render as 150×200 cards with bottom actions
 
 - **GIVEN** a live pack or cards editor surface with one or more task sets
 - **WHEN** the user views the task-set list
-- **THEN** each task set is shown as a 100×200 card
+- **THEN** each task set is shown as a 150×200 card
 - **AND** status chrome when applicable appears at the top
-- **AND** Edit when available is at the top-right
+- **AND** Edit when available is a bottom full-width text control
 - **AND** the body shows a truncated task-set label
 
 ### Requirement: Staff do not see false draft after direct staff save

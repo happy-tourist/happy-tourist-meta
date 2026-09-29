@@ -1,20 +1,21 @@
 ## Context
 
-See `proposal.md`. CSV helper + import modal + playing-card components уже поставлены (D1–D11). Follow-up explore 2026-09-29: contrast/sizes tiles; catalog + task-set card grids; staff ложный draft; map paint race + layout; Lobby crumb.
+See `proposal.md`. CSV helper + tiles + catalog cards + staff draft + map paint race + Lobby crumb уже поставлены (D1–D17). Follow-up explore 2026-09-29 вечер: убрать import modal/tooltip → framed CSV panel; пересмотреть размеры/split/actions плиток; description в каталоге; maps list cards; центрирование редактора карты; миниатюра selected map в Lobby.
 
 ## Goals / Non-Goals
 
 **Goals**
 
 - Чистый parse/serialize CSV (`;`, без escape) + резолв слотов по точному `content`
-- Import через Quasar-модалку; Export сразу download, disabled если пусто
+- Import/Export в **рамке** с format hint и inline-ошибкой; Import → сразу file picker; без tooltip / без `q-dialog`
 - Append-only; гейт и block missing answers
-- Playing-card tiles с **фиксированными** размерами и читаемым contrast light/dark
-- Catalog packs + task-set lists как card grid 100×200 (star TL, status top, Edit right)
-- Staff не видит ложный draft после прямого staff-save
-- Map paint без потери клеток; поле ~game-board; палитра под полем с labels under tiles
-- Breadcrumb Lobby → lobby route
-- Vitest / mocha по новым SC
+- Playing-card tiles: **150×200** / **300×200**, высота **200**, вертикальный split, шрифт ~×2, слоты в ряд, actions снизу текстом
+- Catalog + task-set cards **150×200**; catalog показывает truncated description; star TL; actions снизу
+- Maps list как card grid (миниатюра сверху, capacity ниже)
+- Map editor: весь столбец по центру; seat selects нормальной ширины
+- Lobby create: selected map показывает миниатюру
+- Staff без ложного draft; Lobby crumb; paint anti-stale (уже)
+- Vitest / mocha по SC
 
 **Non-Goals**
 
@@ -41,27 +42,28 @@ See `proposal.md`. CSV helper + import modal + playing-card components уже п
 
 ### D3 — Shared task CSV controls on both task surfaces
 
-- **Choice:** Один helper + общий компонент/composable кнопок+диалога на `ContentPackAddTaskSetPage` и `ContentPackTasksPage`.
-- **Why:** Одинаковый UX слотов; не дублировать parse.
+- **Choice:** Один helper + общий CSV-panel компонент на `ContentPackAddTaskSetPage` и `ContentPackTasksPage` (и answers на editor).
+- **Why:** Одинаковый UX; не дублировать parse.
 - **Alternatives:** Только add-task-set — отклонено.
 
 ### D4 — Difficulty column; default 1
 
 - **Choice:** Колонка 2 = difficulty; пусто / не `1|2|3` → `1`.
 - **Why:** Difficulty обязателен в модели; автор может не указывать.
-- **Alternatives:** Отдельный out-of-band default без колонки — отклонено (колонка нужна для round-trip export).
+- **Alternatives:** Out-of-band default без колонки — отклонено.
 
 ### D5 — Duplicates allowed; first content match for slots
 
-- **Choice:** Дубликаты `content` при импорте ответов ок. Резолв слота: первый `answerCards.find(c => c.content === slotText)` (без trim/case-fold, кроме trim краёв ячейки CSV).
+- **Choice:** Дубликаты `content` при импорте ответов ок. Резолв слота: первый `answerCards.find(c => c.content === slotText)`.
 - **Why:** Explore: не усложнять; missing = block.
 - **Note:** Trim ячеек — минимальная гигиена parse.
 
-### D6′ — Quasar import modal with format + in-modal errors (revises D6)
+### D6″ — Framed CSV panel; direct file picker; inline errors (revises D6′)
 
-- **Choice:** «Импорт» открывает `q-dialog` с примером формата и file pick; успех → apply + закрыть; ошибка → текст в модалке, draft не менять. Export сразу download; disabled если пусто.
-- **Why:** Подсказка формата и ошибки в одном месте.
-- **Supersedes:** D6 File picker dialog only.
+- **Choice:** Export + Import в общей визуальной **рамке**. Под кнопками — постоянный текст рекомендаций формата CSV (answers / tasks). **Нет** `q-tooltip` на Import. **Нет** `q-dialog` импорта. Клик Import (когда enabled) сразу открывает системный file picker. Ошибка импорта — текст **внутри рамки**; draft не менять. Успех — apply + сброс ошибки в рамке. Export сразу download; disabled если пусто.
+- **Why:** Explore 2026-09-29 вечер: модалка и tooltip лишние; hint и ошибка рядом с кнопками.
+- **Supersedes:** D6′ Quasar import modal.
+- **Package:** client — `ContentPackEditorPage`, `PackTasksCsvControls`; удалить/не использовать `PackCsvImportDialog` как primary path.
 
 ### D7 — Whole-file reject only for missing answer texts
 
@@ -83,72 +85,94 @@ See `proposal.md`. CSV helper + import modal + playing-card components уже п
 | Слой | Точка врезки |
 |------|----------------|
 | Helper | `src/lib/packContentCsv.ts` |
-| CSV UI | Shared import modal + Export на editor / `PackTasksCsvControls` |
-| Answer/task tiles | Shared tiles; fixed px sizes; contrast light/dark |
-| Pack/task-set cards | Catalog + live/editor task-set lists → card grid 100×200 |
-| Map editor | `MapEditorPage` + `MapGridPreview`; save race; palette under |
+| CSV UI | Framed Export+Import + format hint + inline error (editor + `PackTasksCsvControls`) |
+| Answer/task tiles | Shared tiles; 150/300×200; vertical split; bottom text actions |
+| Pack/task-set cards | Catalog + task-set lists → 150×200; catalog description; actions bottom |
+| Maps list | `MapsListPage` → card grid (mini top, capacity below) |
+| Map editor | `MapEditorPage` centered column; seat select width |
+| Lobby create | `LobbyPage` map `q-select` selected-item + option mini |
 | Breadcrumbs | `App.vue` Lobby crumb → lobby |
-| Staff status | Server `withTaskSetModerationStatuses` / staff-save sync **или** client hide draft for staff |
-| State | Локальный draft → autosave / staff-save / map quiet save |
-| i18n | CSV + card a11y + map palette labels |
+| Staff status | Server omit false draft / twin clear (уже) |
+| i18n | CSV hints + button labels (Edit/Delete словами) |
 | Tests | Vitest / mocha по SC follow-up |
 
 ### D11 — Playing-card chrome everywhere
 
-- **Choice:** Ответы и задания — скруглённые плитки в wrap-ряду; split halves; difficulty TL; pencil+delete TR when editable; Add form above grid; description scroll in lower half. Same chrome on picker / live / staff.
-- **Why:** Explore C1–C9.
-- **Follow-up sizes:** см. D12.
+- **Choice:** Ответы и задания — скруглённые плитки в wrap-ряду на editor / picker / live / staff. Add form above grid.
+- **Follow-up layout:** см. D12′ / D18.
 
-### D12 — Fixed tile pixel sizes (revises approximate sizing in D11)
+### D12′ — Tile sizes 150/300, vertical split, larger type (revises D12)
 
-- **Choice:** Answer **without** description: **100×200** px. Answer **with** description: **200×200** px with horizontal splitter. Task tile (question|slots): **200×200** px. Explicit `background` + `color` (and edit icon colors) so dark mode is not white-on-white (`--q-card-background` fallback `#fff` alone insufficient).
-- **Why:** Explore 2026-09-29; contrast bug on dark theme.
-- **Alternatives:** rem-only fluid sizing — отклонено для этого follow-up.
+- **Choice:** Answer **без** description: **150×200**. Answer **с** description: **300×200** с **вертикальным** разделителем (content | description). Task: **300×200**, вертикальный split (question | slots). Высота всегда **200**. Размер шрифта content/question/slots ~**×2** относительно прежних ~0.8–0.9rem. Explicit light/dark bg + fg (contrast).
+- **Why:** Explore 2026-09-29 вечер.
+- **Supersedes:** D12 100/200 horizontal split.
 
-### D13 — Catalog packs + task-set lists as 100×200 cards
+### D13′ — Catalog + task-set cards 150×200 + description + bottom actions (revises D13)
 
-- **Choice:** Unified packs catalog and task-set lists (live pack + cards editor) render as wrap card grid **100×200**. Chrome: **status** top; **favorite star** top-left where favorites apply (catalog); **Edit** control **top-right only**; body = truncated title / task-set label. Row click / card body open semantics stay as today (catalog open pack; task-set enter/edit rules unchanged). Soft-unpublish / republish / other side actions remain reachable without losing star/edit (do not race navigation).
-- **Why:** Explore D1 answers: catalog + task sets both 100×200; Edit only right.
-- **Alternatives:** Keep q-list rows — отклонено.
+- **Choice:** Catalog и task-set lists — wrap grid **150×200**. Status **сверху**. Favorite star **слева сверху** (catalog). **Все action-кнопки** карты (Edit, Unpublish, Republish, …) — **внизу**, **словами**, друг под другом, на всю ширину карточки. Справа сверху пусто. Catalog body: truncated title + truncated **description**. Task-set body: truncated label. Open/navigation semantics без изменений.
+- **Why:** Explore Q2/Q5/Q6.
+- **Supersedes:** D13 Edit top-right; 100×200.
 
 ### D14 — Staff must not see false draft after staff-save
 
-- **Choice:** Moderator/admin after staff direct-save MUST NOT see author-facing `draft` / «needs moderation» on sets solely because working≠live. Prefer: after staff-save align working with live **or** when serializing statuses for staff without open author request, omit `draft` from working≠live fingerprint. Keep `pending` / `needs_revision` for real open author requests.
-- **Why:** Staff edits publish immediately; stale working vs updated live currently marks draft for staff viewers.
-- **Alternatives:** Only hide badge on client — weaker; sync working preferred if cheap.
+- **Choice:** Omit `draft` for staff without open author request; clear twin working after staff-save when appropriate. Keep `pending` / `needs_revision`.
+- **Status:** реализовано в change.
 
 ### D15 — Map paint: block while saving + anti-stale apply
 
-- **Choice:** While a quiet/staff map save is in flight, ignore further cell paints (or queue until unlock). Do **not** apply a save response that is older than the local revision the user has since painted (generation token / dirty-since-request). Goal: rapid second paint must not disappear when the first save returns.
-- **Why:** Explore race: flushAutosave overwrote local with stale server grid.
-- **Alternatives:** Only debounce longer — insufficient.
+- **Choice:** Block paint while save in flight; skip stale save apply via local revision.
+- **Status:** реализовано (+ flushAutosave wait).
 
-### D16 — Map editor layout: board-like field, palette under with labels under tiles
+### D16′ — Map editor centered column + usable seat selects (extends D16)
 
-- **Choice:** Editor grid sized closer to in-game board (responsive large square, not tiny 280/360 side-panel). Paint tools as tiles **below** the map; **label under each tile** (start / task / finish). Seat selects and other chrome stay usable without returning palette to a side column as primary.
-- **Why:** Explore; main spec already says bottom palette — align UI.
-- **Alternatives:** Keep side palette — отклонено.
+- **Choice:** Под полем — palette with labels under tiles (уже). Весь столбец редактора (поле + палитра + селекты seats + chrome) **центрировать** горизонтально на странице как игровое поле. Селекты players / tourists — **достаточная ширина** (не схлопнутые `col-6` в узком `max-width: 360px` без запаса).
+- **Why:** Explore Q7 + «селекты схлопнулись».
+- **Package:** client `MapEditorPage.vue`.
 
 ### D17 — Breadcrumb Lobby navigates to lobby
 
-- **Choice:** Activating the Lobby crumb MUST navigate to the lobby route (`name: 'lobby'`). Use reliable router navigation (fix `to` and/or explicit push) so the crumb is not a dead label.
-- **Why:** Explore: click on Lobby crumb did not enter lobby.
-- **Capability:** `ui/branding` (extends breadcrumb path behavior).
+- **Choice:** Lobby crumb → `name: 'lobby'`.
+- **Status:** реализовано.
+
+### D18 — Bottom full-width text actions on answer/task tiles
+
+- **Choice:** Убрать round icon Edit/Delete из углов. Когда editable — внизу плитки две (или более) кнопки **словами** (`Редактировать` / `Удалить`), stacked, **width 100%** плитки. Difficulty / status badges остаются сверху.
+- **Why:** Explore Q2/Q6.
+- **Package:** `PackAnswerCardTile`, `PackTaskTile` (+ list cards per D13′).
+
+### D19 — Task slots as horizontal filled chips
+
+- **Choice:** В правой половине task tile слоты — **в ряд** (wrap), визуально как заполненные slot-чипы, не вертикальный список строк.
+- **Why:** Explore.
+- **Package:** `PackTaskTile`.
+
+### D20 — Maps list as cards
+
+- **Choice:** `MapsListPage` — wrap card grid вместо `q-list` rows. Карточка: сверху **миниатюра** grid; ниже `players×tourists` (и author/status по необходимости); action-кнопки снизу словами на всю ширину (как D13′).
+- **Why:** Explore «набор карт тоже в виде карт».
+- **Package:** client `MapsListPage` (+ shared map list card component если нужно).
+
+### D21 — Lobby create map select shows selected miniature
+
+- **Choice:** В create-game `q-select` карты: option list уже с mini preview; **selected-item** (закрытое состояние) MUST тоже показывать миниатюру выбранной карты рядом с label (не только текст).
+- **Why:** Explore.
+- **Capability:** `lobby/rooms`.
+- **Package:** client `LobbyPage.vue`.
 
 ## Risks / Trade-offs
 
-- **[Risk] `;` в тексте** → format hint; no escape v1.
-- **[Risk] Дубликаты content** → first match; accepted.
-- **[Risk] Catalog cards 100×200 узкие** → truncated title; accepted start size.
-- **[Risk] Staff sync working=live** → may discard author working if mis-applied; only after staff-save path / status omit for staff without open request.
-- **[Risk] Blocking paint while save** → slight friction on fast paint; safer than lost cells.
+- **[Risk] `;` в тексте** → format hint в рамке; no escape v1.
+- **[Risk] 150×200 + bottom buttons** → меньше места для title/description; truncate + clamp.
+- **[Risk] Font ×2 на узкой половине** → overflow/scroll внутри половины.
+- **[Risk] Staff sync working=live** → только staff-save path (уже).
+- **[Risk] Blocking paint while save** → slight friction (уже принято).
 
 ## Migration Plan
 
-1. Client (+ optional server status/sync): follow-up UX; vitest/mocha; lint/typecheck/build.
-2. Deploy client (and server if status fix lands there).
+1. Client UX follow-up + vitest; lint/typecheck/build.
+2. Deploy client (server already has D14).
 3. Rollback: revert commits.
 
 ## Open Questions
 
-None — D1–D5, D6′, D7–D17 закрыты в explore.
+None — Q1–Q7 закрыты (высота 200; все actions вниз; Import сразу picker; fold в этот change; star TL; badges top; editor column centered).
