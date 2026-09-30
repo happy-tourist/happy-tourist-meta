@@ -264,7 +264,7 @@ await router.push({ name: 'game', params: { roomId } });
 | Restoring «Играть» / `joinOrCreate` shortcut | Create with map+pack+sets or join listed room only |
 | Reviving maxSeats-only create (no map/pack) | Require mapId + packId + ≥1 published taskSetIds |
 | Showing `clients`/`maxClients` as capacity | Use metadata `seats`/`maxSeats` |
-| Surfacing task-set author on create options or room list | Use `taskSetOption` + ordinal `taskSetLabel` / `packSetsCaption` `{sets}` (SC-LOBBY-24/26); ordinal = pack index among **all** sets, not published-only index |
+| Surfacing task-set author on create options or room list | Use `taskSetOption` + ordinal `taskSetLabel` «Набор заданий #{n}» / `packSetsCaption` `{sets}` (SC-LOBBY-24/26); ordinal = pack index among **all** sets, not published-only index |
 | Join without `roomId` when clicking a list row | Pass `room.roomId` into `joinGame(roomId)` |
 | Enter success but no navigation | `push({ name: 'game', params: { roomId } })` |
 | Calling `client.create` / `joinById` in the page | Use `createGame` / `joinGame` on the store |

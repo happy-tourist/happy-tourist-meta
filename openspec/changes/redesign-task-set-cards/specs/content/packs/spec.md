@@ -5,13 +5,14 @@
 | SC-PACK-04…06, 34 | unchanged (attribution without display author) |
 | SC-PACK-130 | covered (client vitest — stats on task-set card) |
 | SC-PACK-132 | covered (client vitest — short unpublished badge) |
-| SC-PACK-135 | covered (client vitest — no author/coauthor on labels) |
+| SC-PACK-135 | covered (client vitest — no author/coauthor; `#{n}` ordinal) |
 | SC-PACK-228 | unchanged (catalog packs still 150×200) |
 | SC-PACK-229 | covered (client vitest — redesigned task-set card) |
-| SC-PACK-239 | covered (client vitest — stats rows + difficulty dots) |
+| SC-PACK-239 | covered (client vitest — stats rows + colored difficulty dots + dividers) |
 | SC-PACK-240 | covered (client vitest — short status badges) |
-| SC-PACK-241 | covered (client vitest — outline icon actions) |
+| SC-PACK-241 | covered (client vitest — outline icon actions; short Снять/Вернуть) |
 | SC-PACK-242 | covered (client vitest — light/dark readable) |
+| SC-PACK-243 | covered (client vitest — `#{n}` title; total icon + «Заданий:»; short card actions) |
 
 Related: playing-card answer/task tiles — main SC-PACK-222…227 (unchanged). Catalog pack cards — SC-PACK-228 (unchanged). Lobby create/list labels — `lobby/rooms` delta.
 
@@ -60,7 +61,7 @@ On the live pack view, the client MUST show answer cards and a **list of task-se
 
 ### Requirement: Staff soft-unpublish and republish task set
 
-Moderator and admin MUST be able to soft-unpublish an entire **task set** on a live pack and to republish it without a new moderation request. Soft-unpublish of a task set MUST NOT remove individual questions as a separate product action. Soft-unpublish MUST keep the set stored; non-staff viewers MUST see the set card as muted with a short unpublished status badge (product sense «СНЯТО») and MUST NOT enter the set. Staff MUST still be able to Edit the soft-unpublished set (staff-save / lock session) and MUST have republish on the **task-set card** (editor and live list) and **inside** the task-set page. Staff MUST confirm before unpublishing a set; republish MUST NOT require confirmation. The system MUST reject unpublishing a task set when it is the **only** published task set on the pack. Soft-unpublish of individual tasks/questions MUST NOT be offered. Staff moderation queue MUST NOT expose task-set unpublish controls. Hard-delete of published or soft-unpublished task sets is out of scope for this requirement.
+Moderator and admin MUST be able to soft-unpublish an entire **task set** on a live pack and to republish it without a new moderation request. Soft-unpublish of a task set MUST NOT remove individual questions as a separate product action. Soft-unpublish MUST keep the set stored; non-staff viewers MUST see the set card as muted with a short unpublished status badge (product sense «СНЯТО») and MUST NOT enter the set. Staff MUST still be able to Edit the soft-unpublished set (staff-save / lock session) and MUST have republish on the **task-set card** (editor and live list) and **inside** the task-set page. Staff MUST confirm before unpublishing a set; republish MUST NOT require confirmation. The system MUST reject unpublishing a task set when it is the **only** published task set on the pack. Soft-unpublish of individual tasks/questions MUST NOT be offered. Staff moderation queue MUST NOT expose task-set unpublish controls. Hard-delete of published or soft-unpublished task sets is out of scope for this requirement. On **task-set summary cards**, soft-unpublish and republish action labels MUST use short product copy («Снять» / «Вернуть» or equivalent i18n). Pack/catalog soft-unpublish copy and confirmation dialog wording MAY remain longer («Снять с публикации» / set confirm titles) and MUST NOT be required to match the card short labels.
 
 #### Scenario [SC-PACK-131]: Staff cannot unpublish the only published task set
 
@@ -81,13 +82,13 @@ Moderator and admin MUST be able to soft-unpublish an entire **task set** on a l
 
 ### Requirement: Task-set rows show author display name
 
-Wherever the client lists or titles a task set (live pack summary, cards editor list, staff moderation hub, task-set / questions page header when a set label is shown, and any other task-set title surface in content), each set MUST be labeled **without** the contributing author’s display name and **without** co-author labels. Preferred form: «Набор заданий {n}» (or equivalent i18n). Multiple sets MUST remain separate cards/rows (no collapsing). Internal attribution (`authorUserId`) and edit ACL MUST remain unchanged.
+Wherever the client lists or titles a task set (live pack summary, cards editor list, staff moderation hub, task-set / questions page header when a set label is shown, and any other task-set title surface in content), each set MUST be labeled **without** the contributing author’s display name and **without** co-author labels. Preferred form: «Набор заданий #{n}» (or equivalent i18n with a hash before the ordinal). Multiple sets MUST remain separate cards/rows (no collapsing). Internal attribution (`authorUserId`) and edit ACL MUST remain unchanged.
 
 #### Scenario [SC-PACK-135]: Live and editor show author on every task-set row
 
 - **GIVEN** pack P with two task sets by the same author whose displayName is «Мария»
 - **WHEN** a viewer opens the live pack page, the cards editor task-set list, the staff hub set headings, or a task-set questions page header
-- **THEN** each set label is of the form «Набор заданий {n}» (or equivalent) **without** «от Мария» / author / coauthor text
+- **THEN** each set label is of the form «Набор заданий #{n}» (or equivalent with `#`) **without** «от Мария» / author / coauthor text
 - **AND** the two sets are not merged into one
 
 ### Requirement: Pack catalog and task-set lists use fixed card tiles
@@ -120,7 +121,7 @@ The **task-set** lists on the live pack and cards-editor surfaces MUST render ea
 
 ### Requirement: Task-set cards use denser summary chrome
 
-On live pack and cards-editor task-set lists, each task-set card MUST present, top to bottom: optional short status badge; title «Набор заданий {n}» (no author); a total-tasks row; three difficulty rows (1 / 2 / 3) each with a three-dot indicator (filled count equals difficulty) and the count of tasks at that difficulty; then bottom action controls. Difficulty rows MUST remain scannable in both light and dark themes. Action controls that apply to the card (Edit, soft-unpublish, republish, and similar) MUST be full-width **outline** buttons with a leading icon and text label (not icon-only corner affordances). Hover scale / enlarge of the card MUST NOT be required. Cascade-gap highlight on editor cards MUST remain when applicable.
+On live pack and cards-editor task-set lists, each task-set card MUST present, top to bottom: optional short status badge; title «Набор заданий #{n}» (no author); a total-tasks row with a leading document-style icon and a «Заданий:» (or equivalent) label plus count; a horizontal divider; three difficulty rows (1 / 2 / 3) each with a three-dot indicator (filled count equals difficulty; filled dots use distinct colors for difficulties 1 / 2 / 3 in the product sense green / amber / red; unfilled dots are outline rings) and the count of tasks at that difficulty with capitalized difficulty labels ending in a colon; then a horizontal divider and bottom action controls. Difficulty rows MUST remain scannable in both light and dark themes. Action controls that apply to the card (Edit, soft-unpublish, republish, and similar) MUST be full-width **outline** buttons with a leading icon and text label (not icon-only corner affordances). Soft-unpublish on the card MUST read «Снять» (or equivalent short i18n); republish on the card MUST read «Вернуть» (or equivalent short i18n). Hover scale / enlarge of the card MUST NOT be required. Cascade-gap highlight on editor cards MUST remain when applicable.
 
 #### Scenario [SC-PACK-239]: Task-set card shows counts and difficulty dots
 
@@ -129,6 +130,10 @@ On live pack and cards-editor task-set lists, each task-set card MUST present, t
 - **THEN** the card shows a total tasks count row
 - **AND** shows separate rows for difficulties 1, 2, and 3 with counts
 - **AND** each difficulty row uses a three-dot indicator with filled count equal to that difficulty
+- **AND** filled dots for difficulties 1, 2, and 3 use distinct colors (green / amber / red product sense)
+- **AND** unfilled dots are outline rings rather than solid muted fills
+- **AND** a horizontal divider separates the total row from the difficulty rows
+- **AND** a horizontal divider separates the difficulty rows from the action controls when actions are present
 
 #### Scenario [SC-PACK-240]: Task-set card uses short status badges
 
@@ -143,6 +148,9 @@ On live pack and cards-editor task-set lists, each task-set card MUST present, t
 - **WHEN** the user views the card actions
 - **THEN** each action is a full-width outline control with a leading icon and text
 - **AND** MUST NOT be an icon-only control in a card corner
+- **AND** soft-unpublish on the card uses short «Снять» (or equivalent) rather than pack/catalog «Снять с публикации»
+- **AND WHEN** republish is shown on the card
+- **THEN** it uses short «Вернуть» (or equivalent)
 
 #### Scenario [SC-PACK-242]: Task-set cards stay readable in dark theme
 
@@ -150,3 +158,10 @@ On live pack and cards-editor task-set lists, each task-set card MUST present, t
 - **WHEN** the user views task-set summary cards including status and actions
 - **THEN** title, stats, badge, and actions remain visible against the card background
 - **AND** the card MUST NOT present light text on an unresolved white card background
+
+#### Scenario [SC-PACK-243]: Task-set card title hash and total-row chrome
+
+- **GIVEN** a live or editor task-set list with set ordinal n
+- **WHEN** the user views that set’s summary card
+- **THEN** the title includes a hash before the ordinal (product sense «Набор заданий #{n}»)
+- **AND** the total-tasks row shows a leading document-style icon and a «Заданий:» label (or equivalent) with the total count

@@ -87,9 +87,10 @@ render `PackAnswerCardTile` / `PackTaskTile` inside a wrapping `.pack-card-grid`
 **Catalog packs** use `PackListCardTile` **150×200** (status top, star TL,
 truncated description, **bottom** full-width text actions — SC-PACK-228).
 **Live/editor task-set lists** use dedicated `PackTaskSetCardTile` (denser
-summary chrome: short status, ordinal title without author, count + difficulty
-dots, outline+icon bottom actions; width ~150–160, height MAY exceed 200 —
-SC-PACK-229/239…242). Do **not** reuse `PackListCardTile` for task sets. Slot
+summary chrome: short status, `#{n}` ordinal title without author, total icon +
+«Заданий:», colored outline difficulty dots, dividers, outline+icon bottom
+actions with short «Снять»/«Вернуть»; width ~150–160, height MAY exceed 200 —
+SC-PACK-229/239…243). Do **not** reuse `PackListCardTile` for task sets. Slot
 **values** on a task row use `.peek-slot-like` (above); the answer **picker**
 beside slots is `PackAnswerCardTile` (selectable), **not** `q-chip`
 (SC-PACK-133 superseded for picker chrome by SC-PACK-222…224). Edit/delete only
@@ -102,7 +103,7 @@ staff Edit keeps CSV SC-PACK-236; Import opens the file picker directly — no
 
 ## Task-set label + Tasks back (SC-PACK-135 / 136 / 182)
 
-UI labels MUST use ordinal `content.taskSetLabel` («Набор заданий {n}») —
+UI labels MUST use ordinal `content.taskSetLabel` («Набор заданий #{n}») —
 **no** author/coauthor on live / editor / staff hub / Tasks heading / lobby
 create+list. `TaskSet.authorDisplayName` may remain in API/types for ACL but
 MUST NOT drive these labels; on save keep `coauthorLabels: []`. Live drill-in
@@ -173,7 +174,7 @@ UX as the cards editor while the author’s `task_set` request is
 | Add-task-set | verified non-anonymous + in-catalog | **no** collection membership (SC-PACK-164) → `content-pack-add-task-set` |
 | Soft-unpublished non-staff | any | list badge / no live; trash OK for never-approved |
 | Staff Edit | staff, **no** open author request | published (`hasLive`) → `enterStaffEdit` / staff-save **before** creator path even if staff is creator (SC-PACK-231); never-published staff creator keeps Submit (SC-PACK-232); `acquireEditLock` → `loadStaffEdit` / `staffSavePack`; else disabled + `staffEditBlockedAuthorRequest` |
-| Staff soft-unpublish | staff | `unpublishPack` / `republishPack` / task-set twins + confirms |
+| Staff soft-unpublish | staff | `unpublishPack` / `republishPack` / task-set twins + confirms; **card** labels `taskSetCardUnpublish`/`taskSetCardRepublish` («Снять»/«Вернуть»); pack/catalog/confirm copy stays long |
 | Staff queue | staff | **take** before approve/needs_revision/cancel; take badge when held by other |
 
 ## UI contracts

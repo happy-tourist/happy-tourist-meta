@@ -28,3 +28,12 @@
 ## 6. Meta skills touch-up
 
 - [x] 6.1 Обновить `.agents/skills/client/work-with-styles/pack-cards.md` (и при необходимости content-pages/content store notes) под task-set summary chrome vs catalog 150×200; verify текст skills согласован с design
+
+## 7. Client — mock polish (hash / colors / dividers / short actions)
+
+- [x] 7.1 Прочитать `design.md` Decision 3/5/8 и delta SC-PACK-135/239/241/243 + SC-LOBBY-24/26; текущие `PackTaskSetCardTile.vue`, live/editor action labels, i18n `taskSetLabel` / `taskSetCard*` / `unpublish` / `republish`
+- [x] 7.2 i18n: `taskSetLabel` → «Набор заданий #{n}» везде; total «Заданий:»; diff labels «Лёгкие:» / «Средние:» / «Сложные:»; card-only keys «Снять» и «Вернуть» (pack/catalog `unpublish` / confirms не трогать); verify строки в unit/i18n assertions
+- [x] 7.3 `PackTaskSetCardTile`: leading Material `description` на total-row; divider после total; outline empty dots + filled green/amber/red; ослабить слишком dense actions; без нового hover-polish / без scale; verify SC-PACK-239/242/243 в `PackTaskSetCardTile` vitest
+- [x] 7.4 Live + editor: soft-unpublish/republish на карточке → short keys «Снять» / «Вернуть»; verify SC-PACK-241 в list-cards / FollowUp vitest
+- [x] 7.5 Lobby create/list уже на `taskSetLabel` — убедиться что `#{n}` виден в SC-LOBBY-24/26 vitest (`LobbyCreateWire` и смежные)
+- [x] 7.6 Обновить `pack-cards.md` (+ localization/content notes при нужде): hash, цвета dots, dividers, short card actions, placeholder icon + reserved SVG names; `npm test` + `npm run lint` + `npm run typecheck` в client — зелёные по затронутому

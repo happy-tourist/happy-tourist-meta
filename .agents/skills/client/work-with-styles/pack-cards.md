@@ -31,15 +31,30 @@ bottom full-width **text** buttons when editable).
 (status top; star TL; truncated title + description; bottom full-width **text**
 actions). Do **not** fold task-set summary chrome into this tile.
 
-**Task-set lists — live + cards editor (SC-PACK-229 / 239…242):** dedicated
-`PackTaskSetCardTile.vue` (not `PackListCardTile`). Denser summary chrome:
-status top (short badges — СНЯТО / ДОРАБОТАТЬ / НА ПРОВЕРКЕ / …); ordinal title
-without author/coauthor (`taskSetLabel` / «Набор заданий {n}»); body rows —
-total count + difficulty 1/2/3 with filled dots; bottom full-width **outline +
-icon** actions (`@click.stop`); width ~150–160 (`156px` today); height MAY
-exceed 200 (`min-height` ~228); supports `cascade-gap-outline` (SC-PACK-126);
-explicit light/dark `--pack-ts-*` contrast; no hover scale. Answer/task
-playing-card tiles stay unchanged.
+**Task-set lists — live + cards editor (SC-PACK-229 / 239…243):** dedicated
+`PackTaskSetCardTile.vue` (not `PackListCardTile`). Mock-aligned summary chrome:
+
+- Status top (short badges — СНЯТО / ДОРАБОТАТЬ / НА ПРОВЕРКЕ / …). Badge SVGs
+  deferred; reserved names under `src/assets/content/`:
+  `task-set-badge-revise.svg`, `task-set-badge-pending.svg`,
+  `task-set-badge-unpublished.svg`, `task-set-badge-draft.svg` (temp Material
+  `close` / `schedule` / `visibility_off` / `edit_note`).
+- Ordinal title with hash, no author/coauthor: i18n `taskSetLabel` =
+  «Набор заданий #{n}» (live, editor, staff hub, tasks header, lobby create/list).
+- Total row: leading Material `description` (placeholder until
+  `task-set-card-tasks.svg`) + «Заданий:» + count; horizontal divider under total.
+- Difficulty rows: labels «Лёгкие:» / «Средние:» / «Сложные:»; three-dot indicator
+  (filled count = difficulty); filled colors 1 green / 2 amber / 3 red
+  (`--pack-ts-dot-1/2/3`); **unfilled = outline rings** (not solid muted).
+- Actions divider (border-top on actions block); bottom full-width **outline +
+  icon** actions (`@click.stop`); **not** overly `dense`. Card soft-unpublish /
+  republish: short keys `taskSetCardUnpublish` «Снять» /
+  `taskSetCardRepublish` «Вернуть». Pack/catalog `content.unpublish` /
+  `content.republish` and confirm dialogs stay long.
+- Width ~150–160 (`156px` today); height MAY exceed 200 (`min-height` ~228);
+  `cascade-gap-outline` (SC-PACK-126); explicit light/dark `--pack-ts-*`
+  contrast; **no hover scale / no new hover-polish** (existing clickable border
+  only). Answer/task playing-card tiles stay unchanged.
 
 Maps list uses `MapListCardTile.vue` (mini preview top, capacity, bottom text
 actions — SC-MAP-55).
@@ -51,4 +66,4 @@ lists use global `.peek-slot-like` (+ `--filled` / `__label` / `__empty` /
 as the primary slot chrome on these surfaces. Do **not** reintroduce list
 `q-chip` for answer/task bodies or slot pickers. Contracts: meta
 `work-with-stores/content.md` (Playing-card chrome); SC-PACK-222…229 / 237/238 /
-239…242.
+239…243.

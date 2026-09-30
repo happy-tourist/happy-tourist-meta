@@ -5,7 +5,9 @@ description: >-
   the happy-tourist client: Quasar Dark, quasar.variables.scss, app.scss, scoped
   page CSS, Quasar utilities, Material Icons / Roboto. Core in SKILL.md; topic
   details in theme.md (Dark + /api/theme), board.md (GamePage tourist CSS),
-  pack-cards.md (cascade yellow + pack/map list tiles).
+  pack-cards.md (cascade yellow + answer/task tiles + catalog
+  PackListCardTile + PackTaskSetCardTile summary chrome SC-PACK-229/239…243 +
+  map list tiles).
 ---
 
 # Work With Styles
@@ -31,7 +33,7 @@ Read the matching file in this folder when the change involves that area
 |-------|------|
 | Quasar Dark + GET/POST `/api/theme` + header toggle wiring | [theme.md](theme.md) |
 | Tourist board / presence / HUD / say CSS on GamePage | [board.md](board.md) |
-| Cascade yellow + `.pack-card-grid` + answer/task/list/map tiles | [pack-cards.md](pack-cards.md) |
+| Cascade yellow + `.pack-card-grid` + answer/task + catalog/list + `PackTaskSetCardTile` + map tiles | [pack-cards.md](pack-cards.md) |
 
 ## Project Style Model
 

@@ -19,7 +19,7 @@ live summary+drill-in / AddTaskSet chips), `ContentFollowUp5.test.ts`
 `ContentModerationUx.test.ts` (SC-PACK-126 editor cascade CSS; SC-PACK-127 slot
 chips on staff hub + add-task-set; SC-PACK-128 add-task-set thread/status/reply;
 SC-PACK-194/195 no `content.catalogNav` on pack/staff/my-moderation pages),
-pack CSV SC-PACK-210…229/239…242: `src/lib/__tests__/packContentCsv.test.ts`,
+pack CSV SC-PACK-210…229/239…243: `src/lib/__tests__/packContentCsv.test.ts`,
 `src/components/__tests__/PackTasksCsvControls.test.ts`,
 `src/pages/__tests__/ContentPackEditorCsv.test.ts` (framed CSV panel +
 in-frame errors — not `content.error`; no `PackCsvImportDialog`), tile smoke
@@ -27,8 +27,9 @@ in-frame errors — not `content.error`; no `PackCsvImportDialog`), tile smoke
 sizes/contrast SC-PACK-225…227 + catalog `PackListCardTile` /
 `ContentPackListCards` SC-PACK-228 + task-set `PackTaskSetCardTile` /
 `src/components/__tests__/PackTaskSetCardTile.test.ts` +
-`ContentPackListCards` SC-PACK-229/239…242 (summary chrome / short badges /
-outline+icon actions; no author on `taskSetLabel`) + maps list `MapListCardTile` /
+`ContentPackListCards` SC-PACK-229/239…243 (summary chrome / `#{n}` / colored outline
+dots / short badges / outline+icon actions; card «Снять»/«Вернуть»; no author on
+`taskSetLabel`) + maps list `MapListCardTile` /
 `ContentMaps` SC-MAP-55,
 staff-edit-draft-submit SC-PACK-231…238 / SC-MAP-62…65:
 `src/lib/__tests__/editorDirty.test.ts`,
@@ -56,7 +57,7 @@ App shell crumbs: `src/__tests__/AppHeaderChrome.test.ts` — breadcrumbs **insi
 narrow burger fold Acc/Theme/Logout (SC-BRAND-19). Moderation pages omit
 `content.catalogNav`: `ContentModerationUx` SC-PACK-194/195.
 Lobby create/list ordinals (no set author): `LobbyCreateWire` SC-LOBBY-24/26
-(`taskSetOption` / pack-index ordinals when soft sets hide ahead).
+(`taskSetOption` / `taskSetLabel` «Набор заданий #{n}» / pack-index ordinals when soft sets hide ahead).
 
 ## Testing a page / component that uses a store
 
