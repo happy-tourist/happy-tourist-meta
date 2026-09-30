@@ -1,27 +1,19 @@
 ---
 name: work-with-stores
 description: >-
-  Instructions for Pinia stores in the happy-tourist Vue 3 client:
-  setup vs options defineStore, auth vs game vs theme vs support vs content vs
-  maps ownership, local page state vs Pinia, Colyseus I/O in stores (budgets
-  peeks∞ / finite steps, removed-task holes, grille trap/rescue/push/return,
-  catapult reveal keys, D13 atomic `$patch` seats+revealing/broken, peek/end-turn),
-  acceptHMRUpdate, and Quasar pinia entry. Core in SKILL.md; content-pack details
-  in content.md (unified packs list + `openRequestType` + favorites + author
-  re-edit + staff take + `neverLive` ghost sets);
-  content-maps HTTP / paint / list statuses / author pending→Edit / title-row
-  Edit / staff lock / soft-unpublish (SC-MAP-41…52) in maps.md. Use when adding,
-  changing, reviewing, or debugging Pinia stores,
-  shared game/auth/theme/support/content/maps state (incl. admin setUserRole
-  merge / emailVerified; support `change_pack` + packId; maps list/editor), or
-  page-to-store wiring.
+  Instructions for Pinia stores in the happy-tourist Vue 3 client: setup vs
+  options defineStore, auth/theme/game/support/content/maps ownership, local
+  page state vs Pinia, Colyseus I/O in stores, acceptHMRUpdate. Core in SKILL.md;
+  content packs in content.md; content maps in maps.md; game room I/O in game.md.
+  Use when adding, changing, reviewing, or debugging Pinia stores or page-to-store
+  wiring.
 ---
 
 # Work With Stores
 
 Use this skill when deciding where state should live or when changing Pinia stores in the **happy-tourist client** (`happy-tourist.github.io`).
 
-This app uses **Pinia 4** with **six domain stores** (`auth`, `theme`, `game`, `support`, `content`, `maps`) plus Quasar’s Pinia entry. Pages use Composition API (`<script setup>`) and call `useAuthStore()` / `useThemeStore()` / `useGameStore()` / `useSupportStore()` / `useContentStore()` / `useMapsStore()` directly — not Vuex `map*`.
+This app uses **Pinia 4** with **six domain stores** (`auth`, `theme`, `game`, `support`, `content`, `maps`) plus Quasar’s Pinia entry. Pages use Composition API (`<script setup>`) and call `use*Store()` directly — not Vuex `map*`.
 
 Skills for this client live under `.agents/skills/client/`. Runtime paths below are relative to this repo root.
 
@@ -30,16 +22,16 @@ Skills for this client live under `.agents/skills/client/`. Runtime paths below 
 ```
 src/stores/
   index.ts          # Quasar defineStore → createPinia() (app entry, not a domain store)
-  auth.ts           # setup store (Composition API defineStore); exposes `role` / `isStaff` / `isAdmin` from userdata
-  theme.ts          # setup store — Quasar Dark preference (guest local / registered HTTP)
-  game.ts           # options store
-  support.ts        # setup store — support tickets + staff queue + admin users HTTP
-  content.ts        # setup store — unified packs list + favorites + working copy / author re-edit + staff take/lock; see content.md
-  maps.ts           # setup store — maps list statuses/filters + draft/submit + staff lock/soft-unpublish (SC-MAP)
-  example-store.ts  # Quasar scaffold counter — unused by login/lobby/game
+  auth.ts           # setup store; role / isStaff / isAdmin from userdata
+  theme.ts          # setup store — Quasar Dark preference
+  game.ts           # options store — see game.md
+  support.ts        # setup store — tickets + staff queue + admin users
+  content.ts        # setup store — packs; see content.md
+  maps.ts           # setup store — maps; see maps.md
+  example-store.ts  # Quasar scaffold — unused by product
 ```
 
-Pinia is installed via Quasar store entry `src/stores/index.ts` (`createPinia()`). Domain stores import the Colyseus `client` from `@/boot/colyseus`. Prefer importing `use*Store` from `@/stores/auth` / `@/stores/theme` / `@/stores/game` / `@/stores/support` / `@/stores/content` / `@/stores/maps` in pages and router; keep Colyseus calls inside those stores.
+Prefer importing `use*Store` from `@/stores/<domain>`; keep Colyseus calls inside those stores.
 
 ## Specialized Topics
 
@@ -48,335 +40,153 @@ Read the matching file in this folder when the change involves that area
 
 | Topic | File |
 |-------|------|
-| Content packs (`content` store: unified list + `openRequestType` + favorites + working copy / `editorKind` author re-edit, `submitPack`, add-task-set, staff take + lock/save, cascade yellow, set marks without fan-out, `neverLive` ghost + cancel→restore draft D22; playing-card tile chrome on pages; shared queue type `map`) | [content.md](content.md) |
-| Content maps (`maps` store: list statuses/filters + author work→Edit, create/draft/submit/paint, title-row Edit, staff lock/save, soft-unpublish; SC-MAP-41…52) | [maps.md](maps.md) |
+| Content packs (`content` store) | [content.md](content.md) |
+| Content maps (`maps` store) | [maps.md](maps.md) |
+| Game / lobby room I/O (`game` options store) | [game.md](game.md) |
 
 ### Store styles in this repo
 
 | Store | Style | Why |
 |-------|--------|-----|
-| `auth` | **Setup** (`defineStore('auth', () => { … })`) | Refs + computed, `onChange` subscription, `whenReady` promise — fits Composition API |
-| `theme` | **Setup** (`defineStore('theme', () => { … })`) | Dark preference + `syncFromAuthUser` / `toggle`; registered GET restore + POST save |
-| `game` | **Options** (`defineStore('game', { state, getters, actions })`) | Clear room lifecycle, `this.*` mutations, private helpers `_enterRoom` / `_attachRoom` |
-| `support` | **Setup** (`defineStore('support', () => { … })`) | HTTP tickets/staff/admin via `client.http`; `change_pack` requires `packId` (SC-SUP-28); staff list passes `topic`/`status` query; admin list expects `emailVerified`; after `setUserRole` **merge** `{ …u, …updated }` so list-only fields survive if API omits them; `error` + page `q-banner` |
-| `content` | **Setup** (`defineStore('content', () => { … })`) | HTTP packs via `client.http`; working-copy draft / `submitPack` / add-task-set / staff `acquireEditLock`+`staffSavePack` / `isStaffEditSessionNavigation` / `needsRevisionRequest`; cascade yellow; open = pending\|needs_revision; shared my-moderation/staff queue also carries type `map` — details in [content.md](content.md) |
-| `maps` | **Setup** (`defineStore('maps', () => { … })`) | HTTP content maps via `client.http`; paint helpers + draft/submit/staff lock/soft-unpublish; errors via `mapsErrorI18nKey` → `maps.errors.*` — details in [maps.md](maps.md) |
-| `counter` (`example-store`) | Options | Scaffold only — do not extend for product features |
+| `auth` | **Setup** | Refs + computed, `onChange`, `whenReady` |
+| `theme` | **Setup** | Dark preference + HTTP restore/toggle |
+| `game` | **Options** | Room lifecycle + `this.*` — details in [game.md](game.md) |
+| `support` | **Setup** | HTTP tickets/staff/admin; `change_pack`+`packId`; merge after `setUserRole` |
+| `content` | **Setup** | Packs HTTP / working copy — [content.md](content.md) |
+| `maps` | **Setup** | Maps HTTP / paint — [maps.md](maps.md) |
+| `counter` | Options | Scaffold only — do not extend |
 
-**When to choose setup vs options**
-
-- Prefer **setup** when the store needs Vue composables heavily (`ref`/`computed`), long-lived subscriptions, readiness promises (`auth`, `theme`), or thin HTTP CRUD (`support`, `content`, `maps`).
-- Prefer **options** when the domain is action-centric with shared mutable session state and imperative helpers (`game`).
-- Do not convert an existing store style without a concrete reason. Match the neighbor store’s style when extending the same domain.
+**When to choose setup vs options:** prefer **setup** for composables / HTTP CRUD / readiness; prefer **options** for action-centric room sessions (`game`). Do not convert style without a concrete reason.
 
 ### Naming conventions
 
 | Layer | Pattern | Examples |
 |-------|---------|----------|
-| Store id | kebab/camel short id | `'auth'`, `'theme'`, `'game'` |
-| Composable | `use*Store` | `useAuthStore`, `useThemeStore`, `useGameStore` |
-| State | camelCase | `user`, `roomId`, `status` |
-| Getters | camelCase boolean/derived | `isAuthenticated`, `isInRoom` |
-| Actions | verb / domain | `login`, `subscribeLobby`, `createGame`, `rejoinGame`, `leaveGame` |
-| Internal helpers | `_` prefix (options) | `_enterRoom`, `_leaveTouristRoom`, `_attachRoom`, `_resetRoomState`, `_joinLobbyRoom`, `_quietResubscribeLobby` |
-| Exported constants / types | beside the store | `TOURIST_ROOM`, `LOBBY_ROOM`, `AuthUser` |
+| Store id | short id | `'auth'`, `'game'` |
+| Composable | `use*Store` | `useAuthStore` |
+| Actions | verb / domain | `login`, `subscribeLobby`, `createGame` |
+| Internal helpers (options) | `_` prefix | `_enterRoom`, `_attachRoom` |
 
 ## State Ownership
 
 ### Local page state
 
-Keep state in the page when it belongs to one UI scenario and is not needed elsewhere.
-
-Use local `ref()` / `reactive()` for:
-- Form drafts and field values (login email/password/name).
-- UI toggles (`isRegister`, `showPassword`).
-- Page-local busy flags (`creating`, `joining`) that are not shared.
-- Static board layout constants on `GamePage` (tile grid) — geometry is local UI, not Pinia.
-
-Examples:
-- `LoginPage.vue`: `email`, `password`, `displayName`, `isRegister`, `showPassword`.
-- `LobbyPage.vue`: `creating`, `joining` (page spinners); room list and errors come from `game`.
-- `GamePage.vue`: synced `grid` via `lib/boardGeometry` + piece assets; top presence + seated bottom HUD / grace tick; store `consentedLeaving` gates soft-drop rejoin during App header leave; `unfinishedBoardPieces` + disappearing finishers / return travelers for board overlay; strip (row / narrow 2×2; no chip/`q-menu`) from `mySeat` (+ finish icons; return via confirm modal) inside HUD; local `selectedPieceId` / return-mode / `moveAnimating` / legal hints (exclude removed holes) / +N fall anim / place / peek / solo-peeks∞ / dual timer-vs-steps end / return-confirm modals; say picker open state (not Pinia).
+Keep in the page when it belongs to one UI scenario: form drafts, UI toggles,
+page-only busy flags, board geometry/selection/hints on `GamePage`.
 
 ### Pinia state
 
-Use a store for shared domain data, realtime session, or anything the router/other pages must see across navigations.
-
 | Store | Owns | Typical consumers |
 |-------|------|-------------------|
-| **auth** | `user` (`emailVerified?`, `displayName?`, `hasPassword?`, optional `theme`), `token`, `loading`, `error`, `ready`; `isAuthenticated`, `displayName` (persisted name first), `canChangePassword`, `needsEmailVerification`; register/login/anonymous/Google/`logout`/`forgotPassword`/`confirmEmail`/`resetPassword`/`sendEmailConfirmation`/`changeEmail`/`updateDisplayName`/`changePassword`/`refreshUserData`/`whenReady` | `LoginPage`, `ForgotPasswordPage`, `ConfirmEmailPage`, `ResetPasswordPage`, `AccountPage`, router `beforeEach`, `App.vue` session logout + theme sync + verify reminder (not LobbyPage) |
-| **theme** | Quasar Dark `preference`, `error`; async `syncFromAuthUser` (GET restore + generation + `clearStoredTheme` when unset; **no** `auth.user` replace after GET), `toggle` (guest `localStorage` `ht-theme`; registered `get` ≠ JWT-only, `post` on toggle may patch `user.theme`) | `App.vue` header toggle + stable auth identity watch |
-| **game** | lobby + tourist room; mirrored seats (pieces by **pieceId**) / `phase` / `maxSeats` / `grid` / `touristsPerPlayer` / `packTitle` / `flippedCells` / `answerCards` / peek session / turn / `removedTaskKeys` / grilles/catapults; private budgets + `openPeek`/`allJailWarning`; `createGame({ mapId, packId, taskSetIds, maxSeats, grilleDensity?, catapultDensity? })`; `sendMove`/`sendRescue`/`sendPush`/`sendReturnFromFinish`/`sendPeek`/`sendPeekPlace`/`sendPeekSubmit`/`sendEndTurn`/`sendReady`/`sendSay` | `LobbyPage`, `GamePage`, `App.vue` |
-| **support** | tickets / messages / staff queue / `adminUsers` (`emailVerified?`); `loading` / `error`; create (incl. `change_pack`+`packId`)/list/get/reply/close/take/status + `listAdminUsers` / `setUserRole` (merge updated row into `adminUsers`) via `client.http` | `SupportPage`, `SupportTicketPage`, `SupportStaffPage`, `AdminUsersPage` |
-| **content** | catalog / collection / my-moderation / live / working-copy draft / `submitPack` / add-task-set / staff lock+save / cascadeGap* / needs_revision — see [content.md](content.md) | `Content*` pages |
-| **counter** | scaffold only | none in product flow — ignore unless cleaning scaffold |
+| **auth** | session / email flows / roles | Login*, Account, router, App |
+| **theme** | Dark preference + `/api/theme` | App header (`work-with-styles/theme.md`) |
+| **game** | lobby + tourist room — [game.md](game.md) | Lobby, Game, App leave |
+| **support** | tickets / staff / admin users | Support*, AdminUsers |
+| **content** | packs — [content.md](content.md) | Content* pages |
+| **maps** | maps — [maps.md](maps.md) | MapsList / MapEditor |
 
-### Auth vs theme vs game ownership
+### Auth vs theme vs game
 
-- **auth** owns Colyseus Auth only (`client.auth.*`, thin `client.http` for send-confirm / change-email / confirm-email / reset-password / display-name / change-password, token sync via `onChange`). It does not create rooms or call Dark/`GET|POST /api/theme`.
-- **theme** owns chrome Dark preference and preference HTTP (`client.http.get('/api/theme')` on restore, `post` on toggle). Wired from `App.vue`; does not own auth session or rooms. See `work-with-styles`.
-- **game** owns room listing, room lifecycle, tourist reconnect token, seat/turn/start/finish/timer/grille/catapult sync (`seats` pieces by **pieceId** + `phase` / `maxSeats` / `grid` / `touristsPerPlayer` / peek session / turn / `removedTaskKeys` / grilles/catapults from `onStateChange`), private budgets (`budgets` → steps/peeks; shared peek from schema + optional `peekOpen`; `allJailWarning`), `sendMove`/`sendRescue`/`sendPush`/`sendReturnFromFinish`/`sendPeek`/`sendPeekPlace`/`sendPeekSubmit`/`sendEndTurn`/`sendReady`/`sendSay`. Create options: `{ mapId, packId, taskSetIds, maxSeats, grilleDensity?, catapultDensity? }` (`maxSeats` integer `1…map.players`; server omit → `min(2, map.players)`). Selection/hints/`moveAnimating`/say picker/modals stay page-local on `GamePage`.
-- Cross-cutting: router awaits `useAuthStore().whenReady()` then enforces `requiresAuth` / `guest`. `App.vue` uses `watch([() => auth.ready, () => auth.user?.id, () => auth.user?.anonymous], …)` → `theme.syncFromAuthUser` (GET restore; not JWT `user.theme`-only). Do **not** use `watch(() => [ready, id, anonymous])` (new array each run) or replace `auth.user` after GET — that storms `GET /api/theme` (SC-THEME-10). POST toggle may patch `auth.user.theme` because the watch does not depend on it. Game pages assume auth already passed.
-- Room constants: `TOURIST_ROOM = 'tourist'`, `LOBBY_ROOM = 'lobby'`. Board tile geometry + presence + move/peek/grille/catapult chrome stay on `GamePage`.
+- **auth** — Colyseus Auth only; no rooms / no Dark HTTP.
+- **theme** — chrome Dark; wired from App; see `work-with-styles/theme.md`.
+- **game** — rooms + sync + send* — [game.md](game.md).
+- Cross-cutting: router `whenReady()`; App stable multi-source watch →
+  `theme.syncFromAuthUser` (SC-THEME-10 — no `watch(() => […])`, no replace
+  `auth.user` after GET).
 
 ### Decision checklist
 
-Before adding state to Pinia, ask:
-- Do more than one page/component need this data?
-- Should it survive leaving the current page (auth session, active room)?
-- Is it Colyseus I/O or synced room/auth domain state?
-
-If no → keep it in local `ref()` on the page.
-
-Before keeping state local, ask:
-- Is it only used by this page (form draft, selection, one-off spinner)?
-- Can it reset without affecting lobby/game/auth elsewhere?
-
-If yes → keep it local.
+Shared across pages / survives navigation / Colyseus I/O → Pinia. Form draft /
+selection / one-off spinner → local `ref`.
 
 ## Core Patterns
 
 ### Keep Colyseus I/O in stores
 
-Pages call store actions; stores call `client` / `room`.
+Pages call store actions; stores call `client` / `room`. Do **not** scatter
+`client.create` / `client.auth.*` / `client.http` / `room.send` across widgets.
+Theme HTTP belongs in `stores/theme.ts`. Game `room.send` helpers → [game.md](game.md).
 
-```ts
-// Do — in stores/game.ts
-await client.joinOrCreate(LOBBY_ROOM, { filter: { name: TOURIST_ROOM } });
-await client.create(TOURIST_ROOM, options);
-this.room.send('move', { pieceId, row, col }); // sendMove
-this.room.send('peek', { pieceId }); // sendPeek
-this.room.send('peekPlace', { slotIndex, answerCardId }); // peeker
-this.room.send('peekSubmit', {}); // peeker
-this.room.send('endTurn'); // sendEndTurn when canSendEndTurn
-this.room.send('ready'); // only from sendReady when canSendReady
-this.room.send('say', { presetId }); // only from sendSay (hello|luck — not ready)
-
-// Do — in stores/auth.ts
-await client.auth.signInWithEmailAndPassword(email, password);
-client.auth.onChange((data) => { /* sync token/user/ready */ });
-```
-
-Do **not** scatter `client.create` / `client.auth.*` / `client.http` / `room.send` across many components. Import `client` from `@/boot/colyseus` inside stores (and boot), not from random widgets. Theme preference HTTP belongs in `stores/theme.ts` (see `work-with-styles`), not in pages.
-
-### Setup store (`auth`)
+### Setup store (`auth`) sketch
 
 ```ts
 export const useAuthStore = defineStore('auth', () => {
   const user = ref<AuthUser | null>(null);
   const token = ref<string | null>(null);
   const ready = ref(false);
-  // …
   const isAuthenticated = computed(() => Boolean(token.value && user.value));
-
   client.auth.onChange((data) => {
     token.value = data.token ?? null;
     user.value = (data.user as AuthUser | null) ?? null;
     ready.value = true;
-    // resolve whenReady promise once
   });
-
-  async function login(email: string, password: string) {
-    loading.value = true;
-    error.value = null;
-    try {
-      await client.auth.signInWithEmailAndPassword(email, password);
-    } catch (e) {
-      error.value = e instanceof Error ? e.message : String(e);
-      throw e;
-    } finally {
-      loading.value = false;
-    }
-  }
-
-  return { user, token, /* … */, isAuthenticated, login, whenReady };
+  async function login(email: string, password: string) { /* catch → error */ }
+  return { user, token, ready, isAuthenticated, login, whenReady };
 });
 ```
 
-Notes:
-- Catch into store `error` string; pages show `q-banner`.
-- `whenReady()` gates the router until first `onChange`.
-- Token key is SDK-managed (`colyseus-auth-token`); do not invent a parallel token store.
+Catch into store `error`; pages show `q-banner`. `whenReady()` gates the router.
+Token key is SDK-managed (`colyseus-auth-token`).
 
 ### Options store (`game`)
 
-```ts
-export const useGameStore = defineStore('game', {
-  state: () => ({
-    rooms: [],
-    lobbyRoom: null,
-    lobbyWanted: false,
-    room: null,
-    roomId: null,
-    sessionId: null,
-    phase: 'waiting',
-    maxSeats: 2,
-    countdownRemaining: 0,
-    started: false, // legacy mirror of phase === 'playing'
-    currentTurnSessionId: '',
-    turnUntil: 0,
-    turnBudgetSeconds: 0,
-    seats: [],
-    removedTaskKeys: [],
-    steps: 0,
-    peeks: 0,
-    budgetsInfinite: false,
-    peekedThisTurn: false,
-    openPeek: null,
-    status: 'idle',
-    error: null,
-    listing: false,
-  }),
-  getters: {
-    isInRoom: (state) => Boolean(state.room),
-    mySeat: (state) =>
-      state.seats.find((s) => s.sessionId === state.sessionId) ?? null,
-    isSeated: (state) =>
-      Boolean(state.sessionId && state.seats.some((s) => s.sessionId === state.sessionId)),
-    isMyTurn: (state) =>
-      Boolean(
-        state.sessionId &&
-        state.currentTurnSessionId &&
-        state.sessionId === state.currentTurnSessionId &&
-        state.seats.some((s) => s.sessionId === state.sessionId),
-      ),
-    isPlaying: (state) => state.phase === 'playing',
-    canSendReady: (state) => { /* waiting + ≥2 + under maxSeats + own !ready */ },
-    canSendEndTurn: (state) => { /* playing + isMyTurn + !budgetsInfinite + !finished + !timeExpired */ },
-  },
-  actions: {
-    async subscribeLobby() { /* lobbyWanted + joinOrCreate lobby + quiet resubscribe */ },
-    async unsubscribeLobby() { /* lobbyWanted=false; leave lobbyRoom */ },
-    async createGame(options: { mapId: string; packId: string; taskSetIds: string[]; maxSeats: number; grilleDensity?: 'few' | 'medium' | 'many'; catapultDensity?: 'few' | 'medium' | 'many' }) {
-      return this._enterRoom(() => client.create(TOURIST_ROOM, options));
-    },
-    async rejoinGame(roomId, options = {}) {
-      // localStorage reconnect(token) → clear stale on fail → fallback joinById
-    },
-    sendMove(pieceId, row, col) {
-      if (
-        !this.room ||
-        this.phase !== 'playing' ||
-        !this.isMyTurn ||
-        this.isMySeatFinished ||
-        this.isMySeatTimeExpired
-      ) {
-        return false;
-      }
-      this.room.send('move', { pieceId, row, col });
-      return true;
-    },
-    sendPeek(pieceId) { /* playing + isMyTurn → room.send('peek', { pieceId }) */ },
-    sendPeekPlace(slotIndex, answerCardId) { /* room.send('peekPlace', …) */ },
-    sendPeekSubmit() { /* room.send('peekSubmit', {}) */ },
-    sendEndTurn() {
-      if (!this.room || !this.canSendEndTurn) return false;
-      this.room.send('endTurn');
-      return true;
-    },
-    sendReady() {
-      if (!this.room || !this.canSendReady) return false;
-      this.room.send('ready');
-      return true;
-    },
-    sendSay(presetId) {
-      // whitelist hello|luck only (block ready); seated + connected; max 3 live
-      this.room.send('say', { presetId });
-      return true;
-    },
-  },
-});
-```
-
-Notes:
-- Live lobby listing uses `subscribeLobby` / LobbyRoom messages — not LobbyPage HTTP poll. `refreshRooms` HTTP remains unused fallback. Set `lobby.reconnection.enabled = false`; filter reservation/reconnect noise (see `work-with-lobby`).
-- **SC-LOBBY-20:** clear `rooms = []` on subscribe start / unsubscribe / quiet resubscribe; keep `listing` true until the first fresh `rooms` snapshot (clear `listing` in `onMessage('rooms')`, not in a subscribe `finally`).
-- Mirror `seats` (incl. connectivity + `ready` + `finishPlace` + `timeExpired` + piece `trapped`) / `phase` / `maxSeats` / `countdownRemaining` / `currentTurnSessionId` / `turnUntil` / `turnBudgetSeconds` / `removedTaskKeys` / `holdingGrilleKeys` / `revealingCatapultKeys` / `brokenCatapultKeys` / `sessionId` in the store; **D13:** `$patch` seats + revealing/broken catapult keys in one tick (avoid split mirror). Listen `budgets` / `peekOpen` / `allJailWarning` privately. Keep tile geometry + presence + selection/hints + peek/rescue/push/return/end-turn chrome + catapult sequential overlays (land→overlay→fling / continuous board-busy) + say/timeout/place/solo/all-jail modals on `GamePage` (not Pinia). Ephemeral `sayEvents` stay in the store (room I/O).
-- Persist tourist `reconnectionToken` in `localStorage` (`ht-tourist-reconnect`); clear on consented `leaveGame` / `_leaveTouristRoom` and after failed `reconnect`; keep on unexpected `onLeave`; cross-tab steal OK (see `work-with-rooms`).
-- `leaveGame` sets store `consentedLeaving` around room clear (gates GamePage soft-drop), unsubscribes lobby, swallows leave errors (room may already be closed), then clears the flag in `finally`. `GamePage` calls `rejoinGame(roomId)` on mount / soft-fail (reconnect → `joinById`). Leave confirm UX lives in `App.vue` on Game (`work-with-pages`).
+See [game.md](game.md) — do not duplicate the full options sketch in the core.
 
 ### HMR: always `acceptHMRUpdate`
 
 Every domain store ends with:
 
 ```ts
-import { defineStore, acceptHMRUpdate } from 'pinia';
-
-// … defineStore …
-
 if (import.meta.hot) {
   import.meta.hot.accept(acceptHMRUpdate(useAuthStore, import.meta.hot));
 }
 ```
 
-Use the same store composable passed to `defineStore`. Add this when creating a new store file.
-
 ### Quasar Pinia entry (`stores/index.ts`)
 
-Do not put domain state here. Only `createPinia()` (+ optional plugins) and `PiniaCustomProperties` typing. New product stores are separate files under `src/stores/`.
+Only `createPinia()` (+ optional plugins). New product stores are separate files.
 
 ## Using Stores In Pages / Router
 
-Composition API only for product pages:
-
 ```ts
-import { useAuthStore } from '@/stores/auth';
-import { useGameStore } from '@/stores/game';
-
 const auth = useAuthStore();
 const game = useGameStore();
-
 await auth.login(email.value, password.value);
 await game.subscribeLobby();
 ```
 
-Router: await `useAuthStore().whenReady()`, then honor `meta.requiresAuth` / `meta.guest`. Prefer store actions over importing `client` in the router.
-
-Dependency direction: `pages` → `stores` / `boot` / `components`. Keep Colyseus I/O in Pinia.
+Router: `await useAuthStore().whenReady()`, then honor meta. Dependency:
+`pages` → `stores` / `boot` / `components`.
 
 ## Adding A New Store Or Field
 
-1. Prefer extending an existing domain store (`auth` / `theme` / `game` / `support` / `content`) over a sixth store unless the concern is clearly separate.
-2. Pick setup vs options deliberately (see table above); add `acceptHMRUpdate`.
-3. Put defaults in setup `ref()` initial values or options `state()`.
-4. Add getters for derived flags (`isAuthenticated`, `isInRoom`) instead of recomputing in every page.
-5. Put async Colyseus/HTTP work in store actions; set `error` / loading flags there.
-6. Wire pages with `use*Store()`; keep form drafts and board layout local.
-7. Do not build product features on `example-store` / `counter`.
+1. Prefer extending an existing domain store over a seventh store.
+2. Pick setup vs options; add `acceptHMRUpdate`.
+3. Put async Colyseus/HTTP in actions; wire pages with `use*Store()`.
+4. Do not build on `example-store` / `counter`.
 
 ## Do / Don't
 
 **Do**
-- Keep Colyseus Auth and room I/O inside `auth` / `game`; keep HTTP tickets/packs/admin inside `support` / `content`.
-- Use local `ref` for form drafts, layout constants, and page-only spinners.
-- Sync auth from `client.auth.onChange`; gate routes with `whenReady()`.
-- Map only needed room fields from `onStateChange` (incl. `currentTurnSessionId` / `removedTaskKeys` / `holdingGrilleKeys` / `revealingCatapultKeys` / `brokenCatapultKeys` / piece `trapped`); **D13:** `$patch` seats + removed/holding + revealing/broken together (never assign revealing after seats in separate ticks); keep `sendMove` / `sendRescue` / `sendPush` / `sendReturnFromFinish` / `sendPeek` / `sendEndTurn` / `sendSay` lockstep with server `onMessage`.
-- For content HTTP errors, store stable API codes and let pages resolve via `contentErrorI18nKey` → `content.errors.*`.
-- Content packs: working copy + unified `submitPack` + add-task-set + staff lock/save + cascade yellow + needs_revision — follow [content.md](content.md) (no client slot pre-clear).
-- Add `acceptHMRUpdate` to every new store file.
-- Coordinate room name / state schema / messages with `../happy-tourist-server`.
+
+- Keep Auth/room I/O in `auth` / `game`; tickets/packs in `support` / `content`.
+- Local `ref` for forms, layout, page-only spinners.
+- Content packs/maps: follow [content.md](content.md) / [maps.md](maps.md).
+- Game mirror / D13 / send* lockstep: [game.md](game.md).
 
 **Don't**
-- Call `client.auth.*`, `client.create` / `joinById`, `client.http` for packs/tickets, or `room.send` from random components / GamePage (use store actions / `sendMove` / `sendRescue` / `sendPush` / `sendReturnFromFinish` / `sendPeek` / `sendPeekPlace` / `sendPeekSubmit` / `sendEndTurn` / `sendSay`).
-- Put tourist board tile geometry or selection/hints into Pinia without a cross-page need.
-- Assume `sendMove` / `sendPush` advances the turn — end-turn / auto / timeout do.
-- Put domain state in `stores/index.ts` or grow the unused `counter` scaffold.
-- Reintroduce legacy draughts `board` / `{ from, to }` as current product canon.
-- Mix auth session concerns into `game` or room lifecycle into `auth`; do not fold content packs into `support`.
-- Call removed dual `submitAnswers` / `submitTasks` or `draftStale`/`rebaseDraft` — use `submitPack` / add-task-set / staff save; staff soft-unpublish/republish of **pack** (`unpublishPack`/`republishPack`) and **task set** (`unpublishTaskSet`/`republishTaskSet`, set `inCatalog`) is allowed (SC-PACK-120…125 / 129…132; see [content.md](content.md)).
-- Pre-clear task slots before cascade save — see [content.md](content.md).
-- Forget HMR `acceptHMRUpdate` on new stores.
-- After theme GET, replace `auth.user` only to set `theme` — feeds the App
-  restore watch and storms preference HTTP; keep applied theme in `theme`
-  store; use a stable multi-source `watch([...sources])`.
+
+- Call `client.*` / `room.send` from random components / GamePage.
+- Put board geometry or selection into Pinia without cross-page need.
+- Assume `sendMove` / `sendPush` ends the turn.
+- Fold packs into `support` or room lifecycle into `auth`.
+- Pre-clear task slots before cascade save — [content.md](content.md).
+- After theme GET, replace `auth.user` only to set `theme` (SC-THEME-10).
 
 ## Common Mistakes
 
-- Scattering Colyseus calls across pages instead of store actions.
-- Adding Vuex-style modules/`mapState` — this client is Pinia + `<script setup>`.
-- Putting login form fields into `auth` state.
-- Putting cell selection / legal hints into `game` state (keep page-local on `GamePage`).
-- Using `getAvailableRooms` or LobbyPage HTTP poll — use `subscribeLobby` (LobbyRoom); HTTP `refreshRooms` is unused fallback.
-- Assuming `@colyseus/auth` is the client API — browser auth is `client.auth` from `@colyseus/sdk`.
-- Skipping `whenReady()` and racing protected routes before token restore.
-- Leaving room attach listeners only in a page so refresh/rejoin breaks — attach in `game._attachRoom`.
+- Scattering Colyseus calls across pages.
+- Vuex `mapState` — this client is Pinia + `<script setup>`.
+- Login form fields in `auth`; cell selection in `game`.
+- LobbyPage HTTP poll — use `subscribeLobby` (`work-with-lobby`).
+- Skipping `whenReady()`; attaching room listeners only in a page.

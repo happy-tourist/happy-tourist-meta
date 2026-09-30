@@ -16,7 +16,8 @@ Setup store `maps` owns:
 - `submitMap` / `loadModeration` / `postModerationMessage`
 - staff `acquireEditLock` / `refreshEditLock` / `releaseEditLock` /
   `loadStaffEdit` / `staffSaveMap` — staff blocked while `authorRequestOpen`
-  (`author_request_open`; SC-MAP-36)
+  (`author_request_open`; SC-MAP-36); after live staff-save with no open request,
+  server clears retained working (SC-MAP-64 — same as pack SC-PACK-233)
 - `unpublishMap` / `republishMap` (soft-hide `inCatalog`; cascade-cancel + RU mail)
 - `deleteUnpublishedMap` → `POST /api/content/map/delete` (never-approved only)
 - `cancelRequest` → shared cancel; keeps working → author-facing
@@ -68,7 +69,10 @@ HTTP in `maps` beyond cancel/preview helpers the editor already needs.
   **no** paint tools / seat selects (SC-MAP-46/47). App breadcrumbs replace
   «К картам» and sit **inside** `q-page-container` (SC-MAP-44/52 / SC-BRAND-17).
 - **Editor boot:** never-published or creator author-work
-  (draft/pending/needs_revision) → Edit + lock; clean published → View (SC-MAP-46/49/50).
+  (draft/pending/needs_revision) → Edit + lock; clean published → View
+  (SC-MAP-46/49/50). **Published + staff** (`hasLive` + `isStaff`) →
+  `staffMode` / staff-save **before** creator path even if staff is creator
+  (SC-MAP-62); never-published staff creator keeps Submit (SC-MAP-63).
 - **Editor edit:** board-comparable field + under-map paint tiles with labels
   under each tool (SC-MAP-54); **centered** editor column (field + palette +
   seats) with usable-width seat selects (SC-MAP-56); interactive preview +
@@ -76,9 +80,11 @@ HTTP in `maps` beyond cancel/preview helpers the editor already needs.
   flight** and **anti-stale** skip applying older save echoes (SC-MAP-53;
   `flushAutosave` waits in-flight
   before Submit); **author may re-edit published** via lock + draft → moderation
-  (mirrors packs); staff `?staff=1` lock session when no open author request
-  (else blocked tooltip `maps.staffEditBlockedAuthorRequest`). Cancel → draft,
-  keep working (do not `clearWorkingFlags`).
+  (mirrors packs); author «На модерацию» requires dirty vs `lib/editorDirty`
+  baseline + starts minima (SC-MAP-65; hint `maps.submitHintNotDirty`); staff
+  `?staff=1` / staffMode lock session when no open author request (else blocked
+  tooltip `maps.staffEditBlockedAuthorRequest`). Cancel → draft, keep working
+  (do not `clearWorkingFlags`).
 - Unpublish confirm warns open requests cancelled (`maps.unpublishConfirm`).
 - Errors: page `q-banner` on `maps.error`; prefer `mapsErrorI18nKey` when set.
 
@@ -88,8 +94,10 @@ HTTP in `maps` beyond cancel/preview helpers the editor already needs.
 - Pages/UI: `src/pages/__tests__/ContentMaps.test.ts` (list filters/statuses +
   `MapListCardTile` SC-MAP-55 + view meta / title-row Edit / author pending→Edit /
   crumbs / cancel→draft / centered seats SC-MAP-56 + SC-MAP-41…54 + SC-MAP-06…08,
-  14, 17, 21, 24–25, 29–36 + submit starts gate + paint race / palette under).
+  14, 17, 21, 24–25, 29–36 + submit starts gate + paint race / palette under +
+  staff published boot / never-published Submit / dirty gate SC-MAP-62/63/65).
   App crumbs inside `q-page-container`: `AppHeaderChrome` SC-MAP-52 / SC-BRAND-17…20.
-- Server twin: `test/zz-contentMaps.test.ts` (mocha) — do not mix stacks.
+- Server twin: `test/zz-contentMaps.test.ts` (mocha; staff-save clear working
+  SC-MAP-64) — do not mix stacks.
 
 See meta `work-with-test` / `work-with-pages` / `work-with-localization` (`maps.*`).

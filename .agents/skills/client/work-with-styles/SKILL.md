@@ -2,22 +2,10 @@
 name: work-with-styles
 description: >-
   Use when adding, changing, reviewing, or debugging Vue 3 / Quasar 2 styles in
-  the happy-tourist client: Quasar Dark plugin + theme boot/store, App.vue
-  header toggle + always-button brand logo ≥60px CSS + page-zone
-  `.app-breadcrumbs` inside `q-page-container` offset (SC-BRAND-17), guest localStorage vs
-  registered GET/POST /api/theme (restore ≠ JWT-only), muted chrome text,
-  quasar.variables.scss tokens, app.scss, page scoped CSS (especially GamePage
-  board gap/radius 2 + `.tile--removed` holes + grille overlay drop/rise via
-  `--grille-anim-ms` / `GRILLE_ANIM_MS=1000` + catapult reveal/broken-hold CSS
-  via `--catapult-anim-ms` / `CATAPULT_ANIM_MS=1000` (successful fade; broken
-  uses intact/hold/vanish classes, not mid-fade swap) + trapped piece chrome +
-  top presence + sticky seated `.game-hud` presence/ring/avatar + strip
-  row/narrow 2×2 + chrome grille + budgets beside avatar + end-turn icon
-  right-center + peek/rescue/push top-center + say bubbles top↓/own↑), content
-  pack `.cascade-gap-outline` (Editor task-set + Tasks rows; SC-PACK-126) +
-  global `.pack-card-grid` wrap for `PackAnswerCardTile` / `PackTaskTile` /
-  `PackListCardTile` (SC-PACK-222…229), Quasar utility classes, Material Icons / Roboto, or color
-  props on Quasar components.
+  the happy-tourist client: Quasar Dark, quasar.variables.scss, app.scss, scoped
+  page CSS, Quasar utilities, Material Icons / Roboto. Core in SKILL.md; topic
+  details in theme.md (Dark + /api/theme), board.md (GamePage tourist CSS),
+  pack-cards.md (cascade yellow + pack/map list tiles).
 ---
 
 # Work With Styles
@@ -27,76 +15,46 @@ Use this skill when working with styles in the **happy-tourist client**
 
 Stack: Vue 3 Composition API (`<script setup>`) + Quasar 2 + `@quasar/app-vite`
 + Sass/SCSS. Theming is Quasar Sass variables, Quasar utility classes, and the
-built-in **Quasar `Dark` plugin** for light/dark chrome — there is no Vuetify,
-no brand-profile color system, and no co-located `styles.scss` next to
-components.
+built-in **Quasar `Dark` plugin** — no Vuetify, no brand-profile color system,
+no co-located `styles.scss` next to components.
 
-`quasar.config.ts` registers global CSS via `css: ['app.scss']`, loads extras
-`roboto-font` + `material-icons`, enables `framework.plugins: ['Dark']`, and
-boots `theme` before `i18n` / `colyseus`. Theme tokens live in
-`src/css/quasar.variables.scss` (auto-available in `.vue` / `.scss` / `.sass`).
+`quasar.config.ts` registers `css: ['app.scss']`, extras `roboto-font` +
+`material-icons`, `framework.plugins: ['Dark']`, boots `theme` before `i18n` /
+`colyseus`. Tokens: `src/css/quasar.variables.scss`.
+
+## Specialized Topics
+
+Read the matching file in this folder when the change involves that area
+(do not load every file at once):
+
+| Topic | File |
+|-------|------|
+| Quasar Dark + GET/POST `/api/theme` + header toggle wiring | [theme.md](theme.md) |
+| Tourist board / presence / HUD / say CSS on GamePage | [board.md](board.md) |
+| Cascade yellow + `.pack-card-grid` + answer/task/list/map tiles | [pack-cards.md](pack-cards.md) |
 
 ## Project Style Model
 
 | Layer | Role | Location |
 |-------|------|----------|
-| Quasar Dark (runtime) | Chrome light / dark / device `auto` | `quasar.config.ts` plugin + `boot/theme.ts` + `stores/theme.ts` |
-| Shared header toggle | Explicit light ↔ dark on all pages | `App.vue` `q-header` |
-| Brand logo chrome | ≥60px height `logo.png` left (always-button); scoped `.brand-logo` / `.brand-logo-control` | `App.vue` + `src/assets/brand/logo.png` |
-| Page-zone breadcrumbs | `.app-breadcrumbs` **inside** `q-page-container` (header offset zone; not inside elevated `q-header`; not sibling above container) — SC-BRAND-17 | `App.vue` scoped |
-| Quasar theme Sass variables | Brand/palette tokens (`$primary`, `$negative`, …) | `src/css/quasar.variables.scss` |
-| Global app CSS | App-wide rules (e.g. `.text-muted` for dark-friendly chrome) | `src/css/app.scss` |
-| Quasar extras | Roboto font + Material Icons | `quasar.config.ts` → `extras` |
-| Page / component CSS | Scoped rules for custom UI (board, login card width) | `<style scoped>` in the `.vue` file |
-| Template layout | Quasar utility / typography / color classes + props | Template `class` / `color` / `icon` |
+| Quasar Dark (runtime) | Chrome light / dark / device `auto` | See [theme.md](theme.md) |
+| Brand logo / breadcrumbs CSS | ≥60px logo; `.app-breadcrumbs` inside `q-page-container` | `App.vue` scoped (+ `work-with-pages/shell.md`) |
+| Quasar theme Sass variables | `$primary`, `$negative`, … | `src/css/quasar.variables.scss` |
+| Global app CSS | `.text-muted`, `.pack-card-grid` | `src/css/app.scss` |
+| Page / component CSS | Board, login card, tiles | `<style scoped>` / topic files |
+| Template layout | Quasar utility / color props | Template `class` / `color` / `icon` |
 
-There is no shared mixin/token SCSS pipeline beyond Quasar variables. Do **not**
-add a second theme engine — use Quasar `Dark` only.
-
-## Runtime Light / Dark (Quasar Dark)
-
-Preference values: `light` | `dark` | unset (`null`). Unset → `Dark.set('auto')`
-(follows OS). After an explicit choice, toggle is light ↔ dark only (no return
-to auto in v1).
-
-| Concern | Behavior | Code |
-|---------|----------|------|
-| Early apply | Boot reads `localStorage` key `ht-theme` and calls `Dark.set` | `src/boot/theme.ts` |
-| Guest / signed out | Persist explicit choice in `localStorage` only | `writeStoredTheme` / `readStoredTheme` |
-| Registered restore | On `auth.ready` / identity change: async `client.http.get('/api/theme')` and apply; **not** JWT `user.theme` alone after reload (claims may be stale); align device copy (`writeStoredTheme` or `clearStoredTheme` when profile unset → auto); ignore stale GET via generation counter; **do not** replace `auth.user` after GET (theme lives in theme store — SC-THEME-10); GET fail → keep boot/`localStorage`, do not fall back to JWT-only | `stores/theme.ts` `syncFromAuthUser` |
-| Registered save | Toggle → `client.http.post('/api/theme', { body: { theme } })`; also write `localStorage` (flash / device copy); optional in-memory `auth.user.theme` patch after POST (watch must not depend on `user.theme`); failures → store `error` + `q-banner` in `App.vue` | `stores/theme.ts` `toggle` |
-| Header control | Shared `q-header` + `q-btn` icons `dark_mode` / `light_mode` | `App.vue` |
-| Auth wiring | `App.vue`: `watch([() => auth.ready, () => auth.user?.id, () => auth.user?.anonymous], …)` — stable multi-source (not `() => […]` which allocates a new array each run); not on `user.theme` → `theme.syncFromAuthUser` | do not call HTTP from page templates |
-| Board | Unchanged — tourist tile fills are **fixed colors**, not app Dark mode | `GamePage.vue` scoped CSS (`.tourist-board` / `.tile-*`) |
-
-`AuthUser` may include optional `theme?: string | null` from userdata (login /
-display); restore after reload must use **GET** `/api/theme`, not JWT claims
-alone. Anonymous sessions must not GET/POST `/api/theme` (server rejects).
-Colyseus HTTP for theme belongs in the theme store only (`colyseus-client` /
-stores pattern).
-
-Muted secondary chrome text uses global `.text-muted` (with `.body--dark`
-override) instead of hardcoding `text-grey-7` on Login / Lobby / Game chrome.
+Do **not** add a second theme engine — use Quasar `Dark` only.
 
 ## Default Choices
 
-- Prefer Quasar props (`color="primary"`, `color="negative"`, `flat`, `outline`,
-  `dense`) so theme variables apply automatically.
-- Prefer Quasar utility classes in templates for spacing, flex, typography, and
-  text color (`q-pa-md`, `row`, `text-h5`, `text-muted` for secondary chrome).
-- Prefer Material Icons via Quasar `icon` / `q-icon` (`arrow_back`, `refresh`,
-  `logout` for account/lobby sign-out only — **not** Game leave, `sports_esports`,
-  `visibility`, `dark_mode`, `light_mode`) — already loaded as extras. Game leave
-  is the brand logo in `App.vue`, not a Material icon.
-- Put game-board and other custom visuals in **scoped** `<style>` on the owning
-  page (see `GamePage.vue`). Do not invent a co-located `styles.scss` folder
-  pattern unless the project already has one for that feature.
-- Keep `app.scss` for true globals only (e.g. `.text-muted`); do not dump
-  page-specific board CSS there.
-- Use Quasar `Dark` for chrome theming; do not introduce Vuetify classes, brand
-  profiles, or a second theme system.
-- Keep the theme toggle in `App.vue` header — do not duplicate per-page theme
-  buttons.
+- Prefer Quasar props (`color="primary"`, `flat`, `dense`) and utility classes.
+- Prefer Material Icons via `icon` / `q-icon` (already in extras). Game leave is
+  the brand logo in `App.vue`, not a Material `logout` icon.
+- Custom board / tile visuals → scoped SFC CSS (see topics). Do not invent
+  co-located `styles.scss` folders.
+- Keep `app.scss` for true globals only; do not dump board CSS there.
+- Theme toggle lives in `App.vue` — do not duplicate per-page.
 
 ## Quasar Theme Variables
 
@@ -105,257 +63,87 @@ override) instead of hardcoding `text-grey-7` on Login / Lobby / Game chrome.
 $primary: #1976d2;
 $secondary: #26a69a;
 $accent: #9c27b0;
-
 $dark: #1d1d1d;
 $dark-page: #121212;
-
 $positive: #21ba45;
 $negative: #c10015;
 $info: #31ccec;
 $warning: #f2c037;
 ```
 
-These feed Quasar component colors and helpers such as `bg-negative`,
-`text-white`, `color="primary"`. Change branding here first; avoid scattering
-matching hex values across templates unless the UI is intentionally outside the
-Quasar palette (board wood tones, piece gradients).
+Change branding here first; board wood tones / piece gradients may stay outside
+the Quasar palette on purpose.
 
 ## Global CSS
 
 ```scss
 // src/css/app.scss
-// app global css
-
-/* Secondary/muted text readable in both light and dark chrome */
-.text-muted {
-  color: rgba(0, 0, 0, 0.54);
-}
-
-.body--dark .text-muted {
-  color: rgba(255, 255, 255, 0.7);
-}
+.text-muted { color: rgba(0, 0, 0, 0.54); }
+.body--dark .text-muted { color: rgba(255, 255, 255, 0.7); }
 ```
 
-File is registered in `quasar.config.ts` (`css: ['app.scss']`). Keep app-shell
-globals here (muted text, rare resets). Do not move board CSS into this file.
+Also hosts `.pack-card-grid` (see [pack-cards.md](pack-cards.md)).
 
 ## Fonts And Icons
 
-From `quasar.config.ts`:
-
-```ts
-extras: [
-  'roboto-font',
-  'material-icons',
-],
-```
-
-- Typography defaults to Roboto via Quasar extras (not a custom font stack).
-- Icons: Material Icons names as strings on `q-btn` `icon` / `q-icon` `name`.
-- Do not add MDI / Font Awesome unless `extras` is updated on purpose; prefer
-  Material Icons to match the existing lobby/login/game chrome.
+`extras: ['roboto-font', 'material-icons']`. Do not add MDI / Font Awesome unless
+`extras` is updated on purpose.
 
 ## Scoped Page Styles
 
-Custom CSS lives **inline in the SFC** with `scoped`, not in a sibling
-`styles.scss`.
+Custom CSS lives **inline in the SFC** with `scoped`.
 
 ### Login card
 
 ```vue
-<!-- LoginPage.vue -->
 <style scoped>
-.login-card {
-  width: 100%;
-  max-width: 400px;
-}
+.login-card { width: 100%; max-width: 400px; }
 </style>
 ```
 
-Layout/spacing still uses Quasar classes (`q-pa-md`, `q-gutter-md`,
-`flex flex-center`). Scoped CSS only constrains card width.
+### Content cascade / pack tiles / board
 
-### Content pack cascade yellow (`ContentPackEditorPage` / `ContentPackTasksPage`)
-
-Class `cascade-gap-outline` marks cleared answer slots after cascade normalize.
-**Same visible outline on both pages** (SC-PACK-126 / D10):
-
-```css
-.cascade-gap-outline {
-  outline: 2px solid var(--q-warning);
-  outline-offset: -2px;
-}
-```
-
-Do not use `bg-warning` row fill. Applying the class without this scoped CSS
-is a hard defect. Contracts: meta `work-with-stores/content.md`.
-
-### Pack playing-card grid (`app.scss` + tile components)
-
-Answer/task lists use global wrap class `.pack-card-grid` (`display: flex;
-flex-wrap: wrap; gap: 0.75rem`) in `src/css/app.scss`. Tile chrome lives in
-scoped styles on `PackAnswerCardTile.vue` / `PackTaskTile.vue` (fixed px:
-answer **150×200** without description / **300×200** with **vertical** splitter;
-task **300×200**; ~×2 type; explicit light/dark `--pack-tile-*` contrast — not
-`--q-card-background` alone; difficulty top-left on tasks; Edit/Delete as
-bottom full-width **text** buttons when editable). Catalog packs + task-set
-lists use `PackListCardTile.vue` (**150×200**; status top; star TL; catalog
-description; bottom text actions). Maps list uses `MapListCardTile.vue` (mini
-preview top, capacity, bottom text actions — SC-MAP-55). Do **not** reintroduce
-list `q-chip` for answer/task bodies or slot pickers — keep `q-chip` only for
-slot **values** on a task row. Contracts: meta `work-with-stores/content.md`
-(Playing-card chrome); SC-PACK-222…229.
-
-### Tourist board (`GamePage.vue`)
-
-Board UI is custom CSS Grid (not Quasar widgets). Keep selectors local and class-driven:
-
-| Class | Role |
-|-------|------|
-| `.game-page` | Column page: board scroll region (top presence + board) + sticky seated HUD |
-| `.presence-row--top` | Opponents (seated) or all occupied (spectator) above the board |
-| `.end-turn-affordance` | Icon-only `skip_next` **right-center** on own avatar (`right: -8px`, 36px hit) — **not** in budgets row, **no** labeled dock (SC-PRESENCE-17/25) |
-| `.presence-slot--own` | Own HUD cluster: avatar | budgets; **`gap: 20px`** (≥ end-turn hit so `skip_next` does not cover budgets — SC-PRESENCE-25) |
-| `.game-hud` / `__scroll` / `__bar--seated` | Sticky bottom **seated** panel only (`container-name: game-hud`); scroll wrapper owns `overflow-x` so say chrome is not clipped (SC-SAY-15); spectator has **no** bottom HUD |
-| `.tourist-board` | 10×10 CSS Grid; `--cell` / `--gap` / `--radius`; `aspect-ratio: 1`; transparent holes |
-| `.grille-overlay` / `--drop` / `--rise` | Revealed holding grille from `src/assets/grilles/grille.png`; duration via `--grille-anim-ms` (`GRILLE_ANIM_MS = 1000`) for drop/rise incl. leave-clear (SC-BOARD-18/19/21) |
-| `.catapult-overlay` / `--reveal` / `--intact` / `--broken-hold` / `--vanish` | Catapult presentation from `src/assets/catapults/catapult.png` (+ `catapult-broken.png`); successful fade via `--catapult-anim-ms` (`CATAPULT_ANIM_MS = 1000`); broken timeline uses intact → hold → broken-hold → vanish classes; land→overlay→fling sequencing is page logic (SC-BOARD-22…28) |
-| `.piece--trapped` | Trapped tourist still visible under grille (SC-PIECE-27); no own-select chrome |
-| `.tile` | Rounded tile (`border-radius: var(--radius)`); `pointer-events` only when interactive |
-| `.tile-start` | Green start tile (`#4caf50`) |
-| `.tile-task` | Brown task tile (`#8d6e63`) |
-| `.tile-center` | Yellow center (`#ffeb3b`); one element with `span 2` / `span 2` |
-| `.tile--selected` / `.tile--target` | Local white / red move **and** return-mode ring chrome (same red class — SC-FINISH-13 / SC-MOVE-12) |
-| `.tile-task.tile--removed` | Removed-task hole = page background; may keep `.tile--selected` while piece stands; **never** combine with `.tile--target` (holes not landable — SC-BOARD-15) |
-| `.piece` | Absolute `left`/`top` from `--pcol`/`--prow` + `--cell`; ~250ms transition (incl. return from nearest center) |
-| `.presence-marker` | Occupied seat chrome; reserved **96×96** `position: relative` slot for dual rings + 72px avatar (stable layout — SC-PRESENCE-11/13) |
-| `.presence-progress--outer` | Turn ring (96px); `position: absolute; inset: 0; z-index: 0`; `pointer-events: none` |
-| `.presence-progress--inner` | Reconnect ring (84px); absolute centered; `z-index: 1`; `pointer-events: none` |
-| `.presence-avatar` | **Sibling** tourist PNG (**72px**) on top of rings — `z-index: 2`; `pointer-events: none`; no static `--turn` box-shadow; do **not** rely on progress default slot without `show-value` (SC-PRESENCE-12) |
-| `.presence-slot` | Marker wrapper in top row or seated HUD |
-| `.my-tourist-strip` / `.my-tourist-slots` / `.my-tourist-slot` / `-img` / `-finish-icon` | Four strip slots in HUD: wide flex row N,E,W,S; `@container game-hud (max-width: 420px)` → 2×2 smaller slots when own+row would overflow (covers ≤320/300 — SC-PIECE-09/32). **No** chip / `q-menu` / `-return-btn` |
-| `.my-tourist-slot--dimmed` / `--returnable` / `--returning` | Dim finished **only** when `!canReturn`; returnable / returning chrome (SC-FINISH-09/13) |
-| `.my-tourist-chrome-grille` / `--drop` / `--rise` | Grille overlay on strip slots when `trapped`; same `--grille-anim-ms` / `GRILLE_ANIM_MS = 1000` as board (SC-PIECE-31) |
-| `.presence-place-badge` / `.ready-affordance` | Top-left corners (SC-PRESENCE-14) |
-| `.presence-budgets` / `.budget-counter` / `.budget-fall` | Own steps/peeks **beside** own avatar (SC-PRESENCE-15…16); `.budget-fall` ≈ **2 s** (keep CSS in sync with `BUDGET_FALL_MS` / SC-PRESENCE-20); not on opponents; end-turn is **not** here |
-| `.peek-affordance` / `.rescue-affordance` / `.push-affordance` | Top-center above piece (same family as `.return-affordance`; SC-BOARD-13 / SC-MOVE-74/77) |
-| `.say-affordance` | Own marker top-right, raised (`top: -32px`) so hit-area does not overlap focus (SC-SAY-07 / SC-SAY-15 / SC-PRESENCE-33); hit-area ≥ ~32 CSS px (glyph may be smaller); z-index above rings/avatar |
-| `.focus-affordance` | Own marker between say and end-turn (`top: 32%`, `translateY(-50%)`, `right: -8px`, 36px hit — SC-PRESENCE-30/33); see `work-with-game-board/focus.md` |
-| `.say-bubble` / `.say-picker` | Presence comic bubbles + picker; chrome follows Dark via `body.body--dark` overrides (not tile fills) |
-| `.say-bubbles--top` | Top-row markers: bubbles grow **down** toward the board |
-| `.say-bubbles--bottom` | Own bottom marker: bubbles grow **up** toward the board |
-
-Current-turn interactivity, dual turn/reconnect rings, top presence + seated sticky `.game-hud` (own + strip), own budgets beside avatar / end-turn icon right-center, peek/rescue/push top-center, removed-task holes, grille overlays + catapult sequential presentation CSS + strip chrome grille + return-icon, say top↓/own↑, nearest-center finish click, and travel/return/push-finish animation live in `work-with-game-board` — do not reintroduce draughts `.cell` / selection classes, all-markers-bottom HUD, compact chip / `q-menu`, page-local `.game-header`, orange-only return targets, return confirm modal, `.end-turn-dock`, `GRILLE_ANIM_MS = 1500`, or a static blue turn outline.
-
-When editing board visuals:
-
-- Prefer adjusting existing tourist classes over new global CSS.
-- Preserve max tile 60px, gap 2, radius 2; holes show page background; do not style `.tile--removed` as a red landing target.
-- Do not replace the board with Quasar grid components unless explicitly asked.
-- Do **not** retune tile fills for app Dark mode — chrome theme must not
-  change the tourist board look.
-- Say bubbles/picker **may** use `body.body--dark` overrides (readable chrome);
-  keep them comic bubbles near presence, not Quasar Notify toasts.
-- See `work-with-game-board` for layout constant / center span / say rules.
+See [pack-cards.md](pack-cards.md) and [board.md](board.md).
 
 ## Template Utilities And Color Props
 
-Use Quasar helpers already present in login / lobby / game:
+Prefer Quasar helpers already in login / lobby / game:
 
-```html
-<q-page class="q-pa-md flex flex-center column">
-  <div class="row items-center justify-between q-mb-md">
-    <div class="text-h5">Лобби</div>
-    <div class="text-subtitle2 text-muted">…</div>
-  </div>
-  <q-btn color="primary" icon="add" :label="$t('lobby.create')" />
-  <q-banner dense rounded class="bg-negative text-white q-mb-md">…</q-banner>
-</q-page>
-```
-
-Common groups in this app:
-
-- Layout: `flex`, `flex-center`, `column`, `row`, `items-center`,
-  `justify-between`, `full-width`, `col-12`, `col-sm-auto`
-- Spacing: `q-pa-md`, `q-mb-md`, `q-mb-lg`, `q-mt-xs`, `q-gutter-md`,
-  `q-gutter-sm`, `q-col-gutter-md`, `q-px-md`, `q-pb-md`
-- Typography: `text-h5`, `text-subtitle1`, `text-subtitle2`, `text-caption`,
-  `text-center`, `text-muted` (prefer over `text-grey-7` for secondary chrome)
-- Color / chrome: `color="primary"`, `color="grey"` (guest button), `bg-negative`,
-  `text-white`, `rounded-borders`
-- Feedback: `q-banner` with `dense` / `rounded` for store `error` strings
-
-Prefer `color="primary"` / `bg-negative` over hardcoding `#1976d2` /
-`#c10015` on Quasar components.
+- Layout: `flex`, `flex-center`, `column`, `row`, `items-center`, `justify-between`
+- Spacing: `q-pa-md`, `q-mb-md`, `q-gutter-md`, …
+- Typography: `text-h5`, `text-subtitle2`, `text-muted` (prefer over `text-grey-7`)
+- Color: `color="primary"`, `bg-negative`, `text-white`
 
 ## Where Style Files Live
 
-| Area | Typical path |
-|------|----------------|
-| Dark plugin + boot list | `quasar.config.ts` (`plugins: ['Dark']`, `boot: ['theme', …]`) |
-| Theme boot helpers | `src/boot/theme.ts` (`readStoredTheme` / `writeStoredTheme` / `clearStoredTheme` / `applyQuasarTheme`) |
-| Theme Pinia store | `src/stores/theme.ts` |
-| Header theme toggle | `src/App.vue` |
-| Theme variables | `src/css/quasar.variables.scss` |
-| Global CSS (`.text-muted`) | `src/css/app.scss` |
-| Extras / CSS registration | `quasar.config.ts` |
-| Login layout tweak | `src/pages/LoginPage.vue` (`<style scoped>`) |
-| Board / pieces | `src/pages/GamePage.vue` (`<style scoped>`) |
-| Lobby / most chrome | Template Quasar classes only (`LobbyPage.vue`) |
-
-Prefer the login → lobby → game flow for new UI (dead `pages/index*` scaffold removed).
+| Area | Path |
+|------|------|
+| Dark plugin + boot | `quasar.config.ts`, `boot/theme.ts`, `stores/theme.ts` |
+| Header toggle / logo / crumbs | `App.vue` |
+| Variables / globals | `src/css/quasar.variables.scss`, `app.scss` |
+| Board / pieces | `GamePage.vue` scoped → [board.md](board.md) |
+| Pack/map tiles | tile components + [pack-cards.md](pack-cards.md) |
 
 ## How To Add Or Change Styles
 
-1. Identify the surface: Quasar chrome (login/lobby/header) vs custom board
-   (game).
-2. For ordinary spacing, flex, type, and button colors — use Quasar classes /
-   props first; secondary labels → `text-muted`.
-3. For light/dark chrome — Quasar `Dark` via `boot/theme` + `stores/theme` +
-   `App.vue` header; guest → `localStorage` (`ht-theme`); registered →
-   `GET /api/theme` restore (≠ JWT-only) + `POST /api/theme` on toggle.
-4. For theme-wide palette changes — edit `src/css/quasar.variables.scss`.
-5. For true app-wide CSS — edit `src/css/app.scss` sparingly.
-6. For board / piece / selection / target / disabled look — edit scoped CSS in
-   `GamePage.vue`; keep class names (`board`, `cell`, `piece`, …) stable unless
-   updating the template in the same change; do not theme the board for Dark.
-7. For small layout constraints (e.g. card max-width) — scoped class on the
-   page, same pattern as `.login-card`.
-8. Do not add Vuetify, brand profiles, or a design-token package for one-off
-   needs.
+1. Surface: Quasar chrome vs custom board vs pack tiles → pick topic.
+2. Ordinary spacing/flex/type → Quasar classes; secondary labels → `text-muted`.
+3. Light/dark chrome → [theme.md](theme.md).
+4. Palette → `quasar.variables.scss`; globals → `app.scss` sparingly.
+5. Board / tiles → scoped CSS; do not theme tourist tile fills for Dark.
+6. Do not add Vuetify, brand profiles, or a design-token package for one-offs.
 
 ## Common Mistakes
 
-- Reaching for Vuetify utilities (`pa-8`, `d-flex`, `primary--text`) — this
-  client is Quasar (`q-pa-md`, `row`, `text-primary` / `color="primary"`).
-- Building a custom CSS theme system instead of Quasar `Dark`.
-- Calling theme GET/POST from page templates, or saving guest theme to the server.
-- Restoring registered theme from JWT `user.theme` alone after reload (use GET).
-- `watch(() => [ready, id, anonymous])` + replacing `auth.user` after GET →
-  preference GET storm (SC-THEME-10); use stable multi-source watch and keep
-  theme in the theme store after restore.
-- Using `text-grey-7` for secondary chrome (poor contrast in dark) — prefer
-  `text-muted`.
-- Changing tourist tile fills when toggling app Dark mode.
-- Confusing tile class colors with Quasar `body--dark`.
-- Moving board CSS into `app.scss` or a shared tokens file when scoped
-  `GamePage` styles already own it.
-- Hardcoding Quasar palette hex on `q-btn` / banners instead of
-  `color="primary"` / `bg-negative`.
-- Adding new icon packs while Material Icons extras already cover the UI.
-- Restyling move highlights as authoritative rules — they are client hints;
-  server validates moves.
-- Creating co-located `styles.scss` folders by habit from other projects —
-  this repo keeps page styles in the SFC.
-- Binding `cascade-gap-outline` on Editor/Tasks without matching scoped
-  `outline: 2px solid var(--q-warning)` (SC-PACK-126).
-- Rendering pack answer/task lists or slot pickers as `q-chip` / plain rows
-  instead of `PackAnswerCardTile` / `PackTaskTile` in `.pack-card-grid`
-  (SC-PACK-222…224).
-- Reverting answer/task tiles to **100×200 / 200×200**, horizontal splitters,
-  top-right icon Edit/`#trailing`, or catalog cards without description /
-  bottom text actions (SC-PACK-222…229).
-- Reintroducing `PackCsvImportDialog` / import-modal chrome for CSV — use the
-  framed Export/Import panel + direct file picker (SC-PACK-218/221).
-- Rendering maps list as plain `q-item` + tiny preview instead of
-  `MapListCardTile` in `.pack-card-grid` (SC-MAP-55).
+- Vuetify utilities (`pa-8`, `d-flex`) — this client is Quasar.
+- Second CSS theme system instead of Quasar `Dark`.
+- Theme GET/POST from page templates; guest theme saved to server.
+- JWT-only theme restore; `watch(() => […])` + replace `auth.user` after GET
+  (SC-THEME-10) — see [theme.md](theme.md).
+- `text-grey-7` for secondary chrome; retuning tile fills for Dark.
+- Board CSS moved into `app.scss`; co-located `styles.scss` folders.
+- `cascade-gap-outline` without warning outline; pack lists as `q-chip` rows;
+  compose/`PackTaskTile` slots as dense `q-chip` instead of `.peek-slot-like`
+  (see [pack-cards.md](pack-cards.md)).
+  wrong tile sizes; `PackCsvImportDialog`; maps list as plain `q-item` —
+  see [pack-cards.md](pack-cards.md).

@@ -26,6 +26,11 @@ in-frame errors — not `content.error`; no `PackCsvImportDialog`), tile smoke
 sizes/contrast SC-PACK-225…227 + catalog/task-set `PackListCardTile` /
 `ContentPackListCards` SC-PACK-228/229 + maps list `MapListCardTile` /
 `ContentMaps` SC-MAP-55,
+staff-edit-draft-submit SC-PACK-231…238 / SC-MAP-62…65:
+`src/lib/__tests__/editorDirty.test.ts`,
+`src/pages/__tests__/ContentPackStaffBoot.test.ts`,
+`ContentPackDirtySubmit.test.ts`, `ContentPackTasksCsvHide.test.ts`
+(+ `ContentMaps` staff boot / dirty Submit; `PackTaskTile` peek-slot chrome),
 store `content.simplifyAcl.test.ts`; spy `client.http`, do not hit live server;
 cascade helpers + `isStaffEditSessionNavigation`: meta `work-with-stores/content.md`;
 unify follow-ups: `ContentUnifiedList.test.ts` (`openRequestType` pack→Edit /
@@ -33,10 +38,12 @@ task_set→live SC-PACK-191/192; cancel→draft; no published badge),
 `ContentAuthorEditTake.test.ts` (author Edit/take + set marks + `neverLive`
 ghost `pack-task-set-ghost-*` → add-task-set Edit SC-PACK-188…190),
 `maps` (HTTP maps via `client.http`; paint helpers; pages
-`ContentMaps.test.ts` SC-MAP-06…08 / 14 / 17 / 21 / 24–25 / 29–30 / 41…56
+`ContentMaps.test.ts` SC-MAP-06…08 / 14 / 17 / 21 / 24–25 / 29–30 / 41…56 /
+  62…65
   (cancel→draft, view meta, title-row Edit SC-MAP-51, author pending→Edit
   SC-MAP-50, paint race SC-MAP-53, palette under SC-MAP-54, `MapListCardTile`
-  SC-MAP-55, centered seats SC-MAP-56, no published badge); store
+  SC-MAP-55, centered seats SC-MAP-56, staff published boot SC-MAP-62,
+  never-published Submit SC-MAP-63, dirty gate SC-MAP-65, no published badge); store
 `maps.paint.test.ts` SC-MAP-04; errors via `mapsErrorI18nKey` → `maps.errors.*`;
 meta `work-with-stores/maps.md` — shared staff queue still mocked via `content`
 when testing type-badge / my-moderation map rows).

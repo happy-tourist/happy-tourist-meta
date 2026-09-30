@@ -63,33 +63,38 @@ page class `cascade-gap-outline` (not `bg-warning` row fill).
 and `ContentPackEditorPage` (task-set rows). Class alone without scoped
 `outline: 2px solid var(--q-warning)` is insufficient (SC-PACK-126 / D10).
 
-## Question list slot chips (SC-PACK-127 / 130 / 134)
+## Question list slots (SC-PACK-127 / 130 / 134 / 237 / 238)
 
-Every task/question list row MUST show answer slot chips (filled / empty):
+Every task/question list row MUST show answer slots (filled / empty):
 `ContentPackTasksPage` (incl. live drill-in), `ContentStaffRequestPage`,
 `ContentPackAddTaskSetPage`. Live pack page (`ContentPackPage`) shows **set
 summary rows** only (count + difficulty 1/2/3) — slots appear after drill-in
-(SC-PACK-130). Pattern: dense `q-chip` per slot + `slotEmpty` when no slots.
-A filled slot MUST show the answer card’s text. For staff `task_set` preview,
-server merges live `answerCards` into `previewPending` (SC-PACK-134).
+(SC-PACK-130). Pattern: global `.peek-slot-like` (+ `--filled` / `__label` /
+`__empty` / `.peek-slot-like-row`) shared with GamePage peek chrome
+(SC-PACK-237/238); empty copy via `content.slotEmpty`. A filled slot MUST show
+the answer card’s text. Do **not** use dense `q-chip` as primary slot chrome on
+compose rows or `PackTaskTile`. For staff `task_set` preview, server merges live
+`answerCards` into `previewPending` (SC-PACK-134). CSS: `work-with-styles/pack-cards.md`.
 
-## Playing-card chrome (SC-PACK-222…229)
+## Playing-card chrome (SC-PACK-222…229 / 237 / 238)
 
 Wherever the UI lists pack **answer cards** or **tasks** (editor, add-task-set,
 tasks drill-in, live pack answers, staff request preview, **and** slot pickers),
 render `PackAnswerCardTile` / `PackTaskTile` inside a wrapping `.pack-card-grid`
 (`app.scss`). Fixed sizes: answer **150×200** (no description) / **300×200**
 (with description + **vertical** splitter); task **300×200** (vertical split;
-slot chips in a row); explicit light/dark tile contrast (SC-PACK-225…227).
+`.peek-slot-like` slot row); explicit light/dark tile contrast (SC-PACK-225…227).
 Catalog packs and live/editor **task-set** lists use `PackListCardTile`
 **150×200** (status top, star TL, truncated description on catalog, **bottom**
-full-width text actions — SC-PACK-228/229). Slot **values** on a task row stay
-`q-chip` (above); the answer **picker** beside slots is `PackAnswerCardTile`
-(selectable), **not** `q-chip` (SC-PACK-133 superseded for picker chrome by
-SC-PACK-222…224). Edit/delete only when editable (bottom text buttons); body
-click is not edit. CSV import/export is client-only (`lib/packContentCsv` +
-framed Export/Import panel on editor / `PackTasksCsvControls`; Import opens the
-file picker directly — no `PackCsvImportDialog`) — not store HTTP.
+full-width text actions — SC-PACK-228/229). Slot **values** on a task row use
+`.peek-slot-like` (above); the answer **picker** beside slots is
+`PackAnswerCardTile` (selectable), **not** `q-chip` (SC-PACK-133 superseded for
+picker chrome by SC-PACK-222…224). Edit/delete only when editable (bottom text
+buttons); body click is not edit. CSV import/export is client-only
+(`lib/packContentCsv` + framed Export/Import panel on editor /
+`PackTasksCsvControls`; **hide** CSV on live Tasks `viewOnly` SC-PACK-235;
+staff Edit keeps CSV SC-PACK-236; Import opens the file picker directly — no
+`PackCsvImportDialog`) — not store HTTP.
 
 ## Task-set author label + Tasks back (SC-PACK-135 / 136 / 182)
 
@@ -107,11 +112,18 @@ Open status applies **only** to sets belonging to the open request (revision /
 lineage match — not fan-out by `changeAuthorId`). `ContentPackPage` shows
 badges for pending / needs_revision / draft (not `live`).
 
-**Staff false draft (SC-PACK-230 / D14):** after direct `staff-save`, server
-omits author-facing `draft` for staff viewers without an open author request
-(and clears twin working when safe). Client trusts payload marks — do **not**
-locally invent “working≠live → draft” for staff. Keep showing `pending` /
-`needs_revision` when the server sends them.
+**Staff false draft (SC-PACK-230 / SC-PACK-233 / D2):** after direct `staff-save`
+into live with no open author request, server **always** clears
+`workingRevisionId` (and deletes the orphan revision when no moderation refs)
+— not only twin-of-old-live. Staff viewers without an open author request must
+not see author-facing `draft` from leftover working≠live. Client trusts payload
+marks — do **not** locally invent “working≠live → draft” for staff. Keep showing
+`pending` / `needs_revision` when the server sends them.
+
+**Author Submit dirty (SC-PACK-234):** pack editor / add-task-set / map editor
+gate «На модерацию» with `lib/editorDirty` fingerprint vs load baseline (plus
+minima/locks). Pack cards↔tasks share session baseline via
+`ensurePackSubmitBaseline` / clear on leave.
 
 ## Never-live add-task-set ghost (SC-PACK-188…190) + cancel restore (D22)
 
@@ -151,7 +163,7 @@ UX as the cards editor while the author’s `task_set` request is
 | Post-publish task-set Edit | set `authorUserId` (not pack creator) | lock + draft; `editorKind=task_set_author`; cards read-only; only own sets |
 | Add-task-set | verified non-anonymous + in-catalog | **no** collection membership (SC-PACK-164) → `content-pack-add-task-set` |
 | Soft-unpublished non-staff | any | list badge / no live; trash OK for never-approved |
-| Staff Edit | staff, **no** open author request | `acquireEditLock` → `loadStaffEdit` / `staffSavePack`; else disabled + `staffEditBlockedAuthorRequest` |
+| Staff Edit | staff, **no** open author request | published (`hasLive`) → `enterStaffEdit` / staff-save **before** creator path even if staff is creator (SC-PACK-231); never-published staff creator keeps Submit (SC-PACK-232); `acquireEditLock` → `loadStaffEdit` / `staffSavePack`; else disabled + `staffEditBlockedAuthorRequest` |
 | Staff soft-unpublish | staff | `unpublishPack` / `republishPack` / task-set twins + confirms |
 | Staff queue | staff | **take** before approve/needs_revision/cancel; take badge when held by other |
 
@@ -182,8 +194,9 @@ UX as the cards editor while the author’s `task_set` request is
   Модерация entry is App header only. Pages omit `content.catalogNav` when
   App breadcrumbs cover Lobby / Модерация (SC-PACK-194/195).
 - Support `change_pack` select: **in-catalog only** (`inCatalog !== false && hasLive`).
-- Cascade / slot chips / playing-card tiles / add-task-set thread / delete-card
-  confirms — SC-PACK-126…136 + SC-PACK-222…224 contracts above.
+- Cascade / peek-slot rows / playing-card tiles / add-task-set thread /
+  delete-card confirms — SC-PACK-126…136 + SC-PACK-222…229 / 237/238 contracts
+  above.
 - No block/unblock UI.
 
 ## Anti-patterns
@@ -195,6 +208,12 @@ UX as the cards editor while the author’s `task_set` request is
 - Showing a green/`statusInCatalog` badge on published list rows.
 - Staff Edit while author request open (must show blocked + tooltip / 409
   `author_request_open`).
+- Routing published + staff into creator Submit instead of `enterStaffEdit`
+  (SC-PACK-231); enabling author Submit when not dirty vs `lib/editorDirty`
+  baseline (SC-PACK-234).
+- Dense `q-chip` as primary slot chrome on compose / `PackTaskTile` (use
+  `.peek-slot-like` — SC-PACK-237/238); showing Tasks CSV on live `viewOnly`
+  (SC-PACK-235).
 - Approve / needs_revision / cancel without staff take (`moderation_take_required`).
 - Letting task-set author edit answer cards or foreign sets; showing foreign
   set `moderationStatus` to pack creator alone.

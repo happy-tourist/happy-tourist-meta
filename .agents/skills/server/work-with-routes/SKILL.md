@@ -6,8 +6,8 @@ description: >-
   hook handlers (/health, /hi), auth /auth/*, theme, support tickets, content
   packs (/api/content/* unified list + favorites + working-copy / author re-edit +
   unified submit + add-task-set **no** collection gate + cancel never-live restore
-  D22 SC-PACK-196/197 + edit-lock for authors+staff + staff-save twin working clear /
-  staff omit false draft SC-PACK-230 +
+  D22 SC-PACK-196/197 + edit-lock for authors+staff + staff-save always clear working
+  SC-PACK-233 (extends SC-PACK-230) / staff omit false draft SC-PACK-230 +
   staff take/release + soft-unpublish pack/set + my-moderation + staff queue; collection
   HTTP legacy only; DEFAULT_CONTENT_PACK_IDS grants retired SC-PACK-170; block endpoints
   retained), admin roles, or Colyseus room listing /rooms/:roomName.
@@ -128,7 +128,7 @@ For CORS / monitor details use `work-with-middleware` and `work-with-config`.
 | GET\|PUT\|POST | `/api/content/packs/:id/add-task-set` (+ `/submit`) | `createEndpoint` | JWT + verified; **no** collection membership required (SC-PACK-164); after Cancel of never-live cycle GET restores retained revision `taskSets` (same selection as `neverLive` ghost); put/submit reuse cancelled revision id (D22 / SC-PACK-196/197) |
 | GET\|POST | `/api/content/packs/:id/edit-lock` | `createEndpoint` | JWT author **or** staff; acquire/status (TTL 5 min); staff blocked if author request open |
 | POST | `/api/content/packs/:id/edit-unlock` | `createEndpoint` | JWT lock holder; release |
-| GET\|POST | `/api/content/packs/:id/staff-edit` \| `/staff-save` | `createEndpoint` | JWT staff + lock; load / direct save; staff-save clears twin working when safe (SC-PACK-230) |
+| GET\|POST | `/api/content/packs/:id/staff-edit` \| `/staff-save` | `createEndpoint` | JWT staff + lock; load / direct save; after live staff-save with no open author request **always** clear `workingRevisionId` + orphan revision without moderation refs (SC-PACK-233; extends SC-PACK-230 twin clear) |
 | GET\|POST | `/api/content/packs/:id/moderation` (+ `/messages`) | `createEndpoint` | JWT; author ↔ staff thread |
 | POST | `/api/content/packs/:id/block` \| `/unblock` | `createEndpoint` | JWT moderator\|admin (retained; client UI hidden) |
 | POST | `/api/content/pack/delete` | `createEndpoint` | JWT + creator; hard-delete **unpublished** pack |
@@ -140,7 +140,7 @@ For CORS / monitor details use `work-with-middleware` and `work-with-config`.
 | POST | `/api/content/staff/requests/:id/take` \| `/release` | `createEndpoint` | JWT staff; take-to-moderate / release (TTL = edit lock; SC-PACK-161…163 / SC-MAP-38/39) |
 | GET\|POST | `/api/content/staff/requests/:id` (+ `/approve` `/needs-revision` `/reject` `/cancel` `/messages`) | `createEndpoint` | JWT staff; terminal actions require held take (`moderation_take_required`); GET = `previewPending` |
 | GET\|POST | `/api/content/maps` | `createEndpoint` | JWT; list with `moderationStatus` / `authorRequestOpen` / create; author working≠live → `draft` (SC-MAP-41/42) |
-| GET\|POST | `/api/content/maps/:id` (+ `/draft` `/submit` `/moderation` `/edit-lock` `/staff-edit` `/staff-save` `/unpublish` `/republish`) | `createEndpoint` | JWT; author re-edit + staff lock gated by open author request; soft-unpublish cascade SC-MAP |
+| GET\|POST | `/api/content/maps/:id` (+ `/draft` `/submit` `/moderation` `/edit-lock` `/staff-edit` `/staff-save` `/unpublish` `/republish`) | `createEndpoint` | JWT; author re-edit + staff lock gated by open author request; live `staff-save` clears retained working when no open request (SC-MAP-64); soft-unpublish cascade SC-MAP |
 | POST | `/api/content/map/delete` | `createEndpoint` | JWT + creator; hard-delete **never-approved** map |
 | GET | `/api/admin/users` | `createEndpoint` | JWT admin; **exclude** anonymous; include `emailVerified` (+ id/email/role/displayName) |
 

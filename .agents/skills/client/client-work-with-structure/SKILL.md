@@ -48,7 +48,7 @@ may also host copies later).
 |-------|------|------|
 | Pages | `src/pages/*Page.vue` | Route-level screens; compose stores + Quasar + optional components |
 | Components | `src/components/` | Reusable widgets (e.g. `PasswordStrengthMeter.vue`, `MapGridPreview.vue`, `MapListCardTile.vue`, `PackTasksCsvControls.vue`, `PackAnswerCardTile.vue`, `PackTaskTile.vue`, `PackListCardTile.vue` catalog/task-set 150×200; plus Quasar scaffold leftovers) |
-| Lib | `src/lib/` | Pure helpers without Pinia/Colyseus I/O (`passwordPolicy.ts`, `passwordStrength.ts`, `packContentCsv.ts` — `;` CSV answers/tasks + `downloadCsvText`) |
+| Lib | `src/lib/` | Pure helpers without Pinia/Colyseus I/O (`passwordPolicy.ts`, `passwordStrength.ts`, `packContentCsv.ts` — `;` CSV answers/tasks + `downloadCsvText`; `editorDirty.ts` — Submit dirty fingerprint / pack session baseline SC-PACK-234 / SC-MAP-65) |
 | Stores | `src/stores/` | Pinia: `auth`, `theme`, `game`, `support`, `content`, `maps` (+ unused scaffold `example-store`) |
 | Boot | `src/boot/` | Quasar boot: `theme`, `i18n`, `colyseus` (registered in `quasar.config.ts`; `framework.plugins: ['Dark']`) |
 | Router | `src/router/` | `routes.ts` + guards in `index.ts` (`filenameBasedRouting: false`) |

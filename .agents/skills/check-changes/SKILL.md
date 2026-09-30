@@ -2,9 +2,10 @@
 name: check-changes
 description: >-
   Scans unstaged (and untracked) changes in happy-tourist client and server,
-  then recommends whether to add, update, delete, or split bloated skills
-  (extract sibling skill or topic sub-files like work-with-test), and whether
-  to fix projects-map / project-map, docs, or AGENTS.md. Use when the user runs
+  then recommends whether to add, update, delete, or split bloated skills using
+  a scored bloat checklist (topic files preferred; score ≥5 → mandatory split
+  plan; forbid description-dumps into fat cores), and whether to fix
+  projects-map / project-map, docs, or AGENTS.md. Use when the user runs
   check-changes, asks to review unstaged client/server diffs for skill/docs/agent
   drift, wants a «что добавить / что изменить / что удалить / что разбить»
   list, or asks which skills have grown too large to split.
@@ -123,57 +124,82 @@ Check-Changes Progress:
 
 Читать только релевантные skill/AGENTS/docs (не все подряд), но **не пропускать** индекс `.agents/AGENTS.md` и корневые AGENTS затронутых пакетов. Для кандидатов на удаление — сверить skill с **текущим** деревом client/server (не только с diff): пути/API из skill ещё существуют?
 
-### 5. Scan bloat candidates
+### 5. Scan bloat candidates (обязательный скоринг)
 
-После map (шаг 4) **обязательно** проверить раздутие skills — не только «есть ли покрытие», но и «не стал ли skill слишком толстым / многотемным».
+После map (шаг 4) **обязательно** проверить раздутие — не только «есть ли покрытие», но и «не стал ли skill толстым / многотемным / description-dump».
+
+**Анти-паттерн проекта:** дописывать SC-/API-перечисления в `description` и ядро вместо topic-файла. Если diff снова требует такой dump — это сигнал **split**, не «ещё одна строка в description».
 
 #### Кого сканировать
 
-1. Skills, на которые **попали темы diff** (агент дописывал канон / description разросся из-за change).
-2. Skills из индекса client/server с признаками размера (см. эвристики) — даже если diff их не трогал, если diff **расширяет** тот же домен (например board/auth уже жирный skill).
-3. Не устраивать полный аудит всех workspace `openspec-*` без запроса; фокус — `.agents/skills/client/` и `.agents/skills/server/`.
+1. Skills, на которые **попали темы diff**.
+2. Skills того же слоя/домена, которые diff расширяет (pages/stores/styles/routes/…), даже если файл skill в diff не менялся.
+3. Любой client/server `SKILL.md` с `wc -l` ≳ 220 или description ≳ 800 символов — быстрый pass.
+4. Уже разбитые skills: проверить, не раздулось ли **ядро** снова и не стал ли topic `*.md` монстром (≳ **250** строк topic → предложить под-topic или сжатие).
+5. Не аудитить все `openspec-*` без запроса.
 
-Быстрая оценка размера (из корня meta):
+Быстрая оценка (из корня meta):
 
 ```bash
 wc -l .agents/skills/client/*/SKILL.md .agents/skills/server/*/SKILL.md | sort -n
+# description length (optional):
+# awk '/^description:/{f=1;next}/^---/{f=0}f' SKILL.md | wc -c
 ```
 
-Для кандидатов: frontmatter `description`, оглавление/`##` секции, есть ли уже соседние `*.md` в папке skill.
+Для каждого кандидата прочитать: frontmatter `description`, `##` заголовки, таблицу **Specialized Topics** (есть / нет), соседние `*.md`.
 
-#### Эвристики «раздувается»
+#### Скоринг (обязательно заполнить в уме / в отчёте)
 
-Сигналы (достаточно **2+**, или одного очень сильного):
+Сложить баллы по таблице. **Исключения process-skills** (`*-align-code`, `*-verify-code`, `server-work-with-test`, длинные checklist workflow): считать только сигналы «ортогональные домены» / «description-dump» / «дубль соседнего skill»; длина сама по себе не даёт баллов.
 
-| Сигнал | Пример |
-|--------|--------|
-| Длина `SKILL.md` | ≳ **220** строк — мягкий кандидат; ≳ **350** — сильный (исключение: `*-align-code` / `*-verify-code` / длинные checklist workflow — см. ниже) |
-| Description-простыня | frontmatter `description` перечисляет 5+ несвязанных concerns через `/` или длинный enumeration API |
-| Ортогональные темы в одном файле | presence HUD **и** catapult anim **и** say bubbles **и** finish travel — разные «когда читать» |
-| Diff снова добавляет крупный блок в уже большой skill | task «обновить skill» раздувает, вместо выноса |
-| Агент вынужден грузить весь skill ради одной узкой правки | типичный smell для topic-файлов |
-| Дублирование с соседним skill | куски board живут и в `work-with-pages`, и в `work-with-game-board` |
+| Баллы | Сигнал | Как мерить |
+|------:|--------|------------|
+| +2 | Ядро `SKILL.md` ≳ **220** строк | `wc -l` |
+| +3 | Ядро ≳ **350** строк | `wc -l` |
+| +2 | `description` ≳ **800** символов | `wc -c` тела description |
+| +3 | `description` ≳ **1200** символов **или** 5+ несвязанных concerns / длинный SC-/API enumeration | frontmatter |
+| +3 | ≥ **3 ортогональные темы** в одном ядре (разные «когда читать») | `##` / Domain Map / unrelated surfaces |
+| +2 | Diff снова дописывает крупный блок (≥ ~30 строк канона) в уже ≥220 skill | diff vs skill size |
+| +2 | Нет таблицы Specialized Topics при ядре ≳220 **или** topics есть, но ядро всё ещё держит детали topics | структура папки |
+| +2 | Дублирование с соседним skill (тот же concern подробно в двух местах) | сравнение |
+| +1 | Topic-файл ≳ **250** строк (сам кандидат на вынос/сжатие) | `wc -l` topic |
+| +2 | Индекс `.agents/AGENTS.md` «Когда» — простыня SC-кодов вместо короткого trigger + ссылки на topics | индекс |
 
-**Не считать раздутием само по себе:**
+**Порог решения:**
 
-- `client-align-code` / `server-align-code` / `*-verify-code` / `server-work-with-test` — длинные process/checklist skills; дробить только если внутри явно выделились **независимые домены** с отдельным trigger;
-- skill уже разбит на `SKILL.md` + topic `*.md` и ядро остаётся тонким (как эталон ниже) — предложить только если **ядро** снова раздулось или topic-файл сам стал монстром.
+| Сумма | Действие |
+|------:|----------|
+| 0–2 | Не предлагать split («разбивать рано») |
+| 3–4 | Предложить split **A** как рекомендацию; если diff только точечный — допустим change + «следить» |
+| ≥ **5** | **Обязательно** «Что разбить» с конкретным планом A или B — **нельзя** закрыть только «изменить description» |
+| ≥ 5 и diff добавляет канон в тот же skill | В «Что изменить» запретить «дописать в ядро»; писать «вынести в topic X, в ядре — одна строка + ссылка» |
+
+Цель после split **A**: ядро ≲ **220** строк; `description` ≲ **800** символов; детали — в topic; индекс AGENTS — короткий trigger.
+
+#### Эвристики выбора границ topic (A)
+
+Резать по **поверхности чтения агента**, не по SC-номерам:
+
+| Родитель (пример) | Типичные topics |
+|-------------------|-----------------|
+| `work-with-pages` | `shell.md` (App/header/crumbs), `content-pages.md` (packs/maps UI), `game-page.md` (GamePage HUD wiring) |
+| `work-with-styles` | `theme.md` (Dark/HTTP), `board.md` (GamePage CSS), `pack-cards.md` (tiles/grid/cascade) |
+| `work-with-stores` | уже `content.md` / `maps.md`; далее `game.md` (options store I/O) |
+| `work-with-localization` | короткие namespaces в description; детали ключей — в topic родителя домена (`content.md`), не простыня в description |
+| `work-with-game-board` | уже `peek.md` / `focus.md`; новые механики → новый topic, не ядро |
+
+Не плодить topic на один SC-*. Один topic = устойчивая подсистема (shell / packs UI / board CSS / game store).
 
 #### Два варианта разбиения (выбрать явно)
 
-**A. Под-skills (topic files) — предпочтительно**, если темы — грани **одного** workflow / одной точки входа (одна GamePage, один test-plan, один auth surface), агент читает ядро всегда, а детали — по таблице.
-
-Эталон структуры (как `csm-meta` `frontend/work-with-test`):
+**A. Topic files — по умолчанию**, если темы — грани одного слоя/точки входа. Эталон:
 
 ```text
 .agents/skills/client/work-with-<domain>/
-  SKILL.md          # description + core workflow + таблица Specialized Topics
-  presence.md       # узкая тема
-  catapult.md
+  SKILL.md          # short description + core + Specialized Topics table
+  shell.md          # узкая тема
   …
 ```
-
-В `SKILL.md` — секция вроде:
 
 ```markdown
 ## Specialized Topics
@@ -186,11 +212,11 @@ Read the matching file in this folder when the change involves that area
 | … | [foo.md](foo.md) |
 ```
 
-Description ядра коротко указывает: «Core in SKILL.md; topic details in …».
+Description: «Core in SKILL.md; topic details in …».
 
-**B. Отдельный sibling skill** — если concern **самостоятельно discoverable** (другой trigger, другой слой, можно вызывать без родителя): новый каталог `work-with-*` / `client-*` / `server-*` + строка в `.agents/AGENTS.md`. Предлагать, когда тема чаще нужна **вне** контекста родителя (например forms vs pages), а не как глава одной страницы.
+**B. Sibling skill** — только если concern **самостоятельно discoverable** (другой trigger/слой, вызывают без родителя). Иначе A.
 
-В отчёте для каждого кандидата указать: **A или B**, предлагаемые имена файлов/skill, какие секции куда перенести (1 строка), что обновить в description/индексе.
+В «Что разбить» для каждого кандидата: **score N**, сигналы, **A|B**, имена файлов, что перенести (1–2 строки), целевой размер ядра, правки description + `.agents/AGENTS.md` «Когда».
 
 ### 6. Decide: add / change / delete / split / none
 
@@ -214,11 +240,13 @@ Description ядра коротко указывает: «Core in SKILL.md; topi
 - skill частично устарел — достаточно точечной правки, **не** удаления;
 - правка **небольшая** и skill ещё не в зоне bloat — точечный update, без split.
 
-**Разбить / вынести (split)**, если сработали эвристики шага 5:
+**Разбить / вынести (split)**, если скоринг шага 5 ≥ **3** (при ≥ **5** — обязательно, не заменять точечным change description):
 
 - предложить **A (topic files)** или **B (sibling skill)** по правилам выше;
+- указать **score** и 2–4 главных сигнала;
 - не предлагать и add, и split одного и того же concern без выбора;
-- при split ядра — в «Что изменить» можно кратко сослаться («укоротить description после выноса»), детали — в «Что разбить».
+- при score ≥ 5 и необходимости нового канона из diff — **запретить** «дописать простыню в ядро/description»; план: topic + короткая ссылка;
+- при split ядра — в «Что изменить» кратко («укоротить description / Domain Map после выноса»), детали — в «Что разбить».
 
 **Удалить skill** (предложить удаление каталога `…/SKILL.md` + строки из индексов AGENTS), если:
 
@@ -283,8 +311,8 @@ Description ядра коротко указывает: «Core in SKILL.md; topi
 - … или «ничего»
 
 ## Что разбить
-- **`<skill>`** (`путь`, ~N строк): сигнал(ы) bloat; вариант **A** (topic files: `a.md`, `b.md`) или **B** (новый sibling `…`); что перенести; правки description / `.agents/AGENTS.md`
-- … или «ничего» / «разбивать рано»
+- **`<skill>`** (`путь`, ~N строк ядра, desc ~C chars): **score N** (сигналы: …); **A** (topics: `a.md`, `b.md`; цель ядро ≲220) или **B** (sibling `…`); что перенести; правки description / AGENTS «Когда»
+- … или «ничего» / «разбивать рано» (score ≤2)
 
 ## Вне scope / заметки
 - staged ignored; опциональные follow-ups (verify-code, commit) — коротко
