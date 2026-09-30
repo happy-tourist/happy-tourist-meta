@@ -88,9 +88,11 @@ render `PackAnswerCardTile` / `PackTaskTile` inside a wrapping `.pack-card-grid`
 truncated description, **bottom** full-width text actions — SC-PACK-228).
 **Live/editor task-set lists** use dedicated `PackTaskSetCardTile` (denser
 summary chrome: short status, `#{n}` ordinal title without author, total icon +
-«Заданий:», colored outline difficulty dots, dividers, outline+icon bottom
-actions with short «Снять»/«Вернуть»; width ~150–160, height MAY exceed 200 —
-SC-PACK-229/239…243). Do **not** reuse `PackListCardTile` for task sets. Slot
+«Заданий:», colored outline difficulty dots, pale multi-row dividers, lead/label/count
+column grid, vertical fill, slim ~28–32px outline+icon bottom
+actions with short «Снять»/«Вернуть»; pages omit empty `#actions`; width ~150–160,
+height MAY exceed 200 — SC-PACK-229/239…244). Do **not** reuse `PackListCardTile`
+for task sets. Slot
 **values** on a task row use `.peek-slot-like` (above); the answer **picker**
 beside slots is `PackAnswerCardTile` (selectable), **not** `q-chip`
 (SC-PACK-133 superseded for picker chrome by SC-PACK-222…224). Edit/delete only
@@ -120,7 +122,11 @@ Open status applies **only** to sets belonging to the open request (revision /
 lineage match — not fan-out by `changeAuthorId`). `ContentPackPage` / editor task-set cards show short badges via
 `content.taskSetCardBadge.*` (СНЯТО / ДОРАБОТАТЬ / НА ПРОВЕРКЕ / ЧЕРНОВИК —
 SC-PACK-240; not the longer `taskSetStatusMarks.*` prose used on add-task-set
-thread). Badges for pending / needs_revision / draft (not `live`).
+thread). Badges for pending / needs_revision / draft (not `live`):
+`q-badge.pack-task-set-status-badge` + temp Material icon (`schedule` /
+`close` / `edit_note` / `visibility_off`); pending Quasar `warning`,
+needs_revision/draft/unpublished `grey` (not loud warning orange). CSS chrome:
+`work-with-styles/pack-cards.md`.
 
 **Staff false draft (SC-PACK-230 / SC-PACK-233 / D2):** after direct `staff-save`
 into live with no open author request, server **always** clears

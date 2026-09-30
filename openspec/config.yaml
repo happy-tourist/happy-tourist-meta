@@ -40,7 +40,7 @@ context: |
   Домены: auth (register/login/anonymous), lobby (rooms list/create/join), game (board, move, turn/status).
 
   Skills roots: .agents/skills/client/ (UI), .agents/skills/server/ (Colyseus),
-  .agents/skills/ (openspec-*, align-code, verify-mock, check-changes, implement-change, end-implement-change, commit).
+  .agents/skills/ (openspec-*, align-code, prepare-mock, verify-mock, check-changes, implement-change, end-implement-change, commit).
   AGENTS.md — индекс docs/, OpenSpec и .agents/skills/.
   Пакетный контекст: ../happy-tourist.github.io/AGENTS.md, ../happy-tourist-server/AGENTS.md.
   При /opsx-apply: читать applyContextFiles из этого config.yaml помимо contextFiles из CLI.

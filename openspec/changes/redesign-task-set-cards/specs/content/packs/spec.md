@@ -8,11 +8,12 @@
 | SC-PACK-135 | covered (client vitest — no author/coauthor; `#{n}` ordinal) |
 | SC-PACK-228 | unchanged (catalog packs still 150×200) |
 | SC-PACK-229 | covered (client vitest — redesigned task-set card) |
-| SC-PACK-239 | covered (client vitest — stats rows + colored difficulty dots + dividers) |
+| SC-PACK-239 | covered (client vitest — stats rows + colored dots + pale dividers between all stats rows + above actions) |
 | SC-PACK-240 | covered (client vitest — short status badges) |
-| SC-PACK-241 | covered (client vitest — outline icon actions; short Снять/Вернуть) |
+| SC-PACK-241 | covered (client vitest — outline icon actions; short Снять/Вернуть; slim height) |
 | SC-PACK-242 | covered (client vitest — light/dark readable) |
 | SC-PACK-243 | covered (client vitest — `#{n}` title; total icon + «Заданий:»; short card actions) |
+| SC-PACK-244 | covered (client vitest — column grid lead/label/count; vertical fill; reserved top without badge) |
 
 Related: playing-card answer/task tiles — main SC-PACK-222…227 (unchanged). Catalog pack cards — SC-PACK-228 (unchanged). Lobby create/list labels — `lobby/rooms` delta.
 
@@ -121,7 +122,7 @@ The **task-set** lists on the live pack and cards-editor surfaces MUST render ea
 
 ### Requirement: Task-set cards use denser summary chrome
 
-On live pack and cards-editor task-set lists, each task-set card MUST present, top to bottom: optional short status badge; title «Набор заданий #{n}» (no author); a total-tasks row with a leading document-style icon and a «Заданий:» (or equivalent) label plus count; a horizontal divider; three difficulty rows (1 / 2 / 3) each with a three-dot indicator (filled count equals difficulty; filled dots use distinct colors for difficulties 1 / 2 / 3 in the product sense green / amber / red; unfilled dots are outline rings) and the count of tasks at that difficulty with capitalized difficulty labels ending in a colon; then a horizontal divider and bottom action controls. Difficulty rows MUST remain scannable in both light and dark themes. Action controls that apply to the card (Edit, soft-unpublish, republish, and similar) MUST be full-width **outline** buttons with a leading icon and text label (not icon-only corner affordances). Soft-unpublish on the card MUST read «Снять» (or equivalent short i18n); republish on the card MUST read «Вернуть» (or equivalent short i18n). Hover scale / enlarge of the card MUST NOT be required. Cascade-gap highlight on editor cards MUST remain when applicable.
+On live pack and cards-editor task-set lists, each task-set card MUST present, top to bottom: optional short status badge; title «Набор заданий #{n}» (no author); a total-tasks row with a leading document-style icon and a «Заданий:» (or equivalent) label plus count; three difficulty rows (1 / 2 / 3) each with a three-dot indicator (filled count equals difficulty; filled dots use distinct colors for difficulties 1 / 2 / 3 in the product sense green / amber / red; unfilled dots are outline rings) and the count of tasks at that difficulty with capitalized difficulty labels ending in a colon; then bottom action controls. **Pale (low-contrast) horizontal dividers** MUST appear after the total row, **between each consecutive difficulty row**, and **above the action controls** when actions are present. Stats rows MUST use a three-column rhythm: a leading column whose width matches the three-dot group (total-row icon centered in that column), difficulty/total labels sharing one left edge, and counts right-aligned. Card content (badge band → title → stats → actions) MUST distribute to fill the card height; when no status badge applies, empty space MUST remain only in the reserved top status band. Difficulty rows MUST remain scannable in both light and dark themes. Action controls that apply to the card (Edit, soft-unpublish, republish, and similar) MUST be full-width **outline** buttons with a leading icon and text label (not icon-only corner affordances) and MUST use a **slim** control height in the product sense of roughly one stats-row (~28–32 CSS px), not the default tall Quasar button. Soft-unpublish on the card MUST read «Снять» (or equivalent short i18n); republish on the card MUST read «Вернуть» (or equivalent short i18n). Hover scale / enlarge of the card MUST NOT be required. Cascade-gap highlight on editor cards MUST remain when applicable.
 
 #### Scenario [SC-PACK-239]: Task-set card shows counts and difficulty dots
 
@@ -132,8 +133,9 @@ On live pack and cards-editor task-set lists, each task-set card MUST present, t
 - **AND** each difficulty row uses a three-dot indicator with filled count equal to that difficulty
 - **AND** filled dots for difficulties 1, 2, and 3 use distinct colors (green / amber / red product sense)
 - **AND** unfilled dots are outline rings rather than solid muted fills
-- **AND** a horizontal divider separates the total row from the difficulty rows
-- **AND** a horizontal divider separates the difficulty rows from the action controls when actions are present
+- **AND** a pale horizontal divider separates the total row from the first difficulty row
+- **AND** a pale horizontal divider separates each consecutive pair of difficulty rows
+- **AND** a pale horizontal divider separates the last difficulty row from the action controls when actions are present
 
 #### Scenario [SC-PACK-240]: Task-set card uses short status badges
 
@@ -148,6 +150,7 @@ On live pack and cards-editor task-set lists, each task-set card MUST present, t
 - **WHEN** the user views the card actions
 - **THEN** each action is a full-width outline control with a leading icon and text
 - **AND** MUST NOT be an icon-only control in a card corner
+- **AND** each action uses a slim height in the product sense of roughly one stats-row (~28–32 CSS px), not the default tall button
 - **AND** soft-unpublish on the card uses short «Снять» (or equivalent) rather than pack/catalog «Снять с публикации»
 - **AND WHEN** republish is shown on the card
 - **THEN** it uses short «Вернуть» (or equivalent)
@@ -165,3 +168,14 @@ On live pack and cards-editor task-set lists, each task-set card MUST present, t
 - **WHEN** the user views that set’s summary card
 - **THEN** the title includes a hash before the ordinal (product sense «Набор заданий #{n}»)
 - **AND** the total-tasks row shows a leading document-style icon and a «Заданий:» label (or equivalent) with the total count
+
+#### Scenario [SC-PACK-244]: Task-set card column grid and vertical fill
+
+- **GIVEN** a live or editor task-set summary card with total and difficulty rows
+- **WHEN** the user views the card
+- **THEN** the leading icon of the total row is centered within the horizontal span occupied by the three-dot indicators on difficulty rows
+- **AND** the labels «Заданий:», «Лёгкие:», «Средние:», and «Сложные:» (or equivalent) share a common left edge
+- **AND** the numeric counts are right-aligned with each other
+- **AND** badge, title, stats, and actions are distributed to fill the card height
+- **AND WHEN** the card has no status badge
+- **THEN** empty space remains only in the reserved top status band (other blocks keep the fill rhythm)

@@ -37,3 +37,10 @@
 - [x] 7.4 Live + editor: soft-unpublish/republish на карточке → short keys «Снять» / «Вернуть»; verify SC-PACK-241 в list-cards / FollowUp vitest
 - [x] 7.5 Lobby create/list уже на `taskSetLabel` — убедиться что `#{n}` виден в SC-LOBBY-24/26 vitest (`LobbyCreateWire` и смежные)
 - [x] 7.6 Обновить `pack-cards.md` (+ localization/content notes при нужде): hash, цвета dots, dividers, short card actions, placeholder icon + reserved SVG names; `npm test` + `npm run lint` + `npm run typecheck` в client — зелёные по затронутому
+
+## 8. Client — layout polish (pale dividers / columns / fill / slim actions)
+
+- [x] 8.1 Прочитать `design.md` Decision 5/9 + Visual Spec и delta SC-PACK-239/241/244; текущие `PackTaskSetCardTile.vue` + live/editor action `q-btn`
+- [x] 8.2 `PackTaskSetCardTile`: бледные dividers после total, **между** каждыми difficulty rows и над actions; колонка lead = ширина 3 dots + icon по центру; labels на одной левой вертикали; counts справа; vertical fill (без badge — пусто только top); verify SC-PACK-239/244 в vitest
+- [x] 8.3 Live + editor: slim outline actions ~28–32 CSS px (`dense` и/или min-height); несколько actions стопкой как сейчас; verify SC-PACK-241 slim в list-cards / tile tests
+- [x] 8.4 Обновить `pack-cards.md` (+ notes): pale multi-row dividers, column grid, fill, slim actions; `npm test` + `npm run lint` + `npm run typecheck` в client — зелёные по затронутому
