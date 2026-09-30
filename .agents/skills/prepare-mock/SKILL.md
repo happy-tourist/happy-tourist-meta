@@ -60,8 +60,10 @@ description: >-
 | **Бледные dividers** | Список **всех** линий: между каждыми соседними stats-rows **и** над actions. Low-contrast / 1px / soft grey — всё равно MUST «есть», плюс цвет light/dark. Не опускать «между уровнями», если на кадре еле видно. |
 | **Колонки** | Lead width = ширина 3-dot group; total icon centered in lead; labels одна левая вертикаль; counts right. |
 | **Выравнивание текста** | У каждого текстового элемента: `left` / `center` / `right` (+ baseline/vertical center в ряду). Title vs badge vs stats vs button label — **не** считать «как обычно» без взгляда на макет. Общая левая кромка labels; counts на одной правой кромке; badge/title часто center. |
+| **Размер шрифтов** | У **каждого** текстового роли: `font-size` (+ weight, line-height). Title / badge / stats label / count / button — отдельные токены в Visual Spec. Approx OK с якорем (ширина карточки); не оставлять «просто меньше». |
 | **Vertical fill** | Как блоки делят высоту карточки; reserved top при отсутствии badge. |
 | **Button height** | Approx CSS px (якорь: ширина карточки); явно vs Quasar default/dense. |
+| **Размеры всех элементов** | Overall card W×H (или min-height) **и** W/H (или min-height) + pad каждого видимого блока (badge, title, rows, buttons, icons, dots, dividers). Не ограничиться одной «шириной карточки». |
 | **Hover** | **Отдельная** таблица default vs hover (и selected/focus, если на кадре): какие токены меняются — border color/width, shadow, bg, opacity; что **не** меняется (scale/enlarge часто запрещён). Light и dark отдельно. Не смешивать с обязательным chrome покоя. |
 
 При сомнении — crop/zoom карточки или спросить; не invent «нет линии».
@@ -92,6 +94,7 @@ description: >-
 | Точный текст | `Набор заданий #1`, `Заданий:`, `Лёгкие:`, `Снять`, `Вернуть` |
 | Варианты состояний | ДОРАБОТАТЬ / НА ПРОВЕРКЕ / СНЯТО (+ иконка бейджа если видна) |
 | Truncate / max lines | title 1–2 строки |
+| **Типографика** | per-element: `font-size` (px/`rem`/`em`), `font-weight`, `line-height`; badge vs title vs stats vs button — **отдельные** строки |
 | **Выравнивание текста** | per-element: title `center`? badge `center`? stats labels `left` + shared edge; counts `right` + shared edge; button label `center` (icon+text); multi-line title — center each line |
 | Колонки stats | lead (dots width) \| label left-edge shared \| count right |
 | Vertical fill | блоки тянут высоту; без badge — пусто только top |
@@ -100,15 +103,29 @@ description: >-
 
 Если скрин без линейки — давать **оценку в CSS px** с пометкой `approx` и якорем (напр. «ширина карточки ≈ 150–160 относительно соседних»). Лучше диапазон, чем выдуманная точность 1px.
 
+**Обязательно снять:**
+
+1. **Корень / карточка (overall):** width, height или min-height, border-radius, border-width.
+2. **Каждый видимый блок/элемент** (badge, title, total-row, каждая difficulty-row, каждый divider, actions zone, каждая кнопка, иконки, dots): **width и/или height** (или min-height), плюс padding/margin/gap где видно.
+3. **Расстояния между** соседними элементами (не только «gap rows» одной цифрой — если ритм разный, по парам).
+
 | Поле | Пример |
 |------|--------|
-| Card width / min-height / radius | 156×228, `border-radius: 12` |
-| Padding (top/right/bottom/left) | status `4–6` top; body `6–8` x |
-| Gap между rows | `4–6` |
-| Button height / padding / full-width | outline full-width, height ≈ `28–32` (slim; часто ~половина «толстого» default `q-btn`) |
+| Card width / height (or min-height) / radius | 156×228 (or min-height 228), `border-radius: 12` |
+| Card padding (top/right/bottom/left) | status `4–6` top; body `6–8` x; actions pad `…` |
+| Gap / margins между блоками | badge→title `…`; title→total `…`; row↔divider `…` |
+| Badge size | height ≈ `…`; pad; radius (pill) |
+| Title block | **font-size** / weight / line-height; max height (2 lines) |
+| Total-row / each stats-row | row height ≈ `…`; **label + count font-size**/weight; icon size; count width |
+| Button | **full width** of content; **height** ≈ `28–32`; **label font-size**/weight; pad |
 | Dot size / gap | `5–6` diameter, gap `2` |
 | Lead column width | ≈ width of 3 dots (+ gaps); icon centered in it |
+| Icon size (total / action / badge) | ≈ `14–16` |
 | Divider thickness / inset / **где** | `1px` pale; **между всеми** stats-rows + над actions; full content width |
+
+В Report — таблица **«Размеры элементов»**: одна строка на элемент (`token | w | h | pad | notes | confidence`). Overall card — первая строка. Пустых «забыли кнопку» не оставлять: если на макете видно — строка обязательна.
+
+Не путать: **overall** карточки ≠ сумма children без учёта padding/gap — при расхождении пометить `approx` / Open Question.
 
 ### C. Цвета (hex / rgba / product sense)
 
@@ -241,13 +258,22 @@ Surface: <e.g. task-set summary card>
 2. …
 
 ## Copy (точные строки)
-| Элемент | Текст light/dark | Состояния | Align H | Align V (в ряду) |
-|---------|------------------|-----------|---------|------------------|
-| Title | Набор заданий #{n} | | center | — |
-| Badge | СНЯТО | | center | — |
-| Stats label | Лёгкие: | | left (shared edge) | center |
-| Stats count | 24 | | right (shared edge) | center |
-| Button | Снять | | center (icon+text) | center |
+| Элемент | Текст light/dark | Состояния | Align H | Align V (в ряду) | font-size | weight | line-height |
+|---------|------------------|-----------|---------|------------------|-----------|--------|-------------|
+| Title | Набор заданий #{n} | | center | — | … px | 600 | … |
+| Badge | СНЯТО | | center | — | … | … | … |
+| Stats label | Лёгкие: | | left (shared edge) | center | … | … | … |
+| Stats count | 24 | | right (shared edge) | center | … | … | … |
+| Button | Снять | | center (icon+text) | center | … | … | … |
+
+## Типографика (сводка размеров шрифтов)
+| Роль | font-size | weight | line-height | Notes | Confidence |
+|------|-----------|--------|-------------|-------|------------|
+| title | … | … | … | | |
+| badge | … | … | … | | |
+| stats-label | … | … | … | | |
+| stats-count | … | … | … | | |
+| button-label | … | … | … | | |
 
 ## Выравнивание текста (сводка)
 | Правило с макета | Токен / notes |
@@ -261,7 +287,20 @@ Surface: <e.g. task-set summary card>
 | Токен | Значение | Confidence |
 |-------|----------|------------|
 | card.width | 150–160px | high |
+| card.height / min-height | … | |
 | … | | |
+
+## Размеры элементов (overall + каждый блок)
+| Элемент | W | H (или min-H) | Pad / gap | Notes | Confidence |
+|---------|---|----------------|-----------|-------|------------|
+| card (overall) | … | … | … | radius … | |
+| badge | … | … | … | | |
+| title | … | … | … | | |
+| total-row | … | … | … | icon …×… | |
+| diff-row ×3 | … | … | … | dots … | |
+| divider | full | 1px | … | each location | |
+| action button | full | … | … | vs Quasar | |
+| … | | | | | |
 
 ## Цвета
 ### Light
@@ -320,10 +359,12 @@ Surface: <e.g. task-set summary card>
 ## Не делать
 
 - Не invent точные px «для красоты», если на скрине не видно — `approx` + range.
+- Не ограничиваться overall карточки: **каждый** видимый элемент — строка в «Размеры элементов».
 - Не переносить в specs имена компонентов/CSS.
 - Не реализовывать UI в этом скилле.
 - Не архивировать change и не запускать implement-change.
 - Не пропускать бледные dividers между stats-rows / над actions в Visual Spec.
 - Не игнорировать уточнение пользователя по макету.
 - Не пропускать **выравнивание текста** (left/center/right + общие кромки labels/counts); не подставлять «как в Quasar по умолчанию» без макета.
+- Не пропускать **размеры шрифтов** (font-size / weight / line-height) по ролям — отдельная таблица в extract и Visual Spec.
 - Не сваливать hover в одну строку «есть тень»: отдельно border/shadow/bg/scale; light vs dark; что не меняется.

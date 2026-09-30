@@ -44,3 +44,10 @@
 - [x] 8.2 `PackTaskSetCardTile`: бледные dividers после total, **между** каждыми difficulty rows и над actions; колонка lead = ширина 3 dots + icon по центру; labels на одной левой вертикали; counts справа; vertical fill (без badge — пусто только top); verify SC-PACK-239/244 в vitest
 - [x] 8.3 Live + editor: slim outline actions ~28–32 CSS px (`dense` и/или min-height); несколько actions стопкой как сейчас; verify SC-PACK-241 slim в list-cards / tile tests
 - [x] 8.4 Обновить `pack-cards.md` (+ notes): pale multi-row dividers, column grid, fill, slim actions; `npm test` + `npm run lint` + `npm run typecheck` в client — зелёные по затронутому
+
+## 9. Client — spacing + themed hover (Visual Spec)
+
+- [x] 9.1 Прочитать `design.md` Decision 10 + Visual Spec (точные CSS px) и delta SC-PACK-245/246; текущие `PackTaskSetCardTile.vue` gaps / `:hover`
+- [x] 9.2 `PackTaskSetCardTile`: увеличить внутренние отступы title→stats и air вокруг pale dividers / stats-rows по Visual Spec (grid gutter списков **не** трогать); min-height под resting ~206+; verify SC-PACK-245 в vitest
+- [x] 9.3 Hover без scale: light — тёмная рамка + soft lift shadow; dark — светло-серая рамка (~`#bdbdbd` / Visual Spec), не `--q-secondary`; иконки/dots без перекраса; verify SC-PACK-246 в vitest
+- [x] 9.4 Обновить `pack-cards.md` (+ notes): spacing tokens + themed hover; `npm test` + `npm run lint` + `npm run typecheck` в client — зелёные по затронутому

@@ -91,7 +91,9 @@ summary chrome: short status, `#{n}` ordinal title without author, total icon +
 «Заданий:», colored outline difficulty dots, pale multi-row dividers, lead/label/count
 column grid, vertical fill, slim ~28–32px outline+icon bottom
 actions with short «Снять»/«Вернуть»; pages omit empty `#actions`; width ~150–160,
-height MAY exceed 200 — SC-PACK-229/239…244). Do **not** reuse `PackListCardTile`
+min-height ~206 (MAY grow); internal title/divider spacing SC-PACK-245; themed
+hover border+shadow without scale (dark light-grey, not `--q-secondary`)
+SC-PACK-246 — SC-PACK-229/239…246). Do **not** reuse `PackListCardTile`
 for task sets. Slot
 **values** on a task row use `.peek-slot-like` (above); the answer **picker**
 beside slots is `PackAnswerCardTile` (selectable), **not** `q-chip`
@@ -124,8 +126,10 @@ lineage match — not fan-out by `changeAuthorId`). `ContentPackPage` / editor t
 SC-PACK-240; not the longer `taskSetStatusMarks.*` prose used on add-task-set
 thread). Badges for pending / needs_revision / draft (not `live`):
 `q-badge.pack-task-set-status-badge` + temp Material icon (`schedule` /
-`close` / `edit_note` / `visibility_off`); pending Quasar `warning`,
-needs_revision/draft/unpublished `grey` (not loud warning orange). CSS chrome:
+`close` / `edit_note` / `visibility_off`) + tone classes via page helpers
+(`setModerationBadgeToneClass` / `editorSetModerationBadgeToneClass`):
+`--pending` soft amber (НА ПРОВЕРКЕ); `--muted` pale grey for revise/draft/
+СНЯТО — **not** Quasar solid `color="warning"` / `grey`. CSS chrome:
 `work-with-styles/pack-cards.md`.
 
 **Staff false draft (SC-PACK-230 / SC-PACK-233 / D2):** after direct `staff-save`

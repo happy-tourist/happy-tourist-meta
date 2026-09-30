@@ -19,7 +19,7 @@ live summary+drill-in / AddTaskSet chips), `ContentFollowUp5.test.ts`
 `ContentModerationUx.test.ts` (SC-PACK-126 editor cascade CSS; SC-PACK-127 slot
 chips on staff hub + add-task-set; SC-PACK-128 add-task-set thread/status/reply;
 SC-PACK-194/195 no `content.catalogNav` on pack/staff/my-moderation pages),
-pack CSV SC-PACK-210…229/239…244: `src/lib/__tests__/packContentCsv.test.ts`,
+pack CSV SC-PACK-210…229/239…246: `src/lib/__tests__/packContentCsv.test.ts`,
 `src/components/__tests__/PackTasksCsvControls.test.ts`,
 `src/pages/__tests__/ContentPackEditorCsv.test.ts` (framed CSV panel +
 in-frame errors — not `content.error`; no `PackCsvImportDialog`), tile smoke
@@ -27,10 +27,12 @@ in-frame errors — not `content.error`; no `PackCsvImportDialog`), tile smoke
 sizes/contrast SC-PACK-225…227 + catalog `PackListCardTile` /
 `ContentPackListCards` SC-PACK-228 + task-set `PackTaskSetCardTile` /
 `src/components/__tests__/PackTaskSetCardTile.test.ts` +
-`ContentPackListCards` SC-PACK-229/239…244 (summary chrome / `#{n}` / colored outline
+`ContentPackListCards` SC-PACK-229/239…246 (summary chrome / `#{n}` / colored outline
 dots / pale dividers between every stats row + above actions / SC-PACK-244
 lead/label/count grid + reserved top without badge / slim `dense` ~28–32px
-actions / empty `#actions` omitted for viewers; short badges / outline+icon;
+actions / empty `#actions` omitted for viewers; soft muted `--pending`/`--muted`
+pills + pale action outline (not Quasar solid fills); SC-PACK-245 spacing tokens
++ SC-PACK-246 themed hover no-scale; short badges / outline+icon;
 card «Снять»/«Вернуть»; no author on `taskSetLabel`; tile file
 `PackTaskSetCardTile.test.ts`) + maps list `MapListCardTile` /
 `ContentMaps` SC-MAP-55,

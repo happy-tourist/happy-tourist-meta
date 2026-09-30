@@ -14,8 +14,10 @@
 | SC-PACK-242 | covered (client vitest — light/dark readable) |
 | SC-PACK-243 | covered (client vitest — `#{n}` title; total icon + «Заданий:»; short card actions) |
 | SC-PACK-244 | covered (client vitest — column grid lead/label/count; vertical fill; reserved top without badge) |
+| SC-PACK-245 | covered (client vitest — roomier internal spacing title↔stats and around pale dividers) |
+| SC-PACK-246 | covered (client vitest — themed hover border light/dark; no scale; icons unchanged) |
 
-Related: playing-card answer/task tiles — main SC-PACK-222…227 (unchanged). Catalog pack cards — SC-PACK-228 (unchanged). Lobby create/list labels — `lobby/rooms` delta.
+Related: playing-card answer/task tiles — main SC-PACK-222…227 (unchanged). Catalog pack cards — SC-PACK-228 (unchanged). Lobby create/list labels — `lobby/rooms` delta. Spacing + themed hover — SC-PACK-245/246.
 
 ## MODIFIED Requirements
 
@@ -122,7 +124,7 @@ The **task-set** lists on the live pack and cards-editor surfaces MUST render ea
 
 ### Requirement: Task-set cards use denser summary chrome
 
-On live pack and cards-editor task-set lists, each task-set card MUST present, top to bottom: optional short status badge; title «Набор заданий #{n}» (no author); a total-tasks row with a leading document-style icon and a «Заданий:» (or equivalent) label plus count; three difficulty rows (1 / 2 / 3) each with a three-dot indicator (filled count equals difficulty; filled dots use distinct colors for difficulties 1 / 2 / 3 in the product sense green / amber / red; unfilled dots are outline rings) and the count of tasks at that difficulty with capitalized difficulty labels ending in a colon; then bottom action controls. **Pale (low-contrast) horizontal dividers** MUST appear after the total row, **between each consecutive difficulty row**, and **above the action controls** when actions are present. Stats rows MUST use a three-column rhythm: a leading column whose width matches the three-dot group (total-row icon centered in that column), difficulty/total labels sharing one left edge, and counts right-aligned. Card content (badge band → title → stats → actions) MUST distribute to fill the card height; when no status badge applies, empty space MUST remain only in the reserved top status band. Difficulty rows MUST remain scannable in both light and dark themes. Action controls that apply to the card (Edit, soft-unpublish, republish, and similar) MUST be full-width **outline** buttons with a leading icon and text label (not icon-only corner affordances) and MUST use a **slim** control height in the product sense of roughly one stats-row (~28–32 CSS px), not the default tall Quasar button. Soft-unpublish on the card MUST read «Снять» (or equivalent short i18n); republish on the card MUST read «Вернуть» (or equivalent short i18n). Hover scale / enlarge of the card MUST NOT be required. Cascade-gap highlight on editor cards MUST remain when applicable.
+On live pack and cards-editor task-set lists, each task-set card MUST present, top to bottom: optional short status badge; title «Набор заданий #{n}» (no author); a total-tasks row with a leading document-style icon and a «Заданий:» (or equivalent) label plus count; three difficulty rows (1 / 2 / 3) each with a three-dot indicator (filled count equals difficulty; filled dots use distinct colors for difficulties 1 / 2 / 3 in the product sense green / amber / red; unfilled dots are outline rings) and the count of tasks at that difficulty with capitalized difficulty labels ending in a colon; then bottom action controls. **Pale (low-contrast) horizontal dividers** MUST appear after the total row, **between each consecutive difficulty row**, and **above the action controls** when actions are present. **Internal vertical spacing** MUST leave clear air between the title and the stats block and between each stats label-row and its neighbouring pale dividers (roomier than a tightly packed caption stack; product sense matches the agreed mock Visual Spec). Stats rows MUST use a three-column rhythm: a leading column whose width matches the three-dot group (total-row icon centered in that column), difficulty/total labels sharing one left edge, and counts right-aligned. Card content (badge band → title → stats → actions) MUST distribute to fill the card height; when no status badge applies, empty space MUST remain only in the reserved top status band. Difficulty rows MUST remain scannable in both light and dark themes. Action controls that apply to the card (Edit, soft-unpublish, republish, and similar) MUST be full-width **outline** buttons with a leading icon and text label (not icon-only corner affordances) and MUST use a **slim** control height in the product sense of roughly one stats-row (~28–32 CSS px), not the default tall Quasar button. Soft-unpublish on the card MUST read «Снять» (or equivalent short i18n); republish on the card MUST read «Вернуть» (or equivalent short i18n). Hover / focus affordance on a clickable card MUST change **border and optional soft shadow only**: in light theme the border MUST become a dark / near-black stroke; in dark theme the border MUST become a **light-grey** stroke (not a brand primary/secondary tint). Hover MUST NOT scale or enlarge the card. Difficulty dots, document icon, badge icons, and action icons MUST keep their semantic colors on hover. Cascade-gap highlight on editor cards MUST remain when applicable.
 
 #### Scenario [SC-PACK-239]: Task-set card shows counts and difficulty dots
 
@@ -179,3 +181,25 @@ On live pack and cards-editor task-set lists, each task-set card MUST present, t
 - **AND** badge, title, stats, and actions are distributed to fill the card height
 - **AND WHEN** the card has no status badge
 - **THEN** empty space remains only in the reserved top status band (other blocks keep the fill rhythm)
+
+#### Scenario [SC-PACK-245]: Task-set card internal spacing around title and dividers
+
+- **GIVEN** a live or editor task-set summary card with title, total row, difficulty rows, and pale dividers
+- **WHEN** the user views the card
+- **THEN** there is clear vertical space between the title and the stats block (not a flush caption stack)
+- **AND** there is clear vertical space between each stats label-row and its neighbouring pale dividers
+- **AND** the spacing rhythm remains readable in both light and dark themes
+
+#### Scenario [SC-PACK-246]: Task-set card hover uses themed border without scale
+
+- **GIVEN** a clickable task-set summary card in light theme
+- **WHEN** the user hovers (or equivalently focuses for keyboard affordance) the card
+- **THEN** the card border becomes a dark / near-black stroke relative to the resting soft border
+- **AND** the card MUST NOT enlarge via scale transform
+- **AND** difficulty dots and leading icons MUST keep their colors
+- **AND GIVEN** the same card in dark theme
+- **WHEN** the user hovers the card
+- **THEN** the card border becomes a light-grey stroke (product sense soft silver / off-white grey)
+- **AND** the border MUST NOT rely on brand primary/secondary tint as the only hover cue
+- **AND** the card MUST NOT enlarge via scale transform
+- **AND** difficulty dots and leading icons MUST keep their colors

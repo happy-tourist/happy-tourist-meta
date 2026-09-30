@@ -6,7 +6,7 @@ description: >-
   page CSS, Quasar utilities, Material Icons / Roboto. Core in SKILL.md; topic
   details in theme.md (Dark + /api/theme), board.md (GamePage tourist CSS),
   pack-cards.md (cascade yellow + answer/task tiles + catalog
-  PackListCardTile + PackTaskSetCardTile summary chrome SC-PACK-229/239…244 +
+  PackListCardTile + PackTaskSetCardTile summary chrome SC-PACK-229/239…246 +
   map list tiles).
 ---
 
