@@ -5,5 +5,4 @@ projects-map.local.yaml
 kilo.jsonc
 
 # Local IDE / agent session artifacts
-.cursor/
 .superpowers/

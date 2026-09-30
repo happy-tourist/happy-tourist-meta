@@ -27,6 +27,7 @@
 | SC-BRAND-17 | covered (vitest) — strengthen: page-container offset zone |
 | SC-BRAND-18 | covered (vitest) |
 | SC-BRAND-19 | covered (vitest) |
+| SC-BRAND-20 | covered (`AppHeaderChrome` Lobby crumb → lobby) |
 
 Related leave-on-Game: `game/leave`. Theme toggle: `ui/theme`. Related content chrome: `content/packs`, `content/maps`.
 
@@ -210,3 +211,13 @@ On content packs, maps, and staff/author moderation routes (list, detail, editor
 - **GIVEN** an authenticated moderator or admin on the staff content moderation queue
 - **WHEN** the page renders
 - **THEN** breadcrumbs include a path toward Lobby and Модерация (or equivalent staff moderation root)
+
+### Requirement: Lobby breadcrumb navigates to lobby
+
+Wherever content packs, maps, or staff/author moderation breadcrumbs include a **Lobby** crumb, activating that crumb MUST navigate the user to the lobby screen. The Lobby crumb MUST NOT be a non-interactive label when other crumbs in the same trail are navigable.
+
+#### Scenario [SC-BRAND-20]: Lobby crumb opens lobby from a content route
+
+- **GIVEN** an authenticated user on a packs, maps, or moderation route that shows breadcrumbs including Lobby
+- **WHEN** the user activates the Lobby crumb
+- **THEN** the client navigates to the lobby screen

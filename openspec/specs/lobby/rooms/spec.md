@@ -38,6 +38,7 @@ Live-список доступных игровых комнат на экран
 | SC-LOBBY-28 | covered (client — seats picker 1…map.players) |
 | SC-LOBBY-29 | covered (client — no duplicate capacity caption) |
 | SC-LOBBY-30 | covered (client — auto-check single published set) |
+| SC-LOBBY-31 | covered (client vitest LobbyCreateWire selected mini) |
 
 Related: map snapshot / task deck — `game/board`; seating capacity — `game/pieces` / `game/start`. Grille/catapult density unchanged (SC-LOBBY-13…18).
 
@@ -296,3 +297,14 @@ When the client leaves a tourist game and returns to the lobby listing (or other
 - **WHEN** the lobby listing resubscribes
 - **THEN** the user MUST NOT see a flash of that disposed room as an available game between loading and the fresh empty (or updated) list
 - **AND** after the fresh lobby snapshot, disposed rooms are absent from the list
+
+### Requirement: Create map select shows mini preview when selected
+
+When an authenticated user opens create-game and selects an in-catalog map, the closed/selected presentation of the map picker MUST show a **mini preview** of that map’s grid together with the map’s identifying label (not label-only text). Option rows in the open list MUST continue to show mini preview and players×tourists per existing create-map picker rules.
+
+#### Scenario [SC-LOBBY-31]: Selected map shows mini preview in create select
+
+- **GIVEN** the create-game modal with an in-catalog map M selected
+- **WHEN** the user views the closed map select
+- **THEN** the selected presentation includes a mini preview of M’s grid
+- **AND** the map’s label remains visible
