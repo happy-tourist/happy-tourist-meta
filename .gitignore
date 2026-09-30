@@ -6,3 +6,4 @@ kilo.jsonc
 
 # Local IDE / agent session artifacts
 .superpowers/
+.cursor/
