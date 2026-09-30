@@ -11,7 +11,7 @@ description: >-
   lobby create wire `LobbyCreateWire` / game board wire `GameBoardWire` /
   presence focus `GamePresenceFocus` / `boardGeometry` + `focusActionable` lib tests /
   game peek `game.boardPeek` / soft-unpublish `ContentSoftUnpublish` / follow-up 4–5 / `ContentModerationUx` /
-  pack answers/tasks CSV `packContentCsv` / framed panel / `PackTasksCsvControls` / `ContentPackEditorCsv` + tile smoke `PackAnswerCardTile` / `PackTaskTile` / `PackListCardTile` / `MapListCardTile` / `ContentPackPlayingCards` / `ContentPackListCards` SC-PACK-210…229 /
+  pack answers/tasks CSV `packContentCsv` / framed panel / `PackTasksCsvControls` / `ContentPackEditorCsv` + tile smoke `PackAnswerCardTile` / `PackTaskTile` / `PackListCardTile` / `PackTaskSetCardTile` / `MapListCardTile` / `ContentPackPlayingCards` / `ContentPackListCards` SC-PACK-210…229/239…242 /
   staff boot/dirty Submit/CSV hide/peek slots `editorDirty` / `ContentPackStaffBoot` / `ContentPackDirtySubmit` / `ContentPackTasksCsvHide` SC-PACK-231…238 /
   `ContentMaps` + `maps.paint` SC-MAP-41…56 / 62…65 / App header chrome `AppHeaderChrome`
   (SC-BRAND-17…20) /

@@ -84,24 +84,31 @@ render `PackAnswerCardTile` / `PackTaskTile` inside a wrapping `.pack-card-grid`
 (`app.scss`). Fixed sizes: answer **150×200** (no description) / **300×200**
 (with description + **vertical** splitter); task **300×200** (vertical split;
 `.peek-slot-like` slot row); explicit light/dark tile contrast (SC-PACK-225…227).
-Catalog packs and live/editor **task-set** lists use `PackListCardTile`
-**150×200** (status top, star TL, truncated description on catalog, **bottom**
-full-width text actions — SC-PACK-228/229). Slot **values** on a task row use
-`.peek-slot-like` (above); the answer **picker** beside slots is
-`PackAnswerCardTile` (selectable), **not** `q-chip` (SC-PACK-133 superseded for
-picker chrome by SC-PACK-222…224). Edit/delete only when editable (bottom text
-buttons); body click is not edit. CSV import/export is client-only
+**Catalog packs** use `PackListCardTile` **150×200** (status top, star TL,
+truncated description, **bottom** full-width text actions — SC-PACK-228).
+**Live/editor task-set lists** use dedicated `PackTaskSetCardTile` (denser
+summary chrome: short status, ordinal title without author, count + difficulty
+dots, outline+icon bottom actions; width ~150–160, height MAY exceed 200 —
+SC-PACK-229/239…242). Do **not** reuse `PackListCardTile` for task sets. Slot
+**values** on a task row use `.peek-slot-like` (above); the answer **picker**
+beside slots is `PackAnswerCardTile` (selectable), **not** `q-chip`
+(SC-PACK-133 superseded for picker chrome by SC-PACK-222…224). Edit/delete only
+when editable (bottom text buttons on answer/task tiles; outline+icon on
+task-set tiles); body click is not edit. CSV import/export is client-only
 (`lib/packContentCsv` + framed Export/Import panel on editor /
 `PackTasksCsvControls`; **hide** CSV on live Tasks `viewOnly` SC-PACK-235;
 staff Edit keeps CSV SC-PACK-236; Import opens the file picker directly — no
 `PackCsvImportDialog`) — not store HTTP.
 
-## Task-set author label + Tasks back (SC-PACK-135 / 136 / 182)
+## Task-set label + Tasks back (SC-PACK-135 / 136 / 182)
 
-`TaskSet.authorDisplayName` drives `content.taskSetLabelFrom` on live / editor /
-staff hub / Tasks heading. Live drill-in **omits** page «Вернуться» when App
-breadcrumbs cover the path (SC-PACK-182); editor keeps `content.backToAnswers`.
-Live pack page also omits «К наборам» (SC-PACK-181 — crumbs).
+UI labels MUST use ordinal `content.taskSetLabel` («Набор заданий {n}») —
+**no** author/coauthor on live / editor / staff hub / Tasks heading / lobby
+create+list. `TaskSet.authorDisplayName` may remain in API/types for ACL but
+MUST NOT drive these labels; on save keep `coauthorLabels: []`. Live drill-in
+**omits** page «Вернуться» when App breadcrumbs cover the path (SC-PACK-182);
+editor keeps `content.backToAnswers`. Live pack page also omits «К наборам»
+(SC-PACK-181 — crumbs).
 
 ## Per-set moderation marks (SC-PACK-171…174 / 187 / 230)
 
@@ -109,8 +116,10 @@ Live pack page also omits «К наборам» (SC-PACK-181 — crumbs).
 `null`) appears on live/editor payloads for **that set's author and staff
 only** — pack creator MUST NOT see foreign set marks solely as `createdBy`.
 Open status applies **only** to sets belonging to the open request (revision /
-lineage match — not fan-out by `changeAuthorId`). `ContentPackPage` shows
-badges for pending / needs_revision / draft (not `live`).
+lineage match — not fan-out by `changeAuthorId`). `ContentPackPage` / editor task-set cards show short badges via
+`content.taskSetCardBadge.*` (СНЯТО / ДОРАБОТАТЬ / НА ПРОВЕРКЕ / ЧЕРНОВИК —
+SC-PACK-240; not the longer `taskSetStatusMarks.*` prose used on add-task-set
+thread). Badges for pending / needs_revision / draft (not `live`).
 
 **Staff false draft (SC-PACK-230 / SC-PACK-233 / D2):** after direct `staff-save`
 into live with no open author request, server **always** clears

@@ -34,9 +34,9 @@ Sibling server: `../happy-tourist-server`. Coordinate room name (`tourist`), `lo
 | SDK auto-reconnect | After join: `lobby.reconnection.enabled = false` (avoid reservation churn) |
 | Drop while on Lobby | Clear `lobbyRoom`; if `lobbyWanted` → `_quietResubscribeLobby` (no user-facing reservation text) |
 | Leave lobby | `unsubscribeLobby` after successful tourist connect (`_enterRoom`); also on LobbyPage unmount and `leaveGame` / logout |
-| Create | Modal: **map** picker (option + **selected-item** mini `MapGridPreview` — SC-LOBBY-31; players × tourists in option caption only — SC-LOBBY-29) + **maxSeats** radios `1…map.players` (default `min(2, map.players)` — SC-LOBBY-28) + **pack** + multi-check published sets (exactly one → auto-check — SC-LOBBY-30) + **grille**/ **catapult** density few/medium/many (default medium; server seeds **12/22/35%**) → `createGame({ mapId, packId, taskSetIds, maxSeats, grilleDensity, catapultDensity })` → `client.create(TOURIST_ROOM, …)` |
+| Create | Modal: **map** picker (option + **selected-item** mini `MapGridPreview` — SC-LOBBY-31; players × tourists in option caption only — SC-LOBBY-29) + **maxSeats** radios `1…map.players` (default `min(2, map.players)` — SC-LOBBY-28) + **pack** + multi-check published sets (exactly one → auto-check — SC-LOBBY-30; labels `taskSetOption` / ordinal `taskSetLabel` **without** set author — SC-LOBBY-24; ordinal = pack index among all sets) + **grille**/ **catapult** density few/medium/many (default medium; server seeds **12/22/35%**) → `createGame({ mapId, packId, taskSetIds, maxSeats, grilleDensity, catapultDensity })` → `client.create(TOURIST_ROOM, …)` |
 | Join by id | List row / «Войти» → `joinGame(roomId)` → `client.joinById(roomId)` |
-| Capacity caption | `metadata.seats` / `metadata.maxSeats` as `occupied/maxSeats` (not `clients`/`maxClients`); also map preview + pack/set labels from metadata |
+| Capacity caption | `metadata.seats` / `metadata.maxSeats` as `occupied/maxSeats` (not `clients`/`maxClients`); also map preview + pack/set ordinals from metadata (`packSetsCaption`, **no** set author — SC-LOBBY-26) |
 | Play shortcut | **Removed** — do not restore «Играть» / bare `joinOrCreate` without product request |
 | After enter | `router.push({ name: 'game', params: { roomId } })` |
 | Loading | Store `listing` during subscribe connect; page refs `creating`, `joining`, `pickersLoading` |
@@ -243,12 +243,12 @@ await router.push({ name: 'game', params: { roomId } });
 3. Drop while `lobbyWanted` → quiet resubscribe; filter reservation / reconnect noise from `game.error`.
 4. Lobby mounts subscribe; unmount / logout / successful enter unsubscribe lobby WS; failed enter keeps subscription.
 5. Create modal → `createGame({ mapId, packId, taskSetIds, maxSeats, grilleDensity, catapultDensity })`; join listed → `joinGame(roomId)`; **no** Play / bare `joinOrCreate` UI; seats picker `1…map.players` (not map.players-only capacity).
-6. Capacity caption uses `metadata.seats`/`metadata.maxSeats`; list may show map preview + pack/set labels.
+6. Capacity caption uses `metadata.seats`/`metadata.maxSeats`; list may show map preview + pack/set **ordinals** (`packSetsCaption` / `taskSetLabel` — **no** set author; SC-LOBBY-26).
 7. Successful enter navigates to `/game/:roomId` (route name `game`) with no active lobby subscription.
 8. `listing` / `creating` / `joining` / `pickersLoading` bound; cleared in `finally`.
 9. SC-LOBBY-07 only for real listing unavailability; create pickers use maps/content errors; logout still works.
 10. Logout goes through auth store (after `leaveGame`).
-11. Room name and list metadata match `../happy-tourist-server` (`lobby` + `tourist` + realtime listing; metadata seats/maxSeats + map/pack labels).
+11. Room name and list metadata match `../happy-tourist-server` (`lobby` + `tourist` + realtime listing; metadata seats/maxSeats + map/pack; UI shows set **ordinals**, not set author).
 12. No `client.*` calls from LobbyPage — only store actions.
 13. Run `npm run lint` / `typecheck` from the client package root; fix failures before claiming done.
 
@@ -264,6 +264,7 @@ await router.push({ name: 'game', params: { roomId } });
 | Restoring «Играть» / `joinOrCreate` shortcut | Create with map+pack+sets or join listed room only |
 | Reviving maxSeats-only create (no map/pack) | Require mapId + packId + ≥1 published taskSetIds |
 | Showing `clients`/`maxClients` as capacity | Use metadata `seats`/`maxSeats` |
+| Surfacing task-set author on create options or room list | Use `taskSetOption` + ordinal `taskSetLabel` / `packSetsCaption` `{sets}` (SC-LOBBY-24/26); ordinal = pack index among **all** sets, not published-only index |
 | Join without `roomId` when clicking a list row | Pass `room.roomId` into `joinGame(roomId)` |
 | Enter success but no navigation | `push({ name: 'game', params: { roomId } })` |
 | Calling `client.create` / `joinById` in the page | Use `createGame` / `joinGame` on the store |

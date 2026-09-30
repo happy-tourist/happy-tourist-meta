@@ -1,0 +1,30 @@
+## 1. Client — task-set summary card
+
+- [x] 1.1 Прочитать `design.md`, delta `specs/content/packs/spec.md` (SC-PACK-229/239…242), skills `client/work-with-styles` + `pack-cards.md`, `client/work-with-pages/content-pages.md`, текущие `PackListCardTile.vue` / live+editor grids
+- [x] 1.2 Добавить dedicated task-set summary tile (отдельно от catalog `PackListCardTile`): статус сверху, title без автора, rows count+difficulty dots, outline+icon actions снизу, ширина ~150–160 / высота с запасом, light/dark contrast, cascade-gap class; verify компонент монтируется и размеры/контраст в unit-тесте
+- [x] 1.3 Подключить tile на live pack и cards editor task-set grids (сохранить click/open, soft-unpublish/republish/Edit ACL); catalog packs не менять; verify SC-PACK-229/130 сценарии в vitest list-cards / live+editor
+- [x] 1.4 i18n: короткие бейджи (СНЯТО / ДОРАБОТАТЬ / НА ПРОВЕРКЕ / …) на карточках; labels actions с иконками; verify SC-PACK-240/241 в vitest
+
+## 2. Client — убрать автора и соавторов
+
+- [x] 2.1 Прочитать delta SC-PACK-135 и места `taskSetLabelFrom` / `coauthorLabels` (live, editor, staff hub headings, tasks header)
+- [x] 2.2 Заменить лейблы на «Набор заданий {n}» без автора/соавторов на всех content-поверхностях; `coauthorLabels` при создании/save оставлять `[]`; verify SC-PACK-135 vitest (FollowUp5 / AuthorEditTake / list-cards)
+
+## 3. Client — lobby labels
+
+- [x] 3.1 Прочитать delta `specs/lobby/rooms/spec.md` (SC-LOBBY-24/26), `LobbyPage` create picker + room list metadata
+- [x] 3.2 Убрать автора набора из create task-set options и из отображения task-set labels в listing; map author не трогать; verify SC-LOBBY-24/26 в `LobbyCreateWire` (и смежных) vitest
+
+## 4. Client — verify gate
+
+- [x] 4.1 Обновить/добавить vitest по Traceability SC-PACK-229/239…242/135/132 и SC-LOBBY-24/26; `npm test` в client — зелёный
+- [x] 4.2 `npm run lint` и `npm run typecheck` в client — без ошибок по затронутым файлам
+
+## 5. Server — optional coauthor silence
+
+- [x] 5.1 Прочитать `design.md` Decision 3/7; при необходимости в persist task set всегда писать `coauthorLabels: []` (без миграции колонки); verify существующие mocha content packs не падают (`npm test` server на затронутых suite)
+- [x] 5.2 skipped — UI-only — сервер не менялся; create/list не зависят от server copy author (`coauthorLabels: []` с клиента; lobby — ordinal `taskSetLabel`)
+
+## 6. Meta skills touch-up
+
+- [x] 6.1 Обновить `.agents/skills/client/work-with-styles/pack-cards.md` (и при необходимости content-pages/content store notes) под task-set summary chrome vs catalog 150×200; verify текст skills согласован с design

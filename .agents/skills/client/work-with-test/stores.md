@@ -13,18 +13,22 @@ SC-PACK-100…136 — pages `Content*Acl.test.ts` incl. `ContentCatalogAcl` /
 (SC-PACK-120…125 staff unpublish/republish + soft-unpublished gray/non-nav),
 `ContentFollowUp4.test.ts` (SC-PACK-129…133 + SC-PACK-139 unpublishConfirm warns open requests / set soft-hide /
 live summary+drill-in / AddTaskSet chips), `ContentFollowUp5.test.ts`
-(SC-PACK-134…136 slot card text / `authorDisplayName` / Tasks `content.back`),
+(SC-PACK-134…136 slot card text / ordinal `taskSetLabel` no author / Tasks
+`content.back`),
 `ContentPackTasksHints.test.ts` (SC-PACK-115/119 staff session + stable hints),
 `ContentModerationUx.test.ts` (SC-PACK-126 editor cascade CSS; SC-PACK-127 slot
 chips on staff hub + add-task-set; SC-PACK-128 add-task-set thread/status/reply;
 SC-PACK-194/195 no `content.catalogNav` on pack/staff/my-moderation pages),
-pack CSV SC-PACK-210…229: `src/lib/__tests__/packContentCsv.test.ts`,
+pack CSV SC-PACK-210…229/239…242: `src/lib/__tests__/packContentCsv.test.ts`,
 `src/components/__tests__/PackTasksCsvControls.test.ts`,
 `src/pages/__tests__/ContentPackEditorCsv.test.ts` (framed CSV panel +
 in-frame errors — not `content.error`; no `PackCsvImportDialog`), tile smoke
 `PackAnswerCardTile` / `PackTaskTile` / `ContentPackPlayingCards` +
-sizes/contrast SC-PACK-225…227 + catalog/task-set `PackListCardTile` /
-`ContentPackListCards` SC-PACK-228/229 + maps list `MapListCardTile` /
+sizes/contrast SC-PACK-225…227 + catalog `PackListCardTile` /
+`ContentPackListCards` SC-PACK-228 + task-set `PackTaskSetCardTile` /
+`src/components/__tests__/PackTaskSetCardTile.test.ts` +
+`ContentPackListCards` SC-PACK-229/239…242 (summary chrome / short badges /
+outline+icon actions; no author on `taskSetLabel`) + maps list `MapListCardTile` /
 `ContentMaps` SC-MAP-55,
 staff-edit-draft-submit SC-PACK-231…238 / SC-MAP-62…65:
 `src/lib/__tests__/editorDirty.test.ts`,
@@ -51,6 +55,8 @@ App shell crumbs: `src/__tests__/AppHeaderChrome.test.ts` — breadcrumbs **insi
 `q-page-container` (not elevated `q-header`; SC-BRAND-17…20 / SC-PACK-193 / SC-MAP-52);
 narrow burger fold Acc/Theme/Logout (SC-BRAND-19). Moderation pages omit
 `content.catalogNav`: `ContentModerationUx` SC-PACK-194/195.
+Lobby create/list ordinals (no set author): `LobbyCreateWire` SC-LOBBY-24/26
+(`taskSetOption` / pack-index ordinals when soft sets hide ahead).
 
 ## Testing a page / component that uses a store
 
