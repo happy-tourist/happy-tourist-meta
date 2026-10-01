@@ -25,7 +25,8 @@ pack CSV SC-PACK-210…229/239…248: `src/lib/__tests__/packContentCsv.test.ts`
 in-frame errors — not `content.error`; no `PackCsvImportDialog`), tile smoke
 `PackAnswerCardTile` / `PackTaskTile` / `ContentPackPlayingCards` +
 sizes/contrast SC-PACK-225…227 + catalog `PackListCardTile` /
-`ContentPackListCards` SC-PACK-228 + task-set `PackTaskSetCardTile` /
+`ContentPackListCards` SC-PACK-228/249…251 (~180×260 + set preview + overflow +
+outline actions + revise badge) + task-set `PackTaskSetCardTile` /
 `src/components/__tests__/PackTaskSetCardTile.test.ts` +
 `ContentPackListCards` SC-PACK-229/239…248 (summary chrome / `#{n}` / colored outline
 dots / pale dividers between every stats row + above actions / SC-PACK-244

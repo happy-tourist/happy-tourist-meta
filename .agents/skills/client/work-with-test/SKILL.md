@@ -4,8 +4,9 @@ description: >-
   Use when planning or writing Vue 3 / Quasar unit tests for the happy-tourist
   client (pages, components, Pinia stores, lib helpers): Vitest +
   @vue/test-utils; auth/theme/game/support/content/maps store + page/component
-  contracts (pack CSV/tiles/list-cards incl. `PackTaskSetCardTile` SC-PACK-247/248
-  SVG masks, lobby/game board wire, App header chrome); Colyseus
+  contracts (pack CSV/tiles/list-cards incl. catalog `PackListCardTile`
+  SC-PACK-228/249…251 + `PackTaskSetCardTile` SC-PACK-247/248 SVG masks,
+  lobby/game board wire, App header chrome); Colyseus
   client.auth / client.http / room I/O spies; store error + q-banner;
   vue-i18n / router. Harness: `vitest.config.ts`, `test/setup.ts`, `npm test`.
   Core in SKILL.md; SC/file details in topics: forms.md, stores.md,

@@ -10,7 +10,9 @@ Setup store `content` owns:
 
 - Unified packs list `listCatalog` → `GET /api/content/packs` (caller-facing
   `moderationStatus`, `openRequestType` `pack`|`task_set` for list routing
-  SC-PACK-191/192, `isMine` / `isContributor` / `isFavorite`; SC-PACK-148…153)
+  SC-PACK-191/192, `isMine` / `isContributor` / `isFavorite`; lightweight
+  `taskSetsPreview?: PackTaskSetPreview[]` — full array from server, client
+  shows ≤4 + overflow SC-PACK-249/252/253; SC-PACK-148…153)
 - Favorites `starPack` / `unstarPack` → `POST …/favorite` \| `/unfavorite`
   (SC-PACK-154; registered non-anonymous; in-catalog only)
 - Legacy collection HTTP (`listCollection` / add/remove) — **product UI removed**;
@@ -84,8 +86,12 @@ render `PackAnswerCardTile` / `PackTaskTile` inside a wrapping `.pack-card-grid`
 (`app.scss`). Fixed sizes: answer **150×200** (no description) / **300×200**
 (with description + **vertical** splitter); task **300×200** (vertical split;
 `.peek-slot-like` slot row); explicit light/dark tile contrast (SC-PACK-225…227).
-**Catalog packs** use `PackListCardTile` **150×200** (status top, star TL,
-truncated description, **bottom** full-width text actions — SC-PACK-228).
+**Catalog packs** use `PackListCardTile` **~180×260** (status top, star TL,
+uppercase title + truncated description, set-preview rows ≤4 + overflow,
+**bottom** full-width outline+icon actions — SC-PACK-228/249…251). List rows
+MUST include lightweight `taskSetsPreview` from `GET /api/content/packs`
+(full array; client caps visible rows; treat missing as `[]` only during
+rollout).
 **Live/editor task-set lists** use dedicated `PackTaskSetCardTile` (denser
 summary chrome: short status + custom SVG badge icons via CSS mask, `#{n}`
 ordinal title without author, total SVG `task-set-card-tasks.svg` +
@@ -195,10 +201,15 @@ UX as the cards editor while the author’s `task_set` request is
 - **Catalog (= primary «Наборы»):** App header / Lobby crumbs → `content-catalog`
   (not collection). Filters + status badges for draft / pending / needs_revision /
   unpublished only — **published / `in_catalog` rows show no badge** (SC-PACK-148/
-  185). Star on in-catalog rows (stop click isolation). Row open: never-published
-  or pack-level author draft/pending/needs_revision → edit; add-task-set-only
-  (`openRequestType === 'task_set'`) → live first (SC-PACK-191); clean → live.
-  Staff unpublish/republish + confirm SC-PACK-139. **No** list-chrome staff
+  185); catalog **revise** uses short `taskSetCardBadge.needs_revision`
+  «ДОРАБОТАТЬ» red outline (not long `statuses.needs_revision` — SC-PACK-251).
+  Pass `taskSetsPreview` into `PackListCardTile`; set rows non-navigating
+  (bubble to whole-card open). Gate `#actions` with `hasCatalogCardActions`
+  (omit empty chrome). Star on in-catalog rows (stop click isolation). Row open:
+  never-published or pack-level author draft/pending/needs_revision → edit;
+  add-task-set-only (`openRequestType === 'task_set'`) → live first
+  (SC-PACK-191); clean → live. Staff unpublish/republish + confirm SC-PACK-139
+  (outline+icon on card; pack/confirm copy stays long). **No** list-chrome staff
   «Модерация» (SC-PACK-184 — App header); **no** non-staff my-moderation nav
   (SC-PACK-166).
 - **Collection route:** redirect only (`content-collection` → `content-catalog`).
@@ -248,3 +259,7 @@ UX as the cards editor while the author’s `task_set` request is
 - Jumping `v-if` caption hints (SC-PACK-119).
 - Reviving page «К наборам» / live «Вернуться» / moderation `catalogNav` when App
   breadcrumbs cover the path (SC-PACK-181/182/194/195).
+- Truncating `taskSetsPreview` to 4 on the **server** (client caps visible rows +
+  `packCardSetsOverflow`); navigating from set-preview rows instead of whole-card
+  open; loading full revision slots/cards for list preview; using long
+  `statuses.needs_revision` on catalog revise badge (use `taskSetCardBadge.*`).
