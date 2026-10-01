@@ -27,23 +27,32 @@ task **300×200**; ~×2 type; explicit light/dark `--pack-tile-*` contrast — n
 `--q-card-background` alone; difficulty top-left on tasks; Edit/Delete as
 bottom full-width **text** buttons when editable).
 
-**Catalog packs (SC-PACK-228 / 249…251):** `PackListCardTile.vue` resting size
+**Catalog packs (SC-PACK-228 / 249…254):** `PackListCardTile.vue` resting size
 about **180×260** (width near 180; height MAY grow with four set rows, overflow
-caption, and stacked actions). Pad root **x ~12** / top chrome **~12**; star TL
-offset **~8** / icon **~16** (constrain Quasar sm round via tile CSS); status
-badge TR offset **~10**. Chrome: status top (**revise** = red outline + short
-«ДОРАБОТАТЬ», badge TR on mock; other statuses keep existing catalog labels);
-star TL; truncated **uppercase** title (~15–16) + description (~11–12);
-**task-set preview** rows (≤4 + i18n `packCardSetsOverflow` «ещё {k}»; lead icon
-= `task-set-card-tasks.svg` mask 14px; label `taskSetLabel` `#{n}`; count right;
-row gap ~10; soft-unpub / neverLive rows muted opacity ~0.72; rows
-non-navigating); pale divider **only** above actions (air ~8–10); bottom
-full-width **outline + icon** actions (Edit / long unpublish/republish — same
-Material pattern as task-set cards, slim ~28–32, label ~11–12, icon ~18,
-nowrap). Hover: border + soft shadow like task-set (**no** scale; light
-`#212121` / dark `#bdbdbd` — not `--q-secondary`). Do **not** fold task-set
-difficulty-dot chrome into this tile. Visual Spec: change
-`redesign-pack-list-cards` / main `content/packs` after sync.
+caption, and stacked actions). Pad root **x ~12** / top chrome **~12** (+ pb ~6
+for status→title air); star TL offset **~8** / icon **~16** (constrain Quasar sm
+round via tile CSS); status badge TR offset **~10**. Chrome: status top (**revise**
+= red outline + short «ДОРАБОТАТЬ», badge TR on mock; other statuses keep existing
+catalog labels); star TL; truncated **uppercase** title (**15px** CSS px) +
+description (**12px**) + revise badge (**10px**) — lock Spec type sizes as
+**CSS `px`**, not `rem`/root-relative; **published-only** task-set preview rows
+(`inCatalog && !neverLive`; ≤4 + i18n `packCardSetsOverflow` «ещё {k}» among
+that filtered list; display ordinal `#{n}` remapped 1…N among published — not
+API ordinal; lead icon = `task-set-card-tasks.svg` mask 14px; count right; row
+gap ~10 in `.pack-list-tile__sets-list` only (overflow **sibling**,
+`margin-top` ~5 — Spec sets→overflow ~4–6; overflow indented under label
+column); soft-unpub / neverLive **omitted** from DOM — no
+`pack-list-tile__set-row--muted`; rows non-navigating); set label / count /
+icon ink = **title.fg** (`--pack-list-fg`; Decision 12 — not
+`--pack-list-set-label` / muted grey); pale divider **only** above actions
+(air ~8–10); bottom full-width **outline + icon** actions (Edit / long
+unpublish/republish — same Material pattern as task-set cards, slim ~28–32,
+label ~11–12px, icon ~18, nowrap). Soft-unpublished **pack** cards: catalog
+wires `:muted` when `hasLive && inCatalog === false` (opacity 0.72; class
+`pack-list-tile--muted`). Hover: border + soft shadow like task-set (**no**
+scale; light `#212121` / dark `#bdbdbd` — not `--q-secondary`). Do **not** fold
+task-set difficulty-dot chrome into this tile.
+Visual Spec: change `redesign-pack-list-cards` / main `content/packs` after sync.
 
 **Task-set lists — live + cards editor (SC-PACK-229 / 239…248):** dedicated
 `PackTaskSetCardTile.vue` (not `PackListCardTile`). Mock-aligned summary chrome:

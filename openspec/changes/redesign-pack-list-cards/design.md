@@ -1,18 +1,19 @@
 ## Context
 
-See `proposal.md` — Why. Catalog packs today: `PackListCardTile` **150×200**, title + description, Quasar star TL, solid `q-badge` status, bottom **text** actions; `listCatalog` returns no per-set data. Task-set cards already have denser chrome (`PackTaskSetCardTile`, SC-PACK-229/239…248). Explore closed D1–D3; prepare-mock Visual Spec below.
+See `proposal.md` — Why. Catalog packs: `PackListCardTile` ~**180×260** with set preview from `listCatalog.taskSetsPreview` (already shipped). Follow-up: card shows **published-only** rows in **title.fg**; soft-unpub / never-live stay in API but not on the card. Live pack / `PackTaskSetCardTile` unchanged.
 
 ## Goals / Non-Goals
 
 **Goals:**
 - Redesign catalog pack tile to mock (~180×260): uppercase title, description, set preview ≤4 + «ещё K», outline+icon actions, red-outline revise badge
-- Lightweight `taskSetsPreview` on `GET /api/content/packs`
-- Soft-unpublished sets in preview; never-live ghost for author only
+- Lightweight `taskSetsPreview` on `GET /api/content/packs` (server — done)
+- **Card UI:** only published sets (`inCatalog === true` and not `neverLive`); display ordinal / overflow among that filtered list; set-row colors = `title.fg`
 - Whole-card navigate; set rows non-interactive
-- Update `pack-cards.md` + vitest/mocha for SC-PACK-228 revision / 249…253
+- Update `pack-cards.md` + vitest for SC-PACK-249 revision / 254
 
 **Non-Goals:**
-- Changing `PackTaskSetCardTile` / playing-cards / maps
+- Changing `PackTaskSetCardTile` / live pack soft-unpub visibility or ordinals
+- Filtering soft-unpub / never-live out of the **HTTP** `taskSetsPreview` payload
 - Hover scale; grid gutter changes
 - Custom SVG for Edit/Unpublish (Material)
 - Changing pack unpublish confirm strings / ACL
@@ -26,19 +27,19 @@ See `proposal.md` — Why. Catalog packs today: `PackListCardTile` **150×200**,
 
 2. **Server lightweight preview in `listCatalog`**
    - Pack row field: **`taskSetsPreview`**: array of `{ id, ordinal, taskCount, inCatalog, neverLive? }` (omit `neverLive` or set `false` for ordinary rows).
-   - Return the **full** preview array for that pack (do **not** truncate to 4 on the server). Client caps visible rows at 4 + «ещё K».
+   - Return the **full** preview array for that pack (do **not** truncate to 4 on the server). Soft-unpublished and author never-live ghosts remain in the payload (SC-PACK-252/253) — **card display filter is client-only** (Decision 11).
    - Empty array when the pack has no chosen revision / no sets (`[]`), never omit the field once the contract ships (client MAY treat missing as empty during rollout).
    - Load sets + task counts for the **same revision** already chosen for title/description (`revId` in `listCatalog`: live for in-catalog / staff soft-unpub pack; working for author never-published). **Do not** call full `loadRevisionPayload` for the catalog sets path (no answer cards, no per-task slots). Prefer: select task sets for `revisionId` ordered by DB `position`, then `COUNT(*)` tasks grouped by `taskSetId`.
    - Merge author never-live ghosts with the **same visibility rules as live** (`neverLiveAuthorTaskSets` / `retainedNeverLiveAuthorTaskSetCycle`: pending | needs_revision | cancelled; author only; append after live/working sets). Ghosts need set id + task count only — reuse the cycle selection logic; load request-revision **set rows + task counts** (still no slots/cards). For matching against live author sets, a slim live set list (`id`, `authorUserId`, order) is enough — do **not** require full live slots/cards payload for list enrichment.
    - Cost: packs already capped at 200; prefer batched queries across listed `revisionId`s rather than N× full revision graphs. Ghost detection only for the calling user (same as live), not for every other author.
    - Alternative: client N+1 `getLivePack` — rejected.
 
-3. **Ordinal `#{n}`**
-   - `ordinal` is the **1-based index in `taskSetsPreview` order** (same product sense as live `si + 1` / `content.taskSetLabel`), **not** the raw DB `position` column.
-   - Order: revision task sets by `position` ascending, then append never-live ghosts (live append order). Soft-unpub and never-live stay in sequence; do not renumber only published.
+3. **Ordinal `#{n}` (API vs card)**
+   - API `ordinal` remains the **1-based index in full `taskSetsPreview` order** (soft-unpub and never-live stay in sequence server-side) — not the raw DB `position` column.
+   - **Catalog card display ordinal** is the **1-based index among published-only** rows after client filter (Decision 11), passed to `content.taskSetLabel` / shown as `#{n}`. May differ from live pack numbering when soft-unpub sets exist between published ones — accepted (live out of scope).
 
 4. **Overflow**
-   - Show first **4** by ordinal; caption i18n product sense `ещё {k}`. Preferred key: `content.packCardSetsOverflow` = `ещё {k}` (en-US catalog locale file). `{k}` = `taskSetsPreview.length - 4` when length > 4.
+   - After published-only filter: show first **4**; caption i18n `content.packCardSetsOverflow` = `ещё {k}` where `{k}` = `publishedPreview.length - 4` when length > 4.
 
 5. **Actions**
    - Quasar **outline** + Material `edit` / `visibility_off` / `visibility` (mirror live `PackTaskSetCardTile` / `ContentPackPage` card actions — not catalog’s current `flat` text-only). Long pack copy: `content.edit` / `content.unpublish` («Снять с публикации») / `content.republish` («Опубликовать снова»); slim ~30px via same `--pack-ts-action-h` / dense pattern; `@click.stop`; omit `#actions` when no control would render (same gate idea as `hasTaskSetCardActions`).
@@ -59,21 +60,31 @@ See `proposal.md` — Why. Catalog packs today: `PackListCardTile` **150×200**,
 10. **Set-row icon**
     - Reuse `src/assets/content/task-set-card-tasks.svg` via mask + `currentColor` (14px).
 
+11. **Published-only on catalog card (follow-up)**
+    - Client filters `taskSetsPreview` to rows where `inCatalog === true` and `neverLive` is not true before slice(0, 4) / overflow / display ordinal.
+    - Soft-unpublished and never-live ghosts MUST NOT render on the catalog card (no muted rows).
+    - Rationale: simpler than server filter; API SC-PACK-253 stays; live pack keeps soft-unpub chrome.
+    - Alternative: drop soft-unpub/neverLive from server preview — rejected for this polish (more mocha churn; not needed for UX).
+
+12. **Set-row ink = title.fg (follow-up)**
+    - `set.label.fg`, `set.count.fg`, and `set.icon.ink` MUST use the same token as `title.fg` (light `#232323` / dark near-white). Subtitle stays muted. Remove row-level muted opacity for set preview (nothing muted left on card).
+
 ## Risks / Trade-offs
 
 - [listCatalog cost] → Mitigation: count-only / batched queries by revisionId; pack cap 200; avoid slots/cards; ghost path only for calling user with slim live set list + request set counts.
 - [JPEG mock blur on button height] → Mitigation: align 28–32 with task-set token; verify-mock after apply.
 - [Other status badges not on mock] → Mitigation: only revise forced to red outline; document in Visual Spec.
+- [Card ordinal ≠ live ordinal when soft-unpub present] → Accepted; live out of scope (Decision 11 / Q1).
 
 ## Migration Plan
 
-- Deploy server list preview before or with client (client treats missing preview as empty list).
-- No DB migration.
-- Rollback: client ignores preview / old tile size if needed.
+- Deploy server list preview before or with client (client treats missing preview as empty list) — already shipped.
+- Follow-up: client-only; no DB / API migration.
+- Rollback: revert tile filter/colors if needed.
 
 ## Open Questions
 
-- None blocking (other status badge chrome deferred as Decision 6).
+- None blocking.
 
 ## Visual Spec (from mock)
 
@@ -81,7 +92,7 @@ Source: change `assets/pack-card-catalog-mock.jpg` (+ `pack-card-mock-light-crop
 
 ### Структура
 
-star TL → status badge TR → uppercase title (center) → description (center) → set rows ≤4 (icon | label | count) → optional «ещё K» → pale divider → outline actions (Edit, Unpublish). Soft-unpublished preview rows use **row-level** muted opacity (`muted.opacity`); never-live ghosts same muted treatment for author. No pale dividers between set rows.
+star TL → status badge TR → uppercase title (center) → description (center) → **published-only** set rows ≤4 (icon | label | count) → optional «ещё K» → pale divider → outline actions (Edit, Unpublish). Soft-unpublished and never-live sets are **omitted** (not muted). No pale dividers between set rows.
 
 ### Copy
 
@@ -90,7 +101,7 @@ star TL → status badge TR → uppercase title (center) → description (center
 | Badge revise | `ДОРАБОТАТЬ` | `content.taskSetCardBadge.needs_revision` (or equal short catalog key) — **not** `content.statuses.needs_revision` |
 | Title example | `ГЕОГРАФИЯ МИРА` (CSS uppercase) | pack `title` |
 | Description | pack description | pack `description` |
-| Set row | `Набор заданий #{n}` | `content.taskSetLabel` |
+| Set row | `Набор заданий #{n}` | `content.taskSetLabel` (`n` = published-only index) |
 | Overflow | `ещё {k}` | `content.packCardSetsOverflow` |
 | Edit | `Редактировать` | `content.edit` |
 | Unpublish | `Снять с публикации` | `content.unpublish` |
@@ -122,12 +133,11 @@ star TL → status badge TR → uppercase title (center) → description (center
 | set row h / gap | ~18–20 / ~8–12 |
 | sets→overflow gap | ~4–6 |
 | overflow→divider gap | ~8–10 |
-| max visible sets | 4 |
+| max visible sets | 4 (of **published-only** list) |
 | lead col | ~22 (icon centered; same product sense as `--pack-ts-lead-w`) |
 | set icon | 14 |
 | divider | 1px above actions only (no between rows) |
 | action h | 28–32; stacked gap ~4–6; full-width |
-| soft-unpub / neverLive row | opacity `muted.opacity` on the row (not dashed border required on catalog preview) |
 
 ### Цвета
 
@@ -139,15 +149,14 @@ star TL → status badge TR → uppercase title (center) → description (center
 | card.border.rest | `rgba(0,0,0,0.12)` | med |
 | title.fg | `#232323` / `#242424` | high |
 | subtitle.fg | `#717171` | high |
-| set.label.fg | `#4a4a4a` | high |
-| set.count.fg | `#1d1d1d`–`#2c2c2c` | med |
-| set.icon.ink | `#717171` (→ `currentColor` on mask) | med |
+| set.label.fg | **= title.fg** | high (follow-up) |
+| set.count.fg | **= title.fg** | high (follow-up) |
+| set.icon.ink | **= title.fg** (`currentColor`) | high (follow-up) |
 | badge.revise.bg | transparent | high |
 | badge.revise.fg/border | `#af5a59`–`#b26b65` | high |
 | divider | `rgba(0,0,0,0.08)` | med |
 | action.outline | `rgba(0,0,0,0.22)` | low |
 | action.label.fg / action.icon.ink | title.fg / `currentColor` → title.fg | med |
-| muted.opacity | ~0.72 | canon |
 
 #### Dark
 
@@ -157,22 +166,21 @@ star TL → status badge TR → uppercase title (center) → description (center
 | card.border.rest | `rgba(255,255,255,0.18)`–`0.22` | med |
 | title.fg | `#d4d4d4`–`#fff` | med |
 | subtitle.fg | `#979797` | high |
-| set.label.fg | `#a2a2a2` | high |
-| set.count.fg | `#d4d4d4`–`#fff` (near title.fg) | med |
-| set.icon.ink | `#979797` / subtitle.fg | med |
+| set.label.fg | **= title.fg** | high (follow-up) |
+| set.count.fg | **= title.fg** | high (follow-up) |
+| set.icon.ink | **= title.fg** | high (follow-up) |
 | badge.revise.bg | transparent | high |
 | badge.revise.fg/border | `#aa4a49`–`#9e4f4b` | high |
 | divider | `#5d5d5d` / rgba white 0.16 | med |
 | action.outline | `#aeaeae` | high |
 | action.label.fg / action.icon.ink | title.fg / `currentColor` → title.fg | med |
-| muted.opacity | ~0.72 | canon |
 
 ### Icon ink / sizes
 
 | Place | Size | Ink | Asset |
 |-------|------|-----|-------|
 | star | ~16 | existing Quasar amber when favorited | Quasar `star` / `star_border` |
-| set-row | 14 | set.icon.ink | `src/assets/content/task-set-card-tasks.svg` via CSS mask + `currentColor` |
+| set-row | 14 | set.icon.ink (= title.fg) | `src/assets/content/task-set-card-tasks.svg` via CSS mask + `currentColor` |
 | badge | — | — | **no icon** |
 | actions | Quasar ~18 | action.icon.ink | Material `edit` / `visibility_off` / `visibility` |
 
@@ -190,7 +198,7 @@ Hover not on mock. Implement like task-set (`PackTaskSetCardTile`): border + sof
 /** Lightweight set row on GET /api/content/packs (SC-PACK-252/253). */
 export interface PackTaskSetPreview {
   id: string;
-  /** 1-based index in taskSetsPreview order (not raw DB position). */
+  /** 1-based index in full taskSetsPreview order (API). Card remaps among published. */
   ordinal: number;
   taskCount: number;
   inCatalog: boolean;
@@ -199,15 +207,15 @@ export interface PackTaskSetPreview {
 
 export interface ContentPackSummary {
   // …existing fields…
-  /** Full preview; client shows ≤4 + overflow. Missing → treat as []. */
+  /** Full preview from API; card shows published-only ≤4 + overflow. Missing → []. */
   taskSetsPreview?: PackTaskSetPreview[];
 }
 ```
 
 ## Implementation notes (files)
 
-**Server:** `src/lib/content.ts` — `listCatalog` / pack summary enrichment; mocha coverage SC-PACK-252/253.
+**Server:** `src/lib/content.ts` — `listCatalog` / pack summary enrichment; mocha SC-PACK-252/253 (unchanged for follow-up).
 
-**Client:** `PackListCardTile.vue` (+ styles; set-preview slot or props; badge TR; 180×260); `ContentCatalogPage.vue` wire `taskSetsPreview`, outline+icon actions, revise short badge; `stores/content.ts` types; i18n `packCardSetsOverflow`; skill `pack-cards.md`; vitest SC-PACK-228/249…251.
+**Client (follow-up):** `PackListCardTile.vue` — filter published-only; display ordinal; set-row CSS → title.fg; drop muted set-row classes; vitest SC-PACK-249 revision + SC-PACK-254; `pack-cards.md`.
 
 See `tasks.md` for checklist.

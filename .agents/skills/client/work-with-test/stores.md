@@ -25,8 +25,10 @@ pack CSV SC-PACK-210…229/239…248: `src/lib/__tests__/packContentCsv.test.ts`
 in-frame errors — not `content.error`; no `PackCsvImportDialog`), tile smoke
 `PackAnswerCardTile` / `PackTaskTile` / `ContentPackPlayingCards` +
 sizes/contrast SC-PACK-225…227 + catalog `PackListCardTile` /
-`ContentPackListCards` SC-PACK-228/249…251 (~180×260 + set preview + overflow +
-outline actions + revise badge) + task-set `PackTaskSetCardTile` /
+`ContentPackListCards` SC-PACK-228/249…254 (~180×260 + published-only set preview +
+overflow sibling of `.pack-list-tile__sets-list` + CSS-px title/desc/badge +
+outline actions + revise badge / SC-PACK-254 title.fg; soft-unpub pack
+`pack-list-tile--muted` via `:muted` — no `set-row--muted`) + task-set `PackTaskSetCardTile` /
 `src/components/__tests__/PackTaskSetCardTile.test.ts` +
 `ContentPackListCards` SC-PACK-229/239…248 (summary chrome / `#{n}` / colored outline
 dots / pale dividers between every stats row + above actions / SC-PACK-244

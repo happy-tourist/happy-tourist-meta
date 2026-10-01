@@ -11,8 +11,10 @@ Setup store `content` owns:
 - Unified packs list `listCatalog` → `GET /api/content/packs` (caller-facing
   `moderationStatus`, `openRequestType` `pack`|`task_set` for list routing
   SC-PACK-191/192, `isMine` / `isContributor` / `isFavorite`; lightweight
-  `taskSetsPreview?: PackTaskSetPreview[]` — full array from server, client
-  shows ≤4 + overflow SC-PACK-249/252/253; SC-PACK-148…153)
+  `taskSetsPreview?: PackTaskSetPreview[]` — full array from server (may include
+  soft-unpub / neverLive); catalog tile filters **published-only**
+  (`inCatalog && !neverLive`), remaps display ordinal, shows ≤4 + overflow
+  SC-PACK-249/254/252/253; SC-PACK-148…153)
 - Favorites `starPack` / `unstarPack` → `POST …/favorite` \| `/unfavorite`
   (SC-PACK-154; registered non-anonymous; in-catalog only)
 - Legacy collection HTTP (`listCollection` / add/remove) — **product UI removed**;
@@ -87,11 +89,12 @@ render `PackAnswerCardTile` / `PackTaskTile` inside a wrapping `.pack-card-grid`
 (with description + **vertical** splitter); task **300×200** (vertical split;
 `.peek-slot-like` slot row); explicit light/dark tile contrast (SC-PACK-225…227).
 **Catalog packs** use `PackListCardTile` **~180×260** (status top, star TL,
-uppercase title + truncated description, set-preview rows ≤4 + overflow,
-**bottom** full-width outline+icon actions — SC-PACK-228/249…251). List rows
+uppercase title + truncated description, **published-only** set-preview rows
+≤4 + overflow with display ordinal 1…N and set-row ink = title.fg,
+**bottom** full-width outline+icon actions — SC-PACK-228/249…254). List rows
 MUST include lightweight `taskSetsPreview` from `GET /api/content/packs`
-(full array; client caps visible rows; treat missing as `[]` only during
-rollout).
+(full array incl. soft-unpub/neverLive for API; tile filters for UI; treat
+missing as `[]` only during rollout).
 **Live/editor task-set lists** use dedicated `PackTaskSetCardTile` (denser
 summary chrome: short status + custom SVG badge icons via CSS mask, `#{n}`
 ordinal title without author, total SVG `task-set-card-tasks.svg` +
@@ -203,9 +206,12 @@ UX as the cards editor while the author’s `task_set` request is
   unpublished only — **published / `in_catalog` rows show no badge** (SC-PACK-148/
   185); catalog **revise** uses short `taskSetCardBadge.needs_revision`
   «ДОРАБОТАТЬ» red outline (not long `statuses.needs_revision` — SC-PACK-251).
-  Pass `taskSetsPreview` into `PackListCardTile`; set rows non-navigating
-  (bubble to whole-card open). Gate `#actions` with `hasCatalogCardActions`
-  (omit empty chrome). Star on in-catalog rows (stop click isolation). Row open:
+  Pass `taskSetsPreview` into `PackListCardTile` (tile omits soft-unpub/
+  neverLive; set ink = title.fg — SC-PACK-254); soft-unpub packs
+  `:muted="Boolean(hasLive && inCatalog === false)"` (whole-card, not set-row).
+  Set rows non-navigating (bubble to whole-card open). Gate `#actions` with
+  `hasCatalogCardActions` (omit empty chrome). Star on in-catalog rows (stop
+  click isolation). Row open:
   never-published or pack-level author draft/pending/needs_revision → edit;
   add-task-set-only (`openRequestType === 'task_set'`) → live first
   (SC-PACK-191); clean → live. Staff unpublish/republish + confirm SC-PACK-139
@@ -263,3 +269,6 @@ UX as the cards editor while the author’s `task_set` request is
   `packCardSetsOverflow`); navigating from set-preview rows instead of whole-card
   open; loading full revision slots/cards for list preview; using long
   `statuses.needs_revision` on catalog revise badge (use `taskSetCardBadge.*`).
+- Rendering soft-unpub / neverLive as muted set-rows, using API `ordinal` as the
+  visible `#{n}`, putting overflow inside the sets-list `gap`, or Spec-locked
+  catalog type sizes in `rem` (use CSS `px`: title 15 / desc 12 / revise 10).

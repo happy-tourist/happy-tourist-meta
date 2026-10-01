@@ -4,11 +4,12 @@
 |-------------|----------|
 | SC-PACK-228 | covered (client vitest — catalog pack card 180×260 + set preview) |
 | SC-PACK-229 | unchanged (task-set cards) |
-| SC-PACK-249 | covered (client vitest — set preview rows + overflow «ещё K») |
+| SC-PACK-249 | covered / revised (client vitest — published-only set preview + overflow «ещё K») |
 | SC-PACK-250 | covered (client vitest — outline+icon catalog actions; whole-card open) |
 | SC-PACK-251 | covered (client vitest — revise badge red outline; uppercase title) |
 | SC-PACK-252 | covered (server mocha — listCatalog lightweight taskSetsPreview) |
-| SC-PACK-253 | covered (server mocha — soft-unpub + author neverLive in preview) |
+| SC-PACK-253 | covered (server mocha — soft-unpub + author neverLive in **API** preview) |
+| SC-PACK-254 | covered (client vitest — catalog card omits soft-unpub/neverLive; set-row ink = title.fg) |
 
 Related: task-set summary chrome — SC-PACK-229/239…248 (unchanged). Playing-cards — SC-PACK-222…227 (unchanged).
 
@@ -16,7 +17,7 @@ Related: task-set summary chrome — SC-PACK-229/239…248 (unchanged). Playing-
 
 ### Requirement: Pack catalog and task-set lists use fixed card tiles
 
-The unified packs **catalog** list MUST render each pack as a rounded card in a wrapping row with resting size about **180×260** CSS pixels (width MUST stay near 180; height MAY grow slightly when four set rows, overflow caption, and stacked actions are present). Each catalog card MUST show moderation/status chrome at the **top** when a status badge applies. On the catalog, a favorites star MUST appear at the **top-left**; the top-right MUST NOT host Edit. Catalog action controls MUST appear at the **bottom** as stacked full-width **outline** buttons with a leading icon and text label (slim height in the product sense ~28–32 CSS px, same pattern as task-set cards). The catalog card body MUST show a truncated pack title rendered in **uppercase**, a truncated pack **description**, and a **preview list of task sets** for that pack (not difficulty-breakdown rows from the task-set card chrome). Activating the catalog card body (outside action controls and the favorites star) MUST open the pack as today (live or Edit per existing list routing rules). Individual set-preview rows MUST NOT be separate navigation targets.
+The unified packs **catalog** list MUST render each pack as a rounded card in a wrapping row with resting size about **180×260** CSS pixels (width MUST stay near 180; height MAY grow slightly when four set rows, overflow caption, and stacked actions are present). Each catalog card MUST show moderation/status chrome at the **top** when a status badge applies. On the catalog, a favorites star MUST appear at the **top-left**; the top-right MUST NOT host Edit. Catalog action controls MUST appear at the **bottom** as stacked full-width **outline** buttons with a leading icon and text label (slim height in the product sense ~28–32 CSS px, same pattern as task-set cards). The catalog card body MUST show a truncated pack title rendered in **uppercase**, a truncated pack **description**, and a **preview list of published task sets** for that pack (not difficulty-breakdown rows from the task-set card chrome). Activating the catalog card body (outside action controls and the favorites star) MUST open the pack as today (live or Edit per existing list routing rules). Individual set-preview rows MUST NOT be separate navigation targets.
 
 The **task-set** lists on the live pack and cards-editor surfaces MUST render each task set as a rounded card in a wrapping row. Task-set cards MUST use the denser summary chrome (status badge when applicable, title without author, task-count and difficulty 1/2/3 rows, bottom actions) defined in the task-set card chrome requirement. Width MUST stay near ~150–160 CSS pixels; height MAY be taller than 200 CSS pixels so the summary rows remain readable. Existing open/navigation and soft-unpublish rules MUST remain.
 
@@ -28,7 +29,7 @@ The **task-set** lists on the live pack and cards-editor surfaces MUST render ea
 - **AND** a favorites star control is at the top-left
 - **AND** status chrome when applicable appears at the top (revise badge top-right on the mock)
 - **AND** the body shows a truncated uppercase pack title and truncated description
-- **AND** the body shows a preview of that pack’s task sets (label «Набор заданий #{n}» or equivalent, task count, leading document-style icon)
+- **AND** the body shows a preview of that pack’s **published** task sets (label «Набор заданий #{n}» or equivalent, task count, leading document-style icon)
 - **AND** Edit / soft-unpublish / republish when available are bottom full-width outline+icon controls (not top-right; not text-only)
 
 #### Scenario [SC-PACK-229]: Task-set lists render as 150×200 cards with bottom actions
@@ -45,14 +46,14 @@ The **task-set** lists on the live pack and cards-editor surfaces MUST render ea
 
 ### Requirement: Catalog pack cards preview existing task sets
 
-On the unified packs catalog card, the client MUST list existing task sets for the pack as preview rows. Each visible row MUST show a leading document-style icon (the same product icon family used for the task-set card total row), the label «Набор заданий #{n}» (or equivalent i18n with a hash before the ordinal, no author), and the task count for that set aligned to the right. The card MUST show at most **four** set rows; when more sets exist, it MUST show an overflow caption of the product sense «ещё {k}» (or equivalent i18n) where `{k}` is the number of sets not shown. Soft-unpublished sets MUST appear in the preview with muted chrome for viewers who can see the pack card. Never-live add-task-set ghost sets MUST appear in the preview **only for that set’s author**, with an up-to-date task count. Preview rows MUST NOT be individually clickable for navigation. Pale horizontal dividers MUST NOT appear between set-preview rows; a pale divider MUST appear above the action controls when actions are present. Hover on a clickable catalog card MUST change border and optional soft shadow only (no scale), consistent with task-set card hover product sense.
+On the unified packs catalog card, the client MUST list **published** task sets for the pack as preview rows (`inCatalog` true and not a never-live ghost). Soft-unpublished sets and never-live add-task-set ghosts MUST NOT appear on the catalog card (even when present in the list API payload). Each visible row MUST show a leading document-style icon (the same product icon family used for the task-set card total row), the label «Набор заданий #{n}» (or equivalent i18n with a hash before the ordinal, no author) where `{n}` is the **1-based index among published-only** rows shown for that card, and the task count for that set aligned to the right. Label, count, and set-row icon ink MUST use the same foreground token as the pack title (`title.fg`). The card MUST show at most **four** published set rows; when more **published** sets exist, it MUST show an overflow caption of the product sense «ещё {k}» (or equivalent i18n) where `{k}` is the number of published sets not shown. Preview rows MUST NOT be individually clickable for navigation. Pale horizontal dividers MUST NOT appear between set-preview rows; a pale divider MUST appear above the action controls when actions are present. Hover on a clickable catalog card MUST change border and optional soft shadow only (no scale), consistent with task-set card hover product sense. Live pack / editor soft-unpublish chrome and numbering are out of scope for this requirement.
 
-#### Scenario [SC-PACK-249]: Catalog card shows up to four sets and overflow
+#### Scenario [SC-PACK-249]: Catalog card shows up to four published sets and overflow
 
 - **GIVEN** an in-catalog pack with six published task sets of known task counts
 - **WHEN** a user views that pack’s catalog card
-- **THEN** the card shows at most four set-preview rows with ordinal labels and counts
-- **AND** shows an overflow caption indicating two more sets (product sense «ещё 2»)
+- **THEN** the card shows at most four set-preview rows with ordinal labels and counts among published sets
+- **AND** shows an overflow caption indicating two more published sets (product sense «ещё 2»)
 - **AND** each visible row has a leading document-style icon
 - **AND** activating a set-preview row alone does not navigate away from the pack open affordance of the card
 
@@ -72,9 +73,18 @@ On the unified packs catalog card, the client MUST list existing task sets for t
 - **AND** the badge label is the short uppercase product sense «ДОРАБОТАТЬ» (not the long list status «Нужна доработка»)
 - **AND** the pack title is shown in uppercase
 
+#### Scenario [SC-PACK-254]: Catalog card omits soft-unpub and never-live; set rows use title ink
+
+- **GIVEN** a pack whose list `taskSetsPreview` includes one published set, one soft-unpublished set, and an author never-live ghost
+- **WHEN** a user views that pack’s catalog card
+- **THEN** the card shows only the published set as a set-preview row
+- **AND** MUST NOT show the soft-unpublished set or the never-live ghost
+- **AND** the visible set row’s label/count/icon use the same foreground product sense as the pack title (not muted grey / muted opacity)
+- **AND** the displayed ordinal for that published set is 1 among published-only rows (not the API ordinal that counted soft-unpub/ghost)
+
 ### Requirement: Packs list returns lightweight task-set preview
 
-The unified packs list HTTP response (`GET /api/content/packs` / `listCatalog`) MUST include, for each listed pack, a lightweight **`taskSetsPreview`** array sufficient to render the catalog card without loading the full pack revision (no answer cards, no per-task slots). The server MUST return the **complete** preview for that pack (all sets in order); the client MAY show at most four rows plus an overflow caption. Each preview entry MUST include a stable set `id`, a 1-based `ordinal` equal to the entry’s index in `taskSetsPreview` order (same product sense as live «Набор заданий #{n}»), a `taskCount`, and `inCatalog` (soft-unpublished when false). For the calling user who is the author of a never-live add-task-set ghost (same retention rules as live: pending, needs_revision, or cancelled cycle), that ghost MUST be included in the preview with `neverLive: true` and an up-to-date task count; other callers MUST NOT receive foreign never-live ghosts. Soft-unpublished sets MUST be included in the preview for callers who already receive the pack row. Preview sets MUST come from the same revision already used for that list row’s title/description. The preview MUST NOT require N+1 full live-pack fetches on the client.
+The unified packs list HTTP response (`GET /api/content/packs` / `listCatalog`) MUST include, for each listed pack, a lightweight **`taskSetsPreview`** array sufficient to render the catalog card without loading the full pack revision (no answer cards, no per-task slots). The server MUST return the **complete** preview for that pack (all sets in order); the client MAY filter to published sets and show at most four rows plus an overflow caption. Each preview entry MUST include a stable set `id`, a 1-based `ordinal` equal to the entry’s index in `taskSetsPreview` order (same product sense as live «Набор заданий #{n}»), a `taskCount`, and `inCatalog` (soft-unpublished when false). For the calling user who is the author of a never-live add-task-set ghost (same retention rules as live: pending, needs_revision, or cancelled cycle), that ghost MUST be included in the preview with `neverLive: true` and an up-to-date task count; other callers MUST NOT receive foreign never-live ghosts. Soft-unpublished sets MUST be included in the preview for callers who already receive the pack row. Preview sets MUST come from the same revision already used for that list row’s title/description. The preview MUST NOT require N+1 full live-pack fetches on the client.
 
 #### Scenario [SC-PACK-252]: List catalog includes lightweight set previews
 
