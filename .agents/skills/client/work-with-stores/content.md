@@ -87,13 +87,15 @@ render `PackAnswerCardTile` / `PackTaskTile` inside a wrapping `.pack-card-grid`
 **Catalog packs** use `PackListCardTile` **150×200** (status top, star TL,
 truncated description, **bottom** full-width text actions — SC-PACK-228).
 **Live/editor task-set lists** use dedicated `PackTaskSetCardTile` (denser
-summary chrome: short status, `#{n}` ordinal title without author, total icon +
+summary chrome: short status + custom SVG badge icons via CSS mask, `#{n}`
+ordinal title without author, total SVG `task-set-card-tasks.svg` +
 «Заданий:», colored outline difficulty dots, pale multi-row dividers, lead/label/count
 column grid, vertical fill, slim ~28–32px outline+icon bottom
 actions with short «Снять»/«Вернуть»; pages omit empty `#actions`; width ~150–160,
-min-height ~206 (MAY grow); internal title/divider spacing SC-PACK-245; themed
-hover border+shadow without scale (dark light-grey, not `--q-secondary`)
-SC-PACK-246 — SC-PACK-229/239…246). Do **not** reuse `PackListCardTile`
+min-height ~206 (MAY grow); spacing retune SC-PACK-247 (title→stats ~7 /
+divider air ~4–6); themed hover border+shadow without scale (dark light-grey,
+not `--q-secondary`) SC-PACK-246; SVG ink SC-PACK-248 —
+SC-PACK-229/239…248). Do **not** reuse `PackListCardTile`
 for task sets. Slot
 **values** on a task row use `.peek-slot-like` (above); the answer **picker**
 beside slots is `PackAnswerCardTile` (selectable), **not** `q-chip`
@@ -125,9 +127,10 @@ lineage match — not fan-out by `changeAuthorId`). `ContentPackPage` / editor t
 `content.taskSetCardBadge.*` (СНЯТО / ДОРАБОТАТЬ / НА ПРОВЕРКЕ / ЧЕРНОВИК —
 SC-PACK-240; not the longer `taskSetStatusMarks.*` prose used on add-task-set
 thread). Badges for pending / needs_revision / draft (not `live`):
-`q-badge.pack-task-set-status-badge` + temp Material icon (`schedule` /
-`close` / `edit_note` / `visibility_off`) + tone classes via page helpers
-(`setModerationBadgeToneClass` / `editorSetModerationBadgeToneClass`):
+`q-badge.pack-task-set-status-badge` + SVG mask icon
+(`pack-task-set-status-icon--{pending|revise|draft|unpublished}` from
+`src/assets/content/task-set-badge-*.svg`) + tone classes via page helpers
+(`setModerationBadgeToneClass` / `*ModerationBadgeIconClass`):
 `--pending` soft amber (НА ПРОВЕРКЕ); `--muted` pale grey for revise/draft/
 СНЯТО — **not** Quasar solid `color="warning"` / `grey`. CSS chrome:
 `work-with-styles/pack-cards.md`.

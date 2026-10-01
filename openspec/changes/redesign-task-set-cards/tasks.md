@@ -51,3 +51,10 @@
 - [x] 9.2 `PackTaskSetCardTile`: увеличить внутренние отступы title→stats и air вокруг pale dividers / stats-rows по Visual Spec (grid gutter списков **не** трогать); min-height под resting ~206+; verify SC-PACK-245 в vitest
 - [x] 9.3 Hover без scale: light — тёмная рамка + soft lift shadow; dark — светло-серая рамка (~`#bdbdbd` / Visual Spec), не `--q-secondary`; иконки/dots без перекраса; verify SC-PACK-246 в vitest
 - [x] 9.4 Обновить `pack-cards.md` (+ notes): spacing tokens + themed hover; `npm test` + `npm run lint` + `npm run typecheck` в client — зелёные по затронутому
+
+## 10. Client — spacing retune + wire custom SVG icons
+
+- [x] 10.1 Прочитать `design.md` Decision 11/12 + Visual Spec (retune + **Цвета** + **Icon ink / sizes**) и delta SC-PACK-247/248; текущие `PackTaskSetCardTile.vue` tokens / Material placeholders; assets в `src/assets/content/task-set-*.svg`
+- [x] 10.2 Spacing retune: status→title ~6–8 CSS px; `--pack-ts-title-gap` 14→7; `--pack-ts-divider-air` 5→2–3 (grid gutter **не** трогать); verify SC-PACK-247 в vitest
+- [x] 10.3 Wire SVG: total-row `task-set-card-tasks.svg` (14px); badges revise/pending/unpublished/draft (~12px) на live+editor; ink через `currentColor` / CSS mask по Visual Spec (muted/pending hex); убрать Material placeholders; verify SC-PACK-248 + color assertions в vitest
+- [x] 10.4 Обновить `pack-cards.md` (+ content-pages/localization notes при нужде): retune tokens + SVG paths/map + color/ink table; `npm test` + `npm run lint` + `npm run typecheck` в client — зелёные по затронутому

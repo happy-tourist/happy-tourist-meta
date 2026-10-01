@@ -2,13 +2,14 @@
 name: prepare-mock
 description: >-
   Extracts measurable UI requirements from an attached design mock
-  (sizes, padding, button heights, radii, colors, pale dividers between every
+  (sizes, padding, button heights, radii, **hex/rgba colors** for card/badge/
+  icon ink/dots/dividers/hover light+dark, pale dividers between every
   stats row and above actions, column grids, copy, gaps, icons, text alignment,
-  hover/focus border-shadow-bg diffs, light/dark, vertical fill). Lists missing
-  icons needed for implementation. Produces a structured inventory and folds it
-  into OpenSpec design/requirements. Use when the user runs prepare-mock, asks
-  to measure a mock/макет/screenshot into specs, or to capture visual tokens
-  before propose/apply.
+  hover/focus border-shadow-bg diffs, vertical fill). Lists missing icons.
+  Produces a structured inventory and folds it into OpenSpec
+  design/requirements. Use when the user runs prepare-mock, asks to measure a
+  mock/макет/screenshot into specs, or to capture visual tokens before
+  propose/apply.
 ---
 
 # Prepare Mock — снять с макета требования
@@ -65,6 +66,7 @@ description: >-
 | **Button height** | Approx CSS px (якорь: ширина карточки); явно vs Quasar default/dense. |
 | **Размеры всех элементов** | Overall card W×H (или min-height) **и** W/H (или min-height) + pad каждого видимого блока (badge, title, rows, buttons, icons, dots, dividers). Не ограничиться одной «шириной карточки». |
 | **Hover** | **Отдельная** таблица default vs hover (и selected/focus, если на кадре): какие токены меняются — border color/width, shadow, bg, opacity; что **не** меняется (scale/enlarge часто запрещён). Light и dark отдельно. Не смешивать с обязательным chrome покоя. |
+| **Цвета (hex/rgba)** | Не ограничиваться «grey / amber». Для **каждого** цветного токена light **и** dark: `hex` или `rgba(...)`. Card bg/border/fg; title/stats muted; badge **bg+fg+icon ink** per status; dots 1/2/3; divider; button outline/label; muted-card opacity. Icon ink = обычно `currentColor` родителя — всё равно зафиксировать **какой** токен наследует (badge.fg / stats.muted). Pixel-sample (PIL/`Read` crop) когда доступно; иначе vision + `approx` + confidence. |
 
 При сомнении — crop/zoom карточки или спросить; не invent «нет линии».
 
@@ -127,19 +129,43 @@ description: >-
 
 Не путать: **overall** карточки ≠ сумма children без учёта padding/gap — при расхождении пометить `approx` / Open Question.
 
-### C. Цвета (hex / rgba / product sense)
+### C. Цвета (hex / rgba — обязательно)
 
-Для **light и dark** отдельно, где отличаются:
+Цвета — **измеримый канон**, не «product sense only». Для **light и dark** отдельно заполнить таблицы. Каждый токен: значение `hex` / `rgba` / `currentColor→<token>` + `confidence` (`high` pixel-sample / `med` vision / `approx`).
 
-| Поле | Пример |
-|------|--------|
-| Card bg / border / title / muted | `#fff` / `#2a2a2a`, border soft |
-| Dot filled 1/2/3 | green / amber / red |
-| Dot empty | outline ring, не solid muted |
-| Badge bg/fg per status | grey / yellow tint «НА ПРОВЕРКЕ» |
-| Divider color | **low-contrast** line (light: soft grey on white; dark: soft grey on `#2a2a2a`) — всё равно фиксировать |
-| Button outline / icon / label | Quasar outline sense; tint warning/primary vs нейтральный mock — явно |
-| Muted / soft-unpublished overlay | сниженная opacity / darker card |
+**Обязательные строки (минимум):**
+
+| Токен | Пример light | Пример dark |
+|-------|--------------|-------------|
+| `card.bg` | `#ffffff` | `#2a2a2a` |
+| `card.border.rest` | `rgba(0,0,0,0.14)` / `#e1e3e6` | `rgba(255,255,255,0.22)` |
+| `card.border.hover` | `#212121` | `#bdbdbd` |
+| `card.shadow.rest` / `.hover` | rgba blur | rgba blur |
+| `title.fg` | `rgba(0,0,0,0.87)` | `rgba(255,255,255,0.92)` |
+| `stats.label.fg` / `stats.count.fg` / `stats.icon.ink` | muted grey | muted light |
+| `dot.filled.1/2/3` | `#43a047` / `#f9a825` / `#e53935` | darker-theme variants |
+| `dot.empty` | outline + border color | outline |
+| `divider` | `rgba(0,0,0,0.08)` | `rgba(255,255,255,0.12)` |
+| `badge.<status>.bg` + `.fg` + `.icon.ink` | per СНЯТО / ДОРАБОТАТЬ / НА ПРОВЕРКЕ / ЧЕРНОВИК | same keys dark |
+| `action.outline` / `action.label.fg` / `action.icon.ink` | neutral | neutral |
+| `card.muted.opacity` (soft-unpublished) | ~0.5–0.72 | same |
+
+**Иконки (отдельная подтаблица C2):**
+
+| ID / место | Size CSS px | Ink token | Notes |
+|------------|-------------|-----------|-------|
+| total-row | 14 | `stats.icon.ink` (= stats muted / `currentColor`) | |
+| badge revise / pending / … | ~12 | `badge.<status>.icon.ink` (= badge.fg) | не отдельный hex, если = fg |
+| action edit / unpublish | Quasar default ~18 или Spec | `action.icon.ink` | |
+
+Правила:
+
+- «Grey / amber / green» **недостаточно**, если можно снять hex/rgba (vision crop или pixel-sample).
+- Soft muted pills ≠ Quasar solid `color="grey"` / `warning` — фиксировать **bg и fg отдельно**.
+- Pending / warning: ink часто gold (`#f9a825` / `#ffc107`), bg — tint `rgba(..., 0.14–0.16)`.
+- Icon без собственного fill в SVG → ink через `currentColor` / CSS mask; в Spec всё равно указать **какой** цветной токен.
+- Light и dark — **две** полные таблицы (не «dark same»).
+- При Capture → `design.md` Visual Spec подсекции **`### Цвета`** + **`### Icon ink / sizes`**.
 
 ### D. Иконки
 
@@ -224,7 +250,7 @@ Prepare-Mock Progress:
 
 | Куда | Что |
 |------|-----|
-| `design.md` | Секция **`## Visual Spec (from mock)`** (или обновить существующую): токены A–E, light/dark таблицы, approx пометки, asset names, **`### Missing icons`** (= D2), **`### Hover / focus`** (= E). Decisions могут ссылаться сюда. |
+| `design.md` | Секция **`## Visual Spec (from mock)`** (или обновить существующую): токены A–E, light/dark таблицы **включая hex/rgba цвета + Icon ink/sizes**, approx пометки, asset names, **`### Missing icons`** (= D2), **`### Hover / focus`** (= E). Decisions могут ссылаться сюда. |
 | `proposal.md` | Кратко в What Changes / Impact, если появились новые user-visible copy/chrome; Out of scope для неоднозначного |
 | `specs/<capability>/spec.md` | **Поведение и copy**, не CSS-классы и не сырые hex как «implementation constants»: структура карточки, обязательные строки, цвет **как product sense** (green/amber/red), наличие divider/icon, short action labels. Номера SC — расширить/добавить сценарии при новых MUST. |
 | `tasks.md` | При необходимости новые `- [ ]` на перенос токенов в код; уже `[x]` не снимать без причины |
@@ -302,12 +328,31 @@ Surface: <e.g. task-set summary card>
 | action button | full | … | … | vs Quasar | |
 | … | | | | | |
 
-## Цвета
+## Цвета (hex/rgba — обязательно light + dark)
 ### Light
-| Токен | Значение |
-|-------|----------|
+| Токен | Значение | Confidence |
+|-------|----------|------------|
+| card.bg | #ffffff | |
+| card.border.rest | … | |
+| title.fg | … | |
+| stats.*.fg / icon.ink | … | |
+| badge.revise.bg / .fg / .icon.ink | … | |
+| badge.pending… / unpublished… / draft… | … | |
+| dot.1/2/3 | … | |
+| divider | … | |
+| action.outline / label / icon.ink | … | |
+| card.muted.opacity | … | |
 ### Dark
-| Токен | Значение |
+| Токен | Значение | Confidence |
+|-------|----------|------------|
+| … | | |
+
+## Icon ink / sizes
+| Место | Size CSS px | Ink token | Asset / Material |
+|-------|-------------|-----------|------------------|
+| total-row | 14 | stats.icon.ink | … |
+| badge * | ~12 | badge.<status>.icon.ink | … |
+| action * | … | action.icon.ink | Material OK |
 
 ## Разделители / иконки / actions
 | Где | Есть? | Contrast | Notes |
@@ -346,6 +391,7 @@ Surface: <e.g. task-set summary card>
 
 ## Capture
 - design.md Visual Spec: written | pending
+- Colors + Icon ink/sizes → design ### Цвета / ### Icon ink: written | pending
 - Missing icons → design ### Missing icons: written | pending
 - Hover → design ### Hover / focus: written | pending
 - specs touched: <ids or none>
@@ -354,7 +400,7 @@ Surface: <e.g. task-set summary card>
 
 ## Связь с verify-mock
 
-После apply `verify-mock` обязан считать **Visual Spec в design** первичным измеримым каноном рядом с картинкой: если код ≠ Visual Spec → Violation; если макет нечитаем, а Visual Spec есть — сверять со Spec.
+После apply `verify-mock` обязан считать **Visual Spec в design** первичным измеримым каноном рядом с картинкой: если код ≠ Visual Spec → Violation; если макет нечитаем, а Visual Spec есть — сверять со Spec. **Цвета (hex/rgba) и размеры иконок** из Visual Spec — такая же строгая сверка, как sizes.
 
 ## Не делать
 
@@ -368,3 +414,4 @@ Surface: <e.g. task-set summary card>
 - Не пропускать **выравнивание текста** (left/center/right + общие кромки labels/counts); не подставлять «как в Quasar по умолчанию» без макета.
 - Не пропускать **размеры шрифтов** (font-size / weight / line-height) по ролям — отдельная таблица в extract и Visual Spec.
 - Не сваливать hover в одну строку «есть тень»: отдельно border/shadow/bg/scale; light vs dark; что не меняется.
+- Не оставлять цвета как «grey / amber / green» без hex/rgba (или явного `currentColor→token`), если токен виден на макете — отдельная таблица light+dark + icon ink/sizes.

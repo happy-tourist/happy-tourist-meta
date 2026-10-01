@@ -2,9 +2,10 @@
 name: verify-mock
 description: >-
   Compares client UI implementation against an attached or referenced design
-  mock (screenshot/image): spacing, colors, typography/copy, icons, pale
-  dividers between every stats row, column alignment, slim button height,
-  vertical fill. Strictly enforces Visual Spec sizes (exact or in-range) as
+  mock (screenshot/image): spacing, **hex/rgba colors** (card/badge/icon ink/
+  dots/dividers/hover light+dark), typography/copy, icons, pale dividers
+  between every stats row, column alignment, slim button height, vertical fill.
+  Strictly enforces Visual Spec sizes **and colors** (exact or in-range) as
   Violations. Uses design Visual Spec from prepare-mock when present. Reports
   Violations / Warnings / Recommendations. Use when the user asks to
   verify-mock, check UI vs mock/макет/screenshot, or when implement-change
@@ -67,6 +68,7 @@ Vision и сжатый скрин часто **теряют** бледный chr
 | **Вертикальный fill** | Блоки badge → title → stats → actions распределены по высоте карточки. Опциональный badge: без статуса пусто **только сверху** (зарезервированный top), не схлопывать весь ритм. |
 | **Высота кнопки / размеры** | Сверить **каждый** токен из Visual Spec «Размеры элементов» (overall + badge/title/rows/buttons/icons/dots/dividers/pad/gap). Вне диапазона Spec / вне точного значения → **Violation**. Quasar default (~36–40) при Spec ~28–32 — Violation. |
 | **Hover enlarge** | На макете часто «придуманный» lift; design может запрещать scale → Warning (tension), не чинить scale молча. |
+| **Цвета** | Не принимать «похоже серое». Сверить **каждый** цветовой токен Visual Spec (`### Цвета` / Icon ink): card bg/border/fg, badge bg+fg+icon per status, dots, divider, action outline, muted opacity — light **и** dark. Код с Quasar solid `grey`/`warning` при Spec soft muted → Violation. Icon ink ≠ badge.fg / stats muted при Spec `currentColor→…` → Violation. |
 
 ## Scope реализации
 
@@ -85,7 +87,7 @@ Vision и сжатый скрин часто **теряют** бледный chr
 |-----|---------|
 | **Структура** | порядок сверху вниз; наличие/отсутствие строк, бейджа, actions, divider |
 | **Copy / тексты** | точные продуктовые строки (решётка `#`, «Заданий:», «Снять» vs длинное); i18n keys vs rendered sense |
-| **Цвета** | filled dots, badge tint, card bg/fg light+dark, muted soft-unpublish |
+| **Цвета** | **Обязательно** vs Visual Spec hex/rgba (см. «Цвета — строгая сверка»): filled dots, badge bg/fg/icon ink per status, card bg/fg/border, divider, action outline, muted soft-unpublish, light+dark |
 | **Отступы / ритм / размеры** | **Обязательно:** overall W×H + pad/gap + W/H каждого элемента vs Visual Spec (и макет). См. «Размеры — строгая сверка» ниже |
 | **Типографика / выравнивание** | **font-size / weight / line-height** per role vs Visual Spec (строго, как размеры); truncate; **text-align** per element; vertical center в ряду |
 | **Иконки** | leading total icon (центр над шириной dots), action icons, badge icons (если на макете и в scope) |
@@ -110,13 +112,32 @@ Vision и сжатый скрин часто **теряют** бледный chr
 
 Любой **fail** по размеру **или font-size/weight/line-height из Spec** → **Violation** (не Warning «типографика похожа»).
 
+## Цвета — строгая сверка (обязательно)
+
+`verify-mock` **требует** соответствия цветовых токенов Visual Spec / измеримому макету — не «похожий серый».
+
+| Источник канона | Правило |
+|-----------------|---------|
+| Visual Spec: hex / rgba (напр. `#2a2a2a`, `rgba(0,0,0,0.08)`) | Код MUST совпадать с токеном (declared CSS var / computed). Допуск **только** если Spec пишет `±` / `approx` / «product sense near …». |
+| Visual Spec: `currentColor→badge.fg` / mask ink | Фактический ink иконки MUST наследовать указанный токен (не чужой fill / не Quasar solid). |
+| Visual Spec: soft muted pill | Quasar solid `color="grey"` / `warning` fills → **Violation**. |
+| Visual Spec есть light+dark строки | Сверять **оба** набора; dark fail при light pass → Violation (пометить `dark`). |
+| Spec нет hex, но цвет ярок на макете | Снять approx с макета; явное расхождение (синий vs серый бейдж, primary tint на outline) → Violation; Recommendation дописать Spec. |
+| Ни Spec, ни различимый цвет на макете | не invent Violation по 1 RGB; Warning «нет канона цвета». |
+
+Обязательный проход по таблицам Spec **`### Цвета`** (light+dark) и **`### Icon ink / sizes`**. В отчёте — секция **Colors check**: `token | expected | actual | pass/fail`.
+
+Любой **fail** по цвету из Spec → **Violation** (не Warning «tint близко»).
+
+Icon size из Spec (`14`, `~12`) сверять в **Sizes check** (как другие размеры).
+
 ## Severity (ровно три уровня)
 
 Каждый finding — ровно в один tier. Не замалчивать soft; не раздувать в Violations.
 
 | Tier | Когда | Примеры |
 |------|--------|---------|
-| **Violations** | Доказуемое расхождение с макетом / Visual Spec: структура, copy, цвета, dividers, align, icons, actions copy; **любой размер или font-size/weight/line-height вне канона Spec** | нет `#`; button `40px` при Spec `28–32`; title `font-size 16` при Spec `12–13`; pad `16` при Spec `8` |
+| **Violations** | Доказуемое расхождение с макетом / Visual Spec: структура, copy, **цвета (hex/rgba / icon ink)**, dividers, align, icons, actions copy; **любой размер или font-size/weight/line-height вне канона Spec**; **любой цветовой токен Spec вне канона** | нет `#`; button `40px` при Spec `28–32`; title `font-size 16` при Spec `12–13`; pad `16` при Spec `8`; badge solid Quasar grey при Spec soft muted `rgba(…)`; icon ink ≠ badge.fg |
 | **Warnings** | Сильный lean без полной proof; макет неоднозначен **и** нет числа в Spec; light ок / dark сомнительно; макет vs design tension (не размеры при наличии Spec); hover border tension | hover lift vs forbid scale; badge icon later; нет Spec-строки на элемент и скрин мыльный |
 | **Recommendations** | docs/skills sync; asset drop-in; дописать недостающую строку в Visual Spec после замера | заменить Material placeholder; добавить token в Spec |
 
@@ -140,8 +161,8 @@ Verify-Mock Progress:
 - [ ] 1. Resolve paths + OpenSpec change
 - [ ] 2. Resolve mock image(s) — or SKIPPED
 - [ ] 3. Map mock regions → client files / i18n + load Visual Spec sizes
-- [ ] 4. Diff structure / copy / color / **sizes (strict)** / icons / dividers / actions / hover
-- [ ] 5. Report (three tiers + Sizes check)
+- [ ] 4. Diff structure / copy / **colors (strict)** / **sizes (strict)** / icons / dividers / actions / hover
+- [ ] 5. Report (three tiers + Sizes check + Colors check)
 ```
 
 ## Report
@@ -156,6 +177,7 @@ Using mock: <path / light+dark>
 Scope surfaces: <list>
 Client files reviewed: <paths>
 Visual Spec sizes: yes | no
+Visual Spec colors: yes | no
 
 ## Сводка
 | Violations | Warnings | Recommendations | Verdict |
@@ -166,7 +188,17 @@ Visual Spec sizes: yes | no
 | Token | Expected (Spec/mock) | Actual (code) | Result |
 |-------|----------------------|---------------|--------|
 | card.width | … | … | pass / fail |
+| total.icon.size | 14 | … | pass / fail |
+| badge.icon.size | ~12 | … | pass / fail |
 | … | | | |
+
+## Colors check
+| Token | Expected (Spec/mock) | Actual (code) | Theme | Result |
+|-------|----------------------|---------------|-------|--------|
+| card.bg | #ffffff | … | light | pass / fail |
+| badge.pending.fg | #f9a825 | … | light | pass / fail |
+| badge.pending.icon.ink | currentColor→badge.pending.fg | … | light | pass / fail |
+| … | | | dark | |
 
 ### Violations
 - [violation] <что на макете/Spec> → <что в коде> · <file:symbol> · fix: <минимально>
@@ -178,7 +210,7 @@ Visual Spec sizes: yes | no
 - [recommendation] <optional polish / дописать Spec token>
 
 ## Что делать дальше
-- Violations сначала (в т.ч. size fails); затем Warnings; Recommendations последними
+- Violations сначала (size **и** color fails); затем Warnings; Recommendations последними
 ```
 
 Пустые секции: одна строка `- none` (не смешивать items и `none`).
@@ -189,6 +221,7 @@ Visual Spec sizes: yes | no
 
 - Не подменять align/verify skills.
 - Не ослаблять размеры до Warning «похоже», если в Visual Spec есть число/диапазон — это **Violation**.
+- Не ослаблять цвета до Warning «tint близко», если в Visual Spec есть hex/rgba / `currentColor→token` — это **Violation**.
 - Не расширять на поверхности вне макета/Scope.
 - Не считать отсутствие будущих SVG Violation, если design отложил asset.
 - Не писать «нет разделителей», пока не проверены бледные линии между **всеми** stats-rows и над actions (см. Anti-miss).

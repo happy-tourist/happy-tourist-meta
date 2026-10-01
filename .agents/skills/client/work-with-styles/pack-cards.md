@@ -31,38 +31,42 @@ bottom full-width **text** buttons when editable).
 (status top; star TL; truncated title + description; bottom full-width **text**
 actions). Do **not** fold task-set summary chrome into this tile.
 
-**Task-set lists — live + cards editor (SC-PACK-229 / 239…246):** dedicated
+**Task-set lists — live + cards editor (SC-PACK-229 / 239…248):** dedicated
 `PackTaskSetCardTile.vue` (not `PackListCardTile`). Mock-aligned summary chrome:
 
-- Status top (short badges — СНЯТО / ДОРАБОТАТЬ / НА ПРОВЕРКЕ / …). Badge SVGs
-  deferred; reserved names under `src/assets/content/`:
+- Status top (short badges — СНЯТО / ДОРАБОТАТЬ / НА ПРОВЕРКЕ / …). Badge icons
+  wired from `src/assets/content/`:
   `task-set-badge-revise.svg`, `task-set-badge-pending.svg`,
-  `task-set-badge-unpublished.svg`, `task-set-badge-draft.svg`. Live/editor
-  `#status` slots use temp Material `close` / `schedule` / `visibility_off` /
-  `edit_note` inside `q-badge.pack-task-set-status-badge` (mock: icon+label).
-  **Soft muted pills** (not Quasar solid `color="grey"` / `warning` fills):
+  `task-set-badge-unpublished.svg`, `task-set-badge-draft.svg` (SC-PACK-248).
+  Live/editor `#status` slots use `<span class="pack-task-set-status-icon
+  pack-task-set-status-icon--{revise|pending|unpublished|draft}">` (~12px CSS
+  **mask** + `currentColor` ink). Soft muted pills (not Quasar solid
+  `color="grey"` / `warning` fills):
   `--muted` = pale grey bg + dark/light fg; `--pending` = soft amber tint +
   gold/amber ink (НА ПРОВЕРКЕ). ДОРАБОТАТЬ stays muted, **not** loud orange.
   Reserved top band keeps empty space when no badge
-  (`.pack-task-set-tile__status` min-height — SC-PACK-244).
+  (`.pack-task-set-tile__status` min-height — SC-PACK-244); status→title
+  pad-bottom **~6–8** CSS px (SC-PACK-247).
 - Ordinal title with hash, no author/coauthor: i18n `taskSetLabel` =
   «Набор заданий #{n}» (live, editor, staff hub, tasks header, lobby create/list);
   title `font-weight: 700` (mock).
 - Stats **column grid** (SC-PACK-244): CSS
   `grid-template-columns: var(--pack-ts-lead-w) minmax(0, 1fr) auto` with
   `--pack-ts-lead-w: 22px` (three 6px dots + 2×2px gaps). Each row wraps lead
-  content in `.pack-task-set-tile__lead`; total-row Material `description`
-  (placeholder until `task-set-card-tasks.svg`) centered in lead; labels
+  content in `.pack-task-set-tile__lead`; total-row custom SVG
+  `task-set-card-tasks.svg` via CSS mask + `currentColor` (14×14;
+  `stats.icon.ink` = `--pack-ts-muted`); labels
   («Заданий:» / «Лёгкие:» / «Средние:» / «Сложные:») share one left edge;
   counts right-aligned tabular.
 - **Pale multi-row dividers** (SC-PACK-239): 1px low-contrast
   (`--pack-ts-splitter` ~0.08 light / ~0.12 dark) after total, **between every**
   difficulty row (`pack-task-set-divider-diff-*`), and above actions
   (`border-top` on `.pack-task-set-tile__actions`). Not only two section dividers.
-- **Internal spacing** (SC-PACK-245 / Visual Spec): `--pack-ts-title-gap: 14px`
-  (title→stats 12–16); `--pack-ts-row-pad-y: 6px` (row pad-y 6–8);
-  `--pack-ts-divider-air: 5px` → margin 5+5 = 10 CSS px air around pale dividers
-  (8–12 total). Do **not** change `.pack-card-grid` / list gutter between cards.
+- **Internal spacing** (SC-PACK-245 → retune SC-PACK-247 / Visual Spec):
+  `--pack-ts-title-gap: 7px` (title→stats ~7); `--pack-ts-row-pad-y: 6px`
+  (row pad-y 6–8); `--pack-ts-divider-air: 3px` → margin 3+3 = **6** CSS px air
+  around pale dividers (~4–6 total). Do **not** change `.pack-card-grid` / list
+  gutter between cards.
 - Difficulty rows: three-dot indicator (filled count = difficulty); filled
   colors 1 green / 2 amber / 3 red (`--pack-ts-dot-1/2/3`); **unfilled =
   outline rings** (not solid muted).
@@ -80,7 +84,15 @@ actions). Do **not** fold task-set summary chrome into this tile.
 - Size tokens: width `156px`; `min-height: 206px` (resting mock; MAY grow with
   spacing); soft resting `box-shadow`; body/stats `flex: 1 1 auto` vertical fill;
   `cascade-gap-outline` (SC-PACK-126); explicit light/dark `--pack-ts-*`
-  contrast.
+  contrast. Soft-unpublish `--muted`: opacity `0.72` + **`border-style: dashed`**
+  (mock СНЯТО). Stats **counts** use `--pack-ts-fg` (title.fg, weight 600);
+  labels/icon ink stay `--pack-ts-muted`.
+- **Icon ink / colors** (SC-PACK-248 / Visual Spec): soft-muted badge
+  light `rgba(0,0,0,0.06)` bg + `rgba(0,0,0,0.72)` fg/ink; pending light
+  `rgba(249,168,37,0.16)` + `#f9a825`; dark muted `rgba(255,255,255,0.12)` /
+  `0.82` fg; dark pending `rgba(255,193,7,0.14)` + `#ffc107`. Total/badge
+  icons theme via **mask + `currentColor`** (not plain `<img>`). Action icons
+  stay Quasar Material.
 - **Themed hover** (SC-PACK-246 / Decision 10): clickable cards change
   **border + soft lift shadow only** — **no** `transform: scale` / enlarge.
   Light: `--pack-ts-border-hover: #212121` + `--pack-ts-shadow-hover` lift.
@@ -98,4 +110,4 @@ lists use global `.peek-slot-like` (+ `--filled` / `__label` / `__empty` /
 as the primary slot chrome on these surfaces. Do **not** reintroduce list
 `q-chip` for answer/task bodies or slot pickers. Contracts: meta
 `work-with-stores/content.md` (Playing-card chrome); SC-PACK-222…229 / 237/238 /
-239…246.
+239…248.

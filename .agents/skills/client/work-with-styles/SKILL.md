@@ -6,7 +6,7 @@ description: >-
   page CSS, Quasar utilities, Material Icons / Roboto. Core in SKILL.md; topic
   details in theme.md (Dark + /api/theme), board.md (GamePage tourist CSS),
   pack-cards.md (cascade yellow + answer/task tiles + catalog
-  PackListCardTile + PackTaskSetCardTile summary chrome SC-PACK-229/239…246 +
+  PackListCardTile + PackTaskSetCardTile summary chrome SC-PACK-229/239…248 +
   map list tiles).
 ---
 
@@ -52,7 +52,10 @@ Do **not** add a second theme engine — use Quasar `Dark` only.
 
 - Prefer Quasar props (`color="primary"`, `flat`, `dense`) and utility classes.
 - Prefer Material Icons via `icon` / `q-icon` (already in extras). Game leave is
-  the brand logo in `App.vue`, not a Material `logout` icon.
+  the brand logo in `App.vue`, not a Material `logout` icon. Pack task-set
+  total/badge icons are custom SVG + CSS mask under `src/assets/content/`
+  (see [pack-cards.md](pack-cards.md) SC-PACK-248) — do not keep Material
+  placeholders once those assets exist.
 - Custom board / tile visuals → scoped SFC CSS (see topics). Do not invent
   co-located `styles.scss` folders.
 - Keep `app.scss` for true globals only; do not dump board CSS there.
@@ -89,7 +92,9 @@ Also hosts `.pack-card-grid` (see [pack-cards.md](pack-cards.md)).
 ## Fonts And Icons
 
 `extras: ['roboto-font', 'material-icons']`. Do not add MDI / Font Awesome unless
-`extras` is updated on purpose.
+`extras` is updated on purpose. Themed one-off pack chrome (task-set total /
+status badges) uses Vite-imported SVG + CSS `mask` + `currentColor` from
+`src/assets/content/` — see [pack-cards.md](pack-cards.md).
 
 ## Scoped Page Styles
 
@@ -149,3 +154,5 @@ Prefer Quasar helpers already in login / lobby / game:
   (see [pack-cards.md](pack-cards.md)).
   wrong tile sizes; `PackCsvImportDialog`; maps list as plain `q-item` —
   see [pack-cards.md](pack-cards.md).
+- Task-set badge/total Material `q-icon` after `src/assets/content/task-set-*.svg`
+  exist; soft-unpublish muted without `border-style: dashed`.

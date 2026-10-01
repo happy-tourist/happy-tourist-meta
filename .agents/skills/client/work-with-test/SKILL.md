@@ -3,23 +3,13 @@ name: work-with-test
 description: >-
   Use when planning or writing Vue 3 / Quasar unit tests for the happy-tourist
   client (pages, components, Pinia stores, lib helpers): Vitest +
-  @vue/test-utils, q-form rules, auth/theme/game/support/content/maps stores
-  (my-moderation / cascadeGap* / hasLive confirm / simplify ACL SC-PACK-100…195 /
-  unified list `ContentUnifiedList` (`openRequestType` live-first SC-PACK-191/192) +
-  favorites `content.favorites` + author edit/take `ContentAuthorEditTake`
-  (`neverLive` ghost SC-PACK-188…190) / lobby packs entry `LobbyPacksEntry` /
-  lobby create wire `LobbyCreateWire` / game board wire `GameBoardWire` /
-  presence focus `GamePresenceFocus` / `boardGeometry` + `focusActionable` lib tests /
-  game peek `game.boardPeek` / soft-unpublish `ContentSoftUnpublish` / follow-up 4–5 / `ContentModerationUx` /
-  pack answers/tasks CSV `packContentCsv` / framed panel / `PackTasksCsvControls` / `ContentPackEditorCsv` + tile smoke `PackAnswerCardTile` / `PackTaskTile` / `PackListCardTile` / `PackTaskSetCardTile` / `MapListCardTile` / `ContentPackPlayingCards` / `ContentPackListCards` SC-PACK-210…229/239…246 /
-  staff boot/dirty Submit/CSV hide/peek slots `editorDirty` / `ContentPackStaffBoot` / `ContentPackDirtySubmit` / `ContentPackTasksCsvHide` SC-PACK-231…238 /
-  `ContentMaps` + `maps.paint` SC-MAP-41…56 / 62…65 / App header chrome `AppHeaderChrome`
-  (SC-BRAND-17…20) /
-  (crumbs **inside** `q-page-container` SC-BRAND-17…18; narrow burger fold SC-BRAND-19) in `src/__tests__/` /
-  SupportChangePack SC-SUP-27…29), Colyseus client.auth / client.http / room I/O spies, store error +
-  q-banner, vue-i18n / router. Harness live (`vitest.config.ts`, `test/setup.ts`,
-  `npm test`). Core in SKILL.md; topics: forms.md, stores.md, colyseus.md,
-  errors.md, plugins.md, composables.md, provide-inject.md.
+  @vue/test-utils; auth/theme/game/support/content/maps store + page/component
+  contracts (pack CSV/tiles/list-cards incl. `PackTaskSetCardTile` SC-PACK-247/248
+  SVG masks, lobby/game board wire, App header chrome); Colyseus
+  client.auth / client.http / room I/O spies; store error + q-banner;
+  vue-i18n / router. Harness: `vitest.config.ts`, `test/setup.ts`, `npm test`.
+  Core in SKILL.md; SC/file details in topics: forms.md, stores.md,
+  colyseus.md, errors.md, plugins.md, composables.md, provide-inject.md.
 trigger: slash
 ---
 

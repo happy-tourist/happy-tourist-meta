@@ -10,7 +10,7 @@ description: >-
   topics; soft-unpublish/`inCatalog`; cascade/slot chips SC-PACK-126…136; pack
   answers/tasks CSV via `lib/packContentCsv` + `PackTasksCsvControls` /
   framed CSV panel / tile + catalog `PackListCardTile` / task-set
-  `PackTaskSetCardTile` SC-PACK-210…229/239…246; no collection-first UX; no
+  `PackTaskSetCardTile` SC-PACK-210…229/239…248; no collection-first UX; no
   non-staff my-moderation nav; no block UI). No blocks/ or dialogs/ registry
   layers.
 ---
@@ -55,7 +55,7 @@ may also host copies later).
 | Router | `src/router/` | `routes.ts` + guards in `index.ts` (`filenameBasedRouting: false`) |
 | i18n | `src/i18n/` | Locale message trees (`en-US`) |
 | CSS | `src/css/` | `app.scss` (incl. `.pack-card-grid` wrap for answer/task tiles), `quasar.variables.scss` |
-| Assets | `src/assets/` | Static assets (`brand/logo.png`, `tourists/…`, `grilles/grille.png`, `catapults/catapult.png` + `catapult-broken.png`, …) |
+| Assets | `src/assets/` | Static assets (`brand/logo.png`, `tourists/…`, `grilles/grille.png`, `catapults/catapult.png` + `catapult-broken.png`, `content/task-set-card-tasks.svg` + `content/task-set-badge-{revise,pending,unpublished,draft}.svg` for `PackTaskSetCardTile` CSS masks — SC-PACK-248, …) |
 
 Outside `src`: `public/` (product `favicon.ico` only — no scaffold PNG icon set), `quasar.config.ts`, `package.json` (`productName` = `Happy Tourist`), `.env.development` / `.env.production`, `.github/workflows/`.
 
@@ -242,7 +242,7 @@ Registered in `quasar.config.ts` boot array: `theme`, `i18n`, `colyseus` (+ `fra
 | Lobby / rooms | `LobbyPage` (create map `q-select` option + **selected-item** mini `MapGridPreview` SC-LOBBY-31) | `stores/game.subscribeLobby` / create `{ mapId, packId, taskSetIds, maxSeats, grilleDensity, catapultDensity }` / join |
 | Game session | `GamePage` | `stores/game` room attach + seats / grilles / catapults / top + seated-HUD presence / say / strip + rescue/push + return strip icon (no modal); soft-drop gated by `consentedLeaving` |
 | Game leave + match status | `App.vue` header (logo **and** `header-game-leave`; status on Game) | `stores/game` `leaveGame` + status / phase getters |
-| Content packs | `ContentCatalogPage` (150×200 `PackListCardTile` grid SC-PACK-228; staff unpublish/republish + confirm; no whole-card `:to`) / `ContentCollectionPage` (redirect → catalog) / `ContentMyModerationPage` / `ContentPackPage` (task-set `PackTaskSetCardTile` SC-PACK-229/239…246; staff Edit+lock; pack chrome long `unpublish`/`republish`; **card** short `taskSetCardUnpublish`/`taskSetCardRepublish`; ordinal `taskSetLabel` `#{n}` no author; add-task-set beside «Задания»; answer tiles) / `ContentPackCreatePage` / `ContentPackEditorPage` (set soft-hide; `cascade-gap-outline`; editor `PackTaskSetCardTile` SC-PACK-229/239…246 + short card Снять/Вернуть; answers CSV framed panel + `PackAnswerCardTile` SC-PACK-210…227) / `ContentPackAddTaskSetPage` (slot picker tiles + thread; tasks CSV via `PackTasksCsvControls`; `PackTaskTile`) / `ContentPackTasksPage` (live drill-in; `taskSetLabel` `#{n}` heading; `content.back`; slot picker tiles; set unpublish inside Edit may keep long copy; tasks CSV) / `ContentPackModerationPage` / `ContentStaffPage` / `ContentStaffRequestPage` (Approve / needs-revision; answer/task tiles + `taskSetLabel`; **no** unpublish; no block UI) / `ContentStaffTasksPage` (→ hub) | `stores/content` HTTP (`client.http`); working copy + `submitPack` + add-task-set + staff lock session + soft-unpublish pack+set (`unpublishPack`/`republishPack`/`unpublishTaskSet`/`republishTaskSet`, `inCatalog`) + cascadeGap* + `authorDisplayName` (ACL/API; not UI labels) + SC-PACK-126…136/239…246 + needs_revision; CSV parse/serialize in `lib/packContentCsv` (no new HTTP); framed CSV panel — no `PackCsvImportDialog` |
+| Content packs | `ContentCatalogPage` (150×200 `PackListCardTile` grid SC-PACK-228; staff unpublish/republish + confirm; no whole-card `:to`) / `ContentCollectionPage` (redirect → catalog) / `ContentMyModerationPage` / `ContentPackPage` (task-set `PackTaskSetCardTile` SC-PACK-229/239…248; staff Edit+lock; pack chrome long `unpublish`/`republish`; **card** short `taskSetCardUnpublish`/`taskSetCardRepublish`; ordinal `taskSetLabel` `#{n}` no author; add-task-set beside «Задания»; answer tiles) / `ContentPackCreatePage` / `ContentPackEditorPage` (set soft-hide; `cascade-gap-outline`; editor `PackTaskSetCardTile` SC-PACK-229/239…248 + short card Снять/Вернуть; answers CSV framed panel + `PackAnswerCardTile` SC-PACK-210…227) / `ContentPackAddTaskSetPage` (slot picker tiles + thread; tasks CSV via `PackTasksCsvControls`; `PackTaskTile`) / `ContentPackTasksPage` (live drill-in; `taskSetLabel` `#{n}` heading; `content.back`; slot picker tiles; set unpublish inside Edit may keep long copy; tasks CSV) / `ContentPackModerationPage` / `ContentStaffPage` / `ContentStaffRequestPage` (Approve / needs-revision; answer/task tiles + `taskSetLabel`; **no** unpublish; no block UI) / `ContentStaffTasksPage` (→ hub) | `stores/content` HTTP (`client.http`); working copy + `submitPack` + add-task-set + staff lock session + soft-unpublish pack+set (`unpublishPack`/`republishPack`/`unpublishTaskSet`/`republishTaskSet`, `inCatalog`) + cascadeGap* + `authorDisplayName` (ACL/API; not UI labels) + SC-PACK-126…136/239…248 + needs_revision; CSV parse/serialize in `lib/packContentCsv` (no new HTTP); framed CSV panel — no `PackCsvImportDialog` |
 | Content maps | `MapsListPage` (`MapListCardTile` grid SC-MAP-55; author draft/pending/needs_revision → Edit; clean published → View) / `MapEditorPage` (title-row Edit SC-MAP-51; board field + under-map palette SC-MAP-54; centered seats SC-MAP-56; anti-stale quiet save SC-MAP-53; + `MapGridPreview`) | `stores/maps` HTTP (`client.http`); take via `content` store; no collection |
 | Support | `SupportPage` / `SupportTicketPage` / `SupportStaffPage` | `stores/support` |
 | Brand / title / favicon | `App.vue` + `package.json` / `index.html` / `public/favicon.ico` | `assets/brand/logo.png`; `productName` Happy Tourist; single favicon |
@@ -279,6 +279,7 @@ Board geometry from synced `grid` via `src/lib/boardGeometry.ts` (+ `focusAction
 | Using removed scaffold `pages/index*` / Quasar logo for new routes | Add `*Page.vue` + `routes.ts` entry |
 | Reintroducing Vuex or axios for Colyseus | Pinia + `client` / `client.http` |
 | Manual Quasar imports for auto-imported tags | Use `q-*` in template as-is |
+| Pack task-set badge/total icons as Material `q-icon` or under `public/` | Keep SVGs in `src/assets/content/`; wire via CSS mask + `currentColor` on `PackTaskSetCardTile` (see `work-with-styles/pack-cards.md`) |
 
 ## Related Skills
 
