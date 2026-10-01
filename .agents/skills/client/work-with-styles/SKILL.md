@@ -6,7 +6,7 @@ description: >-
   page CSS, Quasar utilities, Material Icons / Roboto. Core in SKILL.md; topic
   details in theme.md (Dark + /api/theme), board.md (GamePage tourist CSS),
   pack-cards.md (cascade yellow + answer/task tiles + catalog
-  PackListCardTile ~180×260 + published-only set preview SC-PACK-228/249…254 +
+  PackListCardTile ~180×260 + published-only set preview SC-PACK-228/249…255 +
   PackTaskSetCardTile summary chrome SC-PACK-229/239…248 + map list tiles).
 ---
 
@@ -87,7 +87,8 @@ the Quasar palette on purpose.
 .body--dark .text-muted { color: rgba(255, 255, 255, 0.7); }
 ```
 
-Also hosts `.pack-card-grid` (see [pack-cards.md](pack-cards.md)).
+Also hosts `.pack-card-grid` + shared `--pack-card-*` resting tokens
+(SC-PACK-255; see [pack-cards.md](pack-cards.md)).
 
 ## Fonts And Icons
 
@@ -156,3 +157,6 @@ Prefer Quasar helpers already in login / lobby / game:
   see [pack-cards.md](pack-cards.md).
 - Task-set badge/total Material `q-icon` after `src/assets/content/task-set-*.svg`
   exist; soft-unpublish muted without `border-style: dashed`.
+- Catalog/task-set resting surface re-hardcoded locally (`#2f2f2f`, `#aeaeae`,
+  `--pack-list-action-outline`) instead of shared `--pack-card-*` on
+  `.pack-card-grid` (SC-PACK-255).

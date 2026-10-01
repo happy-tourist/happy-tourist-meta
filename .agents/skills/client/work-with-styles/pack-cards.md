@@ -27,7 +27,7 @@ task **300×200**; ~×2 type; explicit light/dark `--pack-tile-*` contrast — n
 `--q-card-background` alone; difficulty top-left on tasks; Edit/Delete as
 bottom full-width **text** buttons when editable).
 
-**Catalog packs (SC-PACK-228 / 249…254):** `PackListCardTile.vue` resting size
+**Catalog packs (SC-PACK-228 / 249…255):** `PackListCardTile.vue` resting size
 about **180×260** (width near 180; height MAY grow with four set rows, overflow
 caption, and stacked actions). Pad root **x ~12** / top chrome **~12** (+ pb ~6
 for status→title air); star TL offset **~8** / icon **~16** (constrain Quasar sm
@@ -43,15 +43,27 @@ gap ~10 in `.pack-list-tile__sets-list` only (overflow **sibling**,
 `margin-top` ~5 — Spec sets→overflow ~4–6; overflow indented under label
 column); soft-unpub / neverLive **omitted** from DOM — no
 `pack-list-tile__set-row--muted`; rows non-navigating); set label / count /
-icon ink = **title.fg** (`--pack-list-fg`; Decision 12 — not
-`--pack-list-set-label` / muted grey); pale divider **only** above actions
-(air ~8–10); bottom full-width **outline + icon** actions (Edit / long
-unpublish/republish — same Material pattern as task-set cards, slim ~28–32,
-label ~11–12px, icon ~18, nowrap). Soft-unpublished **pack** cards: catalog
-wires `:muted` when `hasLive && inCatalog === false` (opacity 0.72; class
-`pack-list-tile--muted`). Hover: border + soft shadow like task-set (**no**
-scale; light `#212121` / dark `#bdbdbd` — not `--q-secondary`). Do **not** fold
+icon ink = **title.fg** (`--pack-list-fg` → shared `--pack-card-fg`; Decision 12 —
+not muted grey); pale divider **only** above actions (air ~8–10); bottom
+full-width **outline + icon** actions (Edit / short «Снять»/«Вернуть» via
+`taskSetCardUnpublish` / `taskSetCardRepublish` — same keys as task-set cards;
+confirm / live pack header keep long `content.unpublish` / `content.republish`;
+slim ~28–32 via `--pack-card-action-h`, label ~11–12px, icon ~18, nowrap;
+outline = `--pack-card-border`, **not** list-only `#aeaeae`). Soft-unpublished
+**pack** cards: catalog wires `:muted` when `hasLive && inCatalog === false`
+(opacity **0.72** + **`border-style: dashed`**; class `pack-list-tile--muted`).
+Hover: border + soft shadow like task-set (**no** scale; light `#212121` /
+dark `#bdbdbd` from shared tokens — not `--q-secondary`). Do **not** fold
 task-set difficulty-dot chrome into this tile.
+
+**Shared resting chrome (SC-PACK-255):** define `--pack-card-bg` / `fg` /
+`muted` / `border` / `border-hover` / `shadow` / `shadow-hover` / `splitter` /
+`action-h` on `.pack-card-grid` in `src/css/app.scss` (+ `body.body--dark`
+overrides). Canon = former task-set surface values (dark bg `#2a2a2a`, **not**
+mock `#2f2f2f`). Both `PackListCardTile` and `PackTaskSetCardTile` alias these
+for resting surface / hover / action outline / muted. Layout-only tokens stay
+local (`--pack-list-lead-w`, `--pack-list-revise-fg`, `--pack-ts-lead-w`,
+dots, spacing).
 Visual Spec: change `redesign-pack-list-cards` / main `content/packs` after sync.
 
 **Task-set lists — live + cards editor (SC-PACK-229 / 239…248):** dedicated
@@ -94,22 +106,26 @@ Visual Spec: change `redesign-pack-list-cards` / main `content/packs` after sync
   colors 1 green / 2 amber / 3 red (`--pack-ts-dot-1/2/3`); **unfilled =
   outline rings** (not solid muted).
 - Bottom full-width **outline + icon** actions (`@click.stop`); **slim**
-  height via `--pack-ts-action-h: 30px` + `:deep(.q-btn)` min 28 / max 32 +
-  page `dense` (SC-PACK-241). Stacked when multiple. Soft-unpublish «Снять»
-  **and** republish «Вернуть» use the same **neutral** outline chrome as Edit
-  (pale `--pack-ts-border`; no `color="warning"` / no `color="primary"` tint).
+  height via `--pack-ts-action-h: var(--pack-card-action-h)` (= 30px) +
+  `:deep(.q-btn)` min 28 / max 32 + page `dense` (SC-PACK-241). Stacked when
+  multiple. Soft-unpublish «Снять» **and** republish «Вернуть» use the same
+  **neutral** outline chrome as Edit (pale `--pack-ts-border` →
+  `--pack-card-border`; no `color="warning"` / no `color="primary"` tint).
   Pages gate `#actions` with a helper (`hasTaskSetCardActions` /
   `hasEditorTaskSetCardActions`) — omit the slot when no control would render
   (empty actions chrome + pale divider above actions — SC-PACK-239). Card
   soft-unpublish / republish: short keys `taskSetCardUnpublish` «Снять» /
-  `taskSetCardRepublish` «Вернуть». Pack/catalog `content.unpublish` /
-  `content.republish` and confirm dialogs stay long.
+  `taskSetCardRepublish` «Вернуть» (catalog pack cards use the **same** short
+  keys). Pack confirm dialogs + live pack **header** keep long
+  `content.unpublish` / `content.republish`.
 - Size tokens: width `156px`; `min-height: 206px` (resting mock; MAY grow with
   spacing); soft resting `box-shadow`; body/stats `flex: 1 1 auto` vertical fill;
-  `cascade-gap-outline` (SC-PACK-126); explicit light/dark `--pack-ts-*`
-  contrast. Soft-unpublish `--muted`: opacity `0.72` + **`border-style: dashed`**
-  (mock СНЯТО). Stats **counts** use `--pack-ts-fg` (title.fg, weight 600);
-  labels/icon ink stay `--pack-ts-muted`.
+  `cascade-gap-outline` (SC-PACK-126); resting surface via shared
+  `--pack-card-*` (aliases `--pack-ts-bg/fg/muted/border/…`); layout tokens
+  (`--pack-ts-lead-w`, dots, spacing) stay local. Soft-unpublish `--muted`:
+  opacity `0.72` + **`border-style: dashed`** (mock СНЯТО). Stats **counts**
+  use `--pack-ts-fg` (title.fg, weight 600); labels/icon ink stay
+  `--pack-ts-muted`.
 - **Icon ink / colors** (SC-PACK-248 / Visual Spec): soft-muted badge
   light `rgba(0,0,0,0.06)` bg + `rgba(0,0,0,0.72)` fg/ink; pending light
   `rgba(249,168,37,0.16)` + `#f9a825`; dark muted `rgba(255,255,255,0.12)` /
@@ -118,8 +134,9 @@ Visual Spec: change `redesign-pack-list-cards` / main `content/packs` after sync
   stay Quasar Material.
 - **Themed hover** (SC-PACK-246 / Decision 10): clickable cards change
   **border + soft lift shadow only** — **no** `transform: scale` / enlarge.
-  Light: `--pack-ts-border-hover: #212121` + `--pack-ts-shadow-hover` lift.
-  Dark: `--pack-ts-border-hover: #bdbdbd` (light grey) — **not** `--q-secondary`.
+  Light: `--pack-card-border-hover: #212121` + `--pack-card-shadow-hover` lift
+  (aliased as `--pack-ts-border-hover` / `--pack-ts-shadow-hover`).
+  Dark: `--pack-card-border-hover: #bdbdbd` (light grey) — **not** `--q-secondary`.
   Difficulty dots, total icon, badge icons, action icons keep semantic colors
   on hover (chrome only). Answer/task playing-card tiles stay unchanged.
 

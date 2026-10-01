@@ -3,15 +3,16 @@
 | Scenario ID | Coverage |
 |-------------|----------|
 | SC-PACK-228 | covered (client vitest — catalog pack card 180×260 + set preview) |
-| SC-PACK-229 | unchanged (task-set cards) |
+| SC-PACK-229 | unchanged product layout (task-set cards; may consume shared chrome tokens) |
 | SC-PACK-249 | covered / revised (client vitest — published-only set preview + overflow «ещё K») |
-| SC-PACK-250 | covered (client vitest — outline+icon catalog actions; whole-card open) |
+| SC-PACK-250 | covered / revised (client vitest — outline+icon catalog actions with **short** Снять/Вернуть; whole-card open) |
 | SC-PACK-251 | covered (client vitest — revise badge red outline; uppercase title) |
 | SC-PACK-252 | covered (server mocha — listCatalog lightweight taskSetsPreview) |
 | SC-PACK-253 | covered (server mocha — soft-unpub + author neverLive in **API** preview) |
 | SC-PACK-254 | covered (client vitest — catalog card omits soft-unpub/neverLive; set-row ink = title.fg) |
+| SC-PACK-255 | covered (client vitest — shared `--pack-card-*` resting chrome; catalog muted = opacity + dashed) |
 
-Related: task-set summary chrome — SC-PACK-229/239…248 (unchanged). Playing-cards — SC-PACK-222…227 (unchanged).
+Related: task-set summary chrome — SC-PACK-229/239…248 (layout unchanged; shared tokens). Playing-cards — SC-PACK-222…227 (unchanged).
 
 ## MODIFIED Requirements
 
@@ -19,7 +20,7 @@ Related: task-set summary chrome — SC-PACK-229/239…248 (unchanged). Playing-
 
 The unified packs **catalog** list MUST render each pack as a rounded card in a wrapping row with resting size about **180×260** CSS pixels (width MUST stay near 180; height MAY grow slightly when four set rows, overflow caption, and stacked actions are present). Each catalog card MUST show moderation/status chrome at the **top** when a status badge applies. On the catalog, a favorites star MUST appear at the **top-left**; the top-right MUST NOT host Edit. Catalog action controls MUST appear at the **bottom** as stacked full-width **outline** buttons with a leading icon and text label (slim height in the product sense ~28–32 CSS px, same pattern as task-set cards). The catalog card body MUST show a truncated pack title rendered in **uppercase**, a truncated pack **description**, and a **preview list of published task sets** for that pack (not difficulty-breakdown rows from the task-set card chrome). Activating the catalog card body (outside action controls and the favorites star) MUST open the pack as today (live or Edit per existing list routing rules). Individual set-preview rows MUST NOT be separate navigation targets.
 
-The **task-set** lists on the live pack and cards-editor surfaces MUST render each task set as a rounded card in a wrapping row. Task-set cards MUST use the denser summary chrome (status badge when applicable, title without author, task-count and difficulty 1/2/3 rows, bottom actions) defined in the task-set card chrome requirement. Width MUST stay near ~150–160 CSS pixels; height MAY be taller than 200 CSS pixels so the summary rows remain readable. Existing open/navigation and soft-unpublish rules MUST remain.
+The **task-set** lists on the live pack and cards-editor surfaces MUST render each task set as a rounded card in a wrapping row. Task-set cards MUST use the denser summary chrome (status badge when applicable, title without author, task-count and difficulty 1/2/3 rows, bottom actions) defined in the task-set card chrome requirement. Width MUST stay near ~150–160 CSS pixels; height MAY be taller than 200 CSS pixels so the summary rows remain readable. Existing open/navigation and soft-unpublish rules MUST remain. Catalog pack cards and task-set cards MUST share the same resting surface chrome product sense (background, border, hover border/shadow, action outline, soft-unpublish muted) via shared CSS tokens (see shared pack-card chrome requirement).
 
 #### Scenario [SC-PACK-228]: Catalog packs render as 150×200 cards with description
 
@@ -61,7 +62,7 @@ On the unified packs catalog card, the client MUST list **published** task sets 
 
 - **GIVEN** a catalog pack card where Edit and staff soft-unpublish apply
 - **WHEN** the user views the card
-- **THEN** Edit and «Снять с публикации» appear as stacked full-width outline buttons with leading icons
+- **THEN** Edit and «Снять» appear as stacked full-width outline buttons with leading icons (same short card product sense as task-set cards; NOT the long «Снять с публикации» used on confirms / pack page header)
 - **AND WHEN** the user activates the card body outside actions and the star
 - **THEN** the client opens the pack per existing list routing (live or Edit)
 
@@ -81,6 +82,18 @@ On the unified packs catalog card, the client MUST list **published** task sets 
 - **AND** MUST NOT show the soft-unpublished set or the never-live ghost
 - **AND** the visible set row’s label/count/icon use the same foreground product sense as the pack title (not muted grey / muted opacity)
 - **AND** the displayed ordinal for that published set is 1 among published-only rows (not the API ordinal that counted soft-unpub/ghost)
+
+### Requirement: Shared pack-card resting chrome tokens
+
+The client MUST define shared CSS custom properties for pack-related list/card resting chrome (background, foreground, muted ink, border, hover border, resting/hover shadow, splitter, action button height) under the existing `.pack-card-grid` global (or an equivalent single global home next to that grid in `app.scss`), with light and dark theme values. Catalog pack cards (`PackListCardTile`) and task-set cards (`PackTaskSetCardTile`) MUST consume those shared tokens for resting surface, hover, and outline action border so the two card families match product sense. Soft-unpublished muted chrome on both families MUST use opacity about **0.72** and a **dashed** border. Layout-specific tokens (catalog set-preview lead column, revise badge red, task-set difficulty dots, badge icon masks) MAY remain local to each tile. Map list cards are out of scope for this requirement.
+
+#### Scenario [SC-PACK-255]: Catalog and task-set cards share resting chrome; catalog muted is dashed
+
+- **GIVEN** the packs catalog and a live pack task-set list rendered in the same theme
+- **WHEN** the user compares a resting catalog pack card to a resting task-set card
+- **THEN** both use the shared pack-card surface tokens for background, border, and outline action border product sense
+- **AND WHEN** a soft-unpublished catalog pack card is shown with muted chrome
+- **THEN** that card uses opacity about 0.72 and a dashed border (same product sense as muted task-set cards)
 
 ### Requirement: Packs list returns lightweight task-set preview
 

@@ -91,10 +91,13 @@ render `PackAnswerCardTile` / `PackTaskTile` inside a wrapping `.pack-card-grid`
 **Catalog packs** use `PackListCardTile` **~180×260** (status top, star TL,
 uppercase title + truncated description, **published-only** set-preview rows
 ≤4 + overflow with display ordinal 1…N and set-row ink = title.fg,
-**bottom** full-width outline+icon actions — SC-PACK-228/249…254). List rows
-MUST include lightweight `taskSetsPreview` from `GET /api/content/packs`
-(full array incl. soft-unpub/neverLive for API; tile filters for UI; treat
-missing as `[]` only during rollout).
+**bottom** full-width outline+icon actions with short «Снять»/«Вернуть»;
+soft-unpub pack `:muted` = opacity 0.72 + dashed — SC-PACK-228/249…255).
+Shared resting chrome `--pack-card-*` on `.pack-card-grid` (SC-PACK-255) —
+both catalog and task-set tiles alias it. List rows MUST include lightweight
+`taskSetsPreview` from `GET /api/content/packs` (full array incl.
+soft-unpub/neverLive for API; tile filters for UI; treat missing as `[]` only
+during rollout).
 **Live/editor task-set lists** use dedicated `PackTaskSetCardTile` (denser
 summary chrome: short status + custom SVG badge icons via CSS mask, `#{n}`
 ordinal title without author, total SVG `task-set-card-tasks.svg` +
@@ -103,8 +106,8 @@ column grid, vertical fill, slim ~28–32px outline+icon bottom
 actions with short «Снять»/«Вернуть»; pages omit empty `#actions`; width ~150–160,
 min-height ~206 (MAY grow); spacing retune SC-PACK-247 (title→stats ~7 /
 divider air ~4–6); themed hover border+shadow without scale (dark light-grey,
-not `--q-secondary`) SC-PACK-246; SVG ink SC-PACK-248 —
-SC-PACK-229/239…248). Do **not** reuse `PackListCardTile`
+not `--q-secondary`) SC-PACK-246; SVG ink SC-PACK-248; shared `--pack-card-*`
+surface — SC-PACK-229/239…248 + 255). Do **not** reuse `PackListCardTile`
 for task sets. Slot
 **values** on a task row use `.peek-slot-like` (above); the answer **picker**
 beside slots is `PackAnswerCardTile` (selectable), **not** `q-chip`
@@ -196,7 +199,7 @@ UX as the cards editor while the author’s `task_set` request is
 | Add-task-set | verified non-anonymous + in-catalog | **no** collection membership (SC-PACK-164) → `content-pack-add-task-set` |
 | Soft-unpublished non-staff | any | list badge / no live; trash OK for never-approved |
 | Staff Edit | staff, **no** open author request | published (`hasLive`) → `enterStaffEdit` / staff-save **before** creator path even if staff is creator (SC-PACK-231); never-published staff creator keeps Submit (SC-PACK-232); `acquireEditLock` → `loadStaffEdit` / `staffSavePack`; else disabled + `staffEditBlockedAuthorRequest` |
-| Staff soft-unpublish | staff | `unpublishPack` / `republishPack` / task-set twins + confirms; **card** labels `taskSetCardUnpublish`/`taskSetCardRepublish` («Снять»/«Вернуть»); pack/catalog/confirm copy stays long |
+| Staff soft-unpublish | staff | `unpublishPack` / `republishPack` / task-set twins + confirms; **card** labels (catalog + task-set) `taskSetCardUnpublish`/`taskSetCardRepublish` («Снять»/«Вернуть» SC-PACK-250); pack **header** + confirm keep long `unpublish`/`republish` |
 | Staff queue | staff | **take** before approve/needs_revision/cancel; take badge when held by other |
 
 ## UI contracts
@@ -214,8 +217,8 @@ UX as the cards editor while the author’s `task_set` request is
   click isolation). Row open:
   never-published or pack-level author draft/pending/needs_revision → edit;
   add-task-set-only (`openRequestType === 'task_set'`) → live first
-  (SC-PACK-191); clean → live. Staff unpublish/republish + confirm SC-PACK-139
-  (outline+icon on card; pack/confirm copy stays long). **No** list-chrome staff
+  (SC-PACK-191); clean → live.   Staff unpublish/republish + confirm SC-PACK-139
+  (outline+icon on card; short card labels; header/confirm stay long). **No** list-chrome staff
   «Модерация» (SC-PACK-184 — App header); **no** non-staff my-moderation nav
   (SC-PACK-166).
 - **Collection route:** redirect only (`content-collection` → `content-catalog`).

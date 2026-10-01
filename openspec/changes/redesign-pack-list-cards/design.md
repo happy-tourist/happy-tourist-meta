@@ -1,28 +1,32 @@
 ## Context
 
-See `proposal.md` — Why. Catalog packs: `PackListCardTile` ~**180×260** with set preview from `listCatalog.taskSetsPreview` (already shipped). Follow-up: card shows **published-only** rows in **title.fg**; soft-unpub / never-live stay in API but not on the card. Live pack / `PackTaskSetCardTile` unchanged.
+See `proposal.md` — Why. Catalog packs: `PackListCardTile` ~**180×260** with published-only set preview (shipped). Follow-up chrome: catalog card **actions + resting surface** must match approved task-set card; extract shared `--pack-card-*` in `app.scss`. Live pack header / confirm dialogs stay long. Maps out of scope.
 
 ## Goals / Non-Goals
 
 **Goals:**
-- Redesign catalog pack tile to mock (~180×260): uppercase title, description, set preview ≤4 + «ещё K», outline+icon actions, red-outline revise badge
+- Redesign catalog pack tile (~180×260): uppercase title, description, set preview ≤4 + «ещё K», outline+icon actions, red-outline revise badge
 - Lightweight `taskSetsPreview` on `GET /api/content/packs` (server — done)
-- **Card UI:** only published sets (`inCatalog === true` and not `neverLive`); display ordinal / overflow among that filtered list; set-row colors = `title.fg`
+- **Card UI:** only published sets; display ordinal / overflow among filtered list; set-row colors = `title.fg`
+- **Catalog `#actions`:** short labels `taskSetCardUnpublish` / `taskSetCardRepublish` (+ `content.edit`)
+- **Shared chrome tokens** `--pack-card-*` in `app.scss`; both `PackListCardTile` and `PackTaskSetCardTile` consume resting surface + muted (0.72 + dashed)
 - Whole-card navigate; set rows non-interactive
-- Update `pack-cards.md` + vitest for SC-PACK-249 revision / 254
+- Update `pack-cards.md` + vitest SC-PACK-249 / 250 / 254 / 255
 
 **Non-Goals:**
-- Changing `PackTaskSetCardTile` / live pack soft-unpub visibility or ordinals
+- Product redesign of task-set body (dots / badge icons / size) — only wire to shared tokens
+- `MapListCardTile` / answer/task playing-cards
 - Filtering soft-unpub / never-live out of the **HTTP** `taskSetsPreview` payload
 - Hover scale; grid gutter changes
 - Custom SVG for Edit/Unpublish (Material)
-- Changing pack unpublish confirm strings / ACL
+- Changing pack unpublish **confirm** strings / live pack **header** long unpublish/republish / ACL
 - Staff hub card-grid
 
 ## Decisions
 
-1. **Extend `PackListCardTile` (or strong variant) rather than reuse `PackTaskSetCardTile`**
-   - Rationale: catalog needs title+description+set list, not difficulty dots; keep task-set tile untouched.
+1. **Extend `PackListCardTile` (or strong variant) rather than reuse `PackTaskSetCardTile` for layout**
+   - Rationale: catalog needs title+description+set list, not difficulty dots; keep task-set **body** layout.
+   - Shared **resting chrome** tokens ARE shared (Decision 13) — both tiles consume `--pack-card-*`.
    - Alternative: one mega-tile — rejected (regress task-set).
 
 2. **Server lightweight preview in `listCatalog`**
@@ -41,8 +45,12 @@ See `proposal.md` — Why. Catalog packs: `PackListCardTile` ~**180×260** with 
 4. **Overflow**
    - After published-only filter: show first **4**; caption i18n `content.packCardSetsOverflow` = `ещё {k}` where `{k}` = `publishedPreview.length - 4` when length > 4.
 
-5. **Actions**
-   - Quasar **outline** + Material `edit` / `visibility_off` / `visibility` (mirror live `PackTaskSetCardTile` / `ContentPackPage` card actions — not catalog’s current `flat` text-only). Long pack copy: `content.edit` / `content.unpublish` («Снять с публикации») / `content.republish` («Опубликовать снова»); slim ~30px via same `--pack-ts-action-h` / dense pattern; `@click.stop`; omit `#actions` when no control would render (same gate idea as `hasTaskSetCardActions`).
+5. **Actions (catalog card = task-set card labels)**
+   - Quasar **outline** + Material `edit` / `visibility_off` / `visibility`; slim ~30px via `--pack-card-action-h` (alias of former `--pack-ts-action-h`); `@click.stop`; omit `#actions` when no control would render.
+   - **Card** labels: `content.edit` / `content.taskSetCardUnpublish` («Снять») / `content.taskSetCardRepublish` («Вернуть») — same keys as live `PackTaskSetCardTile` `#actions`.
+   - Confirm dialogs and live pack **page header** keep long `content.unpublish` / `content.republish`.
+   - Action outline ink = shared card border token (Decision 13), not a separate «white» mock outline.
+   - Alternative: keep mock long «Снять с публикации» on catalog — **rejected** (approved canon is task-set short labels).
 
 6. **Badge revise**
    - Mock: red **outline** + red text, **no** badge icon; place badge **top-right** (star stays TL). Copy MUST be short uppercase **`ДОРАБОТАТЬ`** — reuse `content.taskSetCardBadge.needs_revision` (or a dedicated catalog short key with the same string). MUST NOT keep catalog `content.statuses.needs_revision` («Нужна доработка») for this badge.
@@ -52,7 +60,7 @@ See `proposal.md` — Why. Catalog packs: `PackListCardTile` ~**180×260** with 
    - CSS `text-transform: uppercase` (do not require stored uppercase).
 
 8. **Hover**
-   - Not on mock → inherit task-set: border + soft shadow, no scale (light `#212121` / dark `#bdbdbd`).
+   - Inherit shared tokens: border + soft shadow, no scale (light `#212121` / dark `#bdbdbd`).
 
 9. **Star**
    - Keep current Quasar favorite control.
@@ -67,32 +75,46 @@ See `proposal.md` — Why. Catalog packs: `PackListCardTile` ~**180×260** with 
     - Alternative: drop soft-unpub/neverLive from server preview — rejected for this polish (more mocha churn; not needed for UX).
 
 12. **Set-row ink = title.fg (follow-up)**
-    - `set.label.fg`, `set.count.fg`, and `set.icon.ink` MUST use the same token as `title.fg` (light `#232323` / dark near-white). Subtitle stays muted. Remove row-level muted opacity for set preview (nothing muted left on card).
+    - `set.label.fg`, `set.count.fg`, and `set.icon.ink` MUST use the same token as `title.fg` (light `#232323` / dark near-white). Subtitle stays muted. Remove row-level muted opacity for set preview (nothing muted left on published rows).
+
+13. **Shared `--pack-card-*` tokens (follow-up chrome)**
+    - Define resting chrome CSS custom properties on `.pack-card-grid` in `src/css/app.scss` (project global home; already owns the wrap grid): `--pack-card-bg`, `--pack-card-fg`, `--pack-card-muted`, `--pack-card-border`, `--pack-card-border-hover`, `--pack-card-shadow`, `--pack-card-shadow-hover`, `--pack-card-splitter`, `--pack-card-action-h`, plus `body.body--dark` overrides.
+    - **Canon values = current `PackTaskSetCardTile`** (`--pack-ts-*` surface tokens), not the catalog mock’s separate dark bg `#2f2f2f` / action outline `#aeaeae`.
+    - Both `PackTaskSetCardTile` and `PackListCardTile` consume `--pack-card-*` for resting surface, hover, action height, and outline (`border-color: var(--pack-card-border)` on outline buttons).
+    - Tile-local tokens remain for layout-only differences (e.g. list lead-w, revise-fg, task-set dots).
+    - Soft-unpub `--muted`: shared product sense `opacity: 0.72` + `border-style: dashed` (catalog list currently missing dashed — fix via shared rule or identical local rule).
+    - Alternative: copy values only into list tile — rejected (user: start extracting shared + reuse).
+    - Alternative: include `MapListCardTile` now — rejected (out of scope this change).
+
+14. **Catalog soft-unpub pack `:muted`**
+    - Keep wiring soft-unpublished **pack** cards with `:muted` when staff sees them in catalog (`hasLive && inCatalog === false`); muted chrome follows Decision 13 (opacity + dashed). Set-preview rows stay published-only (Decision 11) — no muted set-rows.
 
 ## Risks / Trade-offs
 
 - [listCatalog cost] → Mitigation: count-only / batched queries by revisionId; pack cap 200; avoid slots/cards; ghost path only for calling user with slim live set list + request set counts.
-- [JPEG mock blur on button height] → Mitigation: align 28–32 with task-set token; verify-mock after apply.
+- [JPEG mock blur on button height] → Mitigation: align 28–32 with shared action-h; verify-mock after apply (labels/outline prefer task-set over mock).
 - [Other status badges not on mock] → Mitigation: only revise forced to red outline; document in Visual Spec.
 - [Card ordinal ≠ live ordinal when soft-unpub present] → Accepted; live out of scope (Decision 11 / Q1).
+- [Task-set SFC churn when wiring tokens] → Mitigation: visual no-op if values copied from current `--pack-ts-*`; run PackTaskSet vitest.
 
 ## Migration Plan
 
 - Deploy server list preview before or with client (client treats missing preview as empty list) — already shipped.
-- Follow-up: client-only; no DB / API migration.
-- Rollback: revert tile filter/colors if needed.
+- Follow-up chrome: client-only; no DB / API migration.
+- Rollback: revert catalog labels + shared token wire if needed.
 
 ## Open Questions
 
 - None blocking.
 
-## Visual Spec (from mock)
+## Visual Spec (from mock + task-set canon)
 
-Source: change `assets/pack-card-catalog-mock.jpg` (+ `pack-card-mock-light-crop.png` / `pack-card-mock-dark-crop.png`). Anchor: Figma **180×260**.
+Source: change `assets/pack-card-catalog-mock.jpg` (+ crops). Anchor size: Figma **180×260**.  
+**Override:** action labels + resting/action outline chrome follow **task-set card** (Decisions 5 / 13), not mock long copy / `#aeaeae` outline / list-only dark `#2f2f2f`.
 
 ### Структура
 
-star TL → status badge TR → uppercase title (center) → description (center) → **published-only** set rows ≤4 (icon | label | count) → optional «ещё K» → pale divider → outline actions (Edit, Unpublish). Soft-unpublished and never-live sets are **omitted** (not muted). No pale dividers between set rows.
+star TL → status badge TR → uppercase title (center) → description (center) → **published-only** set rows ≤4 (icon | label | count) → optional «ещё K» → pale divider → outline actions (Edit, Unpublish short). Soft-unpublished and never-live sets are **omitted** (not muted). Soft-unpublished **pack** card may use shared muted chrome. No pale dividers between set rows.
 
 ### Copy
 
@@ -104,8 +126,9 @@ star TL → status badge TR → uppercase title (center) → description (center
 | Set row | `Набор заданий #{n}` | `content.taskSetLabel` (`n` = published-only index) |
 | Overflow | `ещё {k}` | `content.packCardSetsOverflow` |
 | Edit | `Редактировать` | `content.edit` |
-| Unpublish | `Снять с публикации` | `content.unpublish` |
-| Republish (not on mock) | `Опубликовать снова` | `content.republish` |
+| Unpublish (card) | `Снять` | `content.taskSetCardUnpublish` |
+| Republish (card) | `Вернуть` | `content.taskSetCardRepublish` |
+| Unpublish (confirm / pack header) | `Снять с публикации` | `content.unpublish` (unchanged) |
 
 ### Типографика (approx)
 
@@ -141,39 +164,39 @@ star TL → status badge TR → uppercase title (center) → description (center
 
 ### Цвета
 
+Canon = task-set resting surface (`--pack-card-*`). List-local revise red stays.
+
 #### Light
 
 | Token | Value | Conf |
 |-------|-------|------|
 | card.bg | `#ffffff` | high |
-| card.border.rest | `rgba(0,0,0,0.12)` | med |
-| title.fg | `#232323` / `#242424` | high |
-| subtitle.fg | `#717171` | high |
-| set.label.fg | **= title.fg** | high (follow-up) |
-| set.count.fg | **= title.fg** | high (follow-up) |
-| set.icon.ink | **= title.fg** (`currentColor`) | high (follow-up) |
+| card.border.rest | `rgba(0,0,0,0.14)` (= task-set) | high |
+| title.fg | `rgba(0,0,0,0.87)` / near-black | high |
+| subtitle.fg | muted token | high |
+| set.label.fg | **= title.fg** | high |
+| set.count.fg | **= title.fg** | high |
+| set.icon.ink | **= title.fg** (`currentColor`) | high |
 | badge.revise.bg | transparent | high |
 | badge.revise.fg/border | `#af5a59`–`#b26b65` | high |
-| divider | `rgba(0,0,0,0.08)` | med |
-| action.outline | `rgba(0,0,0,0.22)` | low |
-| action.label.fg / action.icon.ink | title.fg / `currentColor` → title.fg | med |
+| divider | splitter token ~0.08 black | med |
+| action.outline | **= card.border.rest** | high |
+| action.label.fg / action.icon.ink | title.fg / `currentColor` | med |
+| muted soft-unpub | opacity 0.72 + dashed border | high |
 
 #### Dark
 
 | Token | Value | Conf |
 |-------|-------|------|
-| card.bg | `#2f2f2f` | high |
-| card.border.rest | `rgba(255,255,255,0.18)`–`0.22` | med |
-| title.fg | `#d4d4d4`–`#fff` | med |
-| subtitle.fg | `#979797` | high |
-| set.label.fg | **= title.fg** | high (follow-up) |
-| set.count.fg | **= title.fg** | high (follow-up) |
-| set.icon.ink | **= title.fg** | high (follow-up) |
-| badge.revise.bg | transparent | high |
+| card.bg | `#2a2a2a` (= task-set; **not** mock `#2f2f2f`) | high |
+| card.border.rest | `rgba(255,255,255,0.22)` | high |
+| title.fg | near-white | high |
+| subtitle.fg | muted token | high |
+| set.label.fg / set.count.fg / set.icon.ink | **= title.fg** | high |
 | badge.revise.fg/border | `#aa4a49`–`#9e4f4b` | high |
-| divider | `#5d5d5d` / rgba white 0.16 | med |
-| action.outline | `#aeaeae` | high |
-| action.label.fg / action.icon.ink | title.fg / `currentColor` → title.fg | med |
+| divider | splitter ~0.12 white | med |
+| action.outline | **= card.border.rest** (not `#aeaeae`) | high |
+| muted soft-unpub | opacity 0.72 + dashed border | high |
 
 ### Icon ink / sizes
 
@@ -190,7 +213,7 @@ star TL → status badge TR → uppercase title (center) → description (center
 
 ### Hover / focus
 
-Hover not on mock. Implement like task-set (`PackTaskSetCardTile`): border + soft shadow only; **no** scale; light hover border `#212121`; dark `#bdbdbd`. Do **not** keep current catalog `--q-secondary` ring.
+Hover not on mock. Implement via shared tokens: border + soft shadow only; **no** scale; light hover border `#212121`; dark `#bdbdbd`. Do **not** use `--q-secondary` ring.
 
 ### Client type sketch (store)
 
@@ -214,8 +237,13 @@ export interface ContentPackSummary {
 
 ## Implementation notes (files)
 
-**Server:** `src/lib/content.ts` — `listCatalog` / pack summary enrichment; mocha SC-PACK-252/253 (unchanged for follow-up).
+**Server:** `src/lib/content.ts` — `listCatalog` / pack summary enrichment; mocha SC-PACK-252/253 (unchanged for chrome follow-up).
 
-**Client (follow-up):** `PackListCardTile.vue` — filter published-only; display ordinal; set-row CSS → title.fg; drop muted set-row classes; vitest SC-PACK-249 revision + SC-PACK-254; `pack-cards.md`.
+**Client (chrome follow-up):**
+- `src/css/app.scss` — `--pack-card-*` on `.pack-card-grid` (+ dark)
+- `PackTaskSetCardTile.vue` — consume `--pack-card-*` for surface/hover/action/muted (visual no-op)
+- `PackListCardTile.vue` — consume shared tokens; muted + dashed; drop divergent action-outline/dark-bg
+- `ContentCatalogPage.vue` — `#actions` labels → `taskSetCardUnpublish` / `taskSetCardRepublish`
+- vitest SC-PACK-250 / 255; `pack-cards.md`
 
 See `tasks.md` for checklist.
