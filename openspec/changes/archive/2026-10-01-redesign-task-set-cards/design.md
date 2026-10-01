@@ -1,6 +1,6 @@
 ## Context
 
-See `proposal.md` — Why. Shipped: dedicated `PackTaskSetCardTile`, author/coauthor strip, `#{n}`, colored outline dots, Material-placeholder total/badge icons + «Заданий:», short «Снять»/«Вернуть», pale multi-row dividers, lead/label/count grid, slim ~28–32px actions, vertical fill, Visual Spec spacing (title→stats 14 / divider air 10), themed hover without scale. Catalog still `PackListCardTile` 150×200. Remaining: **spacing retune** (status→title air; half title gap; half divider air) and **wire custom SVGs** already under `src/assets/content/`.
+See `proposal.md` — Why. Shipped: dedicated `PackTaskSetCardTile`, author/coauthor strip, `#{n}`, colored outline dots, custom SVG total/badge icons + «Заданий:», short «Снять»/«Вернуть», pale multi-row dividers, lead/label/count grid, slim ~28–32px actions, vertical fill, spacing retune (status→title ~6–8; title→stats ~7; divider air ~4–6), themed hover without scale. Catalog still `PackListCardTile` 150×200. No remaining follow-up in this change.
 
 ## Goals / Non-Goals
 
@@ -8,9 +8,7 @@ See `proposal.md` — Why. Shipped: dedicated `PackTaskSetCardTile`, author/coau
 - Dedicated task-set summary card chrome on live + editor lists
 - Short status badges; outline+icon bottom actions; difficulty dots 1/2/3
 - Strip task-set author/coauthor from all content + lobby labels
-- Mock + layout + first spacing/hover polish (shipped)
-- **Spacing retune:** status→title ~6–8 CSS px; title→stats ~7; divider air ~4–6 total
-- **Custom SVG icons:** total-row + status badges from `src/assets/content/task-set-*.svg` with theme ink via `currentColor` / CSS mask
+- Mock + layout + spacing/hover polish + **spacing retune** + **custom SVG icons** (shipped)
 - Keep catalog pack cards and answer/task playing-card tiles unchanged
 
 **Non-Goals:**
@@ -42,7 +40,7 @@ See `proposal.md` — Why. Shipped: dedicated `PackTaskSetCardTile`, author/coau
    - Card badges: short keys (СНЯТО / ДОРАБОТАТЬ / НА ПРОВЕРКЕ / ЧЕРНОВИК) + leading icons.
    - Chrome: **soft muted pills** (not Quasar solid `grey`/`warning` fills) —
      `--muted` pale grey bg + dark/light fg; `--pending` soft amber tint + gold/amber ink.
-   - **Assets placed** (client): `src/assets/content/task-set-badge-{revise,pending,unpublished,draft}.svg`, `task-set-card-tasks.svg`. Wire at apply (Decision 12); Material placeholders until then.
+   - **Assets wired** (client): `src/assets/content/task-set-badge-{revise,pending,unpublished,draft}.svg`, `task-set-card-tasks.svg` via mask/`currentColor` (Decision 12).
 
 5. **Actions: Quasar outline + icon + label, full width, slim**
    - Height ≈ **28–32 CSS px**. Prefer `dense` and/or constrained `min-height`.
@@ -69,20 +67,18 @@ See `proposal.md` — Why. Shipped: dedicated `PackTaskSetCardTile`, author/coau
     - First pass tokens: `--pack-ts-title-gap: 14px`; `--pack-ts-divider-air: 5px` (10 total); themed hover light `#212121` / dark `#bdbdbd`; no scale; icons unchanged on hover.
     - Package: **client** — `PackTaskSetCardTile` CSS; `pack-cards.md`.
 
-11. **Spacing retune (follow-up)**
-    - **status→title:** add ~**6–8 CSS px** (`padding-bottom` on `__status` and/or `margin-top` on title).
-    - **title→stats:** `--pack-ts-title-gap` **14 → 7**.
-    - **divider air:** `--pack-ts-divider-air` **5 → 2–3** (total air ~**4–6**).
-    - Leave `--pack-ts-row-pad-y: 6` unless retune forces readability fix.
-    - Do **not** change `.pack-card-grid` / list gutter.
+11. **Spacing retune (shipped)**
+    - **status→title:** ~**6–8 CSS px** (`padding-bottom` on `__status` and/or `margin-top` on title).
+    - **title→stats:** `--pack-ts-title-gap` **7** (was 14).
+    - **divider air:** `--pack-ts-divider-air` **2–3** (total air ~**4–6**).
+    - Left `--pack-ts-row-pad-y: 6`; did **not** change `.pack-card-grid` / list gutter.
     - Package: **client** — CSS tokens + vitest SC-PACK-247; `pack-cards.md`.
 
-12. **Wire custom SVG icons (follow-up)**
-    - Files already on disk under `{client}/src/assets/content/` (I1–I5).
-    - Render so ink follows Visual Spec **Icon ink / sizes** (`stats.icon.ink`, `badge.*.icon.ink` via `currentColor` / CSS mask). Preferred: CSS **`mask-image` + `background: currentColor`**. Alternative: patch `fill="currentColor"` on `<svg>` and inline. Do **not** rely on `<img src>` alone if theme recolor is required.
+12. **Wire custom SVG icons (shipped)**
+    - Assets under `{client}/src/assets/content/` (I1–I5) wired via CSS **`mask-image` + `background: currentColor`** (theme ink from Visual Spec).
     - Sizes: badge icon **~12** CSS px; total-row icon **14** CSS px.
     - Map: revise→ДОРАБОТАТЬ; pending→НА ПРОВЕРКЕ; unpublished→СНЯТО; draft→ЧЕРНОВИК; tasks→«Заданий:».
-    - Colors: soft muted / pending hex/rgba from Visual Spec `### Цвета` (not Quasar solid fills).
+    - Soft muted / pending hex/rgba from Visual Spec `### Цвета` (not Quasar solid fills).
     - Package: **client** — `PackTaskSetCardTile` + live/editor badge slots; vitest SC-PACK-248; `pack-cards.md`.
 
 Макеты: `openspec/changes/redesign-task-set-cards/assets/task-set-cards-mock.png` (+ `task-set-cards-mock-v2.jpg`).
@@ -206,17 +202,17 @@ Labels left shared edge; counts right shared edge; button label center.
 | badge ЧЕРНОВИК | **~12** | `badge.muted.icon.ink` | `task-set-badge-draft.svg` |
 | action Edit / Снять / Вернуть | Quasar dense (~18) | `action.icon.ink` | Material (no custom SVG) |
 
-Assets: path-only SVGs (no baked fill). Apply MUST theme via mask/`currentColor` (Decision 12). Иконки **не** перекрашивать на card hover (только border/shadow chrome).
+Assets: path-only SVGs (no baked fill); themed via mask/`currentColor` (Decision 12). Иконки **не** перекрашивать на card hover (только border/shadow chrome).
 
-### Custom icons (placed — wire at apply)
+### Custom icons (wired)
 
-| ID | Место | File under `src/assets/content/` | Copy рядом | Temp Material (until wire) |
-|----|-------|----------------------------------|------------|----------------------------|
-| I1 | total-row | `task-set-card-tasks.svg` | Заданий: | `description` |
-| I2 | badge revise | `task-set-badge-revise.svg` | ДОРАБОТАТЬ | `close` |
-| I3 | badge pending | `task-set-badge-pending.svg` | НА ПРОВЕРКЕ | `schedule` |
-| I4 | badge unpublished | `task-set-badge-unpublished.svg` | СНЯТО | `visibility_off` |
-| I5 | badge draft | `task-set-badge-draft.svg` | ЧЕРНОВИК | `edit_note` |
+| ID | Место | File under `src/assets/content/` | Copy рядом |
+|----|-------|----------------------------------|------------|
+| I1 | total-row | `task-set-card-tasks.svg` | Заданий: |
+| I2 | badge revise | `task-set-badge-revise.svg` | ДОРАБОТАТЬ |
+| I3 | badge pending | `task-set-badge-pending.svg` | НА ПРОВЕРКЕ |
+| I4 | badge unpublished | `task-set-badge-unpublished.svg` | СНЯТО |
+| I5 | badge draft | `task-set-badge-draft.svg` | ЧЕРНОВИК |
 
 ### Hover / focus
 
@@ -244,10 +240,9 @@ Assets: path-only SVGs (no baked fill). Apply MUST theme via mask/`currentColor`
 
 ## Migration Plan
 
-1. Client-only: spacing retune tokens + wire SVG icons on existing tile/pages.
+1. Client-only change shipped (no DB migration).
 2. Rollback: revert client (assets may stay).
-3. No DB migration.
 
 ## Open Questions
 
-(нет — spacing retune tokens from explore; SVG path + mask/`currentColor`; action icons stay Material)
+(нет)

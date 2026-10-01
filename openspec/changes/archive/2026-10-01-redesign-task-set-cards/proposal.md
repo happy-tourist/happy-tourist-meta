@@ -1,6 +1,6 @@
 ## Why
 
-Карточки наборов заданий на live pack и в cards editor выглядят дёшево и плохо читаются: статус, счётчики и сложность сжаты в мелкий caption, а имя автора и соавторы шумят на каждой плитке. Нужен chrome как на согласованном макете (light/dark): плотная, но аккуратная карточка со статистикой и короткими статусами — без автора/соавторов в UI наборов и лобби. Каркас (layout, spacing/hover) уже ближе к макету; follow-up по UX: **подкрутить вертикальный ритм** (больше воздуха от статуса, меньше под title и вокруг dividers) и **подключить уже положенные custom SVG** вместо Material-заглушек.
+Карточки наборов заданий на live pack и в cards editor выглядели дёшево и плохо читались: статус, счётчики и сложность сжаты в мелкий caption, а имя автора и соавторы шумели на каждой плитке. Нужен chrome как на согласованном макете (light/dark): плотная, но аккуратная карточка со статистикой и короткими статусами — без автора/соавторов в UI наборов и лобби. Реализовано: каркас + layout/spacing/hover, **spacing retune** (воздух status→title; tighter title→stats и divider air) и **custom SVG** вместо Material-заглушек.
 
 ## What Changes
 
@@ -10,8 +10,8 @@
 - **Соавторы** больше не показываются и не используются как продуктовая фича (display-only уходит; persist пустым).
 - **BREAKING** (UX/copy): лейблы наборов больше не содержат «от {имя}»; lobby create/list больше не показывает автора сета.
 - **Mock / layout / spacing+hover polish (done):** `#{n}`; total-row; colored outline dots; short «Снять»/«Вернуть»; pale multi-row dividers; column grid; slim actions; fill; themed hover без scale (SC-PACK-239…246).
-- **Spacing retune (follow-up):** добавить отступ status→title (~6–8 CSS px); **уполовинить** title→stats (~14→~7) и air вокруг pale dividers (~10→~4–6); grid gutter между карточками **не** трогать.
-- **Custom SVG icons (follow-up):** файлы уже в client `src/assets/content/` — подключить вместо Material placeholders на total-row и status badges; размер total **14px**, badge **~12px**; цвет через `currentColor` / mask по Visual Spec hex/rgba (soft muted / pending), не запекать тему в SVG.
+- **Spacing retune (done):** отступ status→title (~6–8 CSS px); title→stats ~7; divider air ~4–6; grid gutter между карточками **не** трогали (SC-PACK-247).
+- **Custom SVG icons (done):** `src/assets/content/task-set-*.svg` на total-row и status badges; total **14px**, badge **~12px**; ink через `currentColor` / mask по Visual Spec (SC-PACK-248).
 
 ## Capabilities
 
@@ -31,8 +31,7 @@
 - Поверхности карточек: **live pack**, **cards editor**
 - Автор/соавторы: убрать показ на всех лейблах task set в content + lobby (create + room list metadata)
 - Контракт room/create UI: без смены create payload ids; только подписи
-- Mock / layout / spacing+hover: i18n + `PackTaskSetCardTile` + short card action labels (shipped)
-- Spacing retune + SVG wire: CSS tokens + `PackTaskSetCardTile` / live+editor badge slots; assets `src/assets/content/task-set-*.svg`; **Visual Spec colors + icon ink/sizes**; skills `pack-cards.md`, `prepare-mock` / `verify-mock` color strictness
+- Mock / layout / spacing+hover / spacing retune / SVG wire: i18n + `PackTaskSetCardTile` + short card actions + CSS tokens + custom SVG badges/total; assets `src/assets/content/task-set-*.svg`; skills `pack-cards.md` (shipped)
 
 ## Out of scope
 

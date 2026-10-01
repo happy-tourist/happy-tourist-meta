@@ -118,12 +118,12 @@ UGC-наборы (**набор карточек** + задания): одна р
 | SC-PACK-127 | covered (client vitest) |
 | SC-PACK-128 | covered (client vitest) |
 | SC-PACK-129 | covered (client vitest) |
-| SC-PACK-130 | covered (client vitest) |
+| SC-PACK-130 | covered (client vitest — stats on task-set card) |
 | SC-PACK-131 | covered (server mocha + client) |
-| SC-PACK-132 | covered (client vitest) |
+| SC-PACK-132 | covered (client vitest — short unpublished badge) |
 | SC-PACK-133 | covered (client vitest) |
 | SC-PACK-134 | covered (server + client vitest) |
-| SC-PACK-135 | covered (server mocha + client vitest) |
+| SC-PACK-135 | covered (client vitest — no author/coauthor; `#{n}` ordinal) |
 | SC-PACK-136 | covered (client vitest) |
 | SC-PACK-137 | covered (server mocha) |
 | SC-PACK-138 | covered (server mocha) |
@@ -203,8 +203,8 @@ UGC-наборы (**набор карточек** + задания): одна р
 | SC-PACK-225 | covered (150×200 / 300×200 answer sizes) |
 | SC-PACK-226 | covered (task 300×200) |
 | SC-PACK-227 | covered (contrast tokens) |
-| SC-PACK-228 | covered (`PackListCardTile` catalog 150×200 + description) |
-| SC-PACK-229 | covered (task-set 150×200 + bottom actions) |
+| SC-PACK-228 | covered (catalog packs still 150×200) |
+| SC-PACK-229 | covered (client vitest — redesigned task-set card) |
 | SC-PACK-230 | covered (server mocha staff draft) |
 | SC-PACK-231 | covered (client vitest staff boot) |
 | SC-PACK-232 | covered (client vitest never-published Submit) |
@@ -214,8 +214,18 @@ UGC-наборы (**набор карточек** + задания): одна р
 | SC-PACK-236 | covered (client vitest staff Edit CSV) |
 | SC-PACK-237 | covered (client vitest compose slot chrome) |
 | SC-PACK-238 | covered (client vitest PackTaskTile slot chrome) |
+| SC-PACK-239 | covered (client vitest — stats rows + colored dots + pale dividers) |
+| SC-PACK-240 | covered (client vitest — short status badges) |
+| SC-PACK-241 | covered (client vitest — outline icon actions; short Снять/Вернуть; slim) |
+| SC-PACK-242 | covered (client vitest — light/dark readable) |
+| SC-PACK-243 | covered (client vitest — `#{n}` title; total icon + «Заданий:») |
+| SC-PACK-244 | covered (client vitest — column grid; vertical fill) |
+| SC-PACK-245 | covered (client vitest — internal spacing; retuned by SC-PACK-247) |
+| SC-PACK-246 | covered (client vitest — themed hover border; no scale) |
+| SC-PACK-247 | covered (client vitest — status→title gap; tighter title/divider air) |
+| SC-PACK-248 | covered (client vitest — custom SVG total + badge icons) |
 
-Related: create picker — `lobby/rooms`; peek Q&A — `game/board`. Difficulty remains the peek step reward (`SC-PACK-32`). CSV / playing-card chrome — SC-PACK-210…230; staff published path / dirty Submit / live-view CSV / peek slot chrome — SC-PACK-231…238.
+Related: create picker — `lobby/rooms`; peek Q&A — `game/board`. Difficulty remains the peek step reward (`SC-PACK-32`). CSV / playing-card chrome — SC-PACK-210…227; catalog — SC-PACK-228; task-set summary chrome — SC-PACK-229/239…248; staff published path / dirty Submit / live-view CSV / peek slot chrome — SC-PACK-231…238.
 
 ## Requirements
 
@@ -247,7 +257,7 @@ A non-anonymous user with a valid JWT and verified email MUST be able to create 
 
 ### Requirement: Pack holds answer cards and task sets
 
-A pack MUST contain answer cards and may contain one or more task sets. Each answer card MUST have textual content and MAY have a textual description. Each task MUST have a textual question, a difficulty of exactly `1`, `2`, or `3`, and one or more answer slots that reference answer cards from the same pack. Task sets MUST be labeled by the contributing user’s display identity (author and, when applicable, co-author labels are display-only and MUST NOT grant extra permissions beyond collection membership). Creating or editing tasks MUST require that the pack already has at least one answer card in the editor’s draft. Any collection member who satisfies create/edit identity rules MUST be allowed to edit answer cards and tasks (no per-author ACL beyond collection + verify).
+A pack MUST contain answer cards and may contain one or more task sets. Each answer card MUST have textual content and MAY have a textual description. Each task MUST have a textual question, a difficulty of exactly `1`, `2`, or `3`, and one or more answer slots that reference answer cards from the same pack. Each task set MUST remain attributed to its contributing user for edit/ACL purposes (`authorUserId` and related rules). Task-set **labels shown in the UI** MUST NOT include the author’s display name or co-author labels; co-author labels MUST NOT be offered as a product feature. Creating or editing tasks MUST require that the pack already has at least one answer card in the editor’s draft. Any collection member who satisfies create/edit identity rules MUST be allowed to edit answer cards and tasks (no per-author ACL beyond collection + verify).
 
 #### Scenario [SC-PACK-04]: Answer card has content and description
 
@@ -1080,20 +1090,20 @@ When the change author opens the add-task-set page for an open `task_set` reques
 
 ### Requirement: Live pack shows task-set summary and drill-in
 
-On the live pack view, the client MUST show answer cards and a **list of task-set rows** (not an inline expansion of all questions). Each published task-set row MUST show at least the task count and a difficulty breakdown (counts for difficulties 1, 2, and 3). Activating a published task-set row MUST navigate to a page that lists that set’s questions with answer slots. Soft-unpublished task-set rows follow the soft-unpublish task-set rules (gray, non-enterable for non-staff).
+On the live pack view, the client MUST show answer cards and a **list of task-set cards** (not an inline expansion of all questions). Each published task-set card MUST show at least the task count and a difficulty breakdown (counts for difficulties 1, 2, and 3) as distinct summary rows. Activating a published task-set card MUST navigate to a page that lists that set’s questions with answer slots. Soft-unpublished task-set cards follow the soft-unpublish task-set rules (muted chrome, non-enterable for non-staff).
 
 #### Scenario [SC-PACK-130]: Live pack drills into task set questions
 
 - **GIVEN** in-catalog pack P with at least one published task set S that has tasks of mixed difficulties
 - **WHEN** a viewer opens the live pack page for P
-- **THEN** the page lists S as a summary row with task count and difficulty 1/2/3 counts
+- **THEN** the page lists S as a summary card with task count and difficulty 1/2/3 counts
 - **AND** MUST NOT expand S’s questions inline on that page
-- **AND WHEN** the viewer activates the row for S
+- **AND WHEN** the viewer activates the card for S
 - **THEN** the client opens a questions view for S showing each task’s answer slots
 
 ### Requirement: Staff soft-unpublish and republish task set
 
-Moderator and admin MUST be able to soft-unpublish an entire **task set** on a live pack and to republish it without a new moderation request. Soft-unpublish of a task set MUST NOT remove individual questions as a separate product action. Soft-unpublish MUST keep the set stored; non-staff viewers MUST see the set row as gray with «Снято с публикации» and MUST NOT enter the set. Staff MUST still be able to Edit the soft-unpublished set (staff-save / lock session) and MUST have republish on the **task-set row** (editor and live list) and **inside** the task-set page. Staff MUST confirm before unpublishing a set; republish MUST NOT require confirmation. The system MUST reject unpublishing a task set when it is the **only** published task set on the pack. Soft-unpublish of individual tasks/questions MUST NOT be offered. Staff moderation queue MUST NOT expose task-set unpublish controls. Hard-delete of published or soft-unpublished task sets is out of scope for this requirement.
+Moderator and admin MUST be able to soft-unpublish an entire **task set** on a live pack and to republish it without a new moderation request. Soft-unpublish of a task set MUST NOT remove individual questions as a separate product action. Soft-unpublish MUST keep the set stored; non-staff viewers MUST see the set card as muted with a short unpublished status badge (product sense «СНЯТО») and MUST NOT enter the set. Staff MUST still be able to Edit the soft-unpublished set (staff-save / lock session) and MUST have republish on the **task-set card** (editor and live list) and **inside** the task-set page. Staff MUST confirm before unpublishing a set; republish MUST NOT require confirmation. The system MUST reject unpublishing a task set when it is the **only** published task set on the pack. Soft-unpublish of individual tasks/questions MUST NOT be offered. Staff moderation queue MUST NOT expose task-set unpublish controls. Hard-delete of published or soft-unpublished task sets is out of scope for this requirement. On **task-set summary cards**, soft-unpublish and republish action labels MUST use short product copy («Снять» / «Вернуть» or equivalent i18n). Pack/catalog soft-unpublish copy and confirmation dialog wording MAY remain longer («Снять с публикации» / set confirm titles) and MUST NOT be required to match the card short labels.
 
 #### Scenario [SC-PACK-131]: Staff cannot unpublish the only published task set
 
@@ -1106,10 +1116,10 @@ Moderator and admin MUST be able to soft-unpublish an entire **task set** on a l
 
 - **GIVEN** live pack P with published task set S1 and soft-unpublished task set S2
 - **WHEN** a non-staff viewer opens live P
-- **THEN** S2’s row is gray with «Снято с публикации»
+- **THEN** S2’s card is muted with a short unpublished badge (e.g. «СНЯТО»)
 - **AND** activating S2 MUST NOT open the questions view
-- **AND** staff MAY still Edit S2 and choose «Опубликовать снова» on the row or inside the task-set page without confirmation
-- **AND WHEN** staff chooses «Снять с публикации» on a published set that is not the last published set
+- **AND** staff MAY still Edit S2 and choose republish on the card or inside the task-set page without confirmation
+- **AND WHEN** staff chooses unpublish on a published set that is not the last published set
 - **THEN** the client asks for confirmation before the API call
 
 ### Requirement: Add-task-set answer tiles match task editor chips
@@ -1125,16 +1135,14 @@ On the add-task-set page, the answer-card picker used to fill slots MUST use the
 
 ### Requirement: Task-set rows show author display name
 
-Wherever the client lists or titles a task set (live pack summary, cards editor list, staff moderation hub, task-set / questions page header when a set label is shown), each set MUST be labeled with the contributing author’s display identity: preferred form «Набор заданий {n} от {name}» (or equivalent i18n). The name MUST be the user’s `displayName` when non-empty; otherwise the local-part of their email (substring before `@`). The name MUST be visible to **all** viewers including public live. Multiple sets by the same author MUST each show the author name on their own row (no collapsing). Optional co-author labels MAY appear beside the author name; they remain display-only.
+Wherever the client lists or titles a task set (live pack summary, cards editor list, staff moderation hub, task-set / questions page header when a set label is shown, and any other task-set title surface in content), each set MUST be labeled **without** the contributing author’s display name and **without** co-author labels. Preferred form: «Набор заданий #{n}» (or equivalent i18n with a hash before the ordinal). Multiple sets MUST remain separate cards/rows (no collapsing). Internal attribution (`authorUserId`) and edit ACL MUST remain unchanged.
 
 #### Scenario [SC-PACK-135]: Live and editor show author on every task-set row
 
 - **GIVEN** pack P with two task sets by the same author whose displayName is «Мария»
-- **WHEN** a viewer opens the live pack page or the cards editor task-set list
-- **THEN** each task-set row includes «от Мария» (or equivalent) in its label
-- **AND** the two rows are not merged into one
-- **AND WHEN** the author has no displayName but email `ivan@example.com`
-- **THEN** the label uses local-part `ivan`
+- **WHEN** a viewer opens the live pack page, the cards editor task-set list, the staff hub set headings, or a task-set questions page header
+- **THEN** each set label is of the form «Набор заданий #{n}» (or equivalent with `#`) **without** «от Мария» / author / coauthor text
+- **AND** the two sets are not merged into one
 
 ### Requirement: Back from questions list is not the pack title
 
@@ -1705,7 +1713,9 @@ Wherever the client shows a list or selectable set of pack **answer cards** or *
 
 ### Requirement: Pack catalog and task-set lists use fixed card tiles
 
-The unified packs **catalog** list and the **task-set** lists on the live pack and cards-editor surfaces MUST render each pack or task set as a rounded card in a wrapping row with fixed size **150×200** CSS pixels. Each card MUST show moderation/status chrome at the **top** when a status badge applies. On the catalog, a favorites star MUST appear at the **top-left**; the top-right MUST NOT host Edit. Action controls that apply to the card (Edit, soft-unpublish, republish, and similar) MUST appear at the **bottom** as stacked full-width **text** buttons. The catalog card body MUST show a truncated pack title and a truncated pack **description**. Task-set card bodies MUST show a truncated task-set label. Existing open/navigation and soft-unpublish rules MUST remain.
+The unified packs **catalog** list MUST render each pack as a rounded card in a wrapping row with fixed size **150×200** CSS pixels. Each catalog card MUST show moderation/status chrome at the **top** when a status badge applies. On the catalog, a favorites star MUST appear at the **top-left**; the top-right MUST NOT host Edit. Catalog action controls MUST appear at the **bottom** as stacked full-width **text** buttons. The catalog card body MUST show a truncated pack title and a truncated pack **description**.
+
+The **task-set** lists on the live pack and cards-editor surfaces MUST render each task set as a rounded card in a wrapping row. Task-set cards MUST use the denser summary chrome (status badge when applicable, title without author, task-count and difficulty 1/2/3 rows, bottom actions) defined in the task-set card chrome requirement. Width MUST stay near catalog width (~150–160 CSS pixels); height MAY be taller than 200 CSS pixels so the summary rows remain readable. Existing open/navigation and soft-unpublish rules MUST remain. Catalog pack cards MUST NOT adopt the task-set summary rows.
 
 #### Scenario [SC-PACK-228]: Catalog packs render as 150×200 cards with description
 
@@ -1721,10 +1731,113 @@ The unified packs **catalog** list and the **task-set** lists on the live pack a
 
 - **GIVEN** a live pack or cards editor surface with one or more task sets
 - **WHEN** the user views the task-set list
-- **THEN** each task set is shown as a 150×200 card
+- **THEN** each task set is shown as a rounded summary card (width ~150–160px; height MAY exceed 200px)
 - **AND** status chrome when applicable appears at the top
-- **AND** Edit when available is a bottom full-width text control
-- **AND** the body shows a truncated task-set label
+- **AND** Edit / soft-unpublish / republish when available appear as bottom full-width controls
+- **AND** the body shows a truncated task-set label without author/coauthor
+- **AND** the body shows task count and difficulty 1/2/3 breakdown rows
+
+### Requirement: Task-set cards use denser summary chrome
+
+On live pack and cards-editor task-set lists, each task-set card MUST present, top to bottom: optional short status badge; title «Набор заданий #{n}» (no author); a total-tasks row with a leading document-style icon and a «Заданий:» (or equivalent) label plus count; three difficulty rows (1 / 2 / 3) each with a three-dot indicator (filled count equals difficulty; filled dots use distinct colors for difficulties 1 / 2 / 3 in the product sense green / amber / red; unfilled dots are outline rings) and the count of tasks at that difficulty with capitalized difficulty labels ending in a colon; then bottom action controls. **Pale (low-contrast) horizontal dividers** MUST appear after the total row, **between each consecutive difficulty row**, and **above the action controls** when actions are present. **Internal vertical spacing** MUST leave clear air between the status badge band and the title, between the title and the stats block, and between each stats label-row and its neighbouring pale dividers (product sense matches the agreed Visual Spec retune: roomier status→title, tighter title→stats and divider air than the first spacing polish). Stats rows MUST use a three-column rhythm: a leading column whose width matches the three-dot group (total-row icon centered in that column), difficulty/total labels sharing one left edge, and counts right-aligned. Card content (badge band → title → stats → actions) MUST distribute to fill the card height; when no status badge applies, empty space MUST remain only in the reserved top status band. Difficulty rows MUST remain scannable in both light and dark themes. Action controls that apply to the card (Edit, soft-unpublish, republish, and similar) MUST be full-width **outline** buttons with a leading icon and text label (not icon-only corner affordances) and MUST use a **slim** control height in the product sense of roughly one stats-row (~28–32 CSS px), not the default tall Quasar button. Soft-unpublish on the card MUST read «Снять» (or equivalent short i18n); republish on the card MUST read «Вернуть» (or equivalent short i18n). Hover / focus affordance on a clickable card MUST change **border and optional soft shadow only**: in light theme the border MUST become a dark / near-black stroke; in dark theme the border MUST become a **light-grey** stroke (not a brand primary/secondary tint). Hover MUST NOT scale or enlarge the card. Difficulty dots, document icon, badge icons, and action icons MUST keep their semantic colors on hover. The total-row leading icon and status-badge leading icons MUST use the shipped custom SVG assets under `src/assets/content/` (not Material glyph placeholders) and MUST inherit badge/stats ink via `currentColor` (or equivalent mask) so soft muted / pending tones stay theme-driven. Cascade-gap highlight on editor cards MUST remain when applicable.
+
+#### Scenario [SC-PACK-239]: Task-set card shows counts and difficulty dots
+
+- **GIVEN** a live or editor task-set list for set S with tasks of difficulties 1, 2, and 3
+- **WHEN** the user views S’s card
+- **THEN** the card shows a total tasks count row
+- **AND** shows separate rows for difficulties 1, 2, and 3 with counts
+- **AND** each difficulty row uses a three-dot indicator with filled count equal to that difficulty
+- **AND** filled dots for difficulties 1, 2, and 3 use distinct colors (green / amber / red product sense)
+- **AND** unfilled dots are outline rings rather than solid muted fills
+- **AND** a pale horizontal divider separates the total row from the first difficulty row
+- **AND** a pale horizontal divider separates each consecutive pair of difficulty rows
+- **AND** a pale horizontal divider separates the last difficulty row from the action controls when actions are present
+
+#### Scenario [SC-PACK-240]: Task-set card uses short status badges
+
+- **GIVEN** task sets in pending, needs_revision, and soft-unpublished states on live or editor lists
+- **WHEN** those cards render status chrome
+- **THEN** badges use short labels in the product sense of «НА ПРОВЕРКЕ», «ДОРАБОТАТЬ», and «СНЯТО» (or equivalent i18n)
+- **AND** MUST NOT rely on long page-subtitle phrases as the only badge text on the card
+
+#### Scenario [SC-PACK-241]: Task-set card actions are outline with icons
+
+- **GIVEN** a task-set card that exposes Edit and/or soft-unpublish
+- **WHEN** the user views the card actions
+- **THEN** each action is a full-width outline control with a leading icon and text
+- **AND** MUST NOT be an icon-only control in a card corner
+- **AND** each action uses a slim height in the product sense of roughly one stats-row (~28–32 CSS px), not the default tall button
+- **AND** soft-unpublish on the card uses short «Снять» (or equivalent) rather than pack/catalog «Снять с публикации»
+- **AND WHEN** republish is shown on the card
+- **THEN** it uses short «Вернуть» (or equivalent)
+
+#### Scenario [SC-PACK-242]: Task-set cards stay readable in dark theme
+
+- **GIVEN** the application is in dark theme
+- **WHEN** the user views task-set summary cards including status and actions
+- **THEN** title, stats, badge, and actions remain visible against the card background
+- **AND** the card MUST NOT present light text on an unresolved white card background
+
+#### Scenario [SC-PACK-243]: Task-set card title hash and total-row chrome
+
+- **GIVEN** a live or editor task-set list with set ordinal n
+- **WHEN** the user views that set’s summary card
+- **THEN** the title includes a hash before the ordinal (product sense «Набор заданий #{n}»)
+- **AND** the total-tasks row shows a leading document-style icon and a «Заданий:» label (or equivalent) with the total count
+
+#### Scenario [SC-PACK-244]: Task-set card column grid and vertical fill
+
+- **GIVEN** a live or editor task-set summary card with total and difficulty rows
+- **WHEN** the user views the card
+- **THEN** the leading icon of the total row is centered within the horizontal span occupied by the three-dot indicators on difficulty rows
+- **AND** the labels «Заданий:», «Лёгкие:», «Средние:», and «Сложные:» (or equivalent) share a common left edge
+- **AND** the numeric counts are right-aligned with each other
+- **AND** badge, title, stats, and actions are distributed to fill the card height
+- **AND WHEN** the card has no status badge
+- **THEN** empty space remains only in the reserved top status band (other blocks keep the fill rhythm)
+
+#### Scenario [SC-PACK-245]: Task-set card internal spacing around title and dividers
+
+- **GIVEN** a live or editor task-set summary card with title, total row, difficulty rows, and pale dividers
+- **WHEN** the user views the card
+- **THEN** there is clear vertical space between the title and the stats block (not a flush caption stack)
+- **AND** there is clear vertical space between each stats label-row and its neighbouring pale dividers
+- **AND** the spacing rhythm remains readable in both light and dark themes
+
+#### Scenario [SC-PACK-246]: Task-set card hover uses themed border without scale
+
+- **GIVEN** a clickable task-set summary card in light theme
+- **WHEN** the user hovers (or equivalently focuses for keyboard affordance) the card
+- **THEN** the card border becomes a dark / near-black stroke relative to the resting soft border
+- **AND** the card MUST NOT enlarge via scale transform
+- **AND** difficulty dots and leading icons MUST keep their colors
+- **AND GIVEN** the same card in dark theme
+- **WHEN** the user hovers the card
+- **THEN** the card border becomes a light-grey stroke (product sense soft silver / off-white grey)
+- **AND** the border MUST NOT rely on brand primary/secondary tint as the only hover cue
+- **AND** the card MUST NOT enlarge via scale transform
+- **AND** difficulty dots and leading icons MUST keep their colors
+
+#### Scenario [SC-PACK-247]: Task-set card spacing retune after status / title / dividers
+
+- **GIVEN** a live or editor task-set summary card with a status badge, title, stats rows, and pale dividers
+- **WHEN** the user views the card
+- **THEN** there is clear vertical space between the status badge band and the title (not flush under the badge)
+- **AND** the gap between title and stats is about half of the first spacing-polish title→stats token (~7 CSS px product sense)
+- **AND** the air around pale dividers is about half of the first spacing-polish divider air (~4–6 CSS px total product sense)
+- **AND** the list / grid gutter between neighbouring cards MUST NOT change as part of this retune
+
+#### Scenario [SC-PACK-248]: Task-set card uses custom SVG status and total icons
+
+- **GIVEN** a live or editor task-set summary card showing a total-tasks row
+- **WHEN** the user views the card
+- **THEN** the total-row leading icon is the custom asset `task-set-card-tasks.svg` (not Material `description`)
+- **AND GIVEN** cards with status badges for needs_revision, pending, soft-unpublished, and draft
+- **WHEN** those badges render
+- **THEN** each badge leading icon uses the matching custom SVG (`task-set-badge-revise` / `pending` / `unpublished` / `draft`) rather than Material glyph placeholders
+- **AND** icon ink follows the badge / stats text color from the Visual Spec soft-muted / pending tokens (not a fixed unrelated fill and not Quasar solid grey/warning badge fills)
+- **AND** the total-row icon is about 14 CSS px and badge icons about 12 CSS px (product sense matching Visual Spec)
 
 ### Requirement: Staff do not see false draft after direct staff save
 
