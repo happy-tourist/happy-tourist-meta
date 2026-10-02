@@ -140,8 +140,26 @@ Visual Spec: change `redesign-pack-list-cards` / main `content/packs` after sync
   Difficulty dots, total icon, badge icons, action icons keep semantic colors
   on hover (chrome only). Answer/task playing-card tiles stay unchanged.
 
-Maps list uses `MapListCardTile.vue` (mini preview top, capacity, bottom text
-actions — SC-MAP-55).
+**Maps list (SC-MAP-55/66/67):** `MapListCardTile.vue` resting width **180**
+(height grows with preview + capacity + actions). Mini `MapGridPreview` top
+with **centered overlay** `#status` near preview top (`left: 50%` +
+`translateX(-50%)`; empty when published — no reserved body band). Body: two
+capacity rows (lead **22** + uppercase `maps.mapCardPlayers` /
+`maps.mapCardTourists` + count) with pale divider between; **no author**. Lead
+icons from `map-card-players.svg` / `map-card-tourists.svg` via CSS mask.
+Short badges via page-wired `content.taskSetCardBadge.*` (ЧЕРНОВИК / НА
+ПРОВЕРКЕ / ДОРАБОТАТЬ / СНЯТО) — soft pills + pending amber + revise red
+outline (`pack-list-status-badge--revise` catalog sense); badge SVG masks
+reuse `task-set-badge-*.svg`. Soft-unpub `:muted` when `hasLive &&
+inCatalog === false` (opacity **0.72** + dashed). Bottom full-width
+**outline + icon** actions (Edit / short `taskSetCardUnpublish` /
+`taskSetCardRepublish`; confirm keeps long `maps.unpublish*`); slim via
+`--pack-card-action-h`. Resting surface / hover / action outline alias shared
+`--pack-card-*` from host `.pack-card-grid` via layout-only `--map-list-*`
+aliases (do not invent independent map surface/hover colors);
+hover border+shadow only — **no** scale / **no** `--q-secondary`). Gate
+`#status` with page `hasMapCardStatus` (omit overlay host when published) and
+`#actions` with `hasMapCardActions` (omit empty chrome + pale divider).
 
 **Answer slots (SC-PACK-237/238):** compose slot rows and `PackTaskTile` slot
 lists use global `.peek-slot-like` (+ `--filled` / `__label` / `__empty` /

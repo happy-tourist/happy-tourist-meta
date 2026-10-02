@@ -56,14 +56,24 @@ HTTP in `maps` beyond cancel/preview helpers the editor already needs.
 ## UI contracts
 
 - **List:** filters all / moderation / drafts / mine (identity-only disabled for
-  guests); badges for draft / pending / needs_revision / unpublished only —
-  **published / `in_catalog` rows show no badge** (SC-MAP-45); card grid via
-  `MapListCardTile` — mini `MapGridPreview` top, author + `players×tourists`,
-  bottom full-width text actions (SC-MAP-55); Create at top; **no** collect;
-  **no** list-chrome staff «Модерация» (SC-MAP-43 — App header).
-  Row open: never-published → Edit without `?edit` (SC-MAP-49); author
+  guests); short card badges via `content.taskSetCardBadge.*` (ЧЕРНОВИК / НА
+  ПРОВЕРКЕ / ДОРАБОТАТЬ / СНЯТО) for draft / pending / needs_revision /
+  soft-unpublished only — **not** long `content.statuses.*` /
+  `maps.draftOnly` / `maps.unpublishedByStaff` on the pill; **published /
+  `in_catalog` rows show no badge** (SC-MAP-45); card grid via
+  `MapListCardTile` ~**180** wide — mini `MapGridPreview` + centered overlay
+  status (SC-MAP-66; gate `#status` via `hasMapCardStatus`), two capacity rows (`players` / `touristsPerPlayer` +
+  `maps.mapCardPlayers` / `mapCardTourists`; **no author** on card), soft-unpub
+  `:muted` when `hasLive && inCatalog === false`, bottom full-width
+  **outline + icon** actions (`content.edit` / `maps.staffEdit` / short
+  `taskSetCardUnpublish` / `taskSetCardRepublish`; gate `#actions` via
+  `hasMapCardActions`; confirm keeps long `maps.unpublish*`) + shared
+  `--pack-card-*` chrome (SC-MAP-55/67); Create at
+  top; **no** collect; **no** list-chrome staff «Модерация» (SC-MAP-43 — App
+  header). Row open: never-published → Edit without `?edit` (SC-MAP-49); author
   draft/pending/needs_revision on a live map → Edit with `query.edit=1`
   (SC-MAP-50); clean published → View-first (SC-MAP-46). Staff stays View-first.
+  View meta still shows author + `maps.seatConfig` (SC-MAP-47).
 - **Editor view:** author display + seat config; Enter Edit control in the
   **title row** (`map-view-edit`), not inside `map-view-meta` (SC-MAP-51);
   **no** paint tools / seat selects (SC-MAP-46/47). App breadcrumbs replace
@@ -92,11 +102,12 @@ HTTP in `maps` beyond cancel/preview helpers the editor already needs.
 
 - Paint pure: `src/stores/__tests__/maps.paint.test.ts` (SC-MAP-04).
 - Pages/UI: `src/pages/__tests__/ContentMaps.test.ts` (list filters/statuses +
-  `MapListCardTile` SC-MAP-55 + view meta / title-row Edit / author pending→Edit /
-  crumbs / cancel→draft / centered seats SC-MAP-56 + SC-MAP-41…54 + SC-MAP-06…08,
-  14, 17, 21, 24–25, 29–36 + submit starts gate + paint race / palette under +
-  staff published boot / never-published Submit / dirty gate SC-MAP-62/63/65).
-  App crumbs inside `q-page-container`: `AppHeaderChrome` SC-MAP-52 / SC-BRAND-17…20.
+  `MapListCardTile` SC-MAP-55/66/67 + tile unit `MapListCardTile.test.ts` + view
+  meta / title-row Edit / author pending→Edit / crumbs / cancel→draft /
+  centered seats SC-MAP-56 + SC-MAP-41…54 + SC-MAP-06…08, 14, 17, 21, 24–25,
+  29–36 + submit starts gate + paint race / palette under + staff published
+  boot / never-published Submit / dirty gate SC-MAP-62/63/65). App crumbs
+  inside `q-page-container`: `AppHeaderChrome` SC-MAP-52 / SC-BRAND-17…20.
 - Server twin: `test/zz-contentMaps.test.ts` (mocha; staff-save clear working
   SC-MAP-64) — do not mix stacks.
 
