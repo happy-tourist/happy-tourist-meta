@@ -22,7 +22,7 @@ The unified packs **catalog** list MUST render each pack as a rounded card in a 
 
 The **task-set** lists on the live pack and cards-editor surfaces MUST render each task set as a rounded card in a wrapping row. Task-set cards MUST use the denser summary chrome (status badge when applicable, title without author, task-count and difficulty 1/2/3 rows, bottom actions) defined in the task-set card chrome requirement. Width MUST stay near ~150–160 CSS pixels; height MAY be taller than 200 CSS pixels so the summary rows remain readable. Existing open/navigation and soft-unpublish rules MUST remain. Catalog pack cards and task-set cards MUST share the same resting surface chrome product sense (background, border, hover border/shadow, action outline, soft-unpublish muted) via shared CSS tokens (see shared pack-card chrome requirement).
 
-#### Scenario [SC-PACK-228]: Catalog packs render as 150×200 cards with description
+#### Scenario [SC-PACK-228]: Catalog packs render as 180×260 cards with description and set preview
 
 - **GIVEN** an authenticated user on the packs catalog with at least one pack row that has a description and one or more task sets
 - **WHEN** the user views the list
@@ -33,7 +33,7 @@ The **task-set** lists on the live pack and cards-editor surfaces MUST render ea
 - **AND** the body shows a preview of that pack’s **published** task sets (label «Набор заданий #{n}» or equivalent, task count, leading document-style icon)
 - **AND** Edit / soft-unpublish / republish when available are bottom full-width outline+icon controls (not top-right; not text-only)
 
-#### Scenario [SC-PACK-229]: Task-set lists render as 150×200 cards with bottom actions
+#### Scenario [SC-PACK-229]: Task-set lists render as summary cards with bottom actions
 
 - **GIVEN** a live pack or cards editor surface with one or more task sets
 - **WHEN** the user views the task-set list
