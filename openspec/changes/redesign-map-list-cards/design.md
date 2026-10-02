@@ -9,12 +9,14 @@ See `proposal.md` — Why. Maps list cards today: `MapListCardTile` ~150×220, a
 - Redesign Maps list card: no author; two capacity rows; centered overlay status; outline actions; width **180**; consume `--pack-card-*`
 - Short badge/action copy aligned with task-set / catalog pack cards
 - Visual Spec measurable for apply + verify-mock
+- Capacity / badge CSS masks render silhouettes (SC-MAP-68), including after Vite SVG data-URL inline
 
 **Non-Goals:**
 
-- Server/API contract changes; Map editor / View author meta; lobby picker; pack/task-set body redesign
+- Server/API contract changes; Map editor / View author meta; lobby picker; pack/task-set body redesign (except shared mask `url("${…}")` quote on PackTaskSetCardTile)
 - «ОПУБЛИКОВАНО» badge; hover scale
 - Stripping `authorDisplayName` (or seat/grid fields) from `GET /api/content/maps`
+- Redrawing SVG assets for the solid-square mask bug
 
 ## Decisions
 
@@ -55,6 +57,12 @@ See `proposal.md` — Why. Maps list cards today: `MapListCardTile` ~150×220, a
    - Colors/spacing/hover from `--pack-card-*` and PackTaskSetCardTile rhythm (lead 22, divider air ~4–6, body pad x 12, action pad).
    - Ignore mock: ОПУБЛИКОВАНО; long ТРЕБУЕТ ДОРАБОТКИ; TL badge; dark `#2f2f2f`.
 
+9. **CSS mask URL quoting (Vite) — hotfix after apply**
+   - Symptom: capacity / draft badge icons render as solid `currentColor` squares; opening the SVG file looks correct.
+   - Cause: `iconMaskVars` built as `` `url(${imported})` `` without quotes; Vite may inline small SVGs as `data:image/svg+xml,…`, which makes unquoted `url()` invalid → browser drops `mask-image` → full background square.
+   - Fix (Vite canon): `` `url("${imported}")` `` on `MapListCardTile` and the same pattern on `PackTaskSetCardTile`. Alternatives `?no-inline` / `assetsInlineLimit` — rejected as broader than needed.
+   - Do **not** redraw or replace the SVG assets for this bug.
+
 ## Risks / Trade-offs
 
 | Risk | Mitigation |
@@ -62,6 +70,7 @@ See `proposal.md` — Why. Maps list cards today: `MapListCardTile` ~150×220, a
 | Vitest SC-MAP-06/55 assert `Alice` + `maps.seatConfig`; SC-MAP-31/32 assert long `content.statuses.*` / `maps.draftOnly` | Update **client** tests: no author on card; two capacity rows; short `content.taskSetCardBadge.*` (SC-MAP-55/66/67) |
 | Missing SVG assets | Already in sibling HEAD; Material placeholder only if absent |
 | Misread delta SC-MAP-06/16 «no author on card» as «drop author from API» | Keep `authorDisplayName` in list/detail JSON; server mocha SC-MAP-06/16 stay on visibility + payload; client vitest owns card chrome |
+| Mask icons look correct in `vite`/`npm run`dev` (file URL) but fail after build / Pages | Quote `url("${…}")`; assert SC-MAP-68; smoke prod build or DevTools `mask-image` not dropped |
 
 ## Migration Plan
 
@@ -208,11 +217,12 @@ Hover not shown on mock — use pack-card canon.
 
 | Area | Touch |
 |------|--------|
-| Tile | `src/components/MapListCardTile.vue` — width 180; preview + centered overlay `#status`; two stat rows; drop `author`/`capacity` props; `--pack-card-*` aliases; muted; outline actions slot; hover border+shadow only |
+| Tile | `src/components/MapListCardTile.vue` — width 180; preview + centered overlay `#status`; two stat rows; drop `author`/`capacity` props; `--pack-card-*` aliases; muted; outline actions slot; hover border+shadow only; **`iconMaskVars` → `url("${…}")`** |
+| Task-set tile | `src/components/PackTaskSetCardTile.vue` — same quoted `url("${…}")` for existing mask vars (drive-by; same Vite pitfall) |
 | Page | `src/pages/MapsListPage.vue` — pass `players`/`touristsPerPlayer`; short badges (`taskSetCardBadge.*` + tone/icon helpers like ContentPackPage / PackTaskSet); outline+icon actions; `:muted`; keep confirm `maps.unpublish*` |
-| Assets | reuse `map-card-players.svg` / `map-card-tourists.svg` (+ existing `task-set-badge-*.svg`) |
+| Assets | reuse `map-card-players.svg` / `map-card-tourists.svg` (+ existing `task-set-badge-*.svg`) — **no redraw** for mask square bug |
 | i18n | add `maps.mapCardPlayers`, `maps.mapCardTourists` |
-| Tests | `ContentMaps.test.ts`: SC-MAP-06/16/31/32/45/55 + new 66/67 — drop Alice/`seatConfig` on **card**; assert capacity rows + short badges + outline |
-| Styles skill | `pack-cards.md` maps section; `work-with-pages/content-pages.md`; `work-with-stores/maps.md` |
+| Tests | `ContentMaps.test.ts` / `MapListCardTile.test.ts`: SC-MAP-06/16/31/32/45/55 + 66/67/68 — drop Alice/`seatConfig` on **card**; assert capacity rows + short badges + outline; assert mask CSS vars use quoted `url("`… |
+| Styles skill | `pack-cards.md` maps section + note: JS-built mask vars MUST use `url("${imported}")`; `work-with-pages/content-pages.md`; `work-with-stores/maps.md` |
 
 No server changes. Checklist → `tasks.md`.

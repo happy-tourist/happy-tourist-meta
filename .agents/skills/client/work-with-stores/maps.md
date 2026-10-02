@@ -68,7 +68,9 @@ HTTP in `maps` beyond cancel/preview helpers the editor already needs.
   **outline + icon** actions (`content.edit` / `maps.staffEdit` / short
   `taskSetCardUnpublish` / `taskSetCardRepublish`; gate `#actions` via
   `hasMapCardActions`; confirm keeps long `maps.unpublish*`) + shared
-  `--pack-card-*` chrome (SC-MAP-55/67); Create at
+  `--pack-card-*` chrome (SC-MAP-55/67); lead/badge SVG masks via quoted
+  `` `url("${imported}")` `` `iconMaskVars` (SC-MAP-68 — also pack list /
+  task-set tiles); Create at
   top; **no** collect; **no** list-chrome staff «Модерация» (SC-MAP-43 — App
   header). Row open: never-published → Edit without `?edit` (SC-MAP-49); author
   draft/pending/needs_revision on a live map → Edit with `query.edit=1`
@@ -102,7 +104,7 @@ HTTP in `maps` beyond cancel/preview helpers the editor already needs.
 
 - Paint pure: `src/stores/__tests__/maps.paint.test.ts` (SC-MAP-04).
 - Pages/UI: `src/pages/__tests__/ContentMaps.test.ts` (list filters/statuses +
-  `MapListCardTile` SC-MAP-55/66/67 + tile unit `MapListCardTile.test.ts` + view
+  `MapListCardTile` SC-MAP-55/66/67/68 + tile unit `MapListCardTile.test.ts` + view
   meta / title-row Edit / author pending→Edit / crumbs / cancel→draft /
   centered seats SC-MAP-56 + SC-MAP-41…54 + SC-MAP-06…08, 14, 17, 21, 24–25,
   29–36 + submit starts gate + paint race / palette under + staff published

@@ -16,3 +16,9 @@
 ## 3. Client verification
 
 - [x] 3.1 `npm run lint`, `npm run typecheck`, `npm test` (затронутые ContentMaps / MapListCardTile) в sibling client — verify: все зелёные
+
+## 4. Hotfix — CSS mask URL quoting (SC-MAP-68)
+
+- [x] 4.1 В `MapListCardTile.vue` (и симметрично `PackTaskSetCardTile.vue`) заменить `` `url(${imported})` `` на `` `url("${imported}")` `` для всех `iconMaskVars` mask CSS custom properties — verify: DevTools / computed `mask-image` не отбрасывается; capacity + draft/pending/unpublished icons показывают силуэт, не сплошной квадрат
+- [x] 4.2 Vitest SC-MAP-68 (MapListCardTile и/или ContentMaps): assert что CSS vars mask содержат quoted `url("`… ; skill `pack-cards.md` — note Vite quoted `url()` для JS-built mask vars — verify: тест зелёный; skill обновлён
+- [x] 4.3 `npm run lint`, `npm run typecheck`, `npm test` (MapListCardTile / ContentMaps / PackTaskSet при затронутых) — verify: все зелёные

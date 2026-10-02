@@ -75,10 +75,12 @@ Visual Spec: change `redesign-pack-list-cards` / main `content/packs` after sync
   `task-set-badge-unpublished.svg`, `task-set-badge-draft.svg` (SC-PACK-248).
   Live/editor `#status` slots use `<span class="pack-task-set-status-icon
   pack-task-set-status-icon--{revise|pending|unpublished|draft}">` (~12px CSS
-  **mask** + `currentColor` ink). Soft muted pills (not Quasar solid
-  `color="grey"` / `warning` fills):
-  `--muted` = pale grey bg + dark/light fg; `--pending` = soft amber tint +
-  gold/amber ink (НА ПРОВЕРКЕ). ДОРАБОТАТЬ stays muted, **not** loud orange.
+  **mask** + `currentColor` ink).   Soft muted pills (not Quasar solid
+  `color="grey"` / `warning` fills): reset Quasar badge chrome first
+  (`background: transparent; color: inherit` on the status `q-badge`), then
+  tone classes — `--muted` = pale grey bg + dark/light fg; `--pending` = soft
+  amber tint + gold/amber ink (НА ПРОВЕРКЕ). ДОРАБОТАТЬ stays muted, **not**
+  loud orange.
   Reserved top band keeps empty space when no badge
   (`.pack-task-set-tile__status` min-height — SC-PACK-244); status→title
   pad-bottom **~6–8** CSS px (SC-PACK-247).
@@ -107,10 +109,13 @@ Visual Spec: change `redesign-pack-list-cards` / main `content/packs` after sync
   outline rings** (not solid muted).
 - Bottom full-width **outline + icon** actions (`@click.stop`); **slim**
   height via `--pack-ts-action-h: var(--pack-card-action-h)` (= 30px) +
-  `:deep(.q-btn)` min 28 / max 32 + page `dense` (SC-PACK-241). Stacked when
-  multiple. Soft-unpublish «Снять» **and** republish «Вернуть» use the same
-  **neutral** outline chrome as Edit (pale `--pack-ts-border` →
-  `--pack-card-border`; no `color="warning"` / no `color="primary"` tint).
+  `:deep(.q-btn)` min 28 / max 32 + page `dense` (SC-PACK-241). Match
+  Map/PackList action type: label `font-weight: 500`, `line-height: 1.2`,
+  `white-space: nowrap`; `:deep(.q-btn .q-icon)` **18px** +
+  `color: currentColor`. Stacked when multiple. Soft-unpublish «Снять»
+  **and** republish «Вернуть» use the same **neutral** outline chrome as Edit
+  (pale `--pack-ts-border` → `--pack-card-border`; no `color="warning"` /
+  no `color="primary"` tint).
   Pages gate `#actions` with a helper (`hasTaskSetCardActions` /
   `hasEditorTaskSetCardActions`) — omit the slot when no control would render
   (empty actions chrome + pale divider above actions — SC-PACK-239). Card
@@ -125,13 +130,16 @@ Visual Spec: change `redesign-pack-list-cards` / main `content/packs` after sync
   (`--pack-ts-lead-w`, dots, spacing) stay local. Soft-unpublish `--muted`:
   opacity `0.72` + **`border-style: dashed`** (mock СНЯТО). Stats **counts**
   use `--pack-ts-fg` (title.fg, weight 600); labels/icon ink stay
-  `--pack-ts-muted`.
+  `--pack-ts-muted` at **weight 400–500** (not 600).
 - **Icon ink / colors** (SC-PACK-248 / Visual Spec): soft-muted badge
   light `rgba(0,0,0,0.06)` bg + `rgba(0,0,0,0.72)` fg/ink; pending light
   `rgba(249,168,37,0.16)` + `#f9a825`; dark muted `rgba(255,255,255,0.12)` /
   `0.82` fg; dark pending `rgba(255,193,7,0.14)` + `#ffc107`. Total/badge
   icons theme via **mask + `currentColor`** (not plain `<img>`). Action icons
-  stay Quasar Material.
+  stay Quasar Material. JS-built mask custom properties MUST quote the Vite
+  import: `` `url("${imported}")` `` on `PackListCardTile` /
+  `PackTaskSetCardTile` / `MapListCardTile` (same SC-MAP-68 pitfall —
+  unquoted `data:` URLs drop `mask-image`).
 - **Themed hover** (SC-PACK-246 / Decision 10): clickable cards change
   **border + soft lift shadow only** — **no** `transform: scale` / enlarge.
   Light: `--pack-card-border-hover: #212121` + `--pack-card-shadow-hover` lift
@@ -140,17 +148,26 @@ Visual Spec: change `redesign-pack-list-cards` / main `content/packs` after sync
   Difficulty dots, total icon, badge icons, action icons keep semantic colors
   on hover (chrome only). Answer/task playing-card tiles stay unchanged.
 
-**Maps list (SC-MAP-55/66/67):** `MapListCardTile.vue` resting width **180**
+**Maps list (SC-MAP-55/66/67/68):** `MapListCardTile.vue` resting width **180**
 (height grows with preview + capacity + actions). Mini `MapGridPreview` top
 with **centered overlay** `#status` near preview top (`left: 50%` +
-`translateX(-50%)`; empty when published — no reserved body band). Body: two
-capacity rows (lead **22** + uppercase `maps.mapCardPlayers` /
-`maps.mapCardTourists` + count) with pale divider between; **no author**. Lead
+`translateX(-50%)`; empty when published — no reserved body band). Preview
+cells use slight rounding (`border-radius: 1px` on
+`.map-grid-preview__cell`). Body: two capacity rows (lead **22** + uppercase
+`maps.mapCardPlayers` / `maps.mapCardTourists` + count) with pale divider
+between; **no author**. Stats **labels** weight **500**; counts **600**. Lead
 icons from `map-card-players.svg` / `map-card-tourists.svg` via CSS mask.
+**Vite mask `url()` quoting (SC-MAP-68):** JS-built `iconMaskVars` MUST use
+`` `url("${imported}")` `` (double quotes), not `` `url(${imported})` `` —
+Vite may inline small SVGs as `data:image/svg+xml,…`, and unquoted `url()` is
+invalid CSS → browser drops `mask-image` → solid `currentColor` square.
+Same rule on `PackTaskSetCardTile` and `PackListCardTile` `iconMaskVars`.
+Do **not** redraw SVG assets to work around a broken mask URL.
 Short badges via page-wired `content.taskSetCardBadge.*` (ЧЕРНОВИК / НА
-ПРОВЕРКЕ / ДОРАБОТАТЬ / СНЯТО) — soft pills + pending amber + revise red
-outline (`pack-list-status-badge--revise` catalog sense); badge SVG masks
-reuse `task-set-badge-*.svg`. Soft-unpub `:muted` when `hasLive &&
+ПРОВЕРКЕ / ДОРАБОТАТЬ / СНЯТО) — soft pills (reset Quasar primary fill via
+`background: transparent; color: inherit` before tone) + pending amber +
+revise red outline (`pack-list-status-badge--revise` catalog sense); badge
+SVG masks reuse `task-set-badge-*.svg`. Soft-unpub `:muted` when `hasLive &&
 inCatalog === false` (opacity **0.72** + dashed). Bottom full-width
 **outline + icon** actions (Edit / short `taskSetCardUnpublish` /
 `taskSetCardRepublish`; confirm keeps long `maps.unpublish*`); slim via

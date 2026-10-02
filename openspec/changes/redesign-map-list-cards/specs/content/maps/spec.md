@@ -11,8 +11,9 @@
 | SC-MAP-55 | revised (client vitest — ~180 card; two capacity rows; outline actions; no author) |
 | SC-MAP-66 | covered (client vitest — centered overlay status; short badge copy) |
 | SC-MAP-67 | covered (client vitest — pack-card chrome tokens; muted dashed; outline+icon actions) |
+| SC-MAP-68 | covered (client vitest / visual — lead + badge SVG masks show silhouette, not solid square) |
 
-Related: pack/task-set chrome SC-PACK-239…248 / 255 (shared `--pack-card-*`; map cards now consume). View author meta SC-MAP-46/47 unchanged. **No new server/HTTP claims** — list/unpublish/republish contracts stay as in main `content/maps` + sibling `listMaps`.
+Related: pack/task-set chrome SC-PACK-239…248 / 255 (shared `--pack-card-*`; map cards now consume; same Vite `url("${…}")` mask wiring on `PackTaskSetCardTile`). View author meta SC-MAP-46/47 unchanged. **No new server/HTTP claims** — list/unpublish/republish contracts stay as in main `content/maps` + sibling `listMaps`.
 
 ## MODIFIED Requirements
 
@@ -118,7 +119,7 @@ When a Maps list card shows a moderation/status badge, the badge MUST be drawn a
 
 ### Requirement: Map list cards share pack-card chrome and outline actions
 
-Maps list cards MUST consume the shared pack-card resting chrome tokens (background, foreground, muted ink, border, hover border/shadow, splitter, action height) so they match pack catalog and task-set cards in product sense. Card soft-unpublish muted MUST use opacity about **0.72** and a **dashed** border. Bottom actions MUST be outline+icon (Edit with pencil-style icon; soft-unpublish with eye-off; republish with eye) with short «Снять» / «Вернуть» labels on the card. Hover MUST change border and soft shadow only (**no** enlarge/scale). Lead icons for players and tourists MUST be present (custom SVG preferred; Material placeholder allowed until assets land).
+Maps list cards MUST consume the shared pack-card resting chrome tokens (background, foreground, muted ink, border, hover border/shadow, splitter, action height) so they match pack catalog and task-set cards in product sense. Card soft-unpublish muted MUST use opacity about **0.72** and a **dashed** border. Bottom actions MUST be outline+icon (Edit with pencil-style icon; soft-unpublish with eye-off; republish with eye) with short «Снять» / «Вернуть» labels on the card. Hover MUST change border and soft shadow only (**no** enlarge/scale). Lead icons for players and tourists MUST be present (custom SVG preferred; Material placeholder allowed until assets land). Lead capacity icons and applicable status-badge icons MUST render as **recognizable silhouettes** of the custom SVG (not a solid filled square of ink color with no cutout). Solid-square degradation of a valid SVG mask MUST NOT be accepted as meeting this requirement.
 
 #### Scenario [SC-MAP-67]: Map cards match pack chrome; muted dashed; short outline actions
 
@@ -129,3 +130,11 @@ Maps list cards MUST consume the shared pack-card resting chrome tokens (backgro
 - **THEN** that card uses opacity about 0.72 and a dashed border
 - **AND WHEN** staff soft-unpublish / republish actions apply
 - **THEN** the card shows short «Снять» / «Вернуть» outline+icon controls (not long «Снять с публикации» on the card button)
+
+#### Scenario [SC-MAP-68]: Capacity and badge mask icons show silhouette
+
+- **GIVEN** a Maps list card with players and tourists capacity rows and (when applicable) a draft / pending / soft-unpublished status badge that uses a custom SVG lead or badge icon
+- **WHEN** the user views the card in a production-built or Vite-inlined asset context
+- **THEN** each capacity lead icon shows the players / tourists silhouette (not a solid filled square of the icon ink color)
+- **AND** when a draft (or pending / unpublished) badge icon is shown, that badge icon shows its document / clock / eye-off silhouette rather than a solid filled square
+- **AND** the underlying SVG asset files remain path-based custom assets (not replaced solely to work around a broken CSS mask URL)

@@ -42,7 +42,7 @@ themed hover no-scale; SC-PACK-248 SVG total+badge CSS masks from
 muted soft-unpublish `opacity: 0.72` + `border-style: dashed`; short badges /
 outline+icon; card «Снять»/«Вернуть»; no author on `taskSetLabel`; tile file
 `PackTaskSetCardTile.test.ts`) + maps list `MapListCardTile` /
-`ContentMaps` SC-MAP-55/66/67,
+`ContentMaps` SC-MAP-55/66/67/68,
 staff-edit-draft-submit SC-PACK-231…238 / SC-MAP-62…65:
 `src/lib/__tests__/editorDirty.test.ts`,
 `src/pages/__tests__/ContentPackStaffBoot.test.ts`,
@@ -59,7 +59,7 @@ ghost `pack-task-set-ghost-*` → add-task-set Edit SC-PACK-188…190),
   62…65
   (cancel→draft, view meta, title-row Edit SC-MAP-51, author pending→Edit
   SC-MAP-50, paint race SC-MAP-53, palette under SC-MAP-54, `MapListCardTile`
-  SC-MAP-55/66/67, centered seats SC-MAP-56, staff published boot SC-MAP-62,
+  SC-MAP-55/66/67/68 (quoted mask `url("`…), centered seats SC-MAP-56, staff published boot SC-MAP-62,
   never-published Submit SC-MAP-63, dirty gate SC-MAP-65, no published badge); store
 `maps.paint.test.ts` SC-MAP-04; errors via `mapsErrorI18nKey` → `maps.errors.*`;
 meta `work-with-stores/maps.md` — shared staff queue still mocked via `content`
