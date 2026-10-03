@@ -200,12 +200,15 @@ lists use global `.peek-slot-like` (+ `--filled` / `__label` / `__empty` /
 as the primary **slot chrome** on these surfaces. Do **not** reintroduce list
 `q-chip` for answer/task **bodies** on list grids.
 
-**Task compose dialog answer pool (SC-PACK-224 carve-out / SC-PACK-260):**
+**Task compose dialog answer pool (SC-PACK-224 carve-out / SC-PACK-260 / 263):**
 inside the task compose `q-dialog` only, the selectable answer pool MUST be
 compact chips comparable to GamePage `.peek-answers` / `q-chip` (not
 `PackAnswerCardTile` / not `data-testid="slot-picker-grid"`). Slot **chrome**
 in that dialog still uses `.peek-slot-like`; center the dialog slot row
 (`justify-center`) like GamePage `.peek-slots` — global `.peek-slot-like-row`
-has no center by default. List grids and any non-dialog pickers keep
-playing-card tiles. Contracts: meta `work-with-stores/content.md` (Playing-card
-chrome); SC-PACK-222…227 / 237/238 / 256…262 / 239…248.
+has no center by default. Chips MUST stay reusable for multiple slots: always
+`outline`, no disable / primary filled «already used» state solely because the
+card appears in a slot (SC-PACK-263; Game peek SC-BOARD-49). List grids and any
+non-dialog pickers keep playing-card tiles. Contracts: meta
+`work-with-stores/content.md` (Playing-card chrome); SC-PACK-222…227 / 237/238 /
+256…263 / 239…248.

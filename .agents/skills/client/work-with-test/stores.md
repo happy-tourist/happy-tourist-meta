@@ -10,14 +10,16 @@ Product store conventions: meta skill `work-with-stores`. Domains: `auth`,
 staff lock+save / soft-unpublish pack+set/`inCatalog` / needs_revision; cascadeGap* / hasLive confirm; simplify ACL
 SC-PACK-100…136 — pages `Content*Acl.test.ts` incl. `ContentCatalogAcl` /
 `ContentCollectionAcl` / `ContentPackAcl`, `ContentSoftUnpublish.test.ts`
-(SC-PACK-120…125 staff unpublish/republish + soft-unpublished gray/non-nav),
+(SC-PACK-120…125 staff unpublish/republish + soft-unpublished gray/non-nav;
+catalog card actions assert short `taskSetCardUnpublish`/`taskSetCardRepublish`
+SC-PACK-250 — confirm dialog keeps long `unpublish`/`republish`),
 `ContentFollowUp4.test.ts` (SC-PACK-129…133 + SC-PACK-139 unpublishConfirm warns open requests / set soft-hide /
 live summary+drill-in / SC-PACK-261 AddTaskSet no top live grid + dialog chips), `ContentFollowUp5.test.ts`
 (SC-PACK-134…136 slot card text / ordinal `taskSetLabel` no author / Tasks
 `content.back`),
 `ContentPackTasksHints.test.ts` (SC-PACK-115/119 staff session + stable hints),
 `ContentPackAnswerCompose.test.ts` / `ContentPackTaskCompose.test.ts`
-(SC-PACK-256…262 answer/task compose dialogs + peek-like chip pool + CSV outside dialog),
+(SC-PACK-256…263 answer/task compose dialogs + peek-like chip pool + reusable chips + CSV outside dialog; Game peek SC-BOARD-49),
 `ContentModerationUx.test.ts` (SC-PACK-126 editor cascade CSS; SC-PACK-127 slot
 chips on staff hub; SC-PACK-128 add-task-set thread/status/reply;
 SC-PACK-194/195 no `content.catalogNav` on pack/staff/my-moderation pages),

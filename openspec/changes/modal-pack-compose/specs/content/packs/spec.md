@@ -15,8 +15,9 @@
 | SC-PACK-260 | covered (`ContentPackTaskCompose` + `ContentPackTasksCsvHide`) |
 | SC-PACK-261 | covered (`ContentPackTaskCompose` + `ContentFollowUp4`) |
 | SC-PACK-262 | covered (`ContentPackTaskCompose`) |
+| SC-PACK-263 | covered (`ContentPackTaskCompose`) |
 
-Related: compose/slots SC-PACK-05…07 / 119; add-task-set SC-PACK-107; playing-card tiles SC-PACK-222…227 (list chrome; dialog pool carve-out below); peek-slot chrome SC-PACK-237/238; CSV SC-PACK-213…220 / 235/236; main `content/packs`. Peek gameplay remains `game/board`.
+Related: compose/slots SC-PACK-05…07 / 119; add-task-set SC-PACK-107; playing-card tiles SC-PACK-222…227 (list chrome; dialog pool carve-out below); peek-slot chrome SC-PACK-237/238; CSV SC-PACK-213…220 / 235/236; main `content/packs`. Peek gameplay reuse — `game/board` SC-BOARD-49 (same change).
 
 **Server / HTTP:** this delta is client UX only. Persist, cascade, ACL, add-task-set, and CSV product rules stay in main `content/packs` (no new route/payload/schema claims here).
 
@@ -145,3 +146,15 @@ On task-set editing surfaces that expose task CSV import/export, those controls 
 - **WHEN** the page renders with the task list
 - **THEN** the framed task CSV controls appear above the task list
 - **AND** opening the task compose dialog does not relocate those CSV controls into the dialog
+
+### Requirement: Task compose allows the same answer card in multiple slots
+
+On task compose surfaces (task compose dialog on task-set editor and add-task-set), filling answer slots MUST allow the same answer card to be selected into any number of slots, including every slot of the task. After a card is placed in one slot, its chip in the answer pool MUST remain selectable for other empty slots. The client MUST NOT disable that chip solely because it is already used in a slot, and MUST NOT present a distinct «already used» highlight or filled-vs-outline state that marks the card as consumed. Clicking a filled slot MAY still clear that slot. Persistence and cascade rules for slot `answerCardId` references remain unchanged (multiple slots MAY reference the same card id).
+
+#### Scenario [SC-PACK-263]: Same answer card fills multiple compose slots without used chrome
+
+- **GIVEN** a verified editor has the task compose dialog open with at least one answer card and two or more empty slots
+- **WHEN** the editor places that same answer card into more than one slot
+- **THEN** each of those slots shows that card as its answer
+- **AND** the answer-pool chip for that card remains available for further empty slots
+- **AND** the chip is not shown in a distinct already-used disabled or highlighted consumed state solely because it appears in a slot

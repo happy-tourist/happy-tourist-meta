@@ -16,3 +16,11 @@
 
 - [x] 3.1 Подтвердить meta skills уже согласованы с delta: `work-with-pages/content-pages.md`, `work-with-styles/pack-cards.md`, `work-with-stores/content.md` — compose = dialog; q-chip answer pool **only** inside task compose dialog; при drift — дотянуть те же файлы; **не** менять server skills / HTTP contract docs
 - [x] 3.2 `npm test` (затронутые content/pack suites) + `npm run lint` + `npm run typecheck` в `../happy-tourist.github.io` — зелёный прогон; server sibling не трогать / не гонять как обязательный gate этого change
+
+## 4. Client — reusable answer cards in slots (compose + peek)
+
+- [x] 4.1 Прочитать `design.md` D8; delta SC-PACK-263 + `specs/game/board` SC-BOARD-49; skills `work-with-game-board/peek.md` + content-pages / pack-cards (убрать «disable when already placed»); точки: `PackTaskComposeDialog.vue`, `GamePage.vue` peek chips
+- [x] 4.2 Compose: убрать uniqueness / used-state chrome (`isCardPlaced` из disable/clickable/outline/color и guard в `pickAnswer`); одна карточка MAY заполнить несколько/все слоты — verify vitest SC-PACK-263
+- [x] 4.3 Peek на GamePage: убрать `isAnswerPlaced` disable/outline/color/early-return; chip остаётся доступным без consumed highlight; clear слота без регрессии sync — verify vitest SC-BOARD-49
+- [x] 4.4 Skills drift: `peek.md` (+ при необходимости content-pages / pack-cards / content) — reuse без used-state; server skills не трогать
+- [x] 4.5 `npm test` (compose + peek/board suites) + `npm run lint` + `npm run typecheck` в `../happy-tourist.github.io` — зелёный прогон; server не обязательный gate

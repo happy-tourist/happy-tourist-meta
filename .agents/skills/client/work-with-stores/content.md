@@ -80,7 +80,7 @@ the answer card’s text. Do **not** use dense `q-chip` as primary slot chrome o
 compose rows or `PackTaskTile`. For staff `task_set` preview, server merges live
 `answerCards` into `previewPending` (SC-PACK-134). CSS: `work-with-styles/pack-cards.md`.
 
-## Playing-card chrome (SC-PACK-222…229 / 237 / 238 / 256…262)
+## Playing-card chrome (SC-PACK-222…229 / 237 / 238 / 256…263)
 
 Wherever the UI **lists** pack **answer cards** or **tasks** (editor grid,
 add-task-set task list, tasks drill-in, live pack answers, staff request
@@ -93,7 +93,8 @@ tile contrast (SC-PACK-225…227). Create/edit of answers and tasks is a
 compose is allowed — not an always-visible inline form. **Task compose dialog
 answer pool:** compact chips like GamePage `.peek-answers` / `q-chip`
 (SC-PACK-224 carve-out / SC-PACK-260); do **not** use `PackAnswerCardTile` as
-the dialog picker. Add-task-set MUST NOT show a top read-only
+the dialog picker; same card MAY fill multiple slots with **no** disable /
+used-state chip chrome (SC-PACK-263). Add-task-set MUST NOT show a top read-only
 `live-answer-card-grid` (SC-PACK-261).
 **Catalog packs** use `PackListCardTile` **~180×260** (status top, star TL,
 uppercase title + truncated description, **published-only** set-preview rows

@@ -14,8 +14,10 @@ Store I/O: `work-with-stores/game.md`. Leave/status chrome: [shell.md](shell.md)
   height — SC-PRESENCE-26); sticky bottom `.game-hud` only when seated (strip row /
   HUD ≤~420 → 2×2; **no** chip/`q-menu`).
 - Return → green `undo` when `canReturn` (no confirm modal); finish 2×2 → nearest
-  legal center; peek eye top-center + shared Q&A; end-turn `skip_next` right-center;
-  budgets beside avatar; say top↓ / own↑.
+  legal center; peek eye top-center + shared Q&A (`data-testid="peek-answer-chip"`;
+  same answer MAY fill multiple slots; chips stay `outline` / selectable — no
+  used-state chrome — SC-BOARD-49; details `work-with-game-board/peek.md`);
+  end-turn `skip_next` right-center; budgets beside avatar; say top↓ / own↑.
 - Sync via `useGameStore()`; `rejoinGame(roomId)` on mount / soft-fail.
 - **No** page-local leave/status/roomId — App brand-logo + `header-game-leave` + status.
 
