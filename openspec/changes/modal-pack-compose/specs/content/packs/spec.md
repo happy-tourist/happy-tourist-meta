@@ -16,10 +16,15 @@
 | SC-PACK-261 | covered (`ContentPackTaskCompose` + `ContentFollowUp4`) |
 | SC-PACK-262 | covered (`ContentPackTaskCompose`) |
 | SC-PACK-263 | covered (`ContentPackTaskCompose`) |
+| SC-PACK-264 | covered (server mocha + client vitest — pre-submit incomplete draft persist) |
+| SC-PACK-265 | covered (server mocha + client vitest — leave/reload restores draft) |
+| SC-PACK-266 | covered (server mocha + client vitest — delete draft from AddTaskSet top) |
+| SC-PACK-267 | covered (server mocha — Cancel never-live → draft again) |
+| SC-PACK-268 | covered (server mocha + client vitest — author-only drafts filter / neverLive draft) |
 
-Related: compose/slots SC-PACK-05…07 / 119; add-task-set SC-PACK-107; playing-card tiles SC-PACK-222…227 (list chrome; dialog pool carve-out below); peek-slot chrome SC-PACK-237/238; CSV SC-PACK-213…220 / 235/236; main `content/packs`. Peek gameplay reuse — `game/board` SC-BOARD-49 (same change).
+Related: compose/slots SC-PACK-05…07 / 119; add-task-set SC-PACK-107/108; cancel→draft SC-PACK-175…179/196/197; neverLive SC-PACK-188…190; playing-card tiles SC-PACK-222…227; peek-slot chrome SC-PACK-237/238; CSV SC-PACK-213…220 / 235/236; main `content/packs`. Peek gameplay reuse — `game/board` SC-BOARD-49 (same change).
 
-**Server / HTTP:** this delta is client UX only. Persist, cascade, ACL, add-task-set, and CSV product rules stay in main `content/packs` (no new route/payload/schema claims here).
+**Server / HTTP (revision):** compose UI (SC-PACK-256…263) remains client-only. Pre-submit never-live draft (SC-PACK-264…268) **does** change add-task-set put/get/ghost/discard on server — see ADDED below. Staff-open queue remains `pending` | `needs_revision` only.
 
 ## MODIFIED Requirements
 
@@ -158,3 +163,54 @@ On task compose surfaces (task compose dialog on task-set editor and add-task-se
 - **THEN** each of those slots shows that card as its answer
 - **AND** the answer-pool chip for that card remains available for further empty slots
 - **AND** the chip is not shown in a distinct already-used disabled or highlighted consumed state solely because it appears in a slot
+
+### Requirement: Add-task-set persists an author draft on any change before moderation
+
+On the post-publish add-task-set surface, any author edit that changes the in-progress task set (add/remove/edit a task or slot binding, including incomplete content) MUST quietly persist a **never-live** working draft for that author. Persist MUST succeed even when submit minima are not met (fewer than two tasks and/or empty slots). Submit for moderation MUST continue to enforce existing minima and filled-slot rules. Leaving the page without Submit MUST NOT discard that draft. Reloading add-task-set or returning later MUST restore the retained tasks and slots. The draft MUST appear to the set author as author-facing **draft** with the same never-live ghost visibility rules as after Cancel (live pack set list + unified packs drafts filter for that author only). Other users and staff on live MUST NOT see that never-live draft row. Staff moderation queue MUST NOT list a not-yet-submitted draft. At most one never-live add-task-set cycle per author per pack MUST be retained (same exclusivity as today).
+
+#### Scenario [SC-PACK-264]: Incomplete add-task-set change persists as draft
+
+- **GIVEN** a verified author on add-task-set for in-catalog pack P with no open pending/needs_revision task_set request of their own
+- **WHEN** the author adds or changes at least one task (even with empty slots or fewer than two tasks)
+- **THEN** the system persists that content as the author’s never-live draft
+- **AND** author-facing status for that work is draft
+- **AND** Submit remains disabled until existing minima and filled slots are met
+
+#### Scenario [SC-PACK-265]: Leave without Submit restores the same draft
+
+- **GIVEN** author U has a persisted never-live add-task-set draft on pack P that was never submitted (or was Cancelled back to draft)
+- **WHEN** U leaves the add-task-set page and later opens add-task-set Edit for P again
+- **THEN** the draft includes the same task questions and slot references that were last persisted
+- **AND** the draft MUST NOT be an empty task-set list solely because no open pending request exists
+
+#### Scenario [SC-PACK-268]: Author-only drafts filter and never-live draft row
+
+- **GIVEN** author U has a never-live add-task-set draft on in-catalog pack P and viewer V ≠ U
+- **WHEN** U opens the unified packs list with the drafts filter and the live pack task-set list
+- **THEN** U can reach that draft (list draft mark and/or never-live set row with draft status)
+- **AND WHEN** V opens the same list/live surfaces
+- **THEN** V MUST NOT see U’s never-live draft row or treat P as draft solely because of U’s work
+
+### Requirement: Author may delete a never-live add-task-set draft from the add surface
+
+While a never-live add-task-set draft exists for the author (pre-submit draft or draft after Cancel of a never-published cycle), the add-task-set page MUST expose a **delete draft** control at the **top** of the page (not only on a tile). Confirming delete MUST remove that never-live draft so it no longer appears as a ghost/draft for the author and GET add-task-set returns an empty new set. Delete MUST NOT remove the pack or any live published task sets. Pending/needs_revision cycles keep existing Cancel semantics; this delete targets retained draft work that is not in the staff open queue.
+
+#### Scenario [SC-PACK-266]: Top delete removes never-live draft
+
+- **GIVEN** author U has a never-live add-task-set draft on pack P and is on the add-task-set page
+- **WHEN** U activates the top delete-draft control and confirms
+- **THEN** the never-live draft is removed
+- **AND** U no longer sees that draft ghost/row
+- **AND** opening add-task-set again starts from an empty set (no restored prior draft)
+
+### Requirement: Cancelling never-live moderation returns the work to draft
+
+When staff or the set author cancels an open never-live add-task-set moderation request that has not been approved into live, the retained payload MUST remain available as author-facing **draft** (same restore/ghost rules as SC-PACK-196/197 and the pre-submit draft requirement). The author MUST be able to amend, re-submit, or delete that draft.
+
+#### Scenario [SC-PACK-267]: Cancel never-live open request yields draft again
+
+- **GIVEN** author U submitted a never-live add-task-set on pack P and the request is pending or needs_revision
+- **WHEN** U or staff (after take) cancels that request
+- **THEN** U sees the work as draft (never-live ghost / drafts filter)
+- **AND** GET add-task-set restores the retained tasks and slots
+- **AND** the staff open queue no longer lists that request

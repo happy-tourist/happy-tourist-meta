@@ -20,6 +20,8 @@ live summary+drill-in / SC-PACK-261 AddTaskSet no top live grid + dialog chips),
 `ContentPackTasksHints.test.ts` (SC-PACK-115/119 staff session + stable hints),
 `ContentPackAnswerCompose.test.ts` / `ContentPackTaskCompose.test.ts`
 (SC-PACK-256…263 answer/task compose dialogs + peek-like chip pool + reusable chips + CSV outside dialog; Game peek SC-BOARD-49),
+`ContentPackAddTaskSetDraft.test.ts` (SC-PACK-264…268 quiet autosave incomplete
+draft + leave flush + top delete/`discardAddTaskSetDraft` + catalog draft mark),
 `ContentModerationUx.test.ts` (SC-PACK-126 editor cascade CSS; SC-PACK-127 slot
 chips on staff hub; SC-PACK-128 add-task-set thread/status/reply;
 SC-PACK-194/195 no `content.catalogNav` on pack/staff/my-moderation pages),

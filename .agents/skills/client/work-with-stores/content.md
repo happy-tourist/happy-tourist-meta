@@ -26,7 +26,7 @@ Setup store `content` owns:
 - Live pack detail (`isFavorite`, `moderationStatus`; legacy `inCollection` ignored for ACL)
 - Creator / task-set-author working copy (`editorKind`: `creator` \|
   `task_set_author`) incl. **post-publish re-edit** via moderation (SC-PACK-156…159)
-- Unified `submitPack` / add-task-set load+save+submit
+- Unified `submitPack` / add-task-set load+save+submit + **`discardAddTaskSetDraft`**
 - Edit lock `acquireEditLock` + heartbeat + release — **authors and staff**
   (staff blocked while open author request → `author_request_open`; SC-PACK-157)
 - Staff `staffSavePack` + `isStaffEditSessionNavigation`
@@ -39,10 +39,14 @@ Setup store `content` owns:
   187 — open marks only on request sets, not authorId fan-out)
 - Never-live add-task-set ghost rows: `TaskSet.neverLive` for set author only
   on live pack (D19 / SC-PACK-188…190); row → `content-pack-add-task-set` Edit
-- After Cancel of a never-live add-task-set cycle, GET add-task-set restores the
-  retained revision `taskSets` (same selection as the ghost); `pendingRequestId`
-  may be `null` — still bind the draft (D22 / SC-PACK-196). Put/submit reuse the
-  cancelled revision id on the server (SC-PACK-197); client just forwards payload.
+- Pre-submit / after-Cancel never-live draft (D9–D11 / SC-PACK-264…268): quiet
+  `saveAddTaskSet({ quiet: true })` persists incomplete payload; GET restores
+  `moderationStatus: draft` + `pendingRequestId`; Cancel never-live → `draft`
+  (keeps `pendingRequestId`); `discardAddTaskSetDraft` →
+  `POST …/add-task-set/discard` (live pack/sets untouched). After quiet save,
+  patch catalog row to `draft` + `openRequestType: 'task_set'` (SC-PACK-268).
+  Author-only drafts filter / neverLive row. Page: separate `autosaveBaseline`
+  from Submit `editorDirty` baseline (D10).
 
 Open moderation = `pending`|`needs_revision`. Map API codes with
 `contentErrorI18nKey` → `content.errors.*` (incl. `author_request_open`,
@@ -166,19 +170,21 @@ gate «На модерацию» with `lib/editorDirty` fingerprint vs load base
 minima/locks). Pack cards↔tasks share session baseline via
 `ensurePackSubmitBaseline` / clear on leave.
 
-## Never-live add-task-set ghost (SC-PACK-188…190) + cancel restore (D22)
+## Never-live add-task-set ghost (SC-PACK-188…190) + cancel / draft (D22 / D9–D11)
 
 Live pack payload may include `TaskSet.neverLive === true` rows for the **set
-author only** (pending / needs_revision / draft after cancel). Staff and other
-users do not see ghosts on live (queue for staff). Activating the ghost row
-opens add-task-set Edit (amend), not live tasks drill-in.
+author only** (pending / needs_revision / **draft** pre-submit or after Cancel).
+Staff and other users do not see ghosts on live (queue for staff). Activating
+the ghost row opens add-task-set Edit (amend), not live tasks drill-in.
 
-**Cancel restore (SC-PACK-196/197):** GET `/api/content/packs/:id/add-task-set`
-after Cancel of a never-live cycle MUST return that revision’s `taskSets` (not
-an empty list with only live pack title/description). `pendingRequestId` /
-`moderationStatus` may be null until resubmit — still hydrate the page from
-`draft`. Do not special-case “no open request → blank form”. Server put/submit
-reuse the cancelled revision id; client keeps load→edit→save→submit as today.
+**Cancel → draft (SC-PACK-196/197 / 267):** Cancel of a never-live open cycle
+sets request `status=draft` (not terminal wipe). GET
+`/api/content/packs/:id/add-task-set` MUST return that revision’s `taskSets`
+plus `moderationStatus: draft` and `pendingRequestId`. Legacy rows may still
+be `cancelled` — treat as author draft. Do not special-case
+“no open request → blank form” when `draft.taskSets` is non-empty. Submit
+promotes `draft`→`pending` (reuse revision). Top delete uses
+`discardAddTaskSetDraft` (SC-PACK-266), not Cancel.
 
 ## Packs list open routing (SC-PACK-186 / 191 / 192)
 
@@ -186,12 +192,14 @@ reuse the cancelled revision id; client keeps load→edit→save→submit as tod
 → live first (ghost row then Edit). Never-published / pack-level draft → Edit.
 Clean in-catalog → live.
 
-## Add-task-set moderation thread (SC-PACK-128)
+## Add-task-set moderation thread (SC-PACK-128) + draft mark
 
 `ContentPackAddTaskSetPage` MUST show open-request status
 (`taskSetStatusMarks.pending` | `needs_revision`) and the same thread + reply
 UX as the cards editor while the author’s `task_set` request is
-`pending`|`needs_revision`.
+`pending`|`needs_revision`. For never-live **draft** (pre-submit / after Cancel),
+show author-facing `content.addTaskSetDraftStatus` («Черновик») — no staff
+thread reply until Submit creates `pending`.
 
 ## ACL surfaces (unify-content-lists-author-edit)
 
@@ -232,7 +240,7 @@ UX as the cards editor while the author’s `task_set` request is
 - **Live detail:** breadcrumbs replace «К наборам»; favorite star; author Edit
   (creator) / set-row Edit (task-set author); set-row `moderationStatus` badges
   for set author+staff; `neverLive` ghost → add-task-set Edit (GET restores
-  cancelled never-live draft — SC-PACK-196); staff Edit gated
+  draft\|legacy cancelled — SC-PACK-196/265/267); staff Edit gated
   by open author request; add-task-set beside «Задания» when verified+in-catalog
   (**not** `inCollection`); no Collect.
 - **Editor:** `cardsReadOnly` when `editorKind === 'task_set_author'`; author may
@@ -269,8 +277,9 @@ UX as the cards editor while the author’s `task_set` request is
 - Letting task-set author edit answer cards or foreign sets; showing foreign
   set `moderationStatus` to pack creator alone.
 - Clearing working flags on author cancel (must become draft, keep working).
-- Treating add-task-set GET with `pendingRequestId === null` as a blank new set
-  after never-live Cancel (must bind restored `draft.taskSets` — SC-PACK-196).
+- Treating add-task-set GET with empty `draft.taskSets` / null ids as a blank new
+  set after never-live Cancel or pre-submit draft (must bind restored
+  `draft.taskSets` + `moderationStatus: draft` — SC-PACK-196/265/267).
 - Pre-clearing `slot.answerCardId` before save; conflating soft-unpublish with **block**.
 - Releasing staff edit lock on cards↔tasks navigation (`isStaffEditSessionNavigation`).
 - Jumping `v-if` caption hints (SC-PACK-119).

@@ -48,6 +48,15 @@ Sibling client: `../happy-tourist.github.io` (room type `tourist`, board + piece
 7. Auth is `@colyseus/auth` (register/login/anonymous/Google + JWT + email confirm/forgot) and Room `onAuth` → `JWT.verify`. Auth config in `src/config/auth.ts` (`getRuntimeAuth` / `configureAuthEmailFlows`); mailer in `src/lib/`. Do not invent express-session + Redis.
 8. Prefer aligning **room name**, **state schema**, and **messages** with the client rather than changing the client unilaterally.
 
+## Specialized Topics
+
+Read the matching file in this folder when the change involves that area
+(do not load every file at once):
+
+| Topic | File |
+|-------|------|
+| Content packs lib (`content.ts` / never-live draft) | [content.md](content.md) |
+
 ## Folder Map
 
 | Layer | Path | Role |
@@ -55,7 +64,7 @@ Sibling client: `../happy-tourist.github.io` (room type `tourist`, board + piece
 | Entry | `src/index.ts` | `listen(app)` only |
 | Server wiring | `src/app.config.ts` | `defineServer`: `database`, `rooms`, `routes`, `express`; import auth config; `configureAuthEmailFlows` after DB boot; thin `POST /api/auth/*` + `/api/support/*` + `/api/content/*` + `/api/admin/*`; boot `ensureSupportTables` / `ensureContentTables` / `bootstrapAdminIds` / soft-fail `backfillDefaultPacksOnBoot` / `startAutoCloseInterval` |
 | Auth config | `src/config/` | `auth.ts` — Google/email hooks; create-user still calls grant helper (**no-op** SC-PACK-170); `htRole` → userdata `role` |
-| Mailer / support / content / password policy | `src/lib/` | `mailer.ts`; `support.ts`; `content.ts` — unified list + favorites + author re-edit + staff take + working≠live → list `draft` + per-set `moderationStatus` without authorId fan-out (SC-PACK-171…179, 187) + **staff omit working≠live `draft` / always clear retained working after live staff-save (SC-PACK-233; extends SC-PACK-230)** + neverLive ghost for set author (SC-PACK-188…189) + `retainedNeverLiveAuthorTaskSetCycle` shared with `getAddTaskSet` cancel→restore draft + put/submit reuse cancelled revision (D22 / SC-PACK-196/197) + list `openRequestType` + listCatalog lightweight `taskSetsPreview` (COUNT-only; author neverLive SC-PACK-252/253) + soft-unpublish + my-moderation/staff queue; `contentMaps.ts` — map list statuses + cancel→draft when working differs (SC-MAP-41/42) + live staff-save clears working (SC-MAP-64) + soft-unpublish; `defaultContentPacks.ts` — parse/eligible; grant/backfill **no-ops** (SC-PACK-170); `passwordPolicy.ts` |
+| Mailer / support / content / password policy | `src/lib/` | `mailer.ts`; `support.ts`; **`content.ts` details → [content.md](content.md)** (add-task-set draft put/discard D9–D11 SC-PACK-264…268); `contentMaps.ts` SC-MAP-41/42/64; `defaultContentPacks.ts` grants no-op SC-PACK-170; `passwordPolicy.ts` |
 | Auth HTML | `html/` | Legacy Colyseus cwd templates; product confirm/reset UX is **SPA + JSON** (mail links via `CLIENT_APP_URL`) |
 | Database | `src/db/` | `GameDatabase` (`index.ts`) + Drizzle user schema (`schema.ts`; `htRole` + support + content pack/map table decls) |
 | Rooms | `src/rooms/` | Room handlers (`onCreate` / `onJoin` / `onDrop` / `onReconnect` / leave / dispose; `onMessage('move'|'ready'|'say')`) |
@@ -215,7 +224,7 @@ src/db/
 src/lib/
 ├── mailer.ts          # smtp.bz sendEmail (+ setSendEmailImpl for tests)
 ├── support.ts         # tickets / roles / bootstrap helpers
-├── content.ts         # content packs (ensureContentTables + working copy + submitPack/add-task-set + staff lock/save + soft-unpublish pack+set in_catalog + pack unpublish cascade-cancel open req + mail SC-PACK-137…141 + previewPending live cards + authorDisplayName + needs-revision + cascadeNormalize ≠ answers_dirty + author delete + listMyModeration/listPending + authorWorkingDiffersFromLive list draft SC-PACK-175…179 + withTaskSetModerationStatuses / openStatusByContentSetId SC-PACK-171…174, 187 + staff SC-PACK-230 omit draft / SC-PACK-233 always clear working after live staff-save + retainedNeverLiveAuthorTaskSetCycle / neverLiveAuthorTaskSets SC-PACK-188…189 + getAddTaskSet/put/submit cancel restore D22 SC-PACK-196/197 + list openRequestType + listCatalog lightweight `taskSetsPreview` count-only SC-PACK-252/253)
+├── content.ts         # content packs — see content.md (draft put/discard D9–D11 SC-PACK-264…268)
 ├── contentMaps.ts     # maps list/create/draft/submit + soft-unpublish + mapAuthorWorkingDiffersFromLive list draft SC-MAP-41/42
 ├── defaultContentPacks.ts  # DEFAULT_CONTENT_PACK_IDS parse/eligible; grant/backfill no-ops (SC-PACK-170; re-export from content.ts)
 └── passwordPolicy.ts  # shared product password policy (register / reset / change)

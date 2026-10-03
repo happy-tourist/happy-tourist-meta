@@ -1,36 +1,34 @@
 ## Context
 
-См. `proposal.md` — Why. Пакет: **client** (`../happy-tourist.github.io`).
+См. `proposal.md` — Why.
 
-Уже в runtime (apply блоков 1–3):
+Уже в runtime (блоки 1–4):
 
-- `ContentPackEditorPage` — answer compose в `q-dialog` (fields only); add над `answer-card-grid`.
-- Shared `PackTaskComposeDialog` на Tasks / AddTaskSet: question/difficulty → centered `.peek-slot-like` → chip pool; CSV на странице; верхний live-grid на AddTaskSet убран.
-- Chip pool compose и peek на `GamePage` всё ещё гасят / подсвечивают карточку после первого размещения (`isCardPlaced` / `isAnswerPlaced`) — **снимаем** (revision).
+- Answer/task compose в `q-dialog`; AddTaskSet без верхнего live-grid; CSV на странице.
+- Compose + peek: reuse одной карточки ответа в нескольких слотах без used-state chrome.
 
-Store/API (`stores/content`) и cascade/minima не меняются. Server `peekPlace` / `peekSubmit` уже допускают одинаковый `answerCardId` в разных слотах.
+Gap (revision): add-task-set правки живут в Vue local до Submit; `saveAddTaskSet` / `putAddTaskSet` есть, но страница не делает quiet autosave; GET восстанавливает только open или **cancelled** cycle; ghost — только pending|needs_revision|cancelled. `putAddTaskSet` гоняет submit-minima (≥2 tasks, filled slots) — мешает «любому изменению».
 
-### Server / HTTP (explicit non-touch)
+### Server / HTTP
 
-- **Delta server: нет.** Модалки compose и persist — те же пути. Peek messages / schema не меняются.
-- Product rules cascade/minima/ACL/CSV — main `content/packs`. Correct peek order — main `game/board` SC-BOARD-43/44.
+- Compose UI / peek reuse — без room schema.
+- **Pre-submit draft** — server + client: put/get/ghost/discard + quiet autosave + top delete.
 
 ## Goals / Non-Goals
 
 **Goals:**
 
-- Формы ответа и задания только в `q-dialog`; над списками — кнопки добавления; Edit плитки → та же модалка.
-- Модалка задания: layout как peek (слоты по центру, chip-пул ответов).
-- Модалка ответа: `content` + `description`, без preview плитки.
-- Убрать верхний `live-answer-card-grid` на add-task-set.
-- CSV (`PackTasksCsvControls`) на странице сверху списка заданий.
-- Compose + peek: одна карточка ответа MAY заполнять любое число слотов; без disable и без used-state chrome на chip.
+- Compose dialogs + chip reuse (уже).
+- Add-task-set: quiet persist на любое dirty-изменение; неполный draft ок; minima только на Submit.
+- Уход / reload → тот же draft; author neverLive + drafts filter; staff queue без draft.
+- Top delete draft + confirm; Cancel never-live → снова draft.
+- Один never-live цикл на автора на пак.
 
 **Non-Goals:**
 
-- Менять server / CSV формат / ACL / moderation / правила правильности порядка слотов.
-- Редизайн resting chrome плиток списка.
-- Обязательный shared Vue-компонент compose↔peek.
+- Несколько параллельных never-live drafts одного автора.
+- Soft-unpublish published set как «черновик».
+- Новые peek room messages / CSV format / approve rules.
 
 ## Decisions
 
@@ -42,62 +40,77 @@ Store/API (`stores/content`) и cascade/minima не меняются. Server `pe
 
 ### D2 — Task dialog layout ≈ peek
 
-- **Choice:** question + difficulty → **centered** slot row (`.peek-slot-like` + `justify-center`) → chip pool (`q-chip`, label = `content`). Не `PackAnswerCardTile` / не `slot-picker-grid`. Add/remove slot рядом со слотами; Save/Cancel в footer.
-- **Why:** «как модалка выполнения».
-- **Reuse (revision):** chip click → fill next empty slot; **не** disable и **не** outline/primary «already placed» — см. D8.
-- **Canon carve-out:** answer pool в task compose dialog = chips (MODIFIED SC-PACK-222/224); list tiles без смены.
+- **Choice:** question + difficulty → **centered** slot row → chip pool. Не `PackAnswerCardTile` / не `slot-picker-grid`.
+- **Reuse:** chip click → fill next empty slot; без used-state — D8.
+- **Canon carve-out:** dialog pool = chips (MODIFIED SC-PACK-222/224).
 
 ### D3 — Answer dialog: fields only
 
 - **Choice:** `q-input` content + description; без preview плитки.
-- **Why:** explore.
 
 ### D4 — Remove add-task-set top live grid
 
-- **Choice:** Удалить `live-answer-card-grid` + hint / empty stub; live cards — chip-пул dialog + CSV context.
-- **Why:** дубль не нужен; SC-PACK-107 add-only сохраняется.
+- **Choice:** Удалить `live-answer-card-grid` + hint / empty stub.
 
 ### D5 — Page chrome: add button + CSV + list
 
-- **Choice:** Tasks/AddTaskSet: `[+ Добавить вопрос]` → CSV (если не viewOnly) → `task-card-grid`. Editor: CSV → `[+ Добавить карточку]` → `answer-card-grid`.
-- **Gates:** add/Edit compose только когда compose allowed.
+- **Choice:** Tasks/AddTaskSet: add-question → CSV → grid; Editor: CSV → add-card → grid.
 
 ### D6 — i18n / a11y
 
-- **Choice:** reuse `content.*` / `game.*` keys; persist disabled + tooltip SC-PACK-119 на Save в dialog.
+- **Choice:** reuse `content.*` / `game.*`; persist disabled + tooltip SC-PACK-119 на Save в dialog.
 
 ### D7 — Main-spec / skill supersede (compose shell)
 
-- **Choice:** MODIFIED Playing-card SC-PACK-222…227 + ADDED 256…262; skills pack-cards / content-pages / content — dialog compose + chip-pool carve-out (уже в runtime/skills).
+- **Choice:** MODIFIED Playing-card + ADDED 256…262; skills dialog compose + chip-pool carve-out.
 
 ### D8 — Reusable answer cards in slots (compose + peek)
 
-- **Choice:** Убрать client uniqueness: в `PackTaskComposeDialog` — `isCardPlaced` из disable/clickable/outline/color и early-return в `pickAnswer`; на `GamePage` peek — аналогично `isAnswerPlaced` / `:disable` / `:outline` / `:color` / early-return в `onPeekAnswerClick`. Chip визуально одинаковый независимо от того, стоит ли карточка в слотах (всегда outline или единый нейтральный вид без «consumed»). Клик по chip при наличии пустого слота снова кладёт ту же карточку; полный ряд слотов — no-op. Clear слота кликом по filled slot без изменений.
-- **Why:** explore: «везде нет ограничения»; «не надо подсвечивать что уже используется»; иначе задания с повторяющимися слотами непроходимы в peek.
-- **Alt:** soft highlight без disable — отвергнуто (продукт: без подсветки).
-- **Server:** no-op (уже ok). Specs: SC-PACK-263 + SC-BOARD-49. Skills: `peek.md`, content-pages / pack-cards — убрать формулировки «disable when already placed».
+- **Choice:** Убрать `isCardPlaced` / `isAnswerPlaced` uniqueness chrome. Specs: SC-PACK-263 + SC-BOARD-49.
+
+### D9 — Pre-submit never-live draft carrier (request status `draft`)
+
+- **Choice:** Первый dirty `putAddTaskSet` без open pending/needs_revision: записать task_set-only revision и создать/обновить moderation request `type=task_set`, `status=draft` (author-facing draft; **не** staff-open). GET / neverLive ghosts / list drafts filter включают `draft` наравне с cancelled→draft mapping. Submit: `draft` → `pending` (reuse revision). Cancel open never-live: → `status=draft` (сохранить payload; читать legacy `cancelled` как draft для совместимости). Один цикл на автора на пак — как сейчас.
+- **Why:** тот же author draft vocabulary «с первого изменения», без попадания в очередь; ближе к продуктовому «статус черновика», чем orphan `stagedRevisionId` без request.
+- **Alt:** orphan stagedRevisionId only — отвергнуто (GET/ghost дырявые). Сразу `cancelled` на первом put — отвергнуто (ложная семантика cancel).
+- **Put validation:** для draft put — **не** вызывать submit-minima (`validateOneTaskSet` / filled slots); достаточно ≥1 task set и валидных id ссылок где слот заполнен (пустые слоты ок). Submit сохраняет текущие minima.
+- Specs: SC-PACK-264/265/267/268.
+
+### D10 — Quiet autosave on AddTaskSet (client)
+
+- **Choice:** Как `ContentPackEditorPage` / Tasks: debounce quiet `saveAddTaskSet` на любое dirty изменение local set. Не ждать Submit. После успешного put обновить `staged`/request ids в store; baseline dirty для Submit — отдельно (SC-PACK-234: Submit disabled пока pristine относительно loaded session; после restore draft Submit enabled только после новых правок **или** если baseline = restored draft и уже dirty vs empty — сохранить текущий fingerprint-after-load: после load draft Submit disabled until further edit, minima tooltip как сейчас).
+- **Why:** explore D3/D4 — «любое изменение».
+- Specs: SC-PACK-264/265.
+
+### D11 — Top delete draft
+
+- **Choice:** На `ContentPackAddTaskSetPage` сверху (над add/CSV/list) кнопка удаления черновика, видима когда есть retained never-live draft (`draft` / legacy cancelled / после load непустой draft без pending). Confirm → server discard (новый DELETE или POST discard add-task-set): удалить draft/cancelled never-live request + orphan revision при отсутствии refs; live pack/sets не трогать. Client: очистить local + ghost.
+- **Why:** explore D2 — «сверху».
+- **Alt:** только trash на ghost row — недостаточно (нужна кнопка сверху; ghost trash MAY later, не обязателен).
+- Specs: SC-PACK-266.
 
 ## Risks / Trade-offs
 
 - [Chip pool хуже показывает description] → Mitigation: label = content (как peek).
-- [Дублирование Tasks vs AddTaskSet] → Mitigation: shared dialog (уже).
-- [Регрессия тестов на unique chips] → Mitigation: vitest SC-PACK-263 / SC-BOARD-49; обновить ассерты на disable/outline.
-- [Игрок не видит «сколько раз карточка уже стоит»] → Mitigation: смотреть на слоты (продуктовый выбор).
+- [Неполный draft в БД] → Mitigation: staff queue не видит `draft`; Submit minima без изменений.
+- [Legacy cancelled vs draft] → Mitigation: читать оба как author draft; новые cancel → `draft`.
+- [Autosave гонки] → Mitigation: debounce + last-write; quiet flag без layout jump (SC-PACK-119).
+- [Регрессия put minima tests] → Mitigation: mocha split put-draft vs submit.
 
 ## Migration Plan
 
-- Только client deploy; server не трогаем.
-- Rollback: git revert client (compose dialogs + chip uniqueness).
+- Deploy server (draft status + relax put + discard) затем client (autosave + delete).
+- Rollback: revert server/client; legacy cancelled drafts остаются читаемыми.
 
 ## Technical prerequisites
 
 - Нет новых npm deps / внешних сервисов.
-- Нет новых server endpoints / schema / room messages.
-- Explore: reuse везде + без used-state chrome — закрыто.
+- Нет новых Colyseus room messages.
+- Explore D1–D4 закрыты: draft status earlier; top delete; any change; incomplete put ok.
 
 ## Implementation touchpoints
 
-- Client: `PackTaskComposeDialog.vue`, `GamePage.vue` (peek chips), уже существующие compose pages
-- Skills: `.agents/skills/client/work-with-game-board/peek.md`, при drift — content-pages / pack-cards / content (убрать «disable when already placed»)
-- Tests: vitest SC-PACK-263 (+ compose suites); SC-BOARD-49 (Game peek / board suites); lint/typecheck client
-- Чеклист — `tasks.md` §4 (новые пункты); §1–3 уже `[x]`
+- Server: `lib/content.ts` (`putAddTaskSet`, `getAddTaskSet`, `submitAddTaskSet`, cancel, `retainedNeverLiveAuthorTaskSetCycle` / ghosts, list status); `app.config.ts` discard route; mocha zz-contentPacks
+- Client: `ContentPackAddTaskSetPage.vue` (autosave + top delete); `stores/content.ts`; list/live neverLive already; vitest
+- Skills: client content-pages / content store; server routes/structure/test — never-live draft pre-submit + discard
+- Чеклист — `tasks.md` §5 (новые); §1–4 уже `[x]`

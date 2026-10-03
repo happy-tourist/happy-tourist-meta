@@ -24,3 +24,11 @@
 - [x] 4.3 Peek на GamePage: убрать `isAnswerPlaced` disable/outline/color/early-return; chip остаётся доступным без consumed highlight; clear слота без регрессии sync — verify vitest SC-BOARD-49
 - [x] 4.4 Skills drift: `peek.md` (+ при необходимости content-pages / pack-cards / content) — reuse без used-state; server skills не трогать
 - [x] 4.5 `npm test` (compose + peek/board suites) + `npm run lint` + `npm run typecheck` в `../happy-tourist.github.io` — зелёный прогон; server не обязательный gate
+
+## 5. Server + client — add-task-set pre-submit draft
+
+- [x] 5.1 Прочитать `design.md` D9–D11; delta SC-PACK-264…268; skills server `work-with-routes` / structure / test + client content-pages / `work-with-stores/content`; точки: `putAddTaskSet` / `getAddTaskSet` / neverLive ghosts / cancel; `ContentPackAddTaskSetPage` autosave + top delete
+- [x] 5.2 Server: draft put без submit-minima; создать/обновить `task_set` request `status=draft`; GET + neverLive + list drafts включают draft (+ legacy cancelled); Submit `draft`→`pending`; Cancel never-live → `draft` — verify mocha SC-PACK-264/265/267/268
+- [x] 5.3 Server: discard/delete never-live draft endpoint (не трогает live sets/pack) — verify mocha SC-PACK-266
+- [x] 5.4 Client: quiet autosave `saveAddTaskSet` на любое dirty изменение; reload восстанавливает draft; top delete + confirm; author-only draft/neverLive UX — verify vitest SC-PACK-264/265/266/268
+- [x] 5.5 Skills drift (client content* + server routes/structure/test); `npm test` + lint + typecheck в client; mocha затронутых content suites + build в server
