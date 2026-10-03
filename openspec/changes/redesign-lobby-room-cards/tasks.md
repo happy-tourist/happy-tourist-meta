@@ -15,3 +15,10 @@
 - [x] 3.1 Client vitest: SC-LOBBY-25/26/33/34/35 (preview, seats/tourists, pack+counts, chrome 180+outline, status overlay, overflow) — verify: `npm test` в client, релевантные Lobby* тесты зелёные
 - [x] 3.2 Обновить skills `work-with-lobby` (+ note в `pack-cards.md` что lobby listing потребляет `--pack-card-*`) — verify: топики упоминают card listing / taskCount metadata
 - [x] 3.3 Скопировать mock в `openspec/changes/redesign-lobby-room-cards/assets/` (если файл доступен) — verify: путь ссылается из design Visual Spec
+
+## 4. Seats/tourists metric rows (explore follow-up)
+
+- [x] 4.1 `LobbyRoomCardTile`: seats/tourists — full-width grid `lead | label | count` как set-rows (убрать centered `max-content`); иконки на одной вертикали с наборами — verify: DOM/CSS grid columns совпадают с set-row; testids label+count
+- [x] 4.2 i18n: склоняемые labels мест по `maxSeats` (`Место`/`Места`/`Мест`) и туристов по `touristsPerPlayer` (`Турист`/`Туриста`/`Туристов`); справа `capacity` / bare `n` без «+» — verify: RU catalog + tile render (1/2/5 формы)
+- [x] 4.3 Vitest SC-LOBBY-25/36 (+ обновить устаревшие asserts про combined «N ТУРИСТ…» / centering) — verify: `npm test` LobbyRoomCardTile (+ LobbyCreateWire если ломается)
+- [x] 4.4 Skills note (`work-with-lobby` / listing-cards): metric rows = set-row rhythm; plural by maxSeats / touristsPerPlayer — verify: топик описывает layout + copy

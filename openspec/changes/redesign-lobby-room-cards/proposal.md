@@ -5,7 +5,8 @@
 ## What Changes
 
 - Карточки комнат в live lobby listing: вертикальная card-сетка (~ширина 180), не list-row.
-- Структура: превью карты → места `occupied/maxSeats` → туристы (без плюса) → название пака → строки выбранных наборов с `taskCount` (≤4 + «ещё {k}») → outline «Войти».
+- Структура: превью карты → места → туристы → название пака → строки выбранных наборов с `taskCount` (≤4 + «ещё {k}») → outline «Войти».
+- **Строки мест и туристов** — тот же ритм, что у наборов: lead-иконка слева (одна вертикаль с иконками наборов) | склоняемый label слева | число справа (`occupied / maxSeats` для мест; `touristsPerPlayer` для туристов). Без центрированного блока «иконка+текст».
 - Статус фазы (`waiting` / `playing`) — short badge поверх превью по центру; размеры/цвета как текущие soft pills.
 - Join по всей карточке и по кнопке; busy-lock join без изменения семантики.
 - Lobby metadata: у каждого выбранного набора — `taskCount` (D1, из snapshot при create).
@@ -19,7 +20,7 @@
 
 ### Modified Capabilities
 
-- `lobby/rooms`: chrome/list presentation карточки комнаты; расширение listing metadata `taskCount`; ревизия SC-LOBBY-25/26 (+ новые сценарии card chrome / overflow / status overlay).
+- `lobby/rooms`: chrome/list presentation карточки комнаты; расширение listing metadata `taskCount`; ревизия SC-LOBBY-25/26 (+ card chrome / overflow / status overlay; seats/tourists metric rows как set-rows).
 
 ## Scope
 
@@ -42,7 +43,7 @@
 
 ## Impact
 
-- Client: lobby listing UI → card tile; i18n seats/tourists/status/overflow; join wiring; vitest SC-LOBBY-25/26 + новые chrome scenarios
+- Client: lobby listing UI → card tile; i18n seats/tourists (label+count, склонение) / status/overflow; join wiring; vitest SC-LOBBY-25/26/36 + chrome scenarios
 - Server: `setMetadata` / snapshot labels + `taskCount` per selected set; mocha listing metadata
 - Delta: `lobby/rooms`
 - Skills: `work-with-lobby`, pack-cards note (lobby consumes `--pack-card-*`), возможно pages/stores topics
@@ -52,6 +53,7 @@
 
 - Prepare-mock: lobby card light+dark; consistency > mock pixels; width 180; status center; seats + tourists + pack + sets with counts; «Войти»; overflow «ещё {k}»
 - Explore 2026-10-03: D1 expand metadata taskCount; lobby-only; Material seat placeholder until user SVG
+- Explore follow-up: seats/tourists rows align with set rows (label left + count right; seats plural by maxSeats; tourists plural by touristsPerPlayer)
 - Main `openspec/specs/lobby/rooms`
 - Archive pack/task-set/map list card redesigns (chrome canon `--pack-card-*`)
 - Sibling `../happy-tourist.github.io/AGENTS.md`, `../happy-tourist-server/AGENTS.md`, `docs/projects-map.md`

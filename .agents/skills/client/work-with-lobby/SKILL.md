@@ -37,7 +37,7 @@ file at once):
 
 | Topic | File |
 |-------|------|
-| Room **card** listing chrome (`LobbyRoomCardTile`, `--pack-card-*`, status, set rows + `taskCount`, outline join) | [listing-cards.md](listing-cards.md) |
+| Room **card** listing chrome (`LobbyRoomCardTile`, `--pack-card-*`, seats/tourists metric rows, status, set rows + `taskCount`, outline join) | [listing-cards.md](listing-cards.md) |
 
 ## Quick Reference
 
@@ -52,7 +52,7 @@ file at once):
 | Leave lobby | `unsubscribeLobby` after successful tourist connect (`_enterRoom`); also on LobbyPage unmount and `leaveGame` / logout |
 | Create | Modal: **map** picker (option + **selected-item** mini `MapGridPreview` — SC-LOBBY-31; players × tourists in option caption only — SC-LOBBY-29) + **maxSeats** radios `1…map.players` (default `min(2, map.players)` — SC-LOBBY-28) + **pack** + multi-check published sets (exactly one → auto-check — SC-LOBBY-30; labels `taskSetOption` / ordinal `taskSetLabel` **without** set author — SC-LOBBY-24) + **grille**/ **catapult** density few/medium/many (default medium; server seeds **12/22/35%**) → `createGame({ mapId, packId, taskSetIds, maxSeats, grilleDensity, catapultDensity })` |
 | Join by id | Card body / outline «Войти» → `joinGame(roomId)` → `client.joinById(roomId)` — card chrome in [listing-cards.md](listing-cards.md) |
-| Listing card | `LobbyRoomCardTile` in `.pack-card-grid` (SC-LOBBY-25/26/33/34/35) — details in [listing-cards.md](listing-cards.md) |
+| Listing card | `LobbyRoomCardTile` in `.pack-card-grid` (SC-LOBBY-25/26/33/34/35/36; metric rows = set-row rhythm) — details in [listing-cards.md](listing-cards.md) |
 | Play shortcut | **Removed** — do not restore «Играть» / bare `joinOrCreate` without product request |
 | After enter | `router.push({ name: 'game', params: { roomId } })` |
 | Loading | Store `listing` during subscribe connect; page refs `creating`, `joining`, `pickersLoading` |

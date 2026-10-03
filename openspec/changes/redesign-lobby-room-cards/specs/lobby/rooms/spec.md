@@ -4,12 +4,13 @@
 |-------------|----------|
 | SC-LOBBY-11 | covered / reinforced (seats `occupied/maxSeats` on card) |
 | SC-LOBBY-19 | covered / reinforced (join busy-lock; card + button) |
-| SC-LOBBY-25 | revised (card chrome: preview + seats + tourists without plus + pack title; maxSeats capacity) |
+| SC-LOBBY-25 | revised (card chrome: preview + seats + tourists without plus + pack title; maxSeats capacity; metric rows) |
 | SC-LOBBY-26 | revised (per-set rows with taskCount; no author; ordinal labels) |
 | SC-LOBBY-32 | covered (lobby listing metadata includes taskCount per selected set) |
 | SC-LOBBY-33 | covered (card chrome ~180; outline Войти; pack-card tokens) |
 | SC-LOBBY-34 | covered (phase status overlay centered; short ОЖИДАНИЕ / ИГРА) |
 | SC-LOBBY-35 | covered (≤4 set rows + overflow «ещё {k}») |
+| SC-LOBBY-36 | covered (seats/tourists rows: label left + count right; same lead column as sets; declined labels) |
 
 Related: pack catalog set-preview overflow SC-PACK-249; shared card chrome SC-PACK-255 / SC-MAP-55/66/67. Create-modal SC-LOBBY-21…31 unchanged except listing presentation.
 
@@ -17,16 +18,24 @@ Related: pack catalog set-preview overflow SC-PACK-249; shared card chrome SC-PA
 
 ### Requirement: Lobby lists map capacity, preview, and task sets
 
-Each listed `tourist` room in the live lobby listing MUST appear as a **card** (not a dense list-only row) with resting width about **180** CSS pixels (height MAY grow with preview, capacity rows, pack title, set rows, and the join action). The card MUST show, top to bottom: a **mini preview** of the room’s map grid; **occupied seats over maxSeats** (`occupied/maxSeats`, for example `2/4`) with a leading seat-style icon; **tourists per player** from the map snapshot as a count **without** a leading plus (product sense «N ТУРИСТ…» with appropriate plural), with a leading backpack-style icon; the **pack title** (uppercase, truncated); then **one row per selected task set** (leading document-style icon, ordinal label with hash product sense «Набор #{n}» or equivalent, **task count** right-aligned) **without** task-set author names. Ordinals `{n}` are 1-based among the room’s selected sets in listing order. When more than **four** selected sets exist, the card MUST show at most four rows plus an overflow caption product sense «ещё {k}» where `{k}` is the number of selected sets not shown. Occupied/maxSeats MUST use the room’s chosen `maxSeats` (not the map’s full `players` when those differ). Join MUST remain available via the card body and via a bottom full-width **outline** «Войти» control; join busy-lock (SC-LOBBY-19) MUST still apply.
+Each listed `tourist` room in the live lobby listing MUST appear as a **card** (not a dense list-only row) with resting width about **180** CSS pixels (height MAY grow with preview, capacity rows, pack title, set rows, and the join action). The card MUST show, top to bottom: a **mini preview** of the room’s map grid; a **seats metric row** (leading seat-style icon, declined seats noun on the left, **occupied/maxSeats** right-aligned, for example `2/4`); a **tourists metric row** (leading backpack-style icon, declined tourists noun on the left, bare tourists-per-player count right-aligned **without** a leading plus); the **pack title** (uppercase, truncated); then **one row per selected task set** (leading document-style icon, ordinal label with hash product sense «Набор #{n}» or equivalent, **task count** right-aligned) **without** task-set author names. Seats and tourists rows MUST use the same left-to-right metric rhythm as set rows (shared lead column / label edge / count edge) and MUST NOT be a centered icon+combined-text block. Seats noun pluralization MUST follow **maxSeats**; tourists noun pluralization MUST follow **touristsPerPlayer**. Ordinals `{n}` are 1-based among the room’s selected sets in listing order. When more than **four** selected sets exist, the card MUST show at most four rows plus an overflow caption product sense «ещё {k}» where `{k}` is the number of selected sets not shown. Occupied/maxSeats MUST use the room’s chosen `maxSeats` (not the map’s full `players` when those differ). Join MUST remain available via the card body and via a bottom full-width **outline** «Войти» control; join busy-lock (SC-LOBBY-19) MUST still apply.
 
 #### Scenario [SC-LOBBY-25]: Listing shows map preview and room capacity
 
 - **GIVEN** a listed tourist room created from map M with players=4 and touristsPerPlayer=3 where the creator chose maxSeats=2 and two seats are occupied
 - **WHEN** a lobby subscriber views that room card
 - **THEN** the card shows a mini preview of M’s grid
-- **AND** shows occupied/maxSeats using maxSeats 2 (product sense `2/2` when full, or `occupied/2`)
-- **AND** shows 3 tourists per player without a leading plus
+- **AND** shows a seats row with a declined seats label and occupied/maxSeats using maxSeats 2 on the right (product sense `2/2` when full, or `occupied/2`)
+- **AND** shows a tourists row with a declined tourists label and count 3 on the right without a leading plus
 - **AND** MUST NOT present capacity as a lone `players×tourists` caption in place of those rows
+
+#### Scenario [SC-LOBBY-36]: Seats and tourists rows match set-row metric layout
+
+- **GIVEN** a listed tourist room with seats, touristsPerPlayer, and at least one selected task set
+- **WHEN** a lobby subscriber views that room card
+- **THEN** seats and tourists rows each show lead icon, left label, and right count in the same column rhythm as set rows
+- **AND** seats/tourists lead icons share the set-row lead column (not a centered capacity cluster)
+- **AND** the seats label reflects pluralization by maxSeats and the tourists label by touristsPerPlayer
 
 #### Scenario [SC-LOBBY-26]: Listing shows played task sets
 

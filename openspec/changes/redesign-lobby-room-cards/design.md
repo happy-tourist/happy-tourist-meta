@@ -6,7 +6,7 @@ See `proposal.md` — Why. Lobby listing today: `LobbyPage` `q-list` / `q-item` 
 
 **Goals:**
 
-- Redesign lobby room listing as ~180 cards: preview + seats + tourists (no plus) + pack title + set rows with counts + outline Войти
+- Redesign lobby room listing as ~180 cards: preview + seats/tourists metric rows (label left + count right, same as sets) + pack title + set rows with counts + outline Войти
 - Centered phase badge on preview (ОЖИДАНИЕ / ИГРА); soft pills like existing short badges
 - Extend listing metadata with per-set `taskCount` from create snapshot
 - Visual Spec measurable for apply + verify-mock; overflow ≤4 + «ещё {k}»
@@ -34,10 +34,12 @@ See `proposal.md` — Why. Lobby listing today: `LobbyPage` `q-list` / `q-item` 
 2. **Width 180**
    - Match Maps / Pack catalog resting width; height grows with content.
 
-3. **Capacity copy**
-   - Seats: reuse/adapt `lobby.capacity` → `{seats} / {maxSeats}` with seat icon.
-   - Tourists: new i18n plural without plus (e.g. `lobby.roomCardTourists`).
+3. **Capacity copy (metric rows = set-row rhythm)**
+   - Seats and tourists use the **same full-width grid** as set rows: `lead (22) | label left | count right` — **not** a centered `icon+text` block (supersedes verify-mock centering).
+   - Seats: label = RU plural of «место» by **`maxSeats`** (`Место` / `Места` / `Мест`, sentence case); count = `{seats} / {maxSeats}` (reuse/adapt `lobby.capacity` for the count cell only).
+   - Tourists: label = RU plural of «турист» by **`touristsPerPlayer`** (`Турист` / `Туриста` / `Туристов`); count = bare `n` without `+`. Split former combined `roomCardTourists*` into label keys + numeric cell.
    - Drop listing reliance on `lobby.mapCapacityCaption` (`N×M`) for the card body.
+   - Lead icons share the same left edge as set-row icons.
 
 4. **Set rows**
    - Label: short «Набор #{n}» (or `content.taskSetLabel` if already hash-form; prefer short card key if long «Набор заданий #{n}» overflows 180).
@@ -62,6 +64,10 @@ See `proposal.md` — Why. Lobby listing today: `LobbyPage` `q-list` / `q-item` 
 9. **Divider between seats and tourists**
    - Yes (MapListCardTile capacity rhythm), even if mock omits a visible line between those two.
 
+10. **Seats/tourists align with set metrics (explore follow-up)**
+    - User locked: count seats as `occupied / maxSeats` on the right; decline seats label by maxSeats; decline tourists by touristsPerPlayer; free choice of exact noun forms within that rule.
+    - Typography for capacity labels/counts → match set-row sense (~0.68rem label muted left, count tabular right); seats count MAY stay slightly stronger weight if needed for `2 / 4` readability.
+
 ## Risks / Trade-offs
 
 | Risk | Mitigation |
@@ -79,7 +85,7 @@ See `proposal.md` — Why. Lobby listing today: `LobbyPage` `q-list` / `q-item` 
 
 ## Open Questions
 
-- (none) — explore defaults locked: Material seat until SVG; click card+button; width 180; overflow 4; status pills as current.
+- (none) — explore defaults locked: Material seat until SVG; click card+button; width 180; overflow 4; status pills as current; seats/tourists metric rows = set-row layout (D1–D3).
 
 ---
 
@@ -92,9 +98,9 @@ See `proposal.md` — Why. Lobby listing today: `LobbyPage` `q-list` / `q-item` 
 
 1. Mini map preview (`position: relative` host for badge)
 2. Status badge overlay — absolute, horizontally centered, near top of preview
-3. Seats row (lead icon | `occupied / maxSeats`)
+3. Seats row (lead | declined «Место/Места/Мест» left | `occupied / maxSeats` right) — same columns as sets
 4. Pale divider
-5. Tourists row (lead backpack | `N ТУРИСТ…` no plus)
+5. Tourists row (lead | declined «Турист…» left | `n` right) — same columns as sets
 6. Pack title (uppercase, center, 1–2 lines truncate)
 7. Set rows ≤4 (lead | label left | count right) with pale divider **between** rows
 8. Optional overflow «ещё {k}»
@@ -106,8 +112,10 @@ See `proposal.md` — Why. Lobby listing today: `LobbyPage` `q-list` / `q-item` 
 | Element | Canon |
 |---------|--------|
 | Badge waiting / playing | `ОЖИДАНИЕ` / `ИГРА` |
-| Seats | `{seats} / {maxSeats}` |
-| Tourists | plural without `+` |
+| Seats label | `Место` / `Места` / `Мест` by **maxSeats** (sentence case, not UPPER) |
+| Seats count | `{seats} / {maxSeats}` right-aligned |
+| Tourists label | `Турист` / `Туриста` / `Туристов` by **touristsPerPlayer** (sentence case) |
+| Tourists count | bare `n` right-aligned, no `+` |
 | Pack title | packTitle uppercase |
 | Set label | `Набор #{n}` (1-based among selected) |
 | Overflow | `ещё {k}` |
@@ -118,8 +126,8 @@ See `proposal.md` — Why. Lobby listing today: `LobbyPage` `q-list` / `q-item` 
 | Role | font-size | weight | line-height | Align |
 |------|-----------|--------|-------------|--------|
 | badge | ~10px / 0.62rem | 600–700 | ~1.2 | center |
-| seats | ~0.72–0.8rem | 600–700 | 1.2 | center block / icon+text |
-| tourists | ~0.68–0.72rem | 500–600 | 1.2 | same |
+| seats/tourists label | ~0.68rem | 400–500 | 1.2 | left shared (same edge as set labels) |
+| seats/tourists count | ~0.68–0.78rem | 600–700 | 1.2 | right shared (same edge as set counts) |
 | title | ~0.78–0.9rem | 700 | 1.2 | center |
 | set label | ~0.68rem | 400–500 | 1.2 | left shared |
 | set count | ~0.68rem | 600 | 1.2 | right |
@@ -133,7 +141,7 @@ See `proposal.md` — Why. Lobby listing today: `LobbyPage` `q-list` / `q-item` 
 | card | **180** | grows (~280+) | radius **12** | `--pack-card-*` |
 | preview | ~140–156 | square | pad ~10 top, x ~12 | MapGridPreview |
 | status | max content | ~18–22 | top ~8, center X | overlay |
-| seats / tourists rows | full | ~28–32 | lead **22**, pad-y **6** | |
+| seats / tourists rows | full | ~28–32 | lead **22**, pad-y **6** | grid `lead \| 1fr \| auto` like sets; **not** centered |
 | divider | full | 1px | air ~3+3 | seats↔tourists; between sets; above actions |
 | set row | full | pad-y 6 | lead 22 | icon ~14 |
 | Войти | full content | **30** | actions pad ~8–10 | `--pack-card-action-h` |
@@ -148,8 +156,8 @@ See `proposal.md` — Why. Lobby listing today: `LobbyPage` `q-list` / `q-item` 
 | card.border.rest | `rgba(0,0,0,0.14)` |
 | card.border.hover | `#212121` |
 | card.shadow.rest / .hover | `0 1px 3px rgba(0,0,0,0.08)` / `0 4px 12px rgba(0,0,0,0.14)` |
-| title.fg / seats / counts | `rgba(0,0,0,0.87)` |
-| muted (tourists/set labels) | `rgba(0,0,0,0.7)` |
+| title.fg / seats / set labels / counts | `rgba(0,0,0,0.87)` |
+| muted (tourists labels) | `rgba(0,0,0,0.7)` |
 | divider | `rgba(0,0,0,0.08)` |
 | action.outline | border token |
 | badge pills | soft muted / pending sense (existing short-badge tokens) |
@@ -198,6 +206,6 @@ See `proposal.md` — Why. Lobby listing today: `LobbyPage` `q-list` / `q-item` 
 
 **Server:** `MyRoom.refreshMetadata` (+ types if any); mocha assert `taskCount` on listing metadata after create.
 
-**Client:** new lobby room tile component; `LobbyPage` wrap `.pack-card-grid`; i18n keys; `GameRoomMeta` type; vitest listing chrome; mask `url("${…}")` for SVG leads.
+**Client:** lobby room tile (`LobbyRoomCardTile`); `LobbyPage` wrap `.pack-card-grid`; i18n seats/tourists label plurals + count cells; `GameRoomMeta` type; vitest SC-LOBBY-25/36; mask `url("${…}")` for SVG leads.
 
-**Skills (after apply):** `work-with-lobby`, `pack-cards.md` note lobby consumes shared tokens.
+**Skills (after apply / follow-up):** `work-with-lobby` (+ listing-cards topic), `pack-cards.md` note lobby consumes shared tokens; document metric-row rhythm.

@@ -67,16 +67,17 @@ hover / action outline / muted. Layout-only tokens stay local
 `--lobby-room-lead-w`, dots, spacing).
 Visual Spec: change `redesign-pack-list-cards` / main `content/packs` after sync.
 
-**Lobby room listing (SC-LOBBY-25/26/33/34/35):** `LobbyPage` wraps rooms in
+**Lobby room listing (SC-LOBBY-25/26/33/34/35/36):** `LobbyPage` wraps rooms in
 `.pack-card-grid`; `LobbyRoomCardTile.vue` consumes `--pack-card-*` via
 `--lobby-room-*` aliases (same host tokens as pack/map cards). Card ~180 wide;
-map preview (~156) + centered short status ОЖИДАНИЕ/ИГРА; seats + tourists as a
-**centered** icon+text block (lead 22, not full-width left grid) with pale
+map preview (~156) + centered short status ОЖИДАНИЕ/ИГРА; seats + tourists as
+**full-width metric rows** matching set-row grid (`lead 22 | label | count` —
+SC-LOBBY-36; plural seats by maxSeats, tourists by touristsPerPlayer) with pale
 divider between them; uppercase pack title; set rows with listing metadata
 **`taskCount`** (≤4 + `content.packCardSetsOverflow`); outline «Войти». Lead
 masks `lobby-room-card-seats.svg` / `map-card-tourists.svg` /
 `task-set-card-tasks.svg` via quoted `` `url("${…}")` `` (SC-MAP-68). Contracts:
-meta `work-with-lobby`.
+meta `work-with-lobby` / `listing-cards.md`.
 
 **Task-set lists — live + cards editor (SC-PACK-229 / 239…248):** dedicated
 `PackTaskSetCardTile.vue` (not `PackListCardTile`). Mock-aligned summary chrome:
