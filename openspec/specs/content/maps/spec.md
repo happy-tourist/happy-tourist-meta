@@ -13,7 +13,7 @@ UGC-карты поля 10×10 (старт / игровое / финиш / ды�
 | SC-MAP-03 | covered (server mocha) |
 | SC-MAP-04 | covered (client vitest paint) |
 | SC-MAP-05 | covered (server mocha) |
-| SC-MAP-06 | covered (server mocha + client vitest) |
+| SC-MAP-06 | covered (server mocha list visibility + JSON; client vitest — preview + capacity rows, no author on card) |
 | SC-MAP-07 | covered (server mocha + client vitest) |
 | SC-MAP-08 | covered (client vitest) |
 | SC-MAP-09 | covered (server mocha) |
@@ -23,7 +23,7 @@ UGC-карты поля 10×10 (старт / игровое / финиш / ды�
 | SC-MAP-13 | covered (server mocha) |
 | SC-MAP-14 | covered (server mocha + client vitest) |
 | SC-MAP-15 | covered (server mocha) |
-| SC-MAP-16 | covered (server mocha) |
+| SC-MAP-16 | covered (server mocha approve → in-catalog; client vitest — list card without author) |
 | SC-MAP-17 | covered (server mocha + client vitest) |
 | SC-MAP-18 | covered (server mocha) |
 | SC-MAP-19 | covered (server mocha) |
@@ -38,8 +38,8 @@ UGC-карты поля 10×10 (старт / игровое / финиш / ды�
 | SC-MAP-28 | removed (superseded — maps wired at create) |
 | SC-MAP-29 | covered (client vitest) |
 | SC-MAP-30 | covered (client vitest) |
-| SC-MAP-31 | covered (mocha) |
-| SC-MAP-32 | covered (mocha) |
+| SC-MAP-31 | covered (client vitest — short «НА ПРОВЕРКЕ»; detail via SC-MAP-66/67) |
+| SC-MAP-32 | covered (client vitest — short «ДОРАБОТАТЬ»; detail via SC-MAP-66/67) |
 | SC-MAP-33 | covered (vitest) |
 | SC-MAP-34 | covered (vitest) |
 | SC-MAP-35 | covered (mocha) |
@@ -52,7 +52,7 @@ UGC-карты поля 10×10 (старт / игровое / финиш / ды�
 | SC-MAP-42 | covered (mocha/vitest) |
 | SC-MAP-43 | covered (vitest) |
 | SC-MAP-44 | covered (vitest) |
-| SC-MAP-45 | covered (vitest) |
+| SC-MAP-45 | covered (client vitest — no in_catalog / «ОПУБЛИКОВАНО» badge) |
 | SC-MAP-46 | covered (vitest) |
 | SC-MAP-47 | covered (vitest) |
 | SC-MAP-48 | covered (vitest) |
@@ -62,7 +62,10 @@ UGC-карты поля 10×10 (старт / игровое / финиш / ды�
 | SC-MAP-52 | covered (vitest) — strengthen: offset zone |
 | SC-MAP-53 | covered (client vitest map editor paint/save) |
 | SC-MAP-54 | covered (client vitest / page smoke layout) |
-| SC-MAP-55 | covered (client vitest maps list cards) |
+| SC-MAP-55 | covered (client vitest — ~180 card; two capacity rows; outline actions; no author) |
+| SC-MAP-66 | covered (client vitest — centered overlay status; short badge copy) |
+| SC-MAP-67 | covered (client vitest — pack-card chrome; muted dashed; outline+icon actions) |
+| SC-MAP-68 | covered (client vitest / visual — lead + badge SVG masks show silhouette, not solid square) |
 | SC-MAP-56 | covered (client vitest centered editor seats) |
 | SC-MAP-60 | covered (server mocha — soft-unpublished reject) |
 | SC-MAP-61 | covered (server mocha — create uses live map) |
@@ -71,7 +74,7 @@ UGC-карты поля 10×10 (старт / игровое / финиш / ды�
 | SC-MAP-64 | covered (server mocha staff-save clear working) |
 | SC-MAP-65 | covered (client vitest dirty Submit) |
 
-Related: room create — `lobby/rooms`; runtime board — `game/board`. Moderation patterns — `content/packs`; roles — `support/roles`; branding chrome — `ui/branding`. Staff published path / working clear / dirty Submit — SC-MAP-62…65.
+Related: room create — `lobby/rooms`; runtime board — `game/board`. Moderation patterns — `content/packs`; roles — `support/roles`; branding chrome — `ui/branding`. Staff published path / working clear / dirty Submit — SC-MAP-62…65. List card chrome / pack-card tokens / short badges — SC-MAP-55/66/67/68 (shared product sense with pack/task-set cards).
 
 ## Requirements
 
@@ -123,13 +126,14 @@ A map MUST represent a **10-by-10** grid. Each cell MUST be exactly one of: empt
 
 ### Requirement: Maps list without collection
 
-The client MUST expose a **Maps** section (reachable from the lobby) showing a shared list of **approved in-catalog** maps to any authenticated user (including anonymous). Each list row MUST show a **mini preview** of the grid, the **author** display identity, and the seat config as **players×tourists**. The same Maps page MUST additionally list the **creator’s own unpublished** maps (never approved, or soft-unpublished only for staff visibility rules below) so the author can reopen the editor before and without a moderation submit. Non-authors MUST NOT see another user’s unpublished maps on that list. There MUST be a **Create map** affordance at the top of the Maps section for eligible users. The system MUST NOT offer add-to-collection or remove-from-collection for maps.
+The client MUST expose a **Maps** section (reachable from the lobby) showing a shared list of **approved in-catalog** maps to any authenticated user (including anonymous). Each list **card** MUST show a **mini preview** of the grid and the seat config as **two labeled rows** (players count and tourists-per-player count) — NOT a single `players×tourists` string as the only capacity chrome, and MUST **NOT** show the author display identity on the card. The same Maps page MUST additionally list the **creator’s own unpublished** maps (never approved, or soft-unpublished only for staff visibility rules below) so the author can reopen the editor before and without a moderation submit. Non-authors MUST NOT see another user’s unpublished maps on that list. There MUST be a **Create map** affordance at the top of the Maps section for eligible users. The system MUST NOT offer add-to-collection or remove-from-collection for maps. Author identity MUST remain available on the map **View** surface (SC-MAP-47) and staff queue preview; this requirement only removes author from the list card.
 
 #### Scenario [SC-MAP-06]: Approved maps visible to all sessions
 
 - **GIVEN** an approved in-catalog map M and any authenticated user U (including anonymous)
 - **WHEN** U opens the Maps list
-- **THEN** M appears with mini preview, author, and players×tourists
+- **THEN** M appears as a card with mini preview and players / tourists capacity rows
+- **AND** the card MUST NOT show the author display name
 
 #### Scenario [SC-MAP-07]: Author sees own unpublished on Maps
 
@@ -213,7 +217,8 @@ When staff approves a map moderation request (after take), the submitted grid an
 - **GIVEN** a pending map request and staff who has taken the request
 - **WHEN** the actor approves
 - **THEN** the map is in catalog
-- **AND** any authenticated user sees it on the Maps list with mini preview, author, and players×tourists
+- **AND** any authenticated user sees it on the Maps list with mini preview and players / tourists capacity rows
+- **AND** the list card MUST NOT show the author display name
 
 #### Scenario [SC-MAP-17]: Author cannot edit after approve
 
@@ -341,19 +346,19 @@ Maps pages MUST use loading / empty / error presentation consistent with other c
 
 ### Requirement: Maps list shows moderation statuses
 
-The Maps list MUST show status badges for **pending**, **needs_revision**, **draft** (never-published without open request or author draft after cancel), and soft-**unpublished** (staff) when applicable. Rows that are simply published / in catalog MUST **NOT** show an «В каталоге» / in_catalog status badge. A map with an open request MUST show pending or needs_revision rather than only a generic draft badge. Non-authors still MUST NOT see another user’s never-published maps.
+The Maps list MUST show status badges for **pending**, **needs_revision**, **draft** (never-published without open request or author draft after cancel), and soft-**unpublished** (staff) when applicable. Rows that are simply published / in catalog MUST **NOT** show an «В каталоге» / in_catalog status badge and MUST **NOT** show an «ОПУБЛИКОВАНО» / published badge. A map with an open request MUST show pending or needs_revision rather than only a generic draft badge. Non-authors still MUST NOT see another user’s never-published maps. Badge **copy** on the card MUST use the same short uppercase product sense as pack/task-set cards («ЧЕРНОВИК», «НА ПРОВЕРКЕ», «ДОРАБОТАТЬ», «СНЯТО») — not long list strings such as «Нужна доработка» or «Снято с публикации» on the pill. Badge placement: **horizontally centered overlay** on the mini preview (not a body strip below the preview). Soft-unpublished cards MUST use muted list chrome (reduced opacity and dashed border) consistent with soft-unpublished pack cards.
 
 #### Scenario [SC-MAP-31]: Pending map shows pending on Maps list
 
 - **GIVEN** creator A submitted map M and the request is pending
 - **WHEN** A opens the Maps list
-- **THEN** M appears with a pending status indication
+- **THEN** M appears with a pending status indication using short product sense «НА ПРОВЕРКЕ» (or equivalent i18n)
 
 #### Scenario [SC-MAP-32]: Needs-revision map shows needs-revision on Maps list
 
 - **GIVEN** creator A has map M with an open needs_revision request
 - **WHEN** A opens the Maps list
-- **THEN** M appears with a needs_revision status indication
+- **THEN** M appears with a needs_revision status indication using short product sense «ДОРАБОТАТЬ» (red outline product sense; not long «Нужна доработка»)
 
 ### Requirement: Maps list filters
 
@@ -472,13 +477,14 @@ Maps section surfaces MUST show breadcrumbs **below** the shared elevated header
 
 ### Requirement: No in_catalog status badge on Maps list
 
-Published in-catalog maps MUST appear on the Maps list without an «В каталоге» / in_catalog status badge. Other status badges remain when applicable.
+Published in-catalog maps MUST appear on the Maps list without an «В каталоге» / in_catalog status badge and without an «ОПУБЛИКОВАНО» / published status badge. Other status badges remain when applicable.
 
 #### Scenario [SC-MAP-45]: Published map has no in_catalog badge
 
 - **GIVEN** an approved in-catalog map M with no open author-facing draft/pending/needs_revision mark for the caller
-- **WHEN** the caller opens the Maps list
+- **WHEN** the user views M on the Maps list
 - **THEN** M has no «В каталоге» / in_catalog status badge
+- **AND** M has no «ОПУБЛИКОВАНО» / published status badge
 
 ### Requirement: Published map opens View without paint tools
 
@@ -555,15 +561,50 @@ On the map **edit** surface (not View-only), the lined 10×10 field MUST be pres
 
 ### Requirement: Maps list uses card tiles with mini preview
 
-The Maps section list MUST render each map as a card in a wrapping row. Each card MUST show a **mini preview** of the grid in the upper area and the seat config as **players×tourists** below that preview. Author identity and status chrome MAY appear on the card. Action controls (Edit, soft-unpublish, republish, and similar) MUST appear at the **bottom** as stacked full-width **text** buttons when available. Existing open/navigation and visibility rules for unpublished maps MUST remain.
+The Maps section list MUST render each map as a card in a wrapping row with resting width about **180** CSS pixels (height MAY grow with preview, capacity rows, and stacked actions). Each card MUST show a **mini preview** of the grid in the upper area and, below that preview, **two** capacity rows: a players row (leading person-style icon, uppercase label product sense «ИГРОКОВ:», count right) and a tourists-per-player row (leading backpack-style icon, uppercase label product sense «ТУРИСТОВ:», count right), with a pale horizontal divider between those rows. Author identity MUST **NOT** appear on the card. Status chrome, when applicable, MUST overlay the preview centered horizontally. Action controls (Edit, soft-unpublish, republish, and similar) MUST appear at the **bottom** as stacked full-width **outline** buttons with a leading icon and text label (slim height ~28–32 CSS px), using short soft-unpublish / republish labels product sense «Снять» / «Вернуть» on the card (confirm dialogs MAY keep long maps unpublish copy). Soft-unpublished cards MUST use muted chrome (opacity about **0.72** and dashed border). Resting surface, hover (border + soft shadow only, **no** scale), splitter, and action outline MUST match the shared pack-card chrome product sense already used by pack catalog and task-set cards. Existing open/navigation and visibility rules for unpublished maps MUST remain.
 
 #### Scenario [SC-MAP-55]: Maps list renders cards with mini preview and capacity
 
 - **GIVEN** an authenticated user on the Maps section with at least one listed map
 - **WHEN** the user views the list
-- **THEN** each map is shown as a card
-- **AND** the card shows a mini grid preview above the players×tourists capacity
-- **AND** Edit when available is a bottom full-width text control
+- **THEN** each map is shown as a rounded card about 180 CSS pixels wide
+- **AND** the card shows a mini grid preview above two capacity rows (players and tourists), not a single `players×tourists`-only line as the sole capacity chrome
+- **AND** the card MUST NOT show the author display name
+- **AND** Edit when available is a bottom full-width outline+icon control
+
+### Requirement: Map list card status overlay and short badges
+
+When a Maps list card shows a moderation/status badge, the badge MUST be drawn as an overlay on the mini preview, **horizontally centered** near the top of the preview. Soft muted pills (draft / unpublished / pending amber) and revise red-outline MUST follow the same product sense as pack/task-set status badges. Badge icons for draft / pending / unpublished MAY reuse the same document / clock / eye-off product family as task-set badges; revise MAY be text-only red outline (catalog pack sense). Confirm / header long copy for soft-unpublish MUST NOT replace the short card badge «СНЯТО».
+
+#### Scenario [SC-MAP-66]: Status badge centered on preview with short copy
+
+- **GIVEN** a Maps list card whose author-facing status is draft, pending, needs_revision, or soft-unpublished
+- **WHEN** the user views the card
+- **THEN** the status badge overlays the mini preview and is horizontally centered
+- **AND** the badge uses the short uppercase product label for that status («ЧЕРНОВИК» / «НА ПРОВЕРКЕ» / «ДОРАБОТАТЬ» / «СНЯТО»)
+- **AND** a clean published in-catalog card shows no status badge on the preview
+
+### Requirement: Map list cards share pack-card chrome and outline actions
+
+Maps list cards MUST consume the shared pack-card resting chrome tokens (background, foreground, muted ink, border, hover border/shadow, splitter, action height) so they match pack catalog and task-set cards in product sense. Card soft-unpublish muted MUST use opacity about **0.72** and a **dashed** border. Bottom actions MUST be outline+icon (Edit with pencil-style icon; soft-unpublish with eye-off; republish with eye) with short «Снять» / «Вернуть» labels on the card. Hover MUST change border and soft shadow only (**no** enlarge/scale). Lead icons for players and tourists MUST be present (custom SVG preferred; Material placeholder allowed until assets land). Lead capacity icons and applicable status-badge icons MUST render as **recognizable silhouettes** of the custom SVG (not a solid filled square of ink color with no cutout). Solid-square degradation of a valid SVG mask MUST NOT be accepted as meeting this requirement.
+
+#### Scenario [SC-MAP-67]: Map cards match pack chrome; muted dashed; short outline actions
+
+- **GIVEN** the Maps list rendered in the same theme as the packs catalog
+- **WHEN** the user compares a resting map card to a resting pack catalog card
+- **THEN** both use the shared pack-card surface tokens for background, border, and outline action border product sense
+- **AND WHEN** a soft-unpublished map card is shown
+- **THEN** that card uses opacity about 0.72 and a dashed border
+- **AND WHEN** staff soft-unpublish / republish actions apply
+- **THEN** the card shows short «Снять» / «Вернуть» outline+icon controls (not long «Снять с публикации» on the card button)
+
+#### Scenario [SC-MAP-68]: Capacity and badge mask icons show silhouette
+
+- **GIVEN** a Maps list card with players and tourists capacity rows and (when applicable) a draft / pending / soft-unpublished status badge that uses a custom SVG lead or badge icon
+- **WHEN** the user views the card in a production-built or Vite-inlined asset context
+- **THEN** each capacity lead icon shows the players / tourists silhouette (not a solid filled square of the icon ink color)
+- **AND** when a draft (or pending / unpublished) badge icon is shown, that badge icon shows its document / clock / eye-off silhouette rather than a solid filled square
+- **AND** the underlying SVG asset files remain path-based custom assets (not replaced solely to work around a broken CSS mask URL)
 
 ### Requirement: Map editor column is centered with usable seat selects
 
