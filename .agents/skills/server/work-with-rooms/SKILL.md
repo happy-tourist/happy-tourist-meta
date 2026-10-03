@@ -57,7 +57,7 @@ client create({ mapId, packId, taskSetIds, grilleDensity?, catapultDensity? }) /
   onCreate(options)        ← async once per room instance
         │  setState; loadRoomContentSnapshot(options) → maxSeats=chosen≤map.players + grid + pack
         │  + grilleDensity + catapultDensity (few/medium/many, default medium each)
-        │  refreshMetadata({ title, status, maxSeats, seats, mapGrid, packTitle, … })
+        │  refreshMetadata({ title, status, maxSeats, seats, mapGrid, packTitle, taskSetLabels[+taskCount], … })
         │  onMessage('move'|'rescue'|'push'|'returnFromFinish'|'peek'|'peekPlace'|'peekSubmit'|…|'ready'|'say')
         │  (enableRealtimeListing publishes to LobbyRoom subscribers)
         ▼
@@ -112,7 +112,7 @@ export class MyRoom extends Room<{ state: MyRoomState }> {
     this.setState(new MyRoomState());
     // await loadRoomContentSnapshot(options) → maxSeats=chosen≤map.players, grid, packTitle, …
     this.state.phase = "waiting";
-    this.refreshMetadata(); // title / status / maxSeats / seats / mapGrid / packTitle / …
+    this.refreshMetadata(); // title / status / maxSeats / seats / mapGrid / packTitle / taskSetLabels[+taskCount] / …
     this.onMessage("move", …);
     this.onMessage("peek", …);
     this.onMessage("peekPlace", …);
@@ -130,7 +130,7 @@ export class MyRoom extends Room<{ state: MyRoomState }> {
 
 - `onAuth` is **static**; invalid JWT throws → client cannot connect.
 - `auth` in `onJoin` is the userdata returned from `onAuth`.
-- `refreshMetadata` feeds LobbyPage: `{ title, status, maxSeats, seats, mapGrid?, packTitle?, taskSetLabels? }` — `seats` = occupied seated count; `status` is `playing` only when `phase === 'playing'` (else `waiting`, including countdown).
+- `refreshMetadata` feeds LobbyPage: `{ title, status, maxSeats, seats, mapGrid?, packTitle?, taskSetLabels?: [{ taskSetId, authorDisplayName?, taskCount }] }` — `seats` = occupied seated count; `status` is `playing` only when `phase === 'playing'` (else `waiting`, including countdown); per-set **`taskCount`** = create-time snapshot task count for that set (SC-LOBBY-32; UI shows ordinals+counts, not author).
 - Consented client `leave()` goes straight to `onLeave` (no grace) → clear that seat’s holding grilles before seat delete (SC-PIECE-28). Unexpected drop uses Colyseus `onDrop` → `allowReconnection` (holding stays while grace holds the seat).
 - Seating / start / reconnect / grille leave-clear details: `work-with-game` / `work-with-schema`.
 
@@ -190,7 +190,7 @@ From client rooms / lobby skills — server must provide **today**:
 | Room type `lobby` | Built-in `LobbyRoom` for live list; **no** reconnect hold |
 | Tourist board layout | Client-only tile geometry; server does **not** sync layout |
 | Synced seats / phase / connectivity | `phase` / `maxSeats` / `countdownRemaining` + `seats` Map with `connected` / `reconnectUntil` / `ready` (+ legacy `started`) |
-| Listing metadata | `title` / `status` / `maxSeats` / `seats` via `refreshMetadata` for LobbyPage rows |
+| Listing metadata | `title` / `status` / `maxSeats` / `seats` / `mapGrid` / `packTitle` / `taskSetLabels[+taskCount]` via `refreshMetadata` for LobbyPage cards (SC-LOBBY-32) |
 
 Client: tourist token in `localStorage` + `reconnect` then `joinById`; lobby quiet resubscribe without token. Keep tourist rooms joinable by reconnection token within grace.
 

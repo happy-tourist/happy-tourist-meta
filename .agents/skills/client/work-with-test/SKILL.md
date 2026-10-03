@@ -6,7 +6,8 @@ description: >-
   @vue/test-utils; auth/theme/game/support/content/maps store + page/component
   contracts (pack CSV/tiles/list-cards incl. catalog `PackListCardTile`
   SC-PACK-228/249…255 + `PackTaskSetCardTile` SC-PACK-247/248 SVG masks,
-  lobby/game board wire, App header chrome); Colyseus
+  lobby `LobbyRoomCardTile` / `LobbyCreateWire` SC-LOBBY-24…26/33…35, game
+  board wire, App header chrome); Colyseus
   client.auth / client.http / room I/O spies; store error + q-banner;
   vue-i18n / router. Harness: `vitest.config.ts`, `test/setup.ts`, `npm test`.
   Core in SKILL.md; SC/file details in topics: forms.md, stores.md,

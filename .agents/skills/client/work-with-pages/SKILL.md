@@ -98,7 +98,7 @@ src/pages/
 Examples (auth/lobby/support stay short here; packs/maps/game → topics):
 
 - `LoginPage` / email-flow pages / `AccountPage` — `useAuthStore()`; soft verify modal in App ([shell.md](shell.md)).
-- `LobbyPage` — room list / create (map + maxSeats + pack/task sets + densities) / join; **join busy-lock** (SC-LOBBY-19); selected-map mini `MapGridPreview` (SC-LOBBY-31); **no** page-local Packs/Maps/Support/logout.
+- `LobbyPage` — room **card** listing (`.pack-card-grid` + `LobbyRoomCardTile`) / create (map + maxSeats + pack/task sets + densities) / join; **join busy-lock** (SC-LOBBY-19); selected-map mini `MapGridPreview` (SC-LOBBY-31); **no** page-local Packs/Maps/Support/logout.
 - `Support*` / `AdminUsersPage` — `useSupportStore()`; `change_pack` + catalog pack select; staff/admin meta.
 - Content packs/maps — [content-pages.md](content-pages.md).
 - `GamePage` — [game-page.md](game-page.md).

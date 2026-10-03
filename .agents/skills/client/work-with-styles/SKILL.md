@@ -6,9 +6,9 @@ description: >-
   page CSS, Quasar utilities, Material Icons / Roboto. Core in SKILL.md; topic
   details in theme.md (Dark + /api/theme), board.md (GamePage tourist CSS),
   pack-cards.md (cascade yellow + answer/task tiles + catalog
-  PackListCardTile ~180×260 + published-only set preview SC-PACK-228/249…255 +
-  PackTaskSetCardTile summary chrome SC-PACK-229/239…248 + map list tiles
-  SC-MAP-55/66…68 incl. quoted Vite mask `url("${…}")`).
+  PackListCardTile ~180×260 + PackTaskSetCardTile + MapListCardTile + lobby
+  LobbyRoomCardTile shared `--pack-card-*` SC-LOBBY-33; quoted Vite mask
+  `url("${…}")`).
 ---
 
 # Work With Styles
@@ -34,7 +34,7 @@ Read the matching file in this folder when the change involves that area
 |-------|------|
 | Quasar Dark + GET/POST `/api/theme` + header toggle wiring | [theme.md](theme.md) |
 | Tourist board / presence / HUD / say CSS on GamePage | [board.md](board.md) |
-| Cascade yellow + `.pack-card-grid` + answer/task + catalog/list + `PackTaskSetCardTile` + map tiles (SC-MAP-68 mask `url`) | [pack-cards.md](pack-cards.md) |
+| Cascade yellow + `.pack-card-grid` + answer/task + catalog/list + `PackTaskSetCardTile` + map tiles + lobby `LobbyRoomCardTile` (SC-MAP-68 mask `url`) | [pack-cards.md](pack-cards.md) |
 
 ## Project Style Model
 

@@ -372,12 +372,18 @@ Canonical coverage: `test/MyRoom.test.ts` (SC-SAY-* / ready cases).
   `players[].color`) — they are not in product schema.
 - Do not assert hidden grille locations on schema — only revealed `holdingGrilleKeys`.
 
-### Live lobby listing (SC-LOBBY-02 / SC-LOBBY-03)
+### Live lobby listing (SC-LOBBY-02 / SC-LOBBY-03 / SC-LOBBY-32)
 
 - Client lobby uses Colyseus built-in `LobbyRoom` with filter `name: tourist`.
 - Tests: `joinOrCreate("lobby", { filter })`, wait for `+` on create and `-` on dispose.
 - `createRoom("tourist", …)` and loadtest `--room tourist` must match `app.config.ts`.
 - HTTP `GET /rooms/tourist` is optional fallback coverage, not the primary UI path.
+- **SC-LOBBY-32:** after `createRoom("tourist", { mapId, packId, taskSetIds, … })`, assert
+  `room.metadata.taskSetLabels[].taskCount` equals create-time snapshot task counts per
+  `taskSetId` (compatible fields `seats`/`maxSeats`/`packTitle`/`mapGrid` must not regress).
+  Multi-set fixture: `seedExtraTaskSetOnFixturePackForTests(taskCount)` from
+  `src/lib/roomContentSnapshot.ts` (adds an in-catalog set on the cached pack without
+  mutating fixture `taskSetIds` — pass the returned id into create options).
 
 ## Test File Structure
 

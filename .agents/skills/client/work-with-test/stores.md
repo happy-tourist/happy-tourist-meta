@@ -70,6 +70,9 @@ narrow burger fold Acc/Theme/Logout (SC-BRAND-19). Moderation pages omit
 `content.catalogNav`: `ContentModerationUx` SC-PACK-194/195.
 Lobby create/list ordinals (no set author): `LobbyCreateWire` SC-LOBBY-24/26
 (`taskSetOption` / `taskSetLabel` «Набор заданий #{n}» / pack-index ordinals when soft sets hide ahead).
+Lobby room **card listing**: `LobbyRoomCardTile` + `LobbyCreateWire` SC-LOBBY-25/26/33/34/35
+(preview, seats/tourists, pack + `taskCount` rows, ~180/`--pack-card-*`/outline join,
+status overlay ОЖИДАНИЕ/ИГРА, set overflow ≤4).
 
 ## Testing a page / component that uses a store
 
