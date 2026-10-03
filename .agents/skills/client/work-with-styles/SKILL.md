@@ -7,8 +7,8 @@ description: >-
   details in theme.md (Dark + /api/theme), board.md (GamePage tourist CSS),
   pack-cards.md (cascade yellow + answer/task tiles + catalog
   PackListCardTile ~180×260 + PackTaskSetCardTile + MapListCardTile + lobby
-  LobbyRoomCardTile shared `--pack-card-*` SC-LOBBY-33; quoted Vite mask
-  `url("${…}")`).
+  LobbyRoomCardTile shared `--pack-card-*` SC-LOBBY-33; task-dialog chip
+  pool carve-out SC-PACK-260; quoted Vite mask `url("${…}")`).
 ---
 
 # Work With Styles
@@ -34,7 +34,7 @@ Read the matching file in this folder when the change involves that area
 |-------|------|
 | Quasar Dark + GET/POST `/api/theme` + header toggle wiring | [theme.md](theme.md) |
 | Tourist board / presence / HUD / say CSS on GamePage | [board.md](board.md) |
-| Cascade yellow + `.pack-card-grid` + answer/task + catalog/list + `PackTaskSetCardTile` + map tiles + lobby `LobbyRoomCardTile` (SC-MAP-68 mask `url`) | [pack-cards.md](pack-cards.md) |
+| Cascade yellow + `.pack-card-grid` + answer/task + catalog/list + `PackTaskSetCardTile` + map tiles + lobby `LobbyRoomCardTile` + task-dialog chip pool SC-PACK-260 (SC-MAP-68 mask `url`) | [pack-cards.md](pack-cards.md) |
 
 ## Project Style Model
 

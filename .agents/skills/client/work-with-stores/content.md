@@ -80,14 +80,21 @@ the answer card’s text. Do **not** use dense `q-chip` as primary slot chrome o
 compose rows or `PackTaskTile`. For staff `task_set` preview, server merges live
 `answerCards` into `previewPending` (SC-PACK-134). CSS: `work-with-styles/pack-cards.md`.
 
-## Playing-card chrome (SC-PACK-222…229 / 237 / 238)
+## Playing-card chrome (SC-PACK-222…229 / 237 / 238 / 256…262)
 
-Wherever the UI lists pack **answer cards** or **tasks** (editor, add-task-set,
-tasks drill-in, live pack answers, staff request preview, **and** slot pickers),
-render `PackAnswerCardTile` / `PackTaskTile` inside a wrapping `.pack-card-grid`
-(`app.scss`). Fixed sizes: answer **150×200** (no description) / **300×200**
-(with description + **vertical** splitter); task **300×200** (vertical split;
-`.peek-slot-like` slot row); explicit light/dark tile contrast (SC-PACK-225…227).
+Wherever the UI **lists** pack **answer cards** or **tasks** (editor grid,
+add-task-set task list, tasks drill-in, live pack answers, staff request
+preview), render `PackAnswerCardTile` / `PackTaskTile` inside a wrapping
+`.pack-card-grid` (`app.scss`). Fixed sizes: answer **150×200** (no
+description) / **300×200** (with description + **vertical** splitter); task
+**300×200** (vertical split; `.peek-slot-like` slot row); explicit light/dark
+tile contrast (SC-PACK-225…227). Create/edit of answers and tasks is a
+**dialog** (SC-PACK-256…260): page shows an add control above the list when
+compose is allowed — not an always-visible inline form. **Task compose dialog
+answer pool:** compact chips like GamePage `.peek-answers` / `q-chip`
+(SC-PACK-224 carve-out / SC-PACK-260); do **not** use `PackAnswerCardTile` as
+the dialog picker. Add-task-set MUST NOT show a top read-only
+`live-answer-card-grid` (SC-PACK-261).
 **Catalog packs** use `PackListCardTile` **~180×260** (status top, star TL,
 uppercase title + truncated description, **published-only** set-preview rows
 ≤4 + overflow with display ordinal 1…N and set-row ink = title.fg,
@@ -108,14 +115,12 @@ min-height ~206 (MAY grow); spacing retune SC-PACK-247 (title→stats ~7 /
 divider air ~4–6); themed hover border+shadow without scale (dark light-grey,
 not `--q-secondary`) SC-PACK-246; SVG ink SC-PACK-248; shared `--pack-card-*`
 surface — SC-PACK-229/239…248 + 255). Do **not** reuse `PackListCardTile`
-for task sets. Slot
-**values** on a task row use `.peek-slot-like` (above); the answer **picker**
-beside slots is `PackAnswerCardTile` (selectable), **not** `q-chip`
-(SC-PACK-133 superseded for picker chrome by SC-PACK-222…224). Edit/delete only
-when editable (bottom text buttons on answer/task tiles; outline+icon on
-task-set tiles); body click is not edit. CSV import/export is client-only
-(`lib/packContentCsv` + framed Export/Import panel on editor /
-`PackTasksCsvControls`; **hide** CSV on live Tasks `viewOnly` SC-PACK-235;
+for task sets. Slot **values** on a task row use `.peek-slot-like` (above).
+Edit/delete only when editable (bottom text buttons on answer/task tiles;
+outline+icon on task-set tiles); body click is not edit. CSV import/export is
+client-only (`lib/packContentCsv` + framed Export/Import panel on editor /
+`PackTasksCsvControls` on the page above the task list, not inside compose
+dialog — SC-PACK-262; **hide** CSV on live Tasks `viewOnly` SC-PACK-235;
 staff Edit keeps CSV SC-PACK-236; Import opens the file picker directly — no
 `PackCsvImportDialog`) — not store HTTP.
 
@@ -254,9 +259,11 @@ UX as the cards editor while the author’s `task_set` request is
 - Routing published + staff into creator Submit instead of `enterStaffEdit`
   (SC-PACK-231); enabling author Submit when not dirty vs `lib/editorDirty`
   baseline (SC-PACK-234).
-- Dense `q-chip` as primary slot chrome on compose / `PackTaskTile` (use
-  `.peek-slot-like` — SC-PACK-237/238); showing Tasks CSV on live `viewOnly`
-  (SC-PACK-235).
+- Dense `q-chip` as primary **slot chrome** on compose rows / `PackTaskTile`
+  (use `.peek-slot-like` — SC-PACK-237/238); using playing-card tiles as the
+  **task compose dialog** answer pool (chips only — SC-PACK-260); showing Tasks
+  CSV on live `viewOnly` (SC-PACK-235) or moving CSV into the compose dialog
+  (SC-PACK-262).
 - Approve / needs_revision / cancel without staff take (`moderation_take_required`).
 - Letting task-set author edit answer cards or foreign sets; showing foreign
   set `moderationStatus` to pack creator alone.

@@ -19,13 +19,15 @@ is a hard defect. Contracts: meta `work-with-stores/content.md`.
 
 ## Pack playing-card grid (`app.scss` + tile components)
 
-Answer/task lists use global wrap class `.pack-card-grid` (`display: flex;
+Answer/task **lists** use global wrap class `.pack-card-grid` (`display: flex;
 flex-wrap: wrap; gap: 0.75rem`) in `src/css/app.scss`. Tile chrome lives in
 scoped styles on `PackAnswerCardTile.vue` / `PackTaskTile.vue` (fixed px:
 answer **150×200** without description / **300×200** with **vertical** splitter;
 task **300×200**; ~×2 type; explicit light/dark `--pack-tile-*` contrast — not
 `--q-card-background` alone; difficulty top-left on tasks; Edit/Delete as
-bottom full-width **text** buttons when editable).
+bottom full-width **text** buttons when editable). Create/edit of answers and
+tasks is a **dialog** (SC-PACK-256…260) — not an always-visible inline form
+above the grid; when compose is allowed, expose an add control above the list.
 
 **Catalog packs (SC-PACK-228 / 249…255):** `PackListCardTile.vue` resting size
 about **180×260** (width near 180; height MAY grow with four set rows, overflow
@@ -195,7 +197,15 @@ hover border+shadow only — **no** scale / **no** `--q-secondary`). Gate
 lists use global `.peek-slot-like` (+ `--filled` / `__label` / `__empty` /
 `.peek-slot-like-row`) shared with GamePage `.peek-slot` in `app.scss`
 (~72×40, dashed empty / solid filled). Do **not** reintroduce dense `q-chip`
-as the primary slot chrome on these surfaces. Do **not** reintroduce list
-`q-chip` for answer/task bodies or slot pickers. Contracts: meta
-`work-with-stores/content.md` (Playing-card chrome); SC-PACK-222…229 / 237/238 /
-239…248.
+as the primary **slot chrome** on these surfaces. Do **not** reintroduce list
+`q-chip` for answer/task **bodies** on list grids.
+
+**Task compose dialog answer pool (SC-PACK-224 carve-out / SC-PACK-260):**
+inside the task compose `q-dialog` only, the selectable answer pool MUST be
+compact chips comparable to GamePage `.peek-answers` / `q-chip` (not
+`PackAnswerCardTile` / not `data-testid="slot-picker-grid"`). Slot **chrome**
+in that dialog still uses `.peek-slot-like`; center the dialog slot row
+(`justify-center`) like GamePage `.peek-slots` — global `.peek-slot-like-row`
+has no center by default. List grids and any non-dialog pickers keep
+playing-card tiles. Contracts: meta `work-with-stores/content.md` (Playing-card
+chrome); SC-PACK-222…227 / 237/238 / 256…262 / 239…248.

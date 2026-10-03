@@ -4,7 +4,8 @@ description: >-
   Use when creating or changing Vue page views under src/pages/*Page.vue, routes in
   src/router/routes.ts, router guards, or App.vue shell wiring in the happy-tourist
   Quasar Vue 3 client. Core in SKILL.md; topic details in shell.md (header/brand/
-  crumbs/leave), content-pages.md (packs/maps UI), game-page.md (GamePage wiring).
+  crumbs/leave), content-pages.md (packs/maps UI; answer/task compose dialogs
+  PackTaskComposeDialog SC-PACK-256…262), game-page.md (GamePage wiring).
   Pack/map store contracts → work-with-stores topics; board chrome → work-with-game-board.
 ---
 
@@ -24,7 +25,7 @@ Read the matching file in this folder when the change involves that area
 | Topic | File |
 |-------|------|
 | App shell — brand logo, section nav, breadcrumbs, Game leave/status, theme banner | [shell.md](shell.md) |
-| Content packs + maps pages / routes / list-card UI | [content-pages.md](content-pages.md) |
+| Content packs + maps pages / routes / list-card UI + answer/task compose dialogs | [content-pages.md](content-pages.md) |
 | GamePage composition + route (board details → `work-with-game-board`) | [game-page.md](game-page.md) |
 
 ## Hard Restrictions

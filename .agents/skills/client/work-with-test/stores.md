@@ -12,12 +12,14 @@ SC-PACK-100…136 — pages `Content*Acl.test.ts` incl. `ContentCatalogAcl` /
 `ContentCollectionAcl` / `ContentPackAcl`, `ContentSoftUnpublish.test.ts`
 (SC-PACK-120…125 staff unpublish/republish + soft-unpublished gray/non-nav),
 `ContentFollowUp4.test.ts` (SC-PACK-129…133 + SC-PACK-139 unpublishConfirm warns open requests / set soft-hide /
-live summary+drill-in / AddTaskSet chips), `ContentFollowUp5.test.ts`
+live summary+drill-in / SC-PACK-261 AddTaskSet no top live grid + dialog chips), `ContentFollowUp5.test.ts`
 (SC-PACK-134…136 slot card text / ordinal `taskSetLabel` no author / Tasks
 `content.back`),
 `ContentPackTasksHints.test.ts` (SC-PACK-115/119 staff session + stable hints),
+`ContentPackAnswerCompose.test.ts` / `ContentPackTaskCompose.test.ts`
+(SC-PACK-256…262 answer/task compose dialogs + peek-like chip pool + CSV outside dialog),
 `ContentModerationUx.test.ts` (SC-PACK-126 editor cascade CSS; SC-PACK-127 slot
-chips on staff hub + add-task-set; SC-PACK-128 add-task-set thread/status/reply;
+chips on staff hub; SC-PACK-128 add-task-set thread/status/reply;
 SC-PACK-194/195 no `content.catalogNav` on pack/staff/my-moderation pages),
 pack CSV SC-PACK-210…229/239…248: `src/lib/__tests__/packContentCsv.test.ts`,
 `src/components/__tests__/PackTasksCsvControls.test.ts`,
@@ -47,7 +49,7 @@ staff-edit-draft-submit SC-PACK-231…238 / SC-MAP-62…65:
 `src/lib/__tests__/editorDirty.test.ts`,
 `src/pages/__tests__/ContentPackStaffBoot.test.ts`,
 `ContentPackDirtySubmit.test.ts`, `ContentPackTasksCsvHide.test.ts`
-(+ `ContentMaps` staff boot / dirty Submit; `PackTaskTile` peek-slot chrome),
+(+ `ContentMaps` staff boot / dirty Submit; `PackTaskComposeDialog` / `PackTaskTile` peek-slot chrome SC-PACK-237/260),
 store `content.simplifyAcl.test.ts`; spy `client.http`, do not hit live server;
 cascade helpers + `isStaffEditSessionNavigation`: meta `work-with-stores/content.md`;
 unify follow-ups: `ContentUnifiedList.test.ts` (`openRequestType` pack→Edit /
