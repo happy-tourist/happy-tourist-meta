@@ -21,12 +21,64 @@
 | SC-PACK-266 | covered (server mocha + client vitest — delete draft from AddTaskSet top) |
 | SC-PACK-267 | covered (server mocha — Cancel never-live → draft again) |
 | SC-PACK-268 | covered (server mocha + client vitest — author-only drafts filter / neverLive draft) |
+| SC-PACK-269 | covered (`{server}/test/zz-contentPacks.test.ts` + `{client}/src/pages/__tests__/ContentPackDraftLifecycle.test.ts` — empty pack shell hidden) |
+| SC-PACK-270 | covered (`{server}/test/zz-contentPacks.test.ts` + `{client}/src/pages/__tests__/ContentPackDraftLifecycle.test.ts` / `content.draftLifecycle.test.ts` — first meaningful edit activates draft) |
+| SC-PACK-271 | covered (`{server}/test/zz-contentPacks.test.ts` + `{client}/src/pages/__tests__/ContentPackDirtySubmit.test.ts` / `ContentPackAddTaskSetDraft.test.ts` — Submit readiness survives reload) |
+| SC-PACK-272 | covered (`{server}/test/zz-contentPacks.test.ts` + `{client}/src/pages/__tests__/ContentPackDraftLifecycle.test.ts` / `ContentPackAddTaskSetDraft.test.ts` — author edit withdraws pending to draft) |
+| SC-PACK-273 | covered (`{server}/test/zz-contentPacks.test.ts` + `{client}/src/pages/__tests__/ContentPackDirtySubmit.test.ts` / `ContentPackAddTaskSetDraft.test.ts` — needs_revision dirty survives reload) |
+| SC-PACK-274 | covered (`{server}/test/zz-contentPacks.test.ts` + `{client}/src/pages/__tests__/ContentPackDraftLifecycle.test.ts` / `ContentPackAddTaskSetDraft.test.ts` — delete never-published pack/task-set from moderation) |
+| SC-PACK-275 | covered (`{server}/test/zz-contentPacks.test.ts` + `{client}/src/pages/__tests__/ContentPackDraftLifecycle.test.ts` / `ContentPackAddTaskSetDraft.test.ts` — published entity remains non-deletable) |
 
 Related: compose/slots SC-PACK-05…07 / 119; add-task-set SC-PACK-107/108; cancel→draft SC-PACK-175…179/196/197; neverLive SC-PACK-188…190; playing-card tiles SC-PACK-222…227; peek-slot chrome SC-PACK-237/238; CSV SC-PACK-213…220 / 235/236; main `content/packs`. Peek gameplay reuse — `game/board` SC-BOARD-49 (same change).
 
-**Server / HTTP (revision):** compose UI (SC-PACK-256…263) remains client-only. Pre-submit never-live draft (SC-PACK-264…268) **does** change add-task-set put/get/ghost/discard on server — see ADDED below. Staff-open queue remains `pending` | `needs_revision` only.
+**Server / HTTP (revision):** compose UI (SC-PACK-256…263) remains client-only. Draft lifecycle (SC-PACK-264…275) changes pack/add-task-set persist, list/status, moderation transitions and discard on server. Staff-actionable queue contains clean submitted `pending` / `needs_revision` requests only (`hasUnsubmittedChanges=false`); an author edit of `pending` first withdraws that request to `draft`, while a dirty `needs_revision` keeps its author-facing status but leaves the actionable queue until resubmit.
 
 ## MODIFIED Requirements
+
+### Requirement: Author Submit disabled until content is dirty
+
+On pack creator / task-set-author editing surfaces that expose «На модерацию» (cards editor, task-set editor, add-task-set), Submit MUST represent **persisted unsubmitted author changes**, not merely a difference created during the current browser session. A successful author save that changes editable content MUST persist an unsubmitted-change signal; reopening or reloading the editor MUST preserve that signal. Submit MUST be enabled when that signal is present and minima plus existing lock rules allow, and MUST be disabled when no unsubmitted author changes exist. Successful Submit MUST clear the signal for the submitted revision.
+
+If the author changes content while its request is `pending`, the system MUST withdraw that request from the staff-open queue and expose the work as author `draft` with unsubmitted changes; the author MUST explicitly Submit again. If staff has marked the request `needs_revision`, that author-facing status and thread MUST remain available while the author edits, but the persisted unsubmitted-change signal MUST become true so Submit remains enabled after reload. A dirty `needs_revision` request MUST NOT remain staff-actionable or be approvable until the author successfully resubmits it; resubmit MUST set it to clean `pending`. This supersedes the generic rule that an unchanged needs-revision request may be approved without resubmit: only `hasUnsubmittedChanges=false` remains eligible for that behavior. Staff direct-edit surfaces without Submit are unaffected.
+
+The server MUST persist the unsubmitted-change signal independently for each current author edit target, including pack working copies, re-edits of an author’s published task set, and add-task-set cycles. Editor and add-task-set responses MUST return `hasUnsubmittedChanges` for that target; list responses that expose author status MUST derive status/filter behavior from the same server state. The first semantic task-set save MUST establish or reuse an author `draft` cycle. Save MUST set the signal only after a semantic content mutation is persisted, not for an identical retry. Submit MUST clear it atomically with the request transition and MUST reuse the target’s retained cycle rather than create a parallel one. Migration MUST preserve retained pre-submit task-set drafts (including legacy cancelled rows that retain never-live payload) as dirty, while existing staff-actionable `pending` / `needs_revision` requests MUST start clean because pre-deploy dirty state cannot be reconstructed reliably.
+
+#### Scenario [SC-PACK-234]: Submit disabled on open without edits
+
+- **GIVEN** a verified author opens pack Edit (or add-task-set / task-set editor) with content that already meets submit minima
+- **AND** the persisted content has no unsubmitted author changes
+- **WHEN** the client renders «На модерацию»
+- **THEN** the control is disabled
+- **AND GIVEN** the author changes and saves at least one editable field in the working copy
+- **WHEN** minima and lock rules still allow submit
+- **THEN** «На модерацию» is enabled
+
+#### Scenario [SC-PACK-271]: Draft Submit readiness survives reload
+
+- **GIVEN** author U has a persisted draft with unsubmitted changes that meets submit minima
+- **WHEN** U reloads or later reopens the editor
+- **THEN** the content and its unsubmitted-change signal are restored
+- **AND** «На модерацию» is enabled without requiring another edit in that browser session
+
+#### Scenario [SC-PACK-272]: Editing pending work withdraws it to draft
+
+- **GIVEN** author U has a `pending` pack or never-live task-set request
+- **WHEN** U changes and saves editable content
+- **THEN** the request is removed from the staff-open queue
+- **AND** U sees the affected work as `draft`
+- **AND** its unsubmitted-change signal is true
+- **AND** U MUST Submit again before staff can moderate the changed content
+
+#### Scenario [SC-PACK-273]: Needs-revision changes remain ready after reload
+
+- **GIVEN** staff returned author U’s request with status `needs_revision`
+- **WHEN** U changes and saves editable content and then reloads the editor
+- **THEN** the author-facing status remains `needs_revision`
+- **AND** the persisted unsubmitted-change signal remains true
+- **AND** the request is absent from the staff-actionable queue and staff approve is rejected while that signal is true
+- **AND** «На модерацию» is enabled when submit minima and lock rules allow
+- **AND WHEN** U successfully submits again
+- **THEN** the request becomes clean `pending` and returns to the staff-actionable queue
 
 ### Requirement: Playing-card presentation for answer cards and tasks
 
@@ -84,6 +136,25 @@ Wherever the client shows a **list** of pack **answer cards** or **tasks** (card
 - **AND** the tile MUST NOT present light text on an unresolved white card background
 
 ## ADDED Requirements
+
+### Requirement: Empty pack shell stays hidden until meaningful author work
+
+Creating a pack MAY persist a technical shell needed to open its editor, but that untouched shell MUST NOT appear in the unified packs list or drafts filter for its creator. The first saved author content mutation after opening the editor — including changing pack metadata, adding an answer card, or adding a task — MUST activate an author-only `draft`. An identical save/retry MUST NOT activate the shell. That draft MUST then appear to its creator in the unified list and drafts filter and MUST remain hidden from other non-staff users. Leaving the untouched editor MUST NOT create visible author work. Existing pre-marker never-published packs MUST be conservatively migrated as activated so rollout cannot hide possibly meaningful historical work; the hidden-shell guarantee applies to packs created with the new marker.
+
+#### Scenario [SC-PACK-269]: Untouched new pack does not appear in author catalog
+
+- **GIVEN** verified author U creates a pack shell and opens its editor
+- **WHEN** U makes no editor change and leaves
+- **THEN** the shell does not appear in U’s unified packs list or drafts filter
+- **AND** it does not appear to other non-staff users
+
+#### Scenario [SC-PACK-270]: First meaningful edit activates author draft
+
+- **GIVEN** verified author U has opened an untouched new pack shell
+- **WHEN** U saves a metadata change, adds an answer card, or adds a task
+- **THEN** the work is quietly persisted with author-facing status `draft`
+- **AND** it appears only to U in the unified packs list and drafts filter
+- **AND** leaving and reopening restores that draft
 
 ### Requirement: Answer card compose uses a dialog
 
@@ -191,9 +262,9 @@ On the post-publish add-task-set surface, any author edit that changes the in-pr
 - **AND WHEN** V opens the same list/live surfaces
 - **THEN** V MUST NOT see U’s never-live draft row or treat P as draft solely because of U’s work
 
-### Requirement: Author may delete a never-live add-task-set draft from the add surface
+### Requirement: Author may delete never-published work from its edit surface
 
-While a never-live add-task-set draft exists for the author (pre-submit draft or draft after Cancel of a never-published cycle), the add-task-set page MUST expose a **delete draft** control at the **top** of the page (not only on a tile). Confirming delete MUST remove that never-live draft so it no longer appears as a ghost/draft for the author and GET add-task-set returns an empty new set. Delete MUST NOT remove the pack or any live published task sets. Pending/needs_revision cycles keep existing Cancel semantics; this delete targets retained draft work that is not in the staff open queue.
+While an author-owned pack or task set has never been published, its edit surface MUST expose a delete control at the top regardless of whether its moderation status is `draft`, `pending`, or `needs_revision`. The pack editor (`GET /api/content/packs/:id/draft`) and add-task-set (`GET /api/content/packs/:id/add-task-set`) payloads MUST return authoritative `canHardDelete` for the current target, and the existing pack-delete / add-task-set-discard endpoints MUST enforce the same condition rather than trusting client status. Confirming delete MUST remove that never-published entity, its moderation request/messages and retained revision payload so it disappears from the author list/ghost rows and from the staff queue. For add-task-set, the target is the current author’s single retained never-live cycle; if its retained payload contains multiple never-live sets, delete removes that cycle’s never-live sets together. Deleting a never-live task-set cycle MUST NOT remove its published parent pack or any published sibling task sets. Once the target pack or task set has been published at least once, hard delete MUST NOT be available during later draft/pending/needs_revision edits; the last approved live version remains until a later approval replaces it.
 
 #### Scenario [SC-PACK-266]: Top delete removes never-live draft
 
@@ -202,6 +273,25 @@ While a never-live add-task-set draft exists for the author (pre-submit draft or
 - **THEN** the never-live draft is removed
 - **AND** U no longer sees that draft ghost/row
 - **AND** opening add-task-set again starts from an empty set (no restored prior draft)
+
+#### Scenario [SC-PACK-274]: Author deletes never-published work from moderation
+
+- **GIVEN** author U has either a never-published pack or a never-live task-set cycle with status `pending` or `needs_revision`
+- **AND** the editor payload reports `canHardDelete=true`
+- **WHEN** U confirms delete from the top of its edit surface
+- **THEN** the target entity/cycle, retained payload and moderation request are removed
+- **AND** moderation messages belonging to that request are removed
+- **AND** the request no longer appears in the staff queue
+- **AND IF** the target is a task-set cycle on a published parent pack
+- **THEN** that parent pack and its existing published sibling task sets are unchanged
+
+#### Scenario [SC-PACK-275]: Previously published work cannot be hard-deleted
+
+- **GIVEN** a pack or task set has been published at least once and now has author draft, pending, or needs-revision edits
+- **WHEN** the author opens its edit surface
+- **THEN** hard delete of that pack or task set is unavailable
+- **AND** the server reports `canHardDelete=false` and rejects a direct hard-delete attempt
+- **AND** other users continue to see the last approved live version until new changes are approved
 
 ### Requirement: Cancelling never-live moderation returns the work to draft
 

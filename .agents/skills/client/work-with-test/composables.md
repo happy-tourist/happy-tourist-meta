@@ -7,8 +7,9 @@ Examples in this client: `passwordPolicy.ts`, `passwordStrength.ts`,
 `packContentCsv.ts` (semicolon answers/tasks dialect SC-PACK-210…217; colocated
 `src/lib/__tests__/packContentCsv.test.ts` — modal/tile UI tests live under
 `PackTasksCsvControls` / `ContentPackEditorCsv` / tile smoke, not this helper),
-`editorDirty.ts` (Submit dirty fingerprint + pack session baseline SC-PACK-234 /
-SC-MAP-65; colocated `src/lib/__tests__/editorDirty.test.ts`),
+`editorDirty.ts` (pack/add-task-set **autosave dedupe** fingerprint only —
+Submit uses server `hasUnsubmittedChanges` SC-PACK-234/271; map editor still
+session baseline SC-MAP-65; colocated `src/lib/__tests__/editorDirty.test.ts`),
 and any future board math helpers that stay client-side.
 
 ## How to invoke

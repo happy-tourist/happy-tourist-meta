@@ -6,7 +6,9 @@ description: >-
   fields (displayName, rating, gamesPlayed, gamesWon, theme, emailVerified,
   htRole), support_tickets / support_messages, or content_* pack tables
   (favorites; moderation `taken_by`/`taken_at`; pack/task-set `in_catalog`;
-  open moderation `pending`|`needs_revision`; pack unpublish cascade SC-PACK-137…141)
+  `draft_activated` / pack+request `has_unsubmitted_changes`; staff-actionable
+  open = clean `pending`|`needs_revision`; pack unpublish cascade SC-PACK-137…141;
+  draft lifecycle SC-PACK-269…275)
   in happy-tourist-server so built-in /auth/register and /auth/login keep working.
 ---
 
@@ -50,7 +52,7 @@ These are **profile** fields (display name, rating, games played/won, UI theme, 
 
 ### Content pack tables (custom, not SchemaSet)
 
-`content_packs`, `content_pack_revisions`, `content_answer_cards`, `content_task_sets`, `content_tasks`, `content_task_slots`, `content_pack_collections` (legacy), `content_pack_favorites` (star), `content_moderation_requests` (+ `taken_by` / `taken_at`), `content_moderation_messages` — declared in `src/db/schema.ts`, created at boot by `ensureContentTables()` in `src/lib/content.ts` (migrate/drop `content_user_drafts`; `ALTER` for `working_revision_id` / `edit_locked_*` / pack+set `in_catalog` / moderation take columns). Working copy via `working_revision_id` (incl. post-publish author re-edit). Soft-hide pack/set via `in_catalog`. Moderation `type` `pack`|`task_set`|`map`; **open** = `pending`|`needs_revision`; staff take TTL = edit lock. Favorites ≠ collection. Legacy `content_pack_collections` retained; **DEFAULT_CONTENT_PACK_IDS grants retired** (SC-PACK-170). Not SchemaSet / not room state.
+`content_packs`, `content_pack_revisions`, `content_answer_cards`, `content_task_sets`, `content_tasks`, `content_task_slots`, `content_pack_collections` (legacy), `content_pack_favorites` (star), `content_moderation_requests` (+ `taken_by` / `taken_at` / `has_unsubmitted_changes`), `content_moderation_messages` — declared in `src/db/schema.ts`, created at boot by `ensureContentTables()` in `src/lib/content.ts` (migrate/drop `content_user_drafts`; `ALTER` for `working_revision_id` / `edit_locked_*` / pack+set `in_catalog` / moderation take / **`content_packs.draft_activated`** / pack+request **`has_unsubmitted_changes`**). Working copy via `working_revision_id` (incl. post-publish author re-edit). Soft-hide pack/set via `in_catalog`. **Draft activation (D12 / SC-PACK-269/270):** new create shells get `draft_activated=false` (hidden from list/drafts); first semantic save sets `true`; migration backfills **all existing packs = activated** (conservative — old untouched shells indistinguishable from metadata-only drafts). **Persisted dirty (D13 / SC-PACK-271):** pack marker on `content_packs`; task-set author cycle marker on the retained moderation request; semantic save sets dirty; identical retry does not; Submit clears; Cancel→draft sets dirty; staff `needs_revision` starts clean until author save. Migration: retained `draft` / legacy retained `cancelled` → dirty; existing staff-actionable `pending`|`needs_revision` → clean rollout baseline. Moderation `type` `pack`|`task_set`|`map`; **staff-actionable open** = `pending`|`needs_revision` **and** `has_unsubmitted_changes=false` (dirty `needs_revision` stays author-facing but not queue/approvable — D14 / SC-PACK-272/273); staff take TTL = edit lock. Favorites ≠ collection. Legacy `content_pack_collections` retained; **DEFAULT_CONTENT_PACK_IDS grants retired** (SC-PACK-170). Not SchemaSet / not room state.
 
 ### Content map tables (custom, not SchemaSet)
 

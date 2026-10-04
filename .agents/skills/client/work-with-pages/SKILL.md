@@ -5,7 +5,8 @@ description: >-
   src/router/routes.ts, router guards, or App.vue shell wiring in the happy-tourist
   Quasar Vue 3 client. Core in SKILL.md; topic details in shell.md (header/brand/
   crumbs/leave), content-pages.md (packs/maps UI; answer/task compose dialogs
-  PackTaskComposeDialog SC-PACK-256…263), game-page.md (GamePage wiring; peek chip reuse SC-BOARD-49).
+  PackTaskComposeDialog SC-PACK-256…263; draft lifecycle/`canHardDelete`/hidden
+  shell SC-PACK-234/264…275), game-page.md (GamePage wiring; peek chip reuse SC-BOARD-49).
   Pack/map store contracts → work-with-stores topics; board chrome → work-with-game-board.
 ---
 

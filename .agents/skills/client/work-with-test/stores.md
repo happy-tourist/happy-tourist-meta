@@ -20,8 +20,14 @@ live summary+drill-in / SC-PACK-261 AddTaskSet no top live grid + dialog chips),
 `ContentPackTasksHints.test.ts` (SC-PACK-115/119 staff session + stable hints),
 `ContentPackAnswerCompose.test.ts` / `ContentPackTaskCompose.test.ts`
 (SC-PACK-256…263 answer/task compose dialogs + peek-like chip pool + reusable chips + CSV outside dialog; Game peek SC-BOARD-49),
-`ContentPackAddTaskSetDraft.test.ts` (SC-PACK-264…268 quiet autosave incomplete
-draft + leave flush + top delete/`discardAddTaskSetDraft` + catalog draft mark),
+`ContentPackAddTaskSetDraft.test.ts` (SC-PACK-264…268/271…275 quiet autosave
+incomplete draft + leave flush + top delete/`discardAddTaskSetDraft` by
+`canHardDelete` + catalog draft mark + persisted dirty / pending→draft /
+dirty needs_revision),
+`ContentPackDraftLifecycle.test.ts` (SC-PACK-269/270/272/274/275 hidden shell
++ activate draft + pending withdraw + never-published delete),
+`src/stores/__tests__/content.draftLifecycle.test.ts` (store sync of
+`hasUnsubmittedChanges` / `canHardDelete`),
 `ContentModerationUx.test.ts` (SC-PACK-126 editor cascade CSS; SC-PACK-127 slot
 chips on staff hub; SC-PACK-128 add-task-set thread/status/reply;
 SC-PACK-194/195 no `content.catalogNav` on pack/staff/my-moderation pages),
@@ -49,10 +55,12 @@ muted soft-unpublish `opacity: 0.72` + `border-style: dashed`; short badges /
 outline+icon; card «Снять»/«Вернуть»; no author on `taskSetLabel`; tile file
 `PackTaskSetCardTile.test.ts`) + maps list `MapListCardTile` /
 `ContentMaps` SC-MAP-55/66/67/68,
-staff-edit-draft-submit SC-PACK-231…238 / SC-MAP-62…65:
-`src/lib/__tests__/editorDirty.test.ts`,
+staff-edit-draft-submit SC-PACK-231…238 / 234/271…273 / SC-MAP-62…65:
+`src/lib/__tests__/editorDirty.test.ts` (autosave dedupe; pack Submit = server
+dirty),
 `src/pages/__tests__/ContentPackStaffBoot.test.ts`,
-`ContentPackDirtySubmit.test.ts`, `ContentPackTasksCsvHide.test.ts`
+`ContentPackDirtySubmit.test.ts` (persisted dirty survives reload; dirty
+needs_revision), `ContentPackTasksCsvHide.test.ts`
 (+ `ContentMaps` staff boot / dirty Submit; `PackTaskComposeDialog` / `PackTaskTile` peek-slot chrome SC-PACK-237/260),
 store `content.simplifyAcl.test.ts`; spy `client.http`, do not hit live server;
 cascade helpers + `isStaffEditSessionNavigation`: meta `work-with-stores/content.md`;

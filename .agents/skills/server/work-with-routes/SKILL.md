@@ -5,7 +5,8 @@ description: >-
   Colyseus server: createRouter / createEndpoint in app.config.ts, Express
   hook handlers (/health, /hi), auth /auth/*, theme, support tickets, content
   packs/maps (/api/content/* — details in topic content.md incl. add-task-set
-  draft put/get/discard SC-PACK-264…268), admin roles, or Colyseus room listing
+  draft put/get/discard + persisted dirty/`canHardDelete`/hidden shell
+  SC-PACK-264…275), admin roles, or Colyseus room listing
   /rooms/:roomName. Keep HTTP thin — game logic belongs in rooms. Core in
   SKILL.md; content HTTP catalog in content.md.
 ---
@@ -99,13 +100,13 @@ Read the matching file in this folder when the change involves that area
 
 | Topic | File |
 |-------|------|
-| Content packs / maps HTTP (`/api/content/*`, add-task-set draft discard) | [content.md](content.md) |
+| Content packs / maps HTTP (`/api/content/*`, draft lifecycle discard) | [content.md](content.md) |
 
 ## Route catalog (current + built-in)
 
 Core (non-content) routes below. **All `/api/content/*` pack/map/moderation
 rows → [content.md](content.md)** (incl. add-task-set put/get/submit/discard
-SC-PACK-264…268).
++ persisted dirty/`canHardDelete`/hidden shell SC-PACK-264…275).
 
 | Method | Path | Source | Notes |
 |--------|------|--------|-------|

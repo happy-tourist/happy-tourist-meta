@@ -4,7 +4,8 @@ description: >-
   Instructions for Pinia stores in the happy-tourist Vue 3 client: setup vs
   options defineStore, auth/theme/game/support/content/maps ownership, local
   page state vs Pinia, Colyseus I/O in stores, acceptHMRUpdate. Core in SKILL.md;
-  content packs in content.md (incl. answer/task compose dialogs SC-PACK-256…263);
+  content packs in content.md (compose/tiles SC-PACK-256…263); draft lifecycle
+  in pack-lifecycle.md (`hasUnsubmittedChanges`/`canHardDelete` SC-PACK-234/264…275);
   content maps in maps.md; game room I/O in game.md.
   Use when adding, changing, reviewing, or debugging Pinia stores or page-to-store
   wiring.
@@ -41,7 +42,8 @@ Read the matching file in this folder when the change involves that area
 
 | Topic | File |
 |-------|------|
-| Content packs (`content` store; compose dialogs SC-PACK-256…263) | [content.md](content.md) |
+| Content packs (`content` store; compose/tiles SC-PACK-256…263) | [content.md](content.md) |
+| Pack draft lifecycle (hidden shell, dirty Submit, `canHardDelete`) | [pack-lifecycle.md](pack-lifecycle.md) |
 | Content maps (`maps` store) | [maps.md](maps.md) |
 | Game / lobby room I/O (`game` options store) | [game.md](game.md) |
 

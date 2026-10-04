@@ -55,7 +55,7 @@ Read the matching file in this folder when the change involves that area
 
 | Topic | File |
 |-------|------|
-| Content packs lib (`content.ts` / never-live draft) | [content.md](content.md) |
+| Content packs lib (`content.ts` / never-live draft + persisted lifecycle D12–D14) | [content.md](content.md) |
 
 ## Folder Map
 
@@ -64,7 +64,7 @@ Read the matching file in this folder when the change involves that area
 | Entry | `src/index.ts` | `listen(app)` only |
 | Server wiring | `src/app.config.ts` | `defineServer`: `database`, `rooms`, `routes`, `express`; import auth config; `configureAuthEmailFlows` after DB boot; thin `POST /api/auth/*` + `/api/support/*` + `/api/content/*` + `/api/admin/*`; boot `ensureSupportTables` / `ensureContentTables` / `bootstrapAdminIds` / soft-fail `backfillDefaultPacksOnBoot` / `startAutoCloseInterval` |
 | Auth config | `src/config/` | `auth.ts` — Google/email hooks; create-user still calls grant helper (**no-op** SC-PACK-170); `htRole` → userdata `role` |
-| Mailer / support / content / password policy | `src/lib/` | `mailer.ts`; `support.ts`; **`content.ts` details → [content.md](content.md)** (add-task-set draft put/discard D9–D11 SC-PACK-264…268); `contentMaps.ts` SC-MAP-41/42/64; `defaultContentPacks.ts` grants no-op SC-PACK-170; `passwordPolicy.ts` |
+| Mailer / support / content / password policy | `src/lib/` | `mailer.ts`; `support.ts`; **`content.ts` details → [content.md](content.md)** (add-task-set draft put/discard + persisted dirty/`canHardDelete`/hidden shell D9–D14 SC-PACK-264…275); `contentMaps.ts` SC-MAP-41/42/64; `defaultContentPacks.ts` grants no-op SC-PACK-170; `passwordPolicy.ts` |
 | Auth HTML | `html/` | Legacy Colyseus cwd templates; product confirm/reset UX is **SPA + JSON** (mail links via `CLIENT_APP_URL`) |
 | Database | `src/db/` | `GameDatabase` (`index.ts`) + Drizzle user schema (`schema.ts`; `htRole` + support + content pack/map table decls) |
 | Rooms | `src/rooms/` | Room handlers (`onCreate` / `onJoin` / `onDrop` / `onReconnect` / leave / dispose; `onMessage('move'|'ready'|'say')`) |
@@ -224,7 +224,7 @@ src/db/
 src/lib/
 ├── mailer.ts          # smtp.bz sendEmail (+ setSendEmailImpl for tests)
 ├── support.ts         # tickets / roles / bootstrap helpers
-├── content.ts         # content packs — see content.md (draft put/discard D9–D11 SC-PACK-264…268)
+├── content.ts         # content packs — see content.md (draft put/discard + lifecycle D9–D14 SC-PACK-264…275)
 ├── contentMaps.ts     # maps list/create/draft/submit + soft-unpublish + mapAuthorWorkingDiffersFromLive list draft SC-MAP-41/42
 ├── defaultContentPacks.ts  # DEFAULT_CONTENT_PACK_IDS parse/eligible; grant/backfill no-ops (SC-PACK-170; re-export from content.ts)
 └── passwordPolicy.ts  # shared product password policy (register / reset / change)
