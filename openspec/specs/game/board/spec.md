@@ -46,8 +46,9 @@
 | SC-BOARD-46 | covered (client UX — shared modal) |
 | SC-BOARD-47 | covered (server mocha — leave mid-peek keeps bind) |
 | SC-BOARD-48 | covered (server mocha — cycle deck) |
+| SC-BOARD-49 | covered (`GameBoardWire`) |
 
-Related: create snapshot — `lobby/rooms`; piece count — `game/pieces`; peeks budget — `game/move`; stub removal — `content/packs`; presence row layout — `game/presence` (opponents top / self bottom); turn budgets / multi peek / paced traps / deferred turn — `game/move`; finish travel after catapult — `game/finish`; trapped / leave clear — `game/pieces`.
+Related: create snapshot — `lobby/rooms`; piece count — `game/pieces`; peeks budget — `game/move`; stub removal — `content/packs`; presence row layout — `game/presence` (opponents top / self bottom); turn budgets / multi peek / paced traps / deferred turn — `game/move`; finish travel after catapult — `game/finish`; trapped / leave clear — `game/pieces`; peek chip reuse — SC-BOARD-49 (compose reuse — `content/packs` SC-PACK-263).
 
 ## Requirements
 
@@ -184,6 +185,19 @@ While it is a seated client’s own turn and a peek is allowed for an own unfini
 - **WHEN** that player’s piece leaves C or the peek is force-resolved as incorrect
 - **THEN** C remains present with the same bound task
 - **AND** a later peek on C shows the same question
+
+### Requirement: Peek answer chips stay reusable without used-state chrome
+
+While a shared peek modal is open, the peeker MUST be allowed to place the same pack answer card into any number of empty answer slots (including every slot). After a card is placed in one slot, its chip in the answer pool MUST remain selectable for other empty slots. The client MUST NOT disable that chip solely because it is already used in a slot, and MUST NOT present a distinct «already used» highlight or filled-vs-outline state that marks the card as consumed. Clearing a filled slot (peeker) remains allowed. Spectators still MUST NOT edit slots. Correct submit still requires the slot order to match the bound task’s defined slot order exactly (including when that definition repeats the same answer card).
+
+#### Scenario [SC-BOARD-49]: Same answer card may fill multiple peek slots
+
+- **GIVEN** a seated peeker has an open peek with two or more empty slots and at least one answer-card chip
+- **WHEN** that peeker places the same answer card into more than one slot
+- **THEN** each of those slots shows that card
+- **AND** the answer-pool chip for that card remains available for further empty slots
+- **AND** the chip is not shown in a distinct already-used disabled or highlighted consumed state solely because it appears in a slot
+- **AND** other clients still see the placements in realtime and cannot edit slots
 
 ### Requirement: Fresh peek spends peeks; flipped peek is free
 

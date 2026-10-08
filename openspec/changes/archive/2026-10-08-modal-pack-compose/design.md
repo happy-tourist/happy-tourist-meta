@@ -2,18 +2,17 @@
 
 См. `proposal.md` — Why.
 
-Уже в runtime (блоки 1–5):
+Реализовано (все блоки `tasks.md` §1–8):
 
 - Answer/task compose в `q-dialog`; AddTaskSet без верхнего live-grid; CSV на странице.
 - Compose + peek: reuse одной карточки ответа в нескольких слотах без used-state chrome.
-- Never-live add-task-set quiet draft persist / restore / discard для `draft`.
-
-Gap (follow-up revision): Submit gate остаётся session-local fingerprint. После reload восстановленный draft ошибочно считается pristine, хотя он ещё не отправлен. Пустой pack shell виден автору сразу после create; add-task-set `pending` read-only и discard разрешён только для draft/cancelled. Требуется единый persisted lifecycle для pack и task-set.
+- Never-live add-task-set quiet draft persist / restore / discard.
+- Persisted author lifecycle: draft activation (hidden empty shell), `hasUnsubmittedChanges` Submit gate, pending→draft on edit, dirty `needs_revision` вне staff-actionable queue, authoritative `canHardDelete` для never-published pack/cycle.
 
 ### Server / HTTP
 
 - Compose UI / peek reuse — без room schema.
-- **Draft lifecycle follow-up** — server + client: activation, persisted unsubmitted-change signal, pending withdrawal on edit, delete any never-published status.
+- Draft lifecycle — server + client: activation, persisted unsubmitted-change signal, pending withdrawal on edit, delete any never-published status.
 
 ## Goals / Non-Goals
 
@@ -144,4 +143,4 @@ Gap (follow-up revision): Submit gate остаётся session-local fingerprint
 - Server: `db/schema.ts` + content migration; `lib/content.ts` create/list/save/submit/needs-revision/cancel/delete and add-task-set cycle; thin existing routes; mocha `zz-contentPacks`
 - Client: pack editor + add-task-set/task-set pages; `stores/content.ts` payload types/status transitions; `lib/editorDirty.ts` только для autosave/session dedupe где применимо; vitest
 - Skills: client content pages/store/test + server routes/structure/database/test — lifecycle marker/status/delete canon
-- Чеклист — `tasks.md` §6–8; §1–5 уже `[x]`
+- Чеклист — `tasks.md` §1–8 все `[x]`
