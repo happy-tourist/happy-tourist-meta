@@ -193,22 +193,21 @@ hover border+shadow only — **no** scale / **no** `--q-secondary`). Gate
 `#status` with page `hasMapCardStatus` (omit overlay host when published) and
 `#actions` with `hasMapCardActions` (omit empty chrome + pale divider).
 
-**Answer slots (SC-PACK-237/238):** compose slot rows and `PackTaskTile` slot
-lists use global `.peek-slot-like` (+ `--filled` / `__label` / `__empty` /
-`.peek-slot-like-row`) shared with GamePage `.peek-slot` in `app.scss`
-(~72×40, dashed empty / solid filled). Do **not** reintroduce dense `q-chip`
-as the primary **slot chrome** on these surfaces. Do **not** reintroduce list
-`q-chip` for answer/task **bodies** on list grids.
+**Answer slots (SC-PACK-237/238 + redesign-peek-task-modal):** Game peek and
+task **compose** use `.peek-slot` / `.peek-slot-like` **plus** `--portrait`
+(unlabeled empty dashed; filled mini-card; AR 156∶206). `PackTaskTile` list
+slots keep the compact **labeled** base (~72×40) — **no** `--portrait`
+(SC-PACK-238 carve-out). Do **not** reintroduce dense `q-chip` as primary
+slot chrome. Do **not** reintroduce list `q-chip` for answer/task **bodies**.
 
-**Task compose dialog answer pool (SC-PACK-224 carve-out / SC-PACK-260 / 263):**
-inside the task compose `q-dialog` only, the selectable answer pool MUST be
-compact chips comparable to GamePage `.peek-answers` / `q-chip` (not
-`PackAnswerCardTile` / not `data-testid="slot-picker-grid"`). Slot **chrome**
-in that dialog still uses `.peek-slot-like`; center the dialog slot row
-(`justify-center`) like GamePage `.peek-slots` — global `.peek-slot-like-row`
-has no center by default. Chips MUST stay reusable for multiple slots: always
-`outline`, no disable / primary filled «already used» state solely because the
-card appears in a slot (SC-PACK-263; Game peek SC-BOARD-49). List grids and any
-non-dialog pickers keep playing-card tiles. Contracts: meta
-`work-with-stores/content.md` (Playing-card chrome); SC-PACK-222…227 / 237/238 /
-256…263 / 239…248.
+**Task compose / game peek answer pool (SC-PACK-260 / 263 / 277; SC-BOARD-49/52):**
+pool = `.peek-answer-pool` grid of `.peek-answer-mini` cards (`--pack-card-*`,
+AR 156∶206, ≤4×4 + `overflow-y: auto`; col width via `cqw` so max-height tracks
+narrow modals) — **not** catalog `PackAnswerCardTile` / `slot-picker-grid` /
+flat `q-chip`. Compose slots use `.peek-slot-like--portrait`; center the row
+(`justify-center`). Pool cards stay reusable across slots with **no** used /
+disabled chrome (SC-PACK-263; Game peek SC-BOARD-49). Difficulty header =
+3 pack dots + word badge (compose interactive SC-PACK-276; game read-only
+SC-BOARD-50). List grids keep playing-card tiles. Contracts: meta
+`work-with-stores/content.md`; SC-PACK-222…227 / 237/238 / 256…263 / 276/277 /
+239…248; SC-BOARD-46/49/50…53.

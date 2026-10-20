@@ -14,12 +14,12 @@ SC-PACK-100…136 — pages `Content*Acl.test.ts` incl. `ContentCatalogAcl` /
 catalog card actions assert short `taskSetCardUnpublish`/`taskSetCardRepublish`
 SC-PACK-250 — confirm dialog keeps long `unpublish`/`republish`),
 `ContentFollowUp4.test.ts` (SC-PACK-129…133 + SC-PACK-139 unpublishConfirm warns open requests / set soft-hide /
-live summary+drill-in / SC-PACK-261 AddTaskSet no top live grid + dialog chips), `ContentFollowUp5.test.ts`
+live summary+drill-in / SC-PACK-261 AddTaskSet no top live grid + dialog mini-card pool), `ContentFollowUp5.test.ts`
 (SC-PACK-134…136 slot card text / ordinal `taskSetLabel` no author / Tasks
 `content.back`),
 `ContentPackTasksHints.test.ts` (SC-PACK-115/119 staff session + stable hints),
 `ContentPackAnswerCompose.test.ts` / `ContentPackTaskCompose.test.ts`
-(SC-PACK-256…263 answer/task compose dialogs + peek-like chip pool + reusable chips + CSV outside dialog; Game peek SC-BOARD-49),
+(SC-PACK-256…263/276/277 answer/task compose dialogs + peek mini-card pool + reusable pool cards + CSV outside dialog; Game peek SC-BOARD-49/50…53),
 `ContentPackAddTaskSetDraft.test.ts` (SC-PACK-264…268/271…275 quiet autosave
 incomplete draft + leave flush + top delete/`discardAddTaskSetDraft` by
 `canHardDelete` + catalog draft mark + persisted dirty / pending→draft /
