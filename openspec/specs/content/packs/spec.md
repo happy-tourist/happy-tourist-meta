@@ -214,10 +214,10 @@ UGC-наборы (**набор карточек** + задания): одна р
 | SC-PACK-257 | covered (`ContentPackAnswerCompose`) |
 | SC-PACK-258 | covered (`ContentPackTaskCompose`) |
 | SC-PACK-259 | covered (`ContentPackTaskCompose`) |
-| SC-PACK-260 | covered (`ContentPackTaskCompose` + `ContentPackTasksCsvHide`) |
+| SC-PACK-260 | covered (client vitest — compose slot/pool mini-card parity) |
 | SC-PACK-261 | covered (`ContentPackTaskCompose` + `ContentFollowUp4`) |
 | SC-PACK-262 | covered (`ContentPackTaskCompose`) |
-| SC-PACK-263 | covered (`ContentPackTaskCompose`) |
+| SC-PACK-263 | covered (client vitest — reuse without used-chrome; filled border on slots) |
 | SC-PACK-264 | covered (server mocha + client vitest — pre-submit incomplete draft persist) |
 | SC-PACK-265 | covered (server mocha + client vitest — leave/reload restores draft) |
 | SC-PACK-266 | covered (server mocha + client vitest — delete draft from AddTaskSet top) |
@@ -232,8 +232,10 @@ UGC-наборы (**набор карточек** + задания): одна р
 | SC-PACK-275 | covered (server mocha + client vitest — published entity remains non-deletable) |
 | SC-PACK-235 | covered (client vitest live view no CSV) |
 | SC-PACK-236 | covered (client vitest staff Edit CSV) |
-| SC-PACK-237 | covered (client vitest compose slot chrome) |
-| SC-PACK-238 | covered (client vitest PackTaskTile slot chrome) |
+| SC-PACK-237 | covered (client vitest — compose slots match peek half-size + filled border) |
+| SC-PACK-238 | covered (client vitest — PackTaskTile carve-out; list not peek AR) |
+| SC-PACK-276 | covered (client vitest — difficulty dots left + word-only badge center) |
+| SC-PACK-277 | covered (client vitest — compose empty/filled + pool half size) |
 | SC-PACK-239 | covered (client vitest — stats rows + colored dots + pale dividers) |
 | SC-PACK-240 | covered (client vitest — short status badges) |
 | SC-PACK-241 | covered (client vitest — outline icon actions; short Снять/Вернуть; slim) |
@@ -1722,7 +1724,7 @@ Wherever the client shows a **list** of pack **answer cards** or **tasks** (card
 - **THEN** editable tiles show Edit and Delete as stacked full-width text buttons at the bottom
 - **AND** live and staff views use the same playing-card chrome without Edit/Delete when not editable
 - **AND** answer/task **list** grids keep playing-card chrome
-- **AND** the task compose dialog answer pool uses compact chips (not playing-card tiles) per SC-PACK-260
+- **AND** the task compose dialog answer pool uses mini-cards (not playing-card tiles) per SC-PACK-260
 
 #### Scenario [SC-PACK-225]: Answer tiles use fixed 150×200 or 300×200 sizes
 
@@ -2052,19 +2054,22 @@ On the live pack **view** drill-in into a task set (read-only live view for non-
 
 ### Requirement: Task answer slots match peek slot chrome
 
-On task composing surfaces (slot row while filling a question) and on task tiles that display slot labels (`PackTaskTile` and equivalent list rows), answer slots MUST use the same approximate size and visual chrome as peek answer slots on the game board (min dimensions, padding, dashed empty / solid filled border treatment). Dense Quasar chips that read as a different scale from peek MUST NOT be the primary slot presentation for these surfaces.
+On **task compose dialog** surfaces (slot row while creating/editing a question), answer slots MUST use the same approximate size and visual chrome as shared peek answer slots on the game board for this change: empty = dashed unlabeled; filled = answer mini-card with thin primary border; portrait aspect ratio ≈ pack task-set cards at the **half-size** tile band (see SC-PACK-260/277 and `game/board` SC-BOARD-51). Dense Quasar chips that read as a different scale from peek MUST NOT be the primary slot presentation on compose. On **task list / card tiles** that display slot labels (`PackTaskTile` and equivalent list rows), slots MAY keep compact labeled empty-slot chrome and MUST NOT be required to adopt the peek modal’s unlabeled portrait mini-card aspect ratio (readability carve-out — see SC-PACK-238).
 
 #### Scenario [SC-PACK-237]: Compose slots match peek scale
 
-- **GIVEN** a user is composing a task and filling answer slots
+- **GIVEN** a verified editor is composing a task and filling answer slots in the task compose dialog
 - **WHEN** the slot row is rendered
-- **THEN** each slot uses peek-comparable min size and empty/filled border chrome
+- **THEN** each empty slot uses peek-comparable dashed unlabeled chrome and pack task-set portrait proportion at the half-size band
+- **AND** each filled slot shows the answer as a mini-card comparable to the peek filled slot including the thin primary border
 
 #### Scenario [SC-PACK-238]: Task tile slots match peek scale
 
-- **GIVEN** a task list or card tile showing slot labels for a task
-- **WHEN** the slots are rendered
-- **THEN** those slots use the same peek-comparable chrome as the compose slot row
+- **GIVEN** a task list or card tile (`PackTaskTile`) showing slot labels for a task
+- **WHEN** the slots are rendered after the peek/compose chrome redesign
+- **THEN** those slots MAY keep empty-slot label text and compact sizes
+- **AND** they MUST NOT be required to match the peek modal’s unlabeled portrait mini-card aspect ratio
+- **AND** the compose dialog slot row (not the list tile) remains the surface that matches peek chrome (SC-PACK-237)
 
 ### Requirement: Empty pack shell stays hidden until meaningful author work
 
@@ -2106,7 +2111,7 @@ On the pack cards editing surface, creating or editing an answer card MUST happe
 
 ### Requirement: Task compose uses a peek-like dialog
 
-On task-set editing surfaces (creator/staff task-set editor and post-publish add-task-set), creating or editing a task MUST happen in a dialog, not in an always-visible inline compose form above the task list. When compose is allowed, the surface MUST expose an add-question control above the task list that opens an empty create dialog; when compose is not allowed (`viewOnly` / `readOnly`), the add control MUST be hidden. Activating Edit on a task tile MUST open the same dialog prefilled for that task only when compose is allowed. Inside the dialog the client MUST present editable question and difficulty, then a **centered** ordered slot row (peek-comparable slot chrome, row centered like the game-board peek slot row), then below it a pool of answer choices rendered as compact chips comparable to the shared peek answer pool on the game board (not as a playing-card tile grid). Slot fill/clear/add/remove behavior and draft persistence rules remain as today. Cancel or successful save MUST close the dialog.
+On task-set editing surfaces (creator/staff task-set editor and post-publish add-task-set), creating or editing a task MUST happen in a dialog, not in an always-visible inline compose form above the task list. When compose is allowed, the surface MUST expose an add-question control above the task list that opens an empty create dialog; when compose is not allowed (`viewOnly` / `readOnly`), the add control MUST be hidden. Activating Edit on a task tile MUST open the same dialog prefilled for that task only when compose is allowed. Inside the dialog the client MUST present an editable question, a difficulty control rendered as **three interactive difficulty dots** plus a **word-only** difficulty badge (SC-PACK-276) instead of a standalone numeric-only selector as the primary control, then a **centered** ordered slot row, then below it an answer pool of mini-cards comparable to the shared game peek answer pool (same half-size portrait band, grid up to 4×4 with vertical scroll when needed — not a catalog playing-card tile grid and not flat outline chips as the primary pool chrome). Empty slots MUST be dashed with no placeholder label text; filled slots MUST show the chosen answer as a mini-card with the thin primary border. Slot fill/clear/add/remove behavior and draft persistence rules remain as today. Cancel or successful save MUST close the dialog. The compose question control font-size MUST NOT be required to match the game peek ×1.5 type (SC-BOARD-54).
 
 #### Scenario [SC-PACK-258]: Add question opens dialog above the task list
 
@@ -2126,9 +2131,10 @@ On task-set editing surfaces (creator/staff task-set editor and post-publish add
 
 - **GIVEN** a verified editor has the task compose dialog open with available answer cards
 - **WHEN** the dialog is shown
-- **THEN** question and difficulty controls appear above a centered ordered slot row
-- **AND** below the slots the answer choices appear as compact chips comparable to the game peek answer pool
-- **AND** the dialog MUST NOT use a playing-card tile grid as the answer picker
+- **THEN** the question and difficulty header appear above a centered ordered slot row (dots at the left edge; word-only badge horizontally centered)
+- **AND** empty slots use dashed chrome without placeholder slot-label text
+- **AND** below the slots the answer choices appear as mini-cards comparable to the game peek answer pool (pack task-set portrait aspect ratio at the half-size band)
+- **AND** the dialog MUST NOT use a catalog playing-card tile grid as the answer picker
 
 ### Requirement: Add-task-set does not duplicate live answer cards above compose
 
@@ -2154,15 +2160,43 @@ On task-set editing surfaces that expose task CSV import/export, those controls 
 
 ### Requirement: Task compose allows the same answer card in multiple slots
 
-On task compose surfaces (task compose dialog on task-set editor and add-task-set), filling answer slots MUST allow the same answer card to be selected into any number of slots, including every slot of the task. After a card is placed in one slot, its chip in the answer pool MUST remain selectable for other empty slots. The client MUST NOT disable that chip solely because it is already used in a slot, and MUST NOT present a distinct «already used» highlight or filled-vs-outline state that marks the card as consumed. Clicking a filled slot MAY still clear that slot. Persistence and cascade rules for slot `answerCardId` references remain unchanged (multiple slots MAY reference the same card id).
+On task compose surfaces (task compose dialog on task-set editor and add-task-set), filling answer slots MUST allow the same answer card to be selected into any number of slots, including every slot of the task. After a card is placed in one slot, its pool mini-card MUST remain selectable for other empty slots. The client MUST NOT disable that pool card solely because it is already used in a slot, and MUST NOT present a distinct «already used» highlight or consumed-vs-resting state that marks the card as spent (including MUST NOT apply the filled-slot primary border to the pool card). Clicking a filled slot MAY still clear that slot. Persistence and cascade rules for slot `answerCardId` references remain unchanged (multiple slots MAY reference the same card id).
 
 #### Scenario [SC-PACK-263]: Same answer card fills multiple compose slots without used chrome
 
 - **GIVEN** a verified editor has the task compose dialog open with at least one answer card and two or more empty slots
 - **WHEN** the editor places that same answer card into more than one slot
-- **THEN** each of those slots shows that card as its answer
-- **AND** the answer-pool chip for that card remains available for further empty slots
-- **AND** the chip is not shown in a distinct already-used disabled or highlighted consumed state solely because it appears in a slot
+- **THEN** each of those slots shows that card as a filled mini-card with the thin primary border
+- **AND** the answer-pool card for that card remains available for further empty slots
+- **AND** the pool card is not shown in a distinct already-used disabled or highlighted consumed state solely because it appears in a slot
+
+### Requirement: Task compose difficulty uses interactive dots and word badge
+
+In the task compose dialog, difficulty MUST be chosen with three dots matching the pack task-set difficulty indicator (resting: filled count = current difficulty; **all** dots use that level’s single color — green / amber / red for 1 / 2 / 3 — same as pack task-set summary cards). Hovering (or equivalent pointer preview) over the N-th dot MUST preview filled dots `1…N` **all** in that level’s color N; a **click/tap** on the N-th dot MUST set difficulty to N (works without hover on touch). The dialog MUST show a status badge with **only** the difficulty **word** for the current value (лёгкая / средняя / сложная) — **without** a `Сложность:` prefix and not a digit-only or `1 — …` select label. Layout MUST match game peek: **dots at the left edge**, **badge horizontally centered** (not one centered dots+badge cluster). The previous primary difficulty dropdown MAY be removed; difficulty MUST remain constrained to 1|2|3.
+
+#### Scenario [SC-PACK-276]: Compose difficulty dots preview on hover and commit on click
+
+- **GIVEN** a verified editor has the task compose dialog open with difficulty currently 1
+- **WHEN** the editor hovers the third difficulty dot
+- **THEN** all three dots preview as filled in the hard (red) difficulty color
+- **WHEN** the editor clicks the second difficulty dot
+- **THEN** the task difficulty becomes 2
+- **AND** the badge shows the medium difficulty word only (no `Сложность:` prefix)
+- **AND** the badge is horizontally centered in the dialog (not clustered with the dots)
+- **AND** the resting dots sit at the left edge of the dialog content
+- **AND** the resting dots show two filled amber dots and one empty outline
+
+### Requirement: Compose slots and pool share peek mini-card chrome
+
+Task compose empty slots, filled slots, and the answer pool MUST share the same visual contract as the game peek modal for this change: empty = dashed blank; filled = answer mini-card with thin primary border; pool = mini-cards with pack task-set aspect ratio at the half-size band, at most four columns and four visible rows with vertical scroll when there are more answers. This contract applies to the **task compose dialog** only; catalog/list task tiles (`PackTaskTile`) MAY keep compact labeled empty slots and MUST NOT be required to adopt the peek portrait mini-card grid (same carve-out as SC-PACK-238).
+
+#### Scenario [SC-PACK-277]: Compose empty slot has no label; pool scrolls past 4×4
+
+- **GIVEN** a verified editor opens task compose with more than sixteen available answer cards and at least one empty slot
+- **WHEN** the dialog is shown
+- **THEN** each empty slot shows dashed chrome with no slot-label text
+- **AND** the answer pool shows at most four columns and four visible rows without scrolling
+- **AND** further answers are reachable by scrolling the pool downward
 
 ### Requirement: Add-task-set persists an author draft on any change before moderation
 

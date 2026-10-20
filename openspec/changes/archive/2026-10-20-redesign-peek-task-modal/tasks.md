@@ -5,7 +5,7 @@
 ## 1. Shared chrome + i18n (client)
 
 - [x] 1.1 Перед работой: `design.md` Visual Spec + Decisions; `app.scss` `--pack-card-*` / `.peek-slot*`; `PackTaskSetCardTile` dots CSS; skills `work-with-styles` (pack-cards) и `work-with-localization`
-- [x] 1.2 Добавить/обновить i18n для badge `Сложность: {word}` (лёгкая/средняя/сложная) для game peek и compose; убрать показ голой цифры как единственного difficulty copy в peek. **Не** переиспользовать `game.peekDifficulty` (`{n}`) и **не** `content.difficulty.{n}` (`1 — …`) как badge copy — отдельные word-only ключи (или эквивалент без цифры). Verify: ключи в `en-US` catalog; badge без `{n}`-only и без digit-prefix select labels
+- [x] 1.2 Добавить/обновить i18n для badge difficulty word (лёгкая/средняя/сложная) для game peek и compose; убрать показ голой цифры как единственного difficulty copy в peek. **Не** переиспользовать `game.peekDifficulty` (`{n}`) и **не** `content.difficulty.{n}` (`1 — …`) как badge copy — отдельные word-only ключи. *First ship MAY have used `Сложность: {word}`; superseded by §5 word-only.* Verify: ключи в `en-US` catalog; badge без `{n}`-only и без digit-prefix select labels
 - [x] 1.3 Вынести/расширить CSS для peek + compose: empty dashed slot без label; filled + pool mini-card на `--pack-card-*`, radius 12, AR 156∶206; primary line + secondary description если есть; dots 6px/gap2, resting color = token текущего N (как `PackTaskSetCardTile` `data-diff`) — verify: light/dark. **Carve-out:** `PackTaskTile` сейчас шарит `.peek-slot-like` с compose — новые portrait/unlabeled стили только через peek/compose modifiers (или отдельный compact class на tile); **не** менять общий base так, чтобы list empty labels / compact sizes сломались (см. design Visual Spec)
 
 ## 2. Game peek modal (client)
@@ -17,7 +17,7 @@
 ## 3. Task compose parity (client)
 
 - [x] 3.1 Перед работой: delta `specs/content/packs/spec.md` SC-PACK-237/238/260/263/276/277; `PackTaskComposeDialog`; skill compose / pack-cards carve-out (`PackTaskTile` не переводить на peek AR)
-- [x] 3.2 Заменить primary difficulty control на interactive dots (hover preview `1…K` в цвете K, click/tap commit K) + badge `Сложность: {word}` (sentence case, word-only i18n); слоты/пул mini-cards как в peek (вкл. secondary description если есть) — verify: difficulty остаётся 1|2|3 в модели задачи; `PackTaskTile` list chrome не переведён на peek AR
+- [x] 3.2 Заменить primary difficulty control на interactive dots (hover preview `1…K` в цвете K, click/tap commit K) + word badge (sentence case; *§5: word-only, no `Сложность:`*); слоты/пул mini-cards как в peek (вкл. secondary description если есть) — verify: difficulty остаётся 1|2|3 в модели задачи; `PackTaskTile` list chrome не переведён на peek AR
 - [x] 3.3 Vitest SC-PACK-276/277 + обновлённые 237/238/260/263 — verify: `npm test` (task compose + PackTaskTile slot chrome где есть) в client; list tiles не обязаны совпадать с peek portrait
 
 ## 4. Quality gate (client)
@@ -28,7 +28,7 @@
 ## 5. Polish pass (client) — post-apply revise
 
 - [x] 5.1 Перед работой: обновлённый `design.md` Visual Spec (half-size ~43, centered word-only badge, filled primary border, game question ×1.5); delta SC-BOARD-50…54 / SC-PACK-237/260/263/276/277
-- [x] 5.2 Shared CSS + i18n: tile/pool `max-width` ≈50% prior (~86→~43), AR 156∶206; filled-slot `1px solid #1976d2` (не на пуле); badge copy = только `content.difficultyWord.*` без префикса «Сложность:»; header dots+badge `justify-content: center` (peek + compose) — verify: light/dark; PackTaskTile list не затронут
+- [x] 5.2 Shared CSS + i18n: tile/pool `max-width` ≈50% prior (~86→~43), AR 156∶206; filled-slot `1px solid #1976d2` (не на пуле); badge copy = только `content.difficultyWord.*` без префикса «Сложность:»; header temporarily centered (peek + compose) — *superseded by §6 dots-left / badge-center* — verify: light/dark; PackTaskTile list не затронут
 - [x] 5.3 Game peek: question font ~24–27px (SC-BOARD-54); compose question `q-input` **не** масштабировать — verify: peeker/spectator bindings intact
 - [x] 5.4 Vitest: обновить SC-BOARD-50/51/49/54 и SC-PACK-276/237/263/277 под word-only badge, half-size, filled primary border, no pool used-chrome — verify: `npm test` (peek + compose релевантные)
 - [x] 5.5 `npm run lint` и `npm run typecheck` в client — verify: exit 0

@@ -48,7 +48,7 @@
 | SC-MOVE-36 | covered (server mocha) |
 | SC-MOVE-37 | covered (server mocha) |
 | SC-MOVE-38 | covered (server mocha — auto-end only without peeks-on-`*`) |
-| SC-MOVE-39 | modified (content peek, not stub reward-only) |
+| SC-MOVE-39 | covered (server mocha — multi peek while peeks remain; flipped spends) |
 | SC-MOVE-40 | covered (server mocha — solo peeks∞; already-current carries steps) |
 | SC-MOVE-41 | covered (server mocha — solo no end-turn) |
 | SC-MOVE-42 | covered (server mocha) |

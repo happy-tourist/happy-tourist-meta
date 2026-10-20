@@ -9,7 +9,7 @@
 | SC-PACK-260 | modified (slot/pool chrome parity — polish) |
 | SC-PACK-263 | modified (reuse without used chrome — filled border only on slots) |
 | SC-PACK-276 | covered (difficulty dots left + word-only badge center) |
-| SC-PACK-277 | pending (compose empty/filled slots + pool — half size + filled border) |
+| SC-PACK-277 | covered (compose empty/filled slots + pool — half size + filled border) |
 
 Related game peek chrome: `game/board` SC-BOARD-50…54. List playing-card tiles SC-PACK-222…224 remain out of compose pool. **Apply scope:** client compose chrome only — task `difficulty` `1|2|3` and slot `answerCardId` persistence via existing `/api/content/*` remain unchanged (no new HTTP/DB fields, no server route/schema edits). Interactive dots (SC-PACK-276) only change the compose **control**; the persisted value stays `1|2|3` as today. Peek portrait unlabeled AR applies to compose dialog + game peek; **not** to `PackTaskTile` list rows (SC-PACK-238 carve-out). Game-only question ×1.5 (SC-BOARD-54) does **not** apply to compose `q-input`.
 
