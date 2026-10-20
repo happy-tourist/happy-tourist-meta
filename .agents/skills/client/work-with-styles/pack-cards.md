@@ -17,18 +17,23 @@ Class `cascade-gap-outline` marks cleared answer slots after cascade normalize.
 Do not use `bg-warning` row fill. Applying the class without this scoped CSS
 is a hard defect. Contracts: meta `work-with-stores/content.md`.
 
-## Pack playing-card grid (`app.scss` + tile components)
+## Pack card grid (`app.scss` + tile components)
 
 Answer/task **lists** use global wrap class `.pack-card-grid` (`display: flex;
 flex-wrap: wrap; gap: 0.75rem`) in `src/css/app.scss`. Tile chrome lives in
-scoped styles on `PackAnswerCardTile.vue` / `PackTaskTile.vue` (fixed px:
-answer **150×200** without description / **300×200** with **vertical** splitter;
-task **portrait** pack-card family W **156–180** / min-H ≈**206**, radius 12,
+scoped styles on `PackAnswerCardTile.vue` / `PackTaskTile.vue`. Answer list
+tile = **portrait** pack-card W **156** / min-H ≈**206**, radius 12,
+`--pack-card-*` (one size with/without description — **not** former dual
+**150×200** / **300×200** or horizontal content|description splitter); column
+body: with desc → content top + desc bottom; without → content centered;
+content ≈**0.78rem** / desc ≈**0.68rem** muted; Edit/Delete **outline + icon**
+(`edit` / `delete`; Delete MAY negative) when editable (SC-PACK-222/224/225/282).
+Task **portrait** pack-card family W **156–180** / min-H ≈**206**, radius 12,
 `--pack-card-*` surface; peek-like dots + `content.difficultyWord.*` badge;
 question **24px** (peek parity); filled `.peek-slot-like--portrait` only,
 **centered** row + ≈8–12px air above actions (no flex-grow void pinning slots);
 Edit/Delete as bottom full-width **outline + icon** (`edit` / `delete`; Delete
-MAY negative) when editable). Create/edit of answers and tasks is a
+MAY negative) when editable. Create/edit of answers and tasks is a
 **dialog** (SC-PACK-256…260 / 279/281) — not an always-visible inline form
 above the grid; when compose is allowed, expose an add control above the list.
 
@@ -66,8 +71,9 @@ task-set difficulty-dot chrome into this tile.
 `action-h` on `.pack-card-grid` in `src/css/app.scss` (+ `body.body--dark`
 overrides). Canon = former task-set surface values (dark bg `#2a2a2a`, **not**
 mock `#2f2f2f`). `PackListCardTile`, `PackTaskSetCardTile`, `MapListCardTile`,
-and **lobby listing** `LobbyRoomCardTile` alias these for resting surface /
-hover / action outline / muted. Layout-only tokens stay local
+**lobby listing** `LobbyRoomCardTile`, and list tiles `PackAnswerCardTile` /
+`PackTaskTile` consume these for resting surface / hover / action outline /
+muted. Layout-only tokens stay local
 (`--pack-list-lead-w`, `--pack-list-revise-fg`, `--pack-ts-lead-w`,
 `--lobby-room-lead-w`, dots, spacing).
 Visual Spec: change `redesign-pack-list-cards` / main `content/packs` after sync.
@@ -164,7 +170,8 @@ meta `work-with-lobby` / `listing-cards.md`.
   (aliased as `--pack-ts-border-hover` / `--pack-ts-shadow-hover`).
   Dark: `--pack-card-border-hover: #bdbdbd` (light grey) — **not** `--q-secondary`.
   Difficulty dots, total icon, badge icons, action icons keep semantic colors
-  on hover (chrome only). Answer/task playing-card tiles stay unchanged.
+  on hover (chrome only). Answer/task list portrait pack-card tiles stay
+  unchanged (selectable answer tiles keep secondary hover/selected ring).
 
 **Maps list (SC-MAP-55/66/67/68):** `MapListCardTile.vue` resting width **180**
 (height grows with preview + capacity + actions). Mini `MapGridPreview` top
@@ -231,6 +238,7 @@ peek / list tile. **Compose Save** (SC-PACK-281): full-width primary unelevated
 peekSubmit-like chrome (`--pack-card-action-h`); labels `content.saveTask` /
 `content.addTask`; **no Cancel** btn (dismiss = backdrop/Esc). Game peek
 question ~24px (SC-BOARD-54) + peek submit — unchanged by compose polish;
-compose `q-input` unchanged. List grids keep playing-card tiles. Contracts: meta
-`work-with-stores/content.md`; SC-PACK-222…227 / 237/238 / 256…263 / 276…281 /
+compose `q-input` unchanged. List grids keep portrait pack-card tiles
+(`PackAnswerCardTile` / `PackTaskTile`). Contracts: meta
+`work-with-stores/content.md`; SC-PACK-222…227 / 237/238 / 256…263 / 276…282 /
 239…248; SC-BOARD-46/49/50…54.

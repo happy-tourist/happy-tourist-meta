@@ -35,9 +35,10 @@ pack CSV SC-PACK-210…229/239…248: `src/lib/__tests__/packContentCsv.test.ts`
 `src/components/__tests__/PackTasksCsvControls.test.ts`,
 `src/pages/__tests__/ContentPackEditorCsv.test.ts` (framed CSV panel +
 in-frame errors — not `content.error`; no `PackCsvImportDialog`), tile smoke
-`PackAnswerCardTile` / portrait `PackTaskTile` SC-PACK-278 +
-`src/lib/__tests__/taskFilledSlots.test.ts` + `ContentPackPlayingCards` +
-sizes/contrast SC-PACK-225…227 + catalog `PackListCardTile` /
+portrait `PackAnswerCardTile` SC-PACK-222/225/282 / portrait `PackTaskTile`
+SC-PACK-278 + `src/lib/__tests__/taskFilledSlots.test.ts` +
+`ContentPackPlayingCards` (answer pack-card chrome) + sizes/contrast
+SC-PACK-225…227/282 + catalog `PackListCardTile` /
 `ContentPackListCards` SC-PACK-228/249…255 (~180×260 + published-only set preview +
 overflow sibling of `.pack-list-tile__sets-list` + CSS-px title/desc/badge +
 outline actions + revise badge / SC-PACK-254 title.fg; soft-unpub pack

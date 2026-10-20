@@ -2,8 +2,10 @@
 
 | SC-ID | Status |
 |-------|--------|
+| SC-PACK-222 | modified (answer tile portrait pack-card; **keep historic scenario title**) |
 | SC-PACK-223 | modified (task tile portrait + header + filled slots; **keep historic scenario title**) |
-| SC-PACK-224 | modified (task Edit/Delete → outline+icon like task-set; **keep historic scenario title**) |
+| SC-PACK-224 | modified (task + answer Edit/Delete → outline+icon; **keep historic scenario title**) |
+| SC-PACK-225 | modified (answer one size ≈156×206; **keep historic scenario title**) |
 | SC-PACK-226 | modified (portrait W&lt;H, not 300×200; **keep historic scenario title**) |
 | SC-PACK-127 | modified (filled only; empty omitted; description secondary MUST when present) |
 | SC-PACK-238 | modified (carve-out lifted — filled peek-like mini-cards on tile) |
@@ -14,27 +16,29 @@
 | SC-PACK-279 | added (compose dialog width = 4 mini-cards + pad + ≈50px slack; **keep historic title sense**) |
 | SC-PACK-280 | added (compose difficulty dots hit-target ≈ badge height) |
 | SC-PACK-281 | added (compose Save = peekSubmit chrome; Cancel omitted; dismiss backdrop/Esc) |
+| SC-PACK-282 | added (answer list tile: content top / desc bottom or content centered; one size) |
 
-Related: game peek chrome stays as shipped (`game/board`) except list tile **reuses** peek question 24px and compose Save **reuses** peekSubmit chrome; answer playing-cards SC-PACK-222/225 unchanged; compose slot/pool parity SC-PACK-237/263 unchanged. **Apply scope:** client list task tile + task compose dialog only — no server/HTTP/schema.
+Related: game peek chrome stays as shipped (`game/board`) except list task tile **reuses** peek question 24px and compose Save **reuses** peekSubmit chrome; peek/compose answer **mini-cards** unchanged; compose slot/pool parity SC-PACK-237/263 unchanged. **Apply scope:** client list task tile + list answer tile + task compose dialog — no server/HTTP/schema.
 
 ## MODIFIED Requirements
 
 ### Requirement: Playing-card presentation for answer cards and tasks
 
-Wherever the client shows a **list** of pack **answer cards** or **tasks** (cards editor grid, task list grid, live pack/tasks view, staff moderation views), each item MUST be rendered as a rounded tile in a wrapping row. An answer card tile MUST use a **vertical** splitter: content on one side and description on the other when description is present; when description is empty the tile MUST be **150×200** without an empty description half; when description is present the tile MUST be **300×200**. A **task** tile MUST use **portrait** proportions (width strictly less than height), resting surface chrome in the same product family as pack task-set summary cards (shared pack-card surface tokens), and MUST NOT use the former fixed **300×200** wide playing-card with a vertical question|slots splitter. Task difficulty MUST appear as **three difficulty dots at the top-left** plus a **word-only** difficulty badge **horizontally centered** in the tile header (same product sense as the game peek / task compose header — not a digit-only outline badge). The question MUST appear below the header at approximately the **same font-size as the game peek question** (24 CSS px). **Filled** answer slots MUST appear as portrait mini-cards comparable to peek/compose filled slots (answer **content** primary and optional answer **description** secondary when present); empty slots MUST NOT be rendered on the list tile. Filled slots MUST be **horizontally centered** in the tile and MUST NOT sit flush against the actions divider — there MUST be visible air between the slots row and the actions section (or the tile bottom when not editable). When more filled slots than fit in one row, the slot row MUST scroll **horizontally**. Tile background and foreground MUST remain readable in both light and dark themes. On surfaces where a **task** item is editable, Edit and Delete MUST appear as **full-width stacked outline buttons with icons** at the bottom of the tile (same product chrome as pack task-set summary card actions — not flat text-only and not corner icon-only). Delete MAY use a negative/red tint. Answer-card editable tiles keep their existing action chrome. Changing content MUST be available through Edit, not by treating a body click as edit. Overflow question text MUST scroll inside the question region rather than unbounded grow of the row.
+Wherever the client shows a **list** of pack **answer cards** or **tasks** (cards editor grid, task list grid, live pack/tasks view, staff moderation views), each item MUST be rendered as a rounded tile in a wrapping row. An **answer** card list tile MUST use **portrait** proportions and resting surface chrome in the same product family as pack task-set summary cards (shared pack-card surface tokens), with a **single** resting size comparable to task-set cards (**approximately 156×206**) whether or not a description is present — MUST NOT use the former dual **150×200** / **300×200** sizes or a **horizontal** content|description splitter. When description is present, answer **content** MUST sit toward the **top** of the body and **description** toward the **bottom**; when description is empty, content MUST be **centered** in the body. Content type MUST be comparable to the task-set card title scale (~0.78rem); description MUST use muted smaller type. A **task** tile MUST use **portrait** proportions (width strictly less than height), resting surface chrome in the same pack-card family, and MUST NOT use the former fixed **300×200** wide playing-card with a vertical question|slots splitter. Task difficulty MUST appear as **three difficulty dots at the top-left** plus a **word-only** difficulty badge **horizontally centered** in the tile header (same product sense as the game peek / task compose header — not a digit-only outline badge). The question MUST appear below the header at approximately the **same font-size as the game peek question** (24 CSS px). **Filled** answer slots on task tiles MUST appear as portrait mini-cards comparable to peek/compose filled slots (answer **content** primary and optional answer **description** secondary when present); empty slots MUST NOT be rendered on the list tile. Filled slots MUST be **horizontally centered** in the tile and MUST NOT sit flush against the actions divider — there MUST be visible air between the slots row and the actions section (or the tile bottom when not editable). When more filled slots than fit in one row, the slot row MUST scroll **horizontally**. Tile background and foreground MUST remain readable in both light and dark themes. On surfaces where a **task** or **answer** item is editable, Edit and Delete MUST appear as **full-width stacked outline buttons with icons** at the bottom of the tile (same product chrome as pack task-set summary card actions — not flat text-only and not corner icon-only). Delete MAY use a negative/red tint. Changing content MUST be available through Edit, not by treating a body click as edit (selectable answer tiles MAY still use body click for slot pick). Overflow body text MUST scroll inside its region rather than unbounded grow of the row.
 
 **Compose shell:** create/edit of answer cards and tasks MUST happen in a dialog (see SC-PACK-256…260), not as an always-visible inline form above the list. When compose is allowed, the surface MUST expose an **add control** above the corresponding list (not the full form). When compose is not allowed (read-only / live view-only / cards locked for `task_set_author`), the add control MUST be hidden and Edit on tiles MUST NOT open a compose dialog.
 
-**Task compose answer pool carve-out:** inside the task compose dialog, the selectable answer pool MUST be mini-cards comparable to the game-board peek answer pool and MUST NOT be a playing-card tile grid. Answer-card **list** grids keep playing-card chrome unchanged.
+**Task compose answer pool carve-out:** inside the task compose dialog, the selectable answer pool MUST be mini-cards comparable to the game-board peek answer pool and MUST NOT be a catalog list-tile grid. Answer-card **list** grids use the portrait pack-card family (this requirement), not the former 150/300 playing-card chrome.
 
 #### Scenario [SC-PACK-222]: Answer cards render as vertically split playing-card tiles
 
 - **GIVEN** a surface that lists answer cards including one with description and one without
 - **WHEN** the user views the list
-- **THEN** each card is a rounded tile in a wrapping row
-- **AND** the card with description shows content and description side by side with a vertical splitter
-- **AND** the card without description is a 150×200 rectangle without an empty description half
-- **AND** long description text scrolls inside its half
+- **THEN** each card is a rounded portrait tile in a wrapping row with pack-card family surface chrome
+- **AND** both cards share the same resting size comparable to pack task-set cards (approximately 156 CSS px wide and at least ~206 CSS px tall) — not 150×200 / 300×200
+- **AND** the card with description shows content toward the top of the body and description toward the bottom (no horizontal vertical-splitter halves)
+- **AND** the card without description shows content centered in the body
+- **AND** long content or description text scrolls inside its region
 - **AND** create/edit fields for those cards are not an always-visible inline form above the list (dialog compose per SC-PACK-256/257)
 
 #### Scenario [SC-PACK-223]: Tasks render as vertically split tiles with horizontal slot chips
@@ -54,19 +58,18 @@ Wherever the client shows a **list** of pack **answer cards** or **tasks** (card
 
 - **GIVEN** an editable cards or tasks editor and a read-only live or staff view of the same kind of items
 - **WHEN** the user compares those surfaces
-- **THEN** editable **task** tiles show Edit and Delete as stacked full-width outline buttons with icons at the bottom (task-set action chrome parity; Delete MAY be negative/red)
-- **AND** editable **answer** tiles keep their existing stacked action chrome
+- **THEN** editable **task** and **answer** tiles show Edit and Delete as stacked full-width outline buttons with icons at the bottom (task-set / PackTaskTile action chrome parity; Delete MAY be negative/red)
 - **AND** live and staff views use the same list-tile chrome without Edit/Delete when not editable
-- **AND** answer **list** grids keep playing-card chrome
+- **AND** answer **list** tiles use the portrait pack-card family chrome (SC-PACK-222/225/282)
 - **AND** task **list** tiles use the portrait pack-card family chrome (SC-PACK-223/278)
-- **AND** the task compose dialog answer pool uses mini-cards (not playing-card tiles) per SC-PACK-260
+- **AND** the task compose dialog answer pool uses mini-cards (not catalog list tiles) per SC-PACK-260
 
 #### Scenario [SC-PACK-225]: Answer tiles use fixed 150×200 or 300×200 sizes
 
 - **GIVEN** a surface listing an answer card without description and an answer card with description
 - **WHEN** the user views those tiles
-- **THEN** the card without description is 150 CSS pixels wide and 200 CSS pixels tall
-- **AND** the card with description is 300 CSS pixels wide and 200 CSS pixels tall with a vertical splitter between content and description
+- **THEN** both tiles are approximately 156 CSS pixels wide with min-height approximately 206 CSS pixels (portrait pack-card family — supersedes the former 150×200 / 300×200 dual sizes)
+- **AND** neither tile uses a horizontal vertical-splitter layout between content and description
 
 #### Scenario [SC-PACK-226]: Task tiles are 300×200
 
@@ -233,3 +236,16 @@ In the task compose dialog, the primary Save / Add control MUST be a **full-widt
 - **THEN** a full-width primary unelevated Save / Add button is present with slim action-height chrome comparable to game peek submit
 - **AND** no Cancel button is present in the dialog actions
 - **AND** dismissing the dialog via backdrop or Escape closes it without leaving an inline form on the page
+
+### Requirement: Answer list tile layout matches pack-card portrait family
+
+On every surface that lists answer cards as tiles, each answer tile MUST use portrait pack-card resting size comparable to pack task-set summary cards (approximately 156 CSS px wide, min-height approximately 206). When the card has a non-empty description, content MUST be pinned toward the top of the body and description toward the bottom. When description is empty, content MUST be centered in the body. Content type MUST match task-set title scale; description MUST be muted smaller type. Editable tiles MUST use outline+icon Edit/Delete as in the playing-card presentation requirement. Peek/compose answer mini-cards are out of scope for this requirement.
+
+#### Scenario [SC-PACK-282]: Answer tile content top / description bottom or centered alone
+
+- **GIVEN** a list with one answer card that has a description and one answer card without description
+- **WHEN** the user views those tiles
+- **THEN** both tiles share the same portrait resting size (approximately 156×206 pack-card family)
+- **AND** the card with description shows content near the top of the body and description near the bottom
+- **AND** the card without description shows content centered in the body
+- **AND** neither card uses a horizontal content|description splitter or the former 150/300 dual widths

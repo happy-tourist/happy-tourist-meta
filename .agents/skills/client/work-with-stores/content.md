@@ -81,13 +81,16 @@ card’s text. Do **not** use dense `q-chip` as primary slot chrome on compose
 rows or `PackTaskTile`. For staff `task_set` preview, server merges live
 `answerCards` into `previewPending` (SC-PACK-134). CSS: `work-with-styles/pack-cards.md`.
 
-## Playing-card chrome (SC-PACK-222…229 / 237 / 238 / 256…263)
+## Pack-card list chrome (SC-PACK-222…229 / 237 / 238 / 256…282)
 
 Wherever the UI **lists** pack **answer cards** or **tasks** (editor grid,
 add-task-set task list, tasks drill-in, live pack answers, staff request
 preview), render `PackAnswerCardTile` / `PackTaskTile` inside a wrapping
-`.pack-card-grid` (`app.scss`). Fixed sizes: answer **150×200** (no
-description) / **300×200** (with description + **vertical** splitter); task
+`.pack-card-grid` (`app.scss`). Answer list tile = **portrait** pack-card
+W **156** / min-H ≈**206** (one size with/without description; column layout
+content top + desc bottom, or content centered alone; content ≈0.78rem /
+desc ≈0.68rem muted; outline+icon Edit/Delete — SC-PACK-222/224/225/282 —
+**not** former dual **150×200** / **300×200** or horizontal splitter). Task
 **portrait** pack-card family W **156–180** / min-H ≈**206** (dots + word
 badge header; question **24px**; filled `.peek-slot-like--portrait` centered
 row + air above actions; SC-PACK-223/226/278); `--pack-card-*` surface contrast
@@ -241,9 +244,9 @@ no staff thread reply until Submit creates clean `pending`.
   Модерация entry is App header only. Pages omit `content.catalogNav` when
   App breadcrumbs cover Lobby / Модерация (SC-PACK-194/195).
 - Support `change_pack` select: **in-catalog only** (`inCatalog !== false && hasLive`).
-- Cascade / peek-slot rows / playing-card answer tiles / portrait `PackTaskTile`
-  / add-task-set thread / delete-card confirms — SC-PACK-126…136 +
-  SC-PACK-222…229 / 237/238 / 256…281 contracts above.
+- Cascade / peek-slot rows / portrait `PackAnswerCardTile` (~156×206) /
+  portrait `PackTaskTile` / add-task-set thread / delete-card confirms —
+  SC-PACK-126…136 + SC-PACK-222…229 / 237/238 / 256…282 contracts above.
 - No block/unblock UI.
 
 ## Anti-patterns
@@ -261,10 +264,12 @@ no staff thread reply until Submit creates clean `pending`.
 - Dense `q-chip` as primary **slot chrome** on compose / peek / list tiles;
   reverting `PackTaskTile` to 300×200 / digit badge / compact labeled empty
   slots (use portrait pack-card + filled `.peek-slot-like--portrait` —
-  SC-PACK-223/238/278); using playing-card tiles or flat chips as the **task
-  compose** answer pool (use `.peek-answer-mini` — SC-PACK-260/277); showing
-  Tasks CSV on live `viewOnly` (SC-PACK-235) or moving CSV into the compose
-  dialog (SC-PACK-262).
+  SC-PACK-223/238/278); reverting `PackAnswerCardTile` to dual **150×200** /
+  **300×200** or horizontal content|description splitter (use portrait
+  **156×≈206** pack-card + column top/bottom or centered — SC-PACK-222/225/282);
+  using playing-card tiles or flat chips as the **task compose** answer pool
+  (use `.peek-answer-mini` — SC-PACK-260/277); showing Tasks CSV on live
+  `viewOnly` (SC-PACK-235) or moving CSV into the compose dialog (SC-PACK-262).
 - Approve / needs_revision / cancel without staff take (`moderation_take_required`).
 - Letting task-set author edit answer cards or foreign sets; showing foreign
   set `moderationStatus` to pack creator alone.

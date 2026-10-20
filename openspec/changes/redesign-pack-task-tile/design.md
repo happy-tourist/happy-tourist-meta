@@ -1,6 +1,6 @@
 ## Context
 
-See `proposal.md` — Why. После `redesign-peek-task-modal` game peek и `PackTaskComposeDialog` уже на dots + word-badge + portrait filled/empty slots + 4-col pool. Первый apply этого change уже дал portrait `PackTaskTile` + filledSlots + compose width/dots. Follow-up polish (explore): outline+icon actions, question **24px**, slots centered + raised air, compose Save как peekSubmit без Cancel, width **+≈50px**.
+See `proposal.md` — Why. После `redesign-peek-task-modal` game peek и `PackTaskComposeDialog` уже на dots + word-badge + portrait filled/empty slots + 4-col pool. Первый apply этого change уже дал portrait `PackTaskTile` + filledSlots + compose width/dots. Follow-up polish (explore): outline+icon actions, question **24px**, slots centered + raised air, compose Save как peekSubmit без Cancel, width **+≈50px**. Next explore: `PackAnswerCardTile` still 150/300×200 horizontal split + flat actions — bring to pack-card family like task-set size/type + task-tile actions.
 
 **Пакет:** client only (`happy-tourist.github.io`). Server / HTTP / schema — без изменений.
 
@@ -9,15 +9,17 @@ See `proposal.md` — Why. После `redesign-peek-task-modal` game peek и `P
 **Goals:**
 
 - List task tile → portrait pack-card family; header как peek/compose; только filled mini-slots; horizontal scroll; question **24px**; slots centered + not glued to actions.
-- Editable actions → outline + icon parity with task-set cards (Delete MAY negative).
+- Editable task actions → outline + icon parity with task-set cards (Delete MAY negative).
 - Compose: width = 4 mini-cards + pad **+ ≈50px**; dots ≈ badge height; Save = peekSubmit chrome; no Cancel button.
 - Снять SC-PACK-238 carve-out для filled chrome на tile.
+- List **answer** tile → same resting size as task-set (**156 × min≈206**), one size with/without description; column layout (content top + desc bottom / content centered alone); type ≈ task-set title; outline+icon actions like task tile.
 
 **Non-Goals:**
 
 - Server / HTTP `/api/content/*` / Colyseus room / schema / messages / DB — **без изменений**.
 - Менять game peek width / dot size / layout (peek question 24px is the **source** for list tile; do not change peek itself).
-- Редизайн answer playing-cards / PackTaskSetCardTile / catalog.
+- Peek/compose answer **mini-cards** / pool chrome.
+- Редизайн PackTaskSetCardTile / catalog / maps.
 - Explicit header close (X) on compose.
 - Новые deps; глобальная смена Quasar tokens.
 
@@ -33,8 +35,13 @@ See `proposal.md` — Why. После `redesign-peek-task-modal` game peek и `P
 8. **Question type** — list tile question `font-size` **24px** (same as `.peek-question` / SC-BOARD-54), weight **600**, center, overflow-y auto. Supersedes former 13–15 tile-scaled band.
 9. **Compose Save / Cancel** — single full-width primary **unelevated** `no-caps` submit button styled like `.peek-submit-btn` (height `--pack-card-action-h`, pad `0 0.6rem`, font ~0.78rem / 600). Labels stay `content.saveTask` / `content.addTask` (not `game.peekSubmit`). **Remove** Cancel button from UI. Dismiss without save = backdrop click / Esc (`q-dialog` not persistent); keep `@hide` / parent reset. No header close X.
 10. **Tests** — Vitest SC-PACK-223/226/238/278/281 (tile), SC-PACK-279/280/276/260 (compose); update asserts for outline actions, 24px question, centered/raised slots, no Cancel, Save chrome, width +50.
+11. **Answer list tile size** — always portrait **W 156**, `min-height` ≈**206**, radius **12**, `--pack-card-*` (same resting band as `PackTaskSetCardTile`). **One size** whether description is present or not — supersedes 150×200 / 300×200 and vertical splitter (SC-PACK-222/225).
+12. **Answer list layout** — `flex-direction: column` body: **with** description → content **top** (align start), description **bottom** (align end / margin-top auto), both scroll if overflow; **without** description → content **centered** (horizontal + vertical) in the body region above actions.
+13. **Answer list type** — content `font-size` ≈ task-set title **0.78rem**, weight **600**; description muted ≈ task-set row label **0.68rem**, weight **400**; center text-align for both.
+14. **Answer list actions** — same outline + icon chrome as PackTaskTile (`edit` / `delete`); labels `content.editCard` / `content.deleteCard`; Delete MAY `color="negative"`. Preserve selectable hover/selected for slot-picker uses.
+15. **Answer tests** — Vitest SC-PACK-222/225/224/227/282 (+ page stubs asserting 150/300).
 
-**Alternatives rejected:** оставить 300×200; сужать и game peek; общие 20px dots на peek; dashed empty на list tile; question ×3 (~42px); Save label «Ответить»; явный X вместо Cancel.
+**Alternatives rejected:** оставить 300×200; сужать и game peek; общие 20px dots на peek; dashed empty на list tile; question ×3 (~42px); Save label «Ответить»; явный X вместо Cancel; answer tile still dual-width 150/300; horizontal split with top/bottom only on text align.
 
 ## Risks / Trade-offs
 
@@ -43,25 +50,27 @@ See `proposal.md` — Why. После `redesign-peek-task-modal` game peek и `P
 - [Compose +50px vs 4-tile anchor] → Mitigation: document slack in SC-PACK-279; keep `92vw` cap.
 - [Shared CSS accidentally enlarges peek dots / changes peek submit] → Mitigation: compose-scoped selectors only; Vitest SC-PACK-280.
 - [Removing Cancel] → Mitigation: backdrop/Esc still closes; Vitest SC-PACK-281.
+- [Answer 156 wide + long content/desc] → Mitigation: overflow-y auto in content/desc regions; do not widen past 156.
+- [Selectable answer tiles denser grid] → Mitigation: preserve selected/hover chrome; Vitest existing select flows.
 
 ## Migration Plan
 
-Client-only UI. Нет data migration. Rollback = revert tile + compose CSS/markup.
+Client-only UI. Нет data migration. Rollback = revert tile + compose + answer CSS/markup.
 
 ## Open Questions
 
-_(none — explore closed; question size = 24px)_
+_(none — explore closed; answer: one size 156×206; no-desc content centered)_
 
 ## Implementation touchpoints
 
 - `src/components/PackTaskTile.vue` — portrait layout; question 24px; slots center + raised air; Edit/Delete → outline+icon; reuse `.peek-diff-*` / `.peek-slot-like--portrait`.
 - Parents + `lib/taskFilledSlots.ts` — already filled-only resolve (keep).
-- `src/components/PackTaskComposeDialog.vue` — width +≈50; Save → peekSubmit-like chrome; remove Cancel btn; keep hide/cancel emit path for parents.
-- `src/css/app.scss` — only if shared helpers needed; prefer scoped compose/tile.
-- Vitest: `PackTaskTile.test.ts`, `ContentPackTaskCompose.test.ts` (+ related).
-- Skill notes: pack-cards / content / peek — outline actions, 24px question, compose Save/no Cancel / +50 width.
+- `src/components/PackTaskComposeDialog.vue` — width +≈50; Save → peekSubmit-like chrome; remove Cancel btn; keep hide path for parents.
+- `src/components/PackAnswerCardTile.vue` — drop 150/300 + row split; portrait pack-card; column top/bottom or centered; outline+icon actions; `--pack-card-*`.
+- Vitest: `PackTaskTile.test.ts`, `ContentPackTaskCompose.test.ts`, answer tile / editor page tests asserting 150×200 / 300×200 / vertical split.
+- Skill notes: pack-cards / content — answer list tile portrait + outline actions (lift 150/300 vertical-split carve-out).
 
-**OpenSpec scenario titles:** для SC-PACK-223 / SC-PACK-226 в delta **сохранять исторические заголовки** из main — менять только тело. Rename ломает validate/archive.
+**OpenSpec scenario titles:** для SC-PACK-222 / SC-PACK-223 / SC-PACK-225 / SC-PACK-226 в delta **сохранять исторические заголовки** из main — менять только тело. Rename ломает validate/archive.
 
 Checklist: `tasks.md`.
 
@@ -154,3 +163,38 @@ Order top → bottom (no pale mid-card dividers except actions top border):
 ### CSS scope rule
 
 Larger dots, +50 width, Save chrome apply **only** under compose (`.pack-task-compose-card`). Shared `.peek-diff-dot` base stays 6px. Tile MAY reuse peek header/slot classes without compose-only enlargements.
+
+### PackAnswerCardTile (list) — structure
+
+Order top → bottom:
+
+1. Body (flex column, grow)
+2. Actions when editable — outline + icon stacked
+
+```
++----------------+     +----------------+
+|                |     | CONTENT        |  content top
+|    CONTENT     |     |                |
+|   (centered)   |     | description    |  desc bottom
+|----------------|     |----------------|
+| [edit] ...     |     | [edit] ...     |
+| [del]  ...     |     | [del]  ...     |
++----------------+     +----------------+
+  no description         with description
+  both W 156 / min-H ≈206
+```
+
+### PackAnswerCardTile — sizes / type / actions
+
+| Token | Spec |
+|-------|------|
+| Width | **156** CSS px (task-set resting) |
+| Height | portrait W &lt; H; `min-height` **≈206** — same with/without description |
+| Radius / border / bg / fg | `--pack-card-*` (alias former local `--pack-tile-*`) |
+| Content font | **≈0.78rem**, weight **600**, center; overflow-y auto |
+| Description font | **≈0.68rem**, weight **400**, muted `--pack-card-muted`, center; overflow-y auto; omit node when empty |
+| Body layout w/ desc | column; content `align-self` / flex start; desc `margin-top: auto` (or flex end) |
+| Body layout no desc | content flex center (H+V) in body |
+| Actions | outline + icon; `--pack-card-action-h`; Delete MAY negative — parity PackTaskTile |
+| Selectable | keep hover/selected secondary ring; body click still emits select |
+| Peek mini / pool | **out of scope** — unchanged |

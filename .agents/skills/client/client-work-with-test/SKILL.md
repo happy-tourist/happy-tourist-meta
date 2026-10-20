@@ -7,7 +7,8 @@ description: >-
   contracts (pack CSV/tiles/list-cards incl. catalog `PackListCardTile`
   SC-PACK-228/249…255 + `PackTaskSetCardTile` SC-PACK-247/248 SVG masks,
   AnswerCompose/TaskCompose + `PackTaskComposeDialog` SC-PACK-256…263/276…281 +
-  portrait `PackTaskTile`/`taskFilledSlots` SC-PACK-278 + AddTaskSetDraft SC-PACK-264…268 + DraftLifecycle/DirtySubmit SC-PACK-234/269…275 + GameBoardWire peek SC-BOARD-45/49/50…54 (peeks=0 hides eye on flipped; left-edge dots),
+  portrait `PackAnswerCardTile` SC-PACK-222/225/282 + portrait
+  `PackTaskTile`/`taskFilledSlots` SC-PACK-278 + AddTaskSetDraft SC-PACK-264…268 + DraftLifecycle/DirtySubmit SC-PACK-234/269…275 + GameBoardWire peek SC-BOARD-45/49/50…54 (peeks=0 hides eye on flipped; left-edge dots),
   lobby `LobbyRoomCardTile` / `LobbyCreateWire` SC-LOBBY-24…26/33…36, game
   board wire, App header chrome); Colyseus
   client.auth / client.http / room I/O spies; store error + q-banner;

@@ -23,3 +23,11 @@
 - [x] 3.3 `PackTaskComposeDialog`: width formula **+ ≈50px** slack; Save → full-width primary unelevated peekSubmit-like chrome (labels `saveTask`/`addTask`); **убрать** Cancel из UI (dismiss = backdrop/Esc; `@hide` / parents ok) — verify: Vitest SC-PACK-260/279/281; нет `cancelEditTask` btn; peek modal не тронут
 - [x] 3.4 Skills notes: pack-cards / content — outline+icon actions, 24px question, centered/raised slots; compose Save / no Cancel / +50 width — verify: нет устаревшего «flat text Edit/Delete» / «13–15px question» / «Cancel required» для этих surfaces
 - [x] 3.5 `npm run lint` + `npm run typecheck` + `npm test` (tile + compose suites) в `happy-tourist.github.io` — verify: все зелёные
+
+## 4. Client — PackAnswerCardTile portrait pack-card
+
+- [x] 4.1 Перед работой: `design.md` Decisions 11–15 + Visual Spec answer tile; delta SC-PACK-222/224/225/227/282; эталон размера/шрифта `PackTaskSetCardTile`; эталон actions `PackTaskTile`; текущий `PackAnswerCardTile.vue` + pages (`ContentPackEditorPage` / `ContentPackPage` / `ContentStaffRequestPage`)
+- [x] 4.2 Перестроить `PackAnswerCardTile`: W **156** / min-H ≈**206** / `--pack-card-*` (один размер с/без desc); column body — с desc: content top + desc bottom; без desc: content center; type content ≈0.78rem / desc ≈0.68rem muted; Edit/Delete outline+icon (`edit`/`delete`), Delete MAY negative; сохранить selectable hover/selected — verify: нет 150×200 / 300×200 / horizontal splitter; light/dark
+- [x] 4.3 Vitest SC-PACK-222/225/224/282 (+ page stubs asserting old sizes) — verify: `npm test` по PackAnswerCardTile / related editor suites
+- [x] 4.4 Skills: `.agents/skills/client/work-with-styles/pack-cards.md` + content stores/pages — answer list **150/300** + vertical split → portrait pack-card + outline actions — verify: нет устаревшего «answer MUST 150×200/300×200» для list tile
+- [x] 4.5 `npm run lint` + `npm run typecheck` + `npm test` (answer + task tile suites) в `happy-tourist.github.io` — verify: все зелёные
