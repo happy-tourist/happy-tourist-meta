@@ -1,6 +1,6 @@
 ## Context
 
-See `proposal.md` — Why. После `redesign-peek-task-modal` game peek и `PackTaskComposeDialog` уже на dots + word-badge + portrait filled/empty slots + 4-col pool. `PackTaskTile` остался carve-out (300×200, digit badge, split вопрос|compact slots, SC-PACK-238). Compose dialog сейчас `min(360…400px)` при пуле 4×`--peek-tile-max-w` (~43px) — заметно шире ряда из четырёх mini-cards. Compose dots шарят `.peek-diff-dot` (6px) с game peek.
+See `proposal.md` — Why. После `redesign-peek-task-modal` game peek и `PackTaskComposeDialog` уже на dots + word-badge + portrait filled/empty slots + 4-col pool. Первый apply этого change уже дал portrait `PackTaskTile` + filledSlots + compose width/dots. Follow-up polish (explore): outline+icon actions, question **24px**, slots centered + raised air, compose Save как peekSubmit без Cancel, width **+≈50px**.
 
 **Пакет:** client only (`happy-tourist.github.io`). Server / HTTP / schema — без изменений.
 
@@ -8,36 +8,41 @@ See `proposal.md` — Why. После `redesign-peek-task-modal` game peek и `P
 
 **Goals:**
 
-- List task tile → portrait pack-card family; header как peek/compose; только filled mini-slots; horizontal scroll.
-- Compose: max-width ≤ 4 mini-cards + padding; dots ≈ высота badge (~20px) для hit-target.
+- List task tile → portrait pack-card family; header как peek/compose; только filled mini-slots; horizontal scroll; question **24px**; slots centered + not glued to actions.
+- Editable actions → outline + icon parity with task-set cards (Delete MAY negative).
+- Compose: width = 4 mini-cards + pad **+ ≈50px**; dots ≈ badge height; Save = peekSubmit chrome; no Cancel button.
 - Снять SC-PACK-238 carve-out для filled chrome на tile.
 
 **Non-Goals:**
 
-- Server / HTTP `/api/content/*` / Colyseus room / schema / messages / DB — **без изменений** (FE-only change; answer `content`/`description` и `difficulty` 1|2|3 уже в существующем payload).
-- Менять game peek width / dot size / layout.
+- Server / HTTP `/api/content/*` / Colyseus room / schema / messages / DB — **без изменений**.
+- Менять game peek width / dot size / layout (peek question 24px is the **source** for list tile; do not change peek itself).
 - Редизайн answer playing-cards / PackTaskSetCardTile / catalog.
+- Explicit header close (X) on compose.
 - Новые deps; глобальная смена Quasar tokens.
 
 ## Decisions
 
 1. **Tile size** — portrait W &lt; H; resting band **W 156–180**, `min-height` ≈**206**, radius **12**, `--pack-card-*` surface (см. Visual Spec). Apply выбирает px внутри band; без жёсткого 300×200.
 2. **Header** — reuse `.peek-diff-header` / `.peek-diff-dots` / `.peek-diff-badge`: dots left (**6×6** read-only), word badge center (h **20**); keys `content.difficultyWord.*`. Снять outline digit `q-badge` и primary-copy через `content.difficulty.{1|2|3}` на list tile (digit-only badge — out).
-3. **Slots on tile** — только filled; chrome `.peek-slot-like--portrait` + filled primary border (`#1976d2` 1px); row gap **8**, `overflow-x: auto`, `flex-wrap: nowrap`. Empty omit. Если filled слотов **нет** — **не** рендерить ряд слотов и **не** показывать muted placeholder `content.slotEmpty` / «пусто» на list tile.
-4. **Answer text / props** — primary = answer `content`; secondary = answer `description` if any (как peek filled). **Заменить** текущий `slotLabels: string[]` (сейчас parents прокидывают и empty как `content.slotEmpty`, без description) на filled-only prop вида `filledSlots: { content: string; description?: string }[]` (или эквивалент). Parents (`ContentPackTasksPage` / `ContentPackAddTaskSetPage` / `ContentStaffRequestPage` и helpers `taskSlotLabels` / `slotLabel`): фильтровать `!answerCardId`; резолвить `content` + optional `description` из загруженных `answerCards` — не новый HTTP.
-5. **Compose width** — `max-width: min(4 * var(--peek-tile-max-w) + 3 * 8px + horizontal_pad, 92vw)`; убрать min/max 360/400. Pool `repeat(4, …)` gap 8.
-6. **Compose dots size** — compose-only (`.pack-task-compose-card .peek-diff-dot` или `--compose-diff-dot-size: 20px`); shared base **6px** для game peek.
-7. **Actions** — Edit/Delete full-width stacked bottom — as-is.
-8. **Tests** — Vitest SC-PACK-223/226/238/278 (tile), SC-PACK-279/280/276/260 (compose); обновить устаревшие 300×200 / carve-out asserts.
+3. **Slots on tile** — только filled; chrome `.peek-slot-like--portrait` + filled primary border (`#1976d2` 1px); row gap **8**, `overflow-x: auto`, `flex-wrap: nowrap`, **`justify-content: center`**. Empty omit. Zero filled → omit slots row (no `content.slotEmpty`). **Raise slots:** question region MUST NOT `flex-grow` all free height into a void that pushes slots onto the actions divider; use content-sized / scroll question (`flex: 0 1 auto` or equivalent) + **≈8–12px** air below slots above the actions divider.
+4. **Answer text / props** — primary = answer `content`; secondary = answer `description` if any. Prop `filledSlots: { content: string; description?: string }[]`. Parents resolve from loaded `answerCards` — не новый HTTP. Helper `lib/taskFilledSlots.ts` already preferred (DRY).
+5. **Compose width** — `min/max-width: min(4 * var(--peek-tile-max-w) + 3 * 8px + horizontal_pad + ≈50px, 92vw)`; убрать fixed 360/400. Pool `repeat(4, …)` gap 8 unchanged. The **+≈50px** is intentional slack over strict 4-tile row (SC-PACK-279 revised).
+6. **Compose dots size** — compose-only (`.pack-task-compose-card .peek-diff-dot` / `--compose-diff-dot-size: 20px`); shared base **6px** для game peek.
+7. **Tile actions** — Edit/Delete full-width stacked bottom: **`outline` + Material icon** (`edit` / `delete`), `dense` `no-caps`, slim `--pack-card-action-h`, chrome parity with `.pack-task-set-tile__actions` (neutral outline border via `--pack-card-border`; label weight ~500). Delete MAY use `color="negative"` (red). Labels stay `content.editTask` / `content.deleteTask`. **Not** flat text-only.
+8. **Question type** — list tile question `font-size` **24px** (same as `.peek-question` / SC-BOARD-54), weight **600**, center, overflow-y auto. Supersedes former 13–15 tile-scaled band.
+9. **Compose Save / Cancel** — single full-width primary **unelevated** `no-caps` submit button styled like `.peek-submit-btn` (height `--pack-card-action-h`, pad `0 0.6rem`, font ~0.78rem / 600). Labels stay `content.saveTask` / `content.addTask` (not `game.peekSubmit`). **Remove** Cancel button from UI. Dismiss without save = backdrop click / Esc (`q-dialog` not persistent); keep `@hide` / parent reset. No header close X.
+10. **Tests** — Vitest SC-PACK-223/226/238/278/281 (tile), SC-PACK-279/280/276/260 (compose); update asserts for outline actions, 24px question, centered/raised slots, no Cancel, Save chrome, width +50.
 
-**Alternatives rejected:** оставить 300×200 + только перекрасить header; сужать и game peek; общие 20px dots на peek (ломает visual spec peek); показывать dashed empty на list tile.
+**Alternatives rejected:** оставить 300×200; сужать и game peek; общие 20px dots на peek; dashed empty на list tile; question ×3 (~42px); Save label «Ответить»; явный X вместо Cancel.
 
 ## Risks / Trade-offs
 
-- [Узкая portrait + длинный вопрос] → Mitigation: scroll в зоне вопроса; не растягивать ширину.
-- [Много слотов + horizontal scroll] → Mitigation: явный overflow-x; Vitest SC-PACK-278.
-- [Compose уже dialog на узких экранах] → Mitigation: `min(…, 92vw)` сохранить; якорь — 4 tiles, не меньше mobile.
-- [Shared CSS accidentally enlarges peek dots] → Mitigation: compose-scoped selector only; Vitest SC-PACK-280 asserts peek unchanged if covered, else compose-only class check.
+- [Узкая portrait + 24px вопрос] → Mitigation: scroll в зоне вопроса; не растягивать ширину.
+- [Много слотов + center + horizontal scroll] → Mitigation: `justify-content: center` + `overflow-x: auto`; flex-shrink 0 on minis; Vitest SC-PACK-278.
+- [Compose +50px vs 4-tile anchor] → Mitigation: document slack in SC-PACK-279; keep `92vw` cap.
+- [Shared CSS accidentally enlarges peek dots / changes peek submit] → Mitigation: compose-scoped selectors only; Vitest SC-PACK-280.
+- [Removing Cancel] → Mitigation: backdrop/Esc still closes; Vitest SC-PACK-281.
 
 ## Migration Plan
 
@@ -45,46 +50,43 @@ Client-only UI. Нет data migration. Rollback = revert tile + compose CSS/mark
 
 ## Open Questions
 
-_(none — explore closed)_
+_(none — explore closed; question size = 24px)_
 
 ## Implementation touchpoints
 
-- `src/components/PackTaskTile.vue` — layout/template/styles; заменить digit badge + `slotLabels` на peek header + `filledSlots: { content; description? }[]` (filled-only; zero → no slots row).
-- Parents (`ContentPackTasksPage`, `ContentPackAddTaskSetPage`, `ContentStaffRequestPage`) — переписать `taskSlotLabels` / `slotLabel` (или аналог) → filled-only resolve с `description`; обновить page-test stubs props. **Источник данных без нового HTTP:** `content` + optional `description` уже в payload answer card / task slots (`difficulty` 1|2|3, `answerCardId`) — resolve на client из уже загруженного pack/task-set state; server/API не менять.
-- `src/components/PackTaskComposeDialog.vue` — card width; compose-scoped larger dots.
-- `src/css/app.scss` — compose-only dot size; tile MAY reuse portrait slot classes (lift carve-out comments).
-- Vitest: `PackTaskTile.test.ts`, `ContentPackTaskCompose.test.ts` (+ related page tests asserting 300×200 / SC-PACK-238).
-- Skill notes (apply MUST sync — иначе агенты откатят portrait tile):
-  - `.agents/skills/client/work-with-styles/pack-cards.md` — task **300×200** + SC-PACK-238 compact labeled carve-out
-  - `.agents/skills/client/work-with-stores/content.md` — task 300×200 / Don’t carve-out
-  - `.agents/skills/client/work-with-game-board/peek.md` — Don’t «force peek portrait AR onto PackTaskTile»
-  - комментарии в `app.scss` про SC-PACK-238 carve-out
+- `src/components/PackTaskTile.vue` — portrait layout; question 24px; slots center + raised air; Edit/Delete → outline+icon; reuse `.peek-diff-*` / `.peek-slot-like--portrait`.
+- Parents + `lib/taskFilledSlots.ts` — already filled-only resolve (keep).
+- `src/components/PackTaskComposeDialog.vue` — width +≈50; Save → peekSubmit-like chrome; remove Cancel btn; keep hide/cancel emit path for parents.
+- `src/css/app.scss` — only if shared helpers needed; prefer scoped compose/tile.
+- Vitest: `PackTaskTile.test.ts`, `ContentPackTaskCompose.test.ts` (+ related).
+- Skill notes: pack-cards / content / peek — outline actions, 24px question, compose Save/no Cancel / +50 width.
 
-**OpenSpec scenario titles:** для SC-PACK-223 / SC-PACK-226 в delta **сохранять исторические заголовки** из main (`…vertically split…` / `…300×200`) — менять только тело GIVEN/WHEN/THEN. Rename заголовка ломает `openspec validate` / archive (scenario-loss).
+**OpenSpec scenario titles:** для SC-PACK-223 / SC-PACK-226 в delta **сохранять исторические заголовки** из main — менять только тело. Rename ломает validate/archive.
 
 Checklist: `tasks.md`.
 
 ## Visual Spec
 
-**Source of truth:** this section. Token reuse from shipped peek/compose / pack-card (`app.scss` `.pack-card-grid` / `.peek-chrome`, `.peek-diff-*`, `.peek-slot-like--portrait`, `.peek-answer-pool`). No separate mock image — parity with existing pack-card + peek chrome. Values marked `approx` MAY land in a small band; apply MUST NOT invent a second token family.
+**Source of truth:** this section. Token reuse from shipped peek/compose / pack-card. No separate mock image. Values marked `approx` MAY land in a small band.
 
 ### PackTaskTile (list) — structure
 
 Order top → bottom (no pale mid-card dividers except actions top border):
 
-1. Header (dots left + word badge center) — height 20px (same as `.peek-diff-header`)
-2. Question region (flex grow; overflow-y auto)
-3. Filled-slots row (overflow-x auto; nowrap)
-4. Actions (Edit / Delete) when editable — full-width stacked text buttons
+1. Header (dots left + word badge center) — height 20px
+2. Question region (content-sized / scroll; **not** flex-grow void that pins slots to bottom)
+3. Filled-slots row (centered; overflow-x auto; nowrap) + air **≈8–12** below before actions
+4. Actions (Edit / Delete) when editable — outline + icon stacked
 
 ```
 +---------------------------+  W 156–180; min-H ≥206; W < H
-| ooo          лёгкая       |  header h=20; dots left; badge center
-|      текст задания        |  pad / gap below
-| [mini][mini][mini] -->    |  filled only; gap 8; overflow-x
-|---------------------------|  1px --pack-card-splitter
-| Edit                      |  --pack-card-action-h (~30)
-| Delete                    |
+| ooo          лёгкая       |  header h=20
+|      текст задания        |  24px center
+|    [mini][mini] -->       |  filled only; centered; gap 8
+|         (air)             |  ~8–12 above divider
+|---------------------------|
+| [edit] Изменить вопрос    |  outline + icon; --pack-card-action-h
+| [del]  Удалить            |  outline + icon; MAY negative
 +---------------------------+
 ```
 
@@ -92,73 +94,63 @@ Order top → bottom (no pale mid-card dividers except actions top border):
 
 | Token | Spec |
 |-------|------|
-| Width | `approx` **156–180** CSS px (canon band = `PackTaskSetCardTile` 156; MAY be slightly wider for slot row) |
-| Height | portrait **W &lt; H**; `min-height` **≈206** CSS px (task-set resting); MAY grow with long question scroll, not by widening past band |
+| Width | `approx` **156–180** CSS px |
+| Height | portrait **W &lt; H**; `min-height` **≈206** |
 | Border-radius | **12px** |
-| Border | **1px** solid `var(--pack-card-border)` |
-| Background / fg | `var(--pack-card-bg)` / `var(--pack-card-fg)` |
-| Shadow (resting) | `var(--pack-card-shadow)` |
-| Light surface | bg `#ffffff`; fg `rgba(0,0,0,0.87)`; muted `rgba(0,0,0,0.7)`; border `rgba(0,0,0,0.14)` |
-| Dark surface | bg `#2a2a2a`; fg `rgba(255,255,255,0.92)`; muted `rgba(255,255,255,0.78)`; border `rgba(255,255,255,0.22)` |
-| Root padding | horizontal **8–12** px; top **8–10** px; bottom **0** (actions carry own pad) — `approx` like task-set body `0 12px 6px` |
+| Border / bg / fg / shadow | `--pack-card-*` (light/dark as before) |
+| Root padding | horizontal **8–12** px; top **8–10** px; bottom **0** |
 
 ### PackTaskTile — element sizes / pads / gaps
 
 | Element | Spec |
 |---------|------|
-| Header | height **20px**; width 100%; layout = `.peek-diff-header` (relative; dots absolute left; badge centered) |
-| Dots | **3×** read-only; each **6×6** px; gap **2** px; border-radius 50%; fill count = difficulty; color = `--pack-ts-dot-{N}` via `--peek-diff-dot-color` (light: `#43a047` / `#f9a825` / `#e53935`; dark: `#66bb6a` / `#ffca28` / `#ef5350`) |
-| Badge | height **20px**; pad **2×8** px; radius **999px**; font-size **11px**; weight **600**; line-height **1.2**; word-only (`content.difficultyWord.{1\|2\|3}`); tint `--peek-badge-{N}-bg` / `-fg` |
-| Header → question gap | **8–12** px (`approx`; peek header `margin-bottom: 12`) |
-| Question | `font-size` **13–15** px (`approx` 0.85rem) — **tile-scaled**, NOT game peek 24px (SC-BOARD-54); weight **600**; line-height **1.25–1.35**; color `--pack-card-fg`; **text-align: center**; overflow-y **auto**; word-break break-word; min-height **≈40–56** px flex region |
+| Header | height **20px**; `.peek-diff-header` |
+| Dots | **6×6**; gap **2**; fill = difficulty |
+| Badge | h **20**; word-only `content.difficultyWord.*` |
+| Header → question gap | **8–12** px |
+| Question | `font-size` **24px** (parity `.peek-question`); weight **600**; line-height **1.25–1.35**; center; overflow-y **auto**; word-break; min-height `approx` **40–56**; **flex-grow MUST NOT** create a large empty void that pins slots to the actions edge |
 | Question → slots gap | **8–10** px |
-| Slot mini-card | width `var(--peek-tile-max-w)` **43px**; AR **156∶206**; radius **12px**; pad **4×5** px; border **1px** solid `#1976d2` (filled primary thin — same as `.peek-slot-like--portrait.peek-slot-like--filled`); bg `--pack-card-bg` |
-| Slot primary text | font-size **12px**; weight **600**; line-height **1.2**; center; clamp ≤3 lines |
-| Slot secondary (description) | font-size **9px**; weight **400**; line-height **1.2**; color `--pack-card-muted`; clamp ≤2 lines; omit node when empty |
-| Slots row | `display: flex`; `flex-wrap: nowrap`; gap **8** px; `overflow-x: auto`; `overflow-y: hidden` |
-| Empty slots | **not rendered** |
-| Zero filled slots | omit entire slots row; **no** muted `content.slotEmpty` body placeholder |
-| Actions divider | border-top **1px** `--pack-card-splitter`; air above **≈3** px (`--pack-card` / task-set divider air) |
-| Edit / Delete | full-width text; height `var(--pack-card-action-h)` **≈30** px (min 28 / max 32); font-size **≈0.78rem**; as current stacked flat dense — no Material corner icons |
-| Icons | none (dots are CSS circles; no Material icons on tile body) |
+| Slot mini-card | `--peek-tile-max-w` **43px**; AR **156∶206**; filled primary border `#1976d2` |
+| Slots row | flex nowrap; gap **8**; `justify-content: center`; `overflow-x: auto`; minis `flex-shrink: 0` |
+| Slots → actions air | **≈8–12** px below slots row (or equivalent padding before divider) |
+| Empty / zero filled | omit slot / omit row |
+| Actions | outline + icon; height `--pack-card-action-h` **≈30**; font ~0.72–0.78rem weight **500**; icon **18px**; Delete MAY `color="negative"` |
+| Icons on body | none except action icons |
 
 ### PackTaskTile — alignment
 
 | Element | Align |
 |---------|-------|
-| Dots | left edge of content |
-| Badge | horizontal center of header |
+| Dots | left |
+| Badge | center header |
 | Question | center |
+| Slots row | **center** (horizontal) |
 | Slot texts | center |
-| Edit / Delete labels | center (Quasar full-width text) |
-
-### PackTaskTile — hover / focus
-
-List tile is **read-only chrome** (no click-to-edit on body). Hover chrome **not required** (not shown on parity reference for list tiles). Editable actions: Quasar flat button hover as today. Cascade outline unchanged (`2px` warning).
+| Edit / Delete | center (full-width outline) |
 
 ### PackTaskTile — copy / i18n
 
-| Surface | Key / copy |
-|---------|------------|
-| Badge words | `content.difficultyWord.1` / `.2` / `.3` (лёгкая / средняя / сложная) |
+| Surface | Key |
+|---------|-----|
+| Badge | `content.difficultyWord.{1\|2\|3}` |
 | Edit | `content.editTask` |
 | Delete | `content.deleteTask` |
-| Fallback blank question | parent `content.taskN` (as today) |
 
 ### Slot data binding (FE)
 
-Props for filled slots MUST carry `{ content: string; description?: string }` (or equivalent dual arrays) resolved on client from loaded pack `answerCards` by `answerCardId` — **no new HTTP**. Empty `answerCardId` slots omitted before render. When the resulting array is empty, omit the slots row entirely (do **not** show `content.slotEmpty` / generic empty copy in the tile body). Do **not** keep passing a parallel `slotLabels: string[]` of empty placeholders once `filledSlots` (or equivalent) is wired.
+`filledSlots: { content; description? }[]` from loaded `answerCards` — no new HTTP. Zero → omit row.
 
 ### Compose dialog polish
 
 | Token | Spec |
 |-------|------|
-| Width formula | `max-width: min(4 * var(--peek-tile-max-w) + 3 * 8px + horizontal_pad, 92vw)` where pool gap = **8px** (`.peek-answer-pool`); `horizontal_pad` = dialog section pad **≈32** px total (16+16 Quasar section) **or** explicit card pad if restructured — dialog MUST NOT stay at fixed min **360** / max **400** |
-| Min-width | drop inflated `min(360px, 92vw)`; MAY use `min(formula, 92vw)` for both min and max, or min ≈ content |
-| Dots (compose-only) | visual Ø **≈20** px (= `.peek-diff-badge` height); gap MAY stay **2–4** px; selector scoped under `.pack-task-compose-card` (or `--compose-diff-dot-size: 20px`); shared `.peek-diff-dot` base remains **6×6** for game peek |
-| Pool | still `repeat(4, minmax(0, var(--peek-tile-max-w)))`; gap 8 — unchanged |
-| Game peek | width + 6px dots **unchanged** |
+| Width | `min(4 * var(--peek-tile-max-w) + 3 * 8px + horizontal_pad + ≈50px, 92vw)` — slack **≈50** over strict 4-tile+pad |
+| Dots | compose-only Ø **≈20**; shared base **6×6** for peek |
+| Pool | `repeat(4, …)` gap 8 — unchanged |
+| Save | full-width primary unelevated no-caps; chrome parity `.peek-submit-btn` (`--pack-card-action-h`, pad `0 0.6rem`, font ~0.78rem / 600); labels `content.saveTask` / `content.addTask` |
+| Cancel | **not shown**; dismiss = backdrop / Esc |
+| Game peek | width + dots + submit **unchanged** by this change |
 
 ### CSS scope rule
 
-Larger dots and narrower width apply **only** under compose dialog root (`.pack-task-compose-card` / equivalent). Shared `.peek-diff-dot` base stays 6px for game peek / any other consumer. Tile MAY reuse `.peek-diff-*` + `.peek-slot-like--portrait` without compose-only enlargements.
+Larger dots, +50 width, Save chrome apply **only** under compose (`.pack-task-compose-card`). Shared `.peek-diff-dot` base stays 6px. Tile MAY reuse peek header/slot classes without compose-only enlargements.

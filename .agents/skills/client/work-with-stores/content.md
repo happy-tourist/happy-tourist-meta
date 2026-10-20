@@ -89,20 +89,23 @@ preview), render `PackAnswerCardTile` / `PackTaskTile` inside a wrapping
 `.pack-card-grid` (`app.scss`). Fixed sizes: answer **150×200** (no
 description) / **300×200** (with description + **vertical** splitter); task
 **portrait** pack-card family W **156–180** / min-H ≈**206** (dots + word
-badge header; filled `.peek-slot-like--portrait` row; SC-PACK-223/226/278);
-`--pack-card-*` surface contrast (SC-PACK-225…227). Create/edit of answers and
-tasks is a **dialog** (SC-PACK-256…260): page shows an add control above the
-list when compose is allowed — not an always-visible inline form. **Task
-compose dialog answer pool:** `.peek-answer-mini` grid like Game peek
-(SC-PACK-260/277; SC-BOARD-52) — **not** `PackAnswerCardTile` / flat `q-chip`;
-same card MAY fill multiple slots with **no** used chrome (SC-PACK-263).
-Difficulty = interactive dots + **word-only** badge via
-`content.difficultyWord.*` (no `Сложность:` / digit; SC-PACK-276; mirrors game
-peek SC-BOARD-50). Compose dialog width ≤ four pool mini-cards + pad
-(SC-PACK-279); compose-only dots ≈ badge height (SC-PACK-280) — do **not**
-enlarge shared peek 6px dots. List tile filled slots: `resolveTaskFilledSlots`
-in `lib/taskFilledSlots.ts` (parents filter empty `answerCardId`). Add-task-set
-MUST NOT show a top read-only `live-answer-card-grid` (SC-PACK-261).
+badge header; question **24px**; filled `.peek-slot-like--portrait` centered
+row + air above actions; SC-PACK-223/226/278); `--pack-card-*` surface contrast
+(SC-PACK-225…227). Create/edit of answers and tasks is a **dialog**
+(SC-PACK-256…260 / 279/281): page shows an add control above the list when
+compose is allowed — not an always-visible inline form. **Task compose dialog
+answer pool:** `.peek-answer-mini` grid like Game peek (SC-PACK-260/277;
+SC-BOARD-52) — **not** `PackAnswerCardTile` / flat `q-chip`; same card MAY fill
+multiple slots with **no** used chrome (SC-PACK-263). Difficulty = interactive
+dots + **word-only** badge via `content.difficultyWord.*` (no `Сложность:` /
+digit; SC-PACK-276; mirrors game peek SC-BOARD-50). Compose dialog width =
+four pool mini-cards + pad + ≈50px slack (SC-PACK-279); compose-only dots ≈
+badge height (SC-PACK-280) — do **not** enlarge shared peek 6px dots. Compose
+Save = full-width primary unelevated peekSubmit-like chrome; **no Cancel** btn
+(dismiss backdrop/Esc — SC-PACK-281). List tile filled slots:
+`resolveTaskFilledSlots` in `lib/taskFilledSlots.ts` (parents filter empty
+`answerCardId`). Add-task-set MUST NOT show a top read-only
+`live-answer-card-grid` (SC-PACK-261).
 **Catalog packs** use `PackListCardTile` **~180×260** (status top, star TL,
 uppercase title + truncated description, **published-only** set-preview rows
 ≤4 + overflow with display ordinal 1…N and set-row ink = title.fg,
@@ -124,7 +127,8 @@ divider air ~4–6); themed hover border+shadow without scale (dark light-grey,
 not `--q-secondary`) SC-PACK-246; SVG ink SC-PACK-248; shared `--pack-card-*`
 surface — SC-PACK-229/239…248 + 255). Do **not** reuse `PackListCardTile`
 for task sets. Slot **values** on a task row use `.peek-slot-like` (above).
-Edit/delete only when editable (bottom text buttons on answer/task tiles;
+Edit/delete only when editable (bottom **outline+icon** on task tiles —
+`edit`/`delete`, not flat text; answer tiles keep their stacked chrome;
 outline+icon on task-set tiles); body click is not edit. CSV import/export is
 client-only (`lib/packContentCsv` + framed Export/Import panel on editor /
 `PackTasksCsvControls` on the page above the task list, not inside compose
@@ -239,7 +243,7 @@ no staff thread reply until Submit creates clean `pending`.
 - Support `change_pack` select: **in-catalog only** (`inCatalog !== false && hasLive`).
 - Cascade / peek-slot rows / playing-card answer tiles / portrait `PackTaskTile`
   / add-task-set thread / delete-card confirms — SC-PACK-126…136 +
-  SC-PACK-222…229 / 237/238 / 256…280 contracts above.
+  SC-PACK-222…229 / 237/238 / 256…281 contracts above.
 - No block/unblock UI.
 
 ## Anti-patterns

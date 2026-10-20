@@ -15,3 +15,11 @@
 - [x] 2.2 Сузить compose card: `min(4×--peek-tile-max-w + 3×8px + pad, 92vw)`; убрать fixed min/max 360/400 — verify: pool ≤4 колонок; game peek width не тронут
 - [x] 2.3 Compose-only dots Ø ≈20px (scoped `.pack-task-compose-card`); interactive preview/commit без регрессии; shared 6px base для game peek — verify: Vitest SC-PACK-276/279/280; peek dots unchanged
 - [x] 2.4 `npm run lint` + `npm run typecheck` + `npm test` (compose + tile suites) в `happy-tourist.github.io` — verify: все зелёные
+
+## 3. Client — polish (post-apply feedback)
+
+- [x] 3.1 Перед работой: `design.md` Decisions 3/7–9 + Visual Spec polish; delta SC-PACK-223/224/278/260/279/281; эталон outline+icon в `PackTaskSetCardTile` / `ContentPackPage` #actions; эталон Save в `GamePage` `.peek-submit-btn`; текущий `PackTaskTile.vue` + `PackTaskComposeDialog.vue`
+- [x] 3.2 `PackTaskTile`: вопрос **24px**; slots `justify-content: center` + воздух ≈8–12px над actions (не flex-grow void, прижимающий слоты к низу); Edit/Delete → `outline` + icon (`edit` / `delete`), slim `--pack-card-action-h`, Delete MAY `color="negative"` — verify: Vitest SC-PACK-223/224/278; light/dark
+- [x] 3.3 `PackTaskComposeDialog`: width formula **+ ≈50px** slack; Save → full-width primary unelevated peekSubmit-like chrome (labels `saveTask`/`addTask`); **убрать** Cancel из UI (dismiss = backdrop/Esc; `@hide` / parents ok) — verify: Vitest SC-PACK-260/279/281; нет `cancelEditTask` btn; peek modal не тронут
+- [x] 3.4 Skills notes: pack-cards / content — outline+icon actions, 24px question, centered/raised slots; compose Save / no Cancel / +50 width — verify: нет устаревшего «flat text Edit/Delete» / «13–15px question» / «Cancel required» для этих surfaces
+- [x] 3.5 `npm run lint` + `npm run typecheck` + `npm test` (tile + compose suites) в `happy-tourist.github.io` — verify: все зелёные

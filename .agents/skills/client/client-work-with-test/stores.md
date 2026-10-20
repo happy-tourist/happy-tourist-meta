@@ -62,8 +62,9 @@ dirty),
 `src/pages/__tests__/ContentPackStaffBoot.test.ts`,
 `ContentPackDirtySubmit.test.ts` (persisted dirty survives reload; dirty
 needs_revision), `ContentPackTasksCsvHide.test.ts`
-(+ `ContentMaps` staff boot / dirty Submit; `PackTaskComposeDialog` width/dots
-SC-PACK-279/280 + portrait `PackTaskTile` / peek-slot chrome SC-PACK-237/260/278),
+(+ `ContentMaps` staff boot / dirty Submit; `PackTaskComposeDialog` width/dots/Save
+SC-PACK-279…281 + portrait `PackTaskTile` outline+icon / 24px Q / raised slots
+SC-PACK-223/224/278 + peek-slot chrome SC-PACK-237/260),
 store `content.simplifyAcl.test.ts`; spy `client.http`, do not hit live server;
 cascade helpers + `isStaffEditSessionNavigation`: meta `work-with-stores/content.md`;
 unify follow-ups: `ContentUnifiedList.test.ts` (`openRequestType` pack→Edit /

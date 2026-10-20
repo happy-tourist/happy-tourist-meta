@@ -6,7 +6,7 @@ description: >-
   page CSS, Quasar utilities, Material Icons / Roboto. Core in SKILL.md; topic
   details in theme.md (Dark + /api/theme), board.md (GamePage tourist CSS),
   pack-cards.md (cascade yellow + answer tiles + portrait PackTaskTile
-  SC-PACK-278 + compose width/dots SC-PACK-279/280 + catalog PackListCardTile
+  SC-PACK-278 + compose width/dots/Save SC-PACK-279…281 + catalog PackListCardTile
   ~180×260 + PackTaskSetCardTile + MapListCardTile + lobby LobbyRoomCardTile
   shared `--pack-card-*` SC-LOBBY-33; peek/compose mini-card pool
   SC-PACK-260/277 + SC-BOARD-50…54; quoted Vite mask `url("${…}")`).
@@ -35,7 +35,7 @@ Read the matching file in this folder when the change involves that area
 |-------|------|
 | Quasar Dark + GET/POST `/api/theme` + header toggle wiring | [theme.md](theme.md) |
 | Tourist board / presence / HUD / say CSS on GamePage | [board.md](board.md) |
-| Cascade yellow + `.pack-card-grid` / `.peek-chrome` + answer/portrait-task tiles + catalog/list + `PackTaskSetCardTile` + map tiles + lobby `LobbyRoomCardTile` + peek/compose mini-card pool SC-PACK-260/277…280 (SC-MAP-68 mask `url`) | [pack-cards.md](pack-cards.md) |
+| Cascade yellow + `.pack-card-grid` / `.peek-chrome` + answer/portrait-task tiles + catalog/list + `PackTaskSetCardTile` + map tiles + lobby `LobbyRoomCardTile` + peek/compose mini-card pool SC-PACK-260/277…281 (SC-MAP-68 mask `url`) | [pack-cards.md](pack-cards.md) |
 
 ## Project Style Model
 
@@ -156,8 +156,9 @@ Prefer Quasar helpers already in login / lobby / game:
   compose/`PackTaskTile` slots as dense `q-chip` instead of `.peek-slot-like`;
   reverting `PackTaskTile` to 300×200 / digit badge / compact labeled empty
   slots (use portrait pack-card + filled `.peek-slot-like--portrait` —
-  SC-PACK-278); fixed compose min 360/max 400 or enlarging shared peek 6px
-  dots (SC-PACK-279/280) — see [pack-cards.md](pack-cards.md).
+  SC-PACK-278); fixed compose min 360/max 400, enlarging shared peek 6px
+  dots, or reintroducing Cancel / non-peekSubmit Save
+  (SC-PACK-279…281) — see [pack-cards.md](pack-cards.md).
   wrong tile sizes; `PackCsvImportDialog`; maps list as plain `q-item` —
   see [pack-cards.md](pack-cards.md).
 - Task-set badge/total Material `q-icon` after `src/assets/content/task-set-*.svg`

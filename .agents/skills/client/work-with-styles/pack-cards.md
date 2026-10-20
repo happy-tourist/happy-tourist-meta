@@ -25,9 +25,11 @@ scoped styles on `PackAnswerCardTile.vue` / `PackTaskTile.vue` (fixed px:
 answer **150×200** without description / **300×200** with **vertical** splitter;
 task **portrait** pack-card family W **156–180** / min-H ≈**206**, radius 12,
 `--pack-card-*` surface; peek-like dots + `content.difficultyWord.*` badge;
-filled `.peek-slot-like--portrait` only; Edit/Delete as bottom full-width
-**text** buttons when editable). Create/edit of answers and tasks is a
-**dialog** (SC-PACK-256…260) — not an always-visible inline form
+question **24px** (peek parity); filled `.peek-slot-like--portrait` only,
+**centered** row + ≈8–12px air above actions (no flex-grow void pinning slots);
+Edit/Delete as bottom full-width **outline + icon** (`edit` / `delete`; Delete
+MAY negative) when editable). Create/edit of answers and tasks is a
+**dialog** (SC-PACK-256…260 / 279/281) — not an always-visible inline form
 above the grid; when compose is allowed, expose an add control above the list.
 
 **Catalog packs (SC-PACK-228 / 249…255):** `PackListCardTile.vue` resting size
@@ -200,9 +202,12 @@ Game peek and task **compose** use `.peek-slot` / `.peek-slot-like` **plus**
 empty slots keep `--interactive` (cursor pointer drop-target affordance; click
 still no-ops until filled). `PackTaskTile` list slots show **filled only** as
 `.peek-slot-like--portrait` (content + optional description; gap 8;
-`overflow-x: auto`); empty slots omitted; zero filled → omit slots row (no
-`content.slotEmpty` body placeholder). Do **not** reintroduce dense `q-chip`
-as primary slot chrome. Do **not** reintroduce list `q-chip` for answer/task
+`justify-content: center`; `overflow-x: auto`; ≈8–12px air above actions);
+question **24px** / weight 600 (SC-BOARD-54 parity — **not** 13–15px);
+empty slots omitted; zero filled → omit slots row (no `content.slotEmpty`
+body placeholder). Edit/Delete = slim **outline + icon** (task-set action
+parity; **not** flat text-only). Do **not** reintroduce dense `q-chip` as
+primary slot chrome. Do **not** reintroduce list `q-chip` for answer/task
 **bodies**. Peek/compose dialog cards use `--pack-card-bg` / `fg` on the card
 root (not raw Quasar dark surface).
 
@@ -218,11 +223,14 @@ disabled chrome (SC-PACK-263; Game peek SC-BOARD-49). Difficulty header =
 3 pack dots (**left edge**) + **word-only** badge (`content.difficultyWord.*`,
 horizontally **centered** — not one centered cluster; compose interactive
 SC-PACK-276; game read-only SC-BOARD-50). **Compose shell width** (SC-PACK-279):
-`max-width` / `min-width` = `min(4×--peek-tile-max-w + 3×8px + pad, 92vw)` on
-`.pack-task-compose-card` — **not** fixed min 360 / max 400. **Compose-only
+`max-width` / `min-width` = `min(4×--peek-tile-max-w + 3×8px + pad + ≈50px, 92vw)`
+on `.pack-task-compose-card` — **not** fixed min 360 / max 400. **Compose-only
 dots** (SC-PACK-280): Ø ≈20px via `--compose-diff-dot-size` under
 `.pack-task-compose-card`; shared `.peek-diff-dot` base stays **6px** for game
-peek / list tile. Game peek question ~24px (SC-BOARD-54) — compose `q-input`
-unchanged. List grids keep playing-card tiles. Contracts: meta
-`work-with-stores/content.md`; SC-PACK-222…227 / 237/238 / 256…263 / 276…280 /
+peek / list tile. **Compose Save** (SC-PACK-281): full-width primary unelevated
+peekSubmit-like chrome (`--pack-card-action-h`); labels `content.saveTask` /
+`content.addTask`; **no Cancel** btn (dismiss = backdrop/Esc). Game peek
+question ~24px (SC-BOARD-54) + peek submit — unchanged by compose polish;
+compose `q-input` unchanged. List grids keep playing-card tiles. Contracts: meta
+`work-with-stores/content.md`; SC-PACK-222…227 / 237/238 / 256…263 / 276…281 /
 239…248; SC-BOARD-46/49/50…54.
