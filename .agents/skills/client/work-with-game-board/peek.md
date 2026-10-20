@@ -17,4 +17,4 @@ Read this when changing peek eye affordance, shared Q&A modal, flipped difficult
 ## Do / Don't
 
 - Do: Colyseus I/O only via store (`sendPeek` / `sendPeekPlace` / `sendPeekSubmit`); clear session from sync/`peekClose`, not local clear on submit; keep pool mini-cards reusable without used-state chrome; wrap modal in `.peek-chrome` for `--pack-card-*` / `--pack-ts-dot-*`.
-- Don't: revive `peekAnswer` / Correct/Wrong buttons; offer eye when peeks=0 (finite) on flipped cells; ambient-highlight other peekable cells; mark a pool card used solely because it already appears in a slot; force peek portrait AR onto `PackTaskTile` list slots (SC-PACK-238 carve-out); change server peek messages/schema in a chrome-only change.
+- Don't: revive `peekAnswer` / Correct/Wrong buttons; offer eye when peeks=0 (finite) on flipped cells; ambient-highlight other peekable cells; mark a pool card used solely because it already appears in a slot; change game peek width / 6px dots when retuning PackTaskTile or compose (list tile MAY reuse `.peek-slot-like--portrait`; compose dots/width are compose-scoped); change server peek messages/schema in a chrome-only change.

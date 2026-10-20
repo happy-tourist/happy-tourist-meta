@@ -23,10 +23,11 @@ Answer/task **lists** use global wrap class `.pack-card-grid` (`display: flex;
 flex-wrap: wrap; gap: 0.75rem`) in `src/css/app.scss`. Tile chrome lives in
 scoped styles on `PackAnswerCardTile.vue` / `PackTaskTile.vue` (fixed px:
 answer **150×200** without description / **300×200** with **vertical** splitter;
-task **300×200**; ~×2 type; explicit light/dark `--pack-tile-*` contrast — not
-`--q-card-background` alone; difficulty top-left on tasks; Edit/Delete as
-bottom full-width **text** buttons when editable). Create/edit of answers and
-tasks is a **dialog** (SC-PACK-256…260) — not an always-visible inline form
+task **portrait** pack-card family W **156–180** / min-H ≈**206**, radius 12,
+`--pack-card-*` surface; peek-like dots + `content.difficultyWord.*` badge;
+filled `.peek-slot-like--portrait` only; Edit/Delete as bottom full-width
+**text** buttons when editable). Create/edit of answers and tasks is a
+**dialog** (SC-PACK-256…260) — not an always-visible inline form
 above the grid; when compose is allowed, expose an add control above the list.
 
 **Catalog packs (SC-PACK-228 / 249…255):** `PackListCardTile.vue` resting size
@@ -193,15 +194,17 @@ hover border+shadow only — **no** scale / **no** `--q-secondary`). Gate
 `#status` with page `hasMapCardStatus` (omit overlay host when published) and
 `#actions` with `hasMapCardActions` (omit empty chrome + pale divider).
 
-**Answer slots (SC-PACK-237/238 + redesign-peek-task-modal):** Game peek and
-task **compose** use `.peek-slot` / `.peek-slot-like` **plus** `--portrait`
-(unlabeled empty dashed; filled mini-card; AR 156∶206). Peeker empty slots
-keep `--interactive` (cursor pointer drop-target affordance; click still
-no-ops until filled). `PackTaskTile` list slots keep the compact **labeled**
-base (~72×40) — **no** `--portrait` (SC-PACK-238 carve-out). Do **not**
-reintroduce dense `q-chip` as primary slot chrome. Do **not** reintroduce
-list `q-chip` for answer/task **bodies**. Peek/compose dialog cards use
-`--pack-card-bg` / `fg` on the card root (not raw Quasar dark surface).
+**Answer slots (SC-PACK-237/238 + redesign-peek-task-modal / redesign-pack-task-tile):**
+Game peek and task **compose** use `.peek-slot` / `.peek-slot-like` **plus**
+`--portrait` (unlabeled empty dashed; filled mini-card; AR 156∶206). Peeker
+empty slots keep `--interactive` (cursor pointer drop-target affordance; click
+still no-ops until filled). `PackTaskTile` list slots show **filled only** as
+`.peek-slot-like--portrait` (content + optional description; gap 8;
+`overflow-x: auto`); empty slots omitted; zero filled → omit slots row (no
+`content.slotEmpty` body placeholder). Do **not** reintroduce dense `q-chip`
+as primary slot chrome. Do **not** reintroduce list `q-chip` for answer/task
+**bodies**. Peek/compose dialog cards use `--pack-card-bg` / `fg` on the card
+root (not raw Quasar dark surface).
 
 **Task compose / game peek answer pool (SC-PACK-260 / 263 / 277; SC-BOARD-49/51/52):**
 pool = `.peek-answer-pool` grid of `.peek-answer-mini` cards (`--pack-card-*`,
@@ -214,7 +217,12 @@ Compose slots use `.peek-slot-like--portrait`; center the row
 disabled chrome (SC-PACK-263; Game peek SC-BOARD-49). Difficulty header =
 3 pack dots (**left edge**) + **word-only** badge (`content.difficultyWord.*`,
 horizontally **centered** — not one centered cluster; compose interactive
-SC-PACK-276; game read-only SC-BOARD-50). Game peek
-question ~24px (SC-BOARD-54) — compose `q-input` unchanged. List grids keep
-playing-card tiles. Contracts: meta `work-with-stores/content.md`;
-SC-PACK-222…227 / 237/238 / 256…263 / 276/277 / 239…248; SC-BOARD-46/49/50…54.
+SC-PACK-276; game read-only SC-BOARD-50). **Compose shell width** (SC-PACK-279):
+`max-width` / `min-width` = `min(4×--peek-tile-max-w + 3×8px + pad, 92vw)` on
+`.pack-task-compose-card` — **not** fixed min 360 / max 400. **Compose-only
+dots** (SC-PACK-280): Ø ≈20px via `--compose-diff-dot-size` under
+`.pack-task-compose-card`; shared `.peek-diff-dot` base stays **6px** for game
+peek / list tile. Game peek question ~24px (SC-BOARD-54) — compose `q-input`
+unchanged. List grids keep playing-card tiles. Contracts: meta
+`work-with-stores/content.md`; SC-PACK-222…227 / 237/238 / 256…263 / 276…280 /
+239…248; SC-BOARD-46/49/50…54.

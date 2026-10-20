@@ -35,7 +35,8 @@ pack CSV SC-PACK-210…229/239…248: `src/lib/__tests__/packContentCsv.test.ts`
 `src/components/__tests__/PackTasksCsvControls.test.ts`,
 `src/pages/__tests__/ContentPackEditorCsv.test.ts` (framed CSV panel +
 in-frame errors — not `content.error`; no `PackCsvImportDialog`), tile smoke
-`PackAnswerCardTile` / `PackTaskTile` / `ContentPackPlayingCards` +
+`PackAnswerCardTile` / portrait `PackTaskTile` SC-PACK-278 +
+`src/lib/__tests__/taskFilledSlots.test.ts` + `ContentPackPlayingCards` +
 sizes/contrast SC-PACK-225…227 + catalog `PackListCardTile` /
 `ContentPackListCards` SC-PACK-228/249…255 (~180×260 + published-only set preview +
 overflow sibling of `.pack-list-tile__sets-list` + CSS-px title/desc/badge +
@@ -61,7 +62,8 @@ dirty),
 `src/pages/__tests__/ContentPackStaffBoot.test.ts`,
 `ContentPackDirtySubmit.test.ts` (persisted dirty survives reload; dirty
 needs_revision), `ContentPackTasksCsvHide.test.ts`
-(+ `ContentMaps` staff boot / dirty Submit; `PackTaskComposeDialog` / `PackTaskTile` peek-slot chrome SC-PACK-237/260),
+(+ `ContentMaps` staff boot / dirty Submit; `PackTaskComposeDialog` width/dots
+SC-PACK-279/280 + portrait `PackTaskTile` / peek-slot chrome SC-PACK-237/260/278),
 store `content.simplifyAcl.test.ts`; spy `client.http`, do not hit live server;
 cascade helpers + `isStaffEditSessionNavigation`: meta `work-with-stores/content.md`;
 unify follow-ups: `ContentUnifiedList.test.ts` (`openRequestType` pack→Edit /

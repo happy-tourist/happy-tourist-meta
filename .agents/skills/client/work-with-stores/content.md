@@ -69,15 +69,16 @@ and `ContentPackEditorPage` (task-set rows). Class alone without scoped
 
 ## Question list slots (SC-PACK-127 / 130 / 134 / 237 / 238)
 
-Every task/question list row MUST show answer slots (filled / empty):
+Every task/question list row MUST show **filled** answer slots only:
 `ContentPackTasksPage` (incl. live drill-in), `ContentStaffRequestPage`,
 `ContentPackAddTaskSetPage`. Live pack page (`ContentPackPage`) shows **set
 summary rows** only (count + difficulty 1/2/3) — slots appear after drill-in
-(SC-PACK-130). Pattern: global `.peek-slot-like` (+ `--filled` / `__label` /
-`__empty` / `.peek-slot-like-row`) shared with GamePage peek chrome
-(SC-PACK-237/238); empty copy via `content.slotEmpty`. A filled slot MUST show
-the answer card’s text. Do **not** use dense `q-chip` as primary slot chrome on
-compose rows or `PackTaskTile`. For staff `task_set` preview, server merges live
+(SC-PACK-130). Pattern: `.peek-slot-like--portrait` filled mini-cards (content +
+optional description) shared with GamePage peek / compose chrome
+(SC-PACK-237/238); empty slots omitted; zero filled → omit slots row (no
+`content.slotEmpty` body placeholder). A filled slot MUST show the answer
+card’s text. Do **not** use dense `q-chip` as primary slot chrome on compose
+rows or `PackTaskTile`. For staff `task_set` preview, server merges live
 `answerCards` into `previewPending` (SC-PACK-134). CSS: `work-with-styles/pack-cards.md`.
 
 ## Playing-card chrome (SC-PACK-222…229 / 237 / 238 / 256…263)
@@ -87,16 +88,21 @@ add-task-set task list, tasks drill-in, live pack answers, staff request
 preview), render `PackAnswerCardTile` / `PackTaskTile` inside a wrapping
 `.pack-card-grid` (`app.scss`). Fixed sizes: answer **150×200** (no
 description) / **300×200** (with description + **vertical** splitter); task
-**300×200** (vertical split; `.peek-slot-like` slot row); explicit light/dark
-tile contrast (SC-PACK-225…227). Create/edit of answers and tasks is a
-**dialog** (SC-PACK-256…260): page shows an add control above the list when
-compose is allowed — not an always-visible inline form. **Task compose dialog
-answer pool:** `.peek-answer-mini` grid like Game peek (SC-PACK-260/277;
-SC-BOARD-52) — **not** `PackAnswerCardTile` / flat `q-chip`; same card MAY fill
-multiple slots with **no** used chrome (SC-PACK-263). Difficulty = interactive
-dots + **word-only** badge via `content.difficultyWord.*` (no `Сложность:` /
-digit; SC-PACK-276; mirrors game peek SC-BOARD-50). Add-task-set MUST NOT show
-a top read-only `live-answer-card-grid` (SC-PACK-261).
+**portrait** pack-card family W **156–180** / min-H ≈**206** (dots + word
+badge header; filled `.peek-slot-like--portrait` row; SC-PACK-223/226/278);
+`--pack-card-*` surface contrast (SC-PACK-225…227). Create/edit of answers and
+tasks is a **dialog** (SC-PACK-256…260): page shows an add control above the
+list when compose is allowed — not an always-visible inline form. **Task
+compose dialog answer pool:** `.peek-answer-mini` grid like Game peek
+(SC-PACK-260/277; SC-BOARD-52) — **not** `PackAnswerCardTile` / flat `q-chip`;
+same card MAY fill multiple slots with **no** used chrome (SC-PACK-263).
+Difficulty = interactive dots + **word-only** badge via
+`content.difficultyWord.*` (no `Сложность:` / digit; SC-PACK-276; mirrors game
+peek SC-BOARD-50). Compose dialog width ≤ four pool mini-cards + pad
+(SC-PACK-279); compose-only dots ≈ badge height (SC-PACK-280) — do **not**
+enlarge shared peek 6px dots. List tile filled slots: `resolveTaskFilledSlots`
+in `lib/taskFilledSlots.ts` (parents filter empty `answerCardId`). Add-task-set
+MUST NOT show a top read-only `live-answer-card-grid` (SC-PACK-261).
 **Catalog packs** use `PackListCardTile` **~180×260** (status top, star TL,
 uppercase title + truncated description, **published-only** set-preview rows
 ≤4 + overflow with display ordinal 1…N and set-row ink = title.fg,
@@ -231,9 +237,9 @@ no staff thread reply until Submit creates clean `pending`.
   Модерация entry is App header only. Pages omit `content.catalogNav` when
   App breadcrumbs cover Lobby / Модерация (SC-PACK-194/195).
 - Support `change_pack` select: **in-catalog only** (`inCatalog !== false && hasLive`).
-- Cascade / peek-slot rows / playing-card tiles / add-task-set thread /
-  delete-card confirms — SC-PACK-126…136 + SC-PACK-222…229 / 237/238 contracts
-  above.
+- Cascade / peek-slot rows / playing-card answer tiles / portrait `PackTaskTile`
+  / add-task-set thread / delete-card confirms — SC-PACK-126…136 +
+  SC-PACK-222…229 / 237/238 / 256…280 contracts above.
 - No block/unblock UI.
 
 ## Anti-patterns
@@ -248,11 +254,13 @@ no staff thread reply until Submit creates clean `pending`.
 - Routing published + staff into creator Submit instead of `enterStaffEdit`
   (SC-PACK-231); draft-lifecycle anti-patterns →
   [pack-lifecycle.md](pack-lifecycle.md).
-- Dense `q-chip` as primary **slot chrome** on compose / peek; forcing peek
-  portrait AR onto `PackTaskTile` list slots (SC-PACK-237/238 carve-out); using
-  playing-card tiles or flat chips as the **task compose** answer pool (use
-  `.peek-answer-mini` — SC-PACK-260/277); showing Tasks CSV on live `viewOnly`
-  (SC-PACK-235) or moving CSV into the compose dialog (SC-PACK-262).
+- Dense `q-chip` as primary **slot chrome** on compose / peek / list tiles;
+  reverting `PackTaskTile` to 300×200 / digit badge / compact labeled empty
+  slots (use portrait pack-card + filled `.peek-slot-like--portrait` —
+  SC-PACK-223/238/278); using playing-card tiles or flat chips as the **task
+  compose** answer pool (use `.peek-answer-mini` — SC-PACK-260/277); showing
+  Tasks CSV on live `viewOnly` (SC-PACK-235) or moving CSV into the compose
+  dialog (SC-PACK-262).
 - Approve / needs_revision / cancel without staff take (`moderation_take_required`).
 - Letting task-set author edit answer cards or foreign sets; showing foreign
   set `moderationStatus` to pack creator alone.
