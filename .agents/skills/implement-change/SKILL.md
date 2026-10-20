@@ -2,21 +2,24 @@
 name: implement-change
 description: >-
   Orchestrates full implementation of an active OpenSpec change: apply task
-  blocks via subagents, then align-code, optional verify-mock (only if a mock
-  is attached and the change is mock-driven), check-changes, and commit. Use
-  when the user asks to implement-change, fully implement an active change, or
-  run apply → align → [mock] → check → commit end-to-end without pausing for
-  review.
+  blocks via subagents, then align (постановка via *-align-code), verify-code
+  (compliance via *-verify-code), optional verify-mock (only if a mock is
+  attached and the change is mock-driven), check-changes, and commit. Use when
+  the user asks to implement-change, fully implement an active change, or run
+  apply → align → verify → [mock] → check → commit end-to-end without pausing
+  for review.
 ---
 
-# Implement Change — apply → align → [mock] → check → commit
+# Implement Change — apply → align → verify → [mock] → check → commit
 
 Оркестратор полного цикла по **активному** OpenSpec change. Parent **не** пишет runtime-код сам: делегирует шаги субагентам и гонит пайплайн до конца.
+
+Standalone [`align-code`](../align-code/SKILL.md) (align+verify в одном прогоне) **не** меняется — в этом оркестраторе оси **разведены** на две фазы.
 
 ## Когда применять
 
 - Пользователь запускает `implement-change` / просит полностью реализовать активный change
-- Нужен end-to-end: apply tasks → align → (verify-mock **если** макет прикреплён и change про макет) → check-changes → commit без промежуточного review
+- Нужен end-to-end: apply tasks → align → verify → (verify-mock **если** макет прикреплён и change про макет) → check-changes → commit без промежуточного review
 
 Не подменять одиночный `openspec-apply-change`, если пользователь явно хочет только apply.
 
@@ -32,7 +35,7 @@ description: >-
 - мелкой неоднозначности, если есть разумный default из spec/design/skills
 - желания показать промежуточный отчёт и ждать OK
 - удобства parent-агента
-- пропуска verify-mock, когда нет прикреплённого макета **или** change не про реализацию макета → `SKIPPED` (см. gate фазы 5), пайплайн **продолжается**
+- пропуска verify-mock, когда нет прикреплённого макета **или** change не про реализацию макета → `SKIPPED` (см. gate фазы mock), пайплайн **продолжается**
 
 Останавливаться только когда без выбора человека нельзя продолжить, например: нет/несколько active change без однозначного контекста; секрет/credential, которого нет в env; конфликт требований без default в артефактах; git/auth blocker у `commit`, который нельзя обойти без человека.
 
@@ -42,11 +45,11 @@ description: >-
 
 Путь: `openspec/changes/<name>/.implement-change-state.yaml` (от корня meta).
 
-Писать/обновлять **в начале** (после выбора change), **после каждого** завершённого apply-блока и фазы align/mock/check/commit, и **при** `HUMAN_BLOCKER`.
+Писать/обновлять **в начале** (после выбора change), **после каждого** завершённого apply-блока и фазы align/verify/mock/check/commit, и **при** `HUMAN_BLOCKER`.
 
 ```yaml
 change: <name>
-phase: apply | align | mock | check | commit | done
+phase: apply | align | verify | mock | check | commit | done
 apply_block: "<N-or-null>"   # текущий/следующий блок при phase=apply; иначе null
 blocker: null | "<short reason>"
 updated: "<ISO-8601>"
@@ -54,7 +57,8 @@ updated: "<ISO-8601>"
 
 - После успешного блока apply с ещё pending → `phase: apply`, `apply_block` = следующий pending.
 - После всего apply → `phase: align`, `apply_block: null`.
-- После align → если gate verify-mock (ниже) проходит → `phase: mock`, иначе сразу `phase: check` (в отчёте Verify-mock: SKIPPED).
+- После align → `phase: verify`.
+- После verify → если gate verify-mock (ниже) проходит → `phase: mock`, иначе сразу `phase: check` (в отчёте Verify-mock: SKIPPED).
 - После mock → `phase: check`; после check → `phase: commit`; после commit → `phase: done`, `blocker: null`.
 - При стопе → оставить текущую `phase` / `apply_block`, заполнить `blocker`.
 
@@ -65,12 +69,13 @@ updated: "<ISO-8601>"
 | Фаза | Skill |
 |------|--------|
 | 1. Apply | [`.agents/skills/openspec-apply-change/SKILL.md`](../openspec-apply-change/SKILL.md) |
-| 2. Align | [`.agents/skills/align-code/SKILL.md`](../align-code/SKILL.md) |
-| 3. Mock | [`.agents/skills/verify-mock/SKILL.md`](../verify-mock/SKILL.md) — **только** если gate (ниже) |
-| 4. Check | [`.agents/skills/check-changes/SKILL.md`](../check-changes/SKILL.md) |
-| 5. Commit | [`.agents/skills/commit/SKILL.md`](../commit/SKILL.md) |
+| 2. Align | [`client-align-code`](../client/client-align-code/SKILL.md) + [`server-align-code`](../server/server-align-code/SKILL.md) (только постановка; **не** полный `align-code`) |
+| 3. Verify | [`client-verify-code`](../client/client-verify-code/SKILL.md) + [`server-verify-code`](../server/server-verify-code/SKILL.md) (compliance / tooling) |
+| 4. Mock | [`.agents/skills/verify-mock/SKILL.md`](../verify-mock/SKILL.md) — **только** если gate (ниже) |
+| 5. Check | [`.agents/skills/check-changes/SKILL.md`](../check-changes/SKILL.md) |
+| 6. Commit | [`.agents/skills/commit/SKILL.md`](../commit/SKILL.md) |
 
-Правила apply/align/mock/check/commit живут в дочерних скиллах. Здесь — оркестрация, субагенты и override паузы.
+Правила apply/align/verify/mock/check/commit живут в дочерних скиллах. Здесь — оркестрация, субагенты и override паузы.
 
 ## Вход / выбор change
 
@@ -91,16 +96,17 @@ Implement-Change Progress:
 - [ ] 1. Select active change + read openspec-apply-change
 - [ ] 2. Status + apply instructions + contextFiles (parent)
 - [ ] 3. Apply: каждый блок tasks.md → отдельный субагент
-- [ ] 4. Align-code → отдельный субагент (+ правка)
-- [ ] 5. Verify-mock → только если gate OK; иначе SKIPPED → check
-- [ ] 6. Check-changes → отдельный субагент (+ правка)
-- [ ] 7. Commit → отдельный субагент
-- [ ] 8. Short final report
+- [ ] 4. Align → субагент (только *-align-code) (+ «Добавь и поправь…»)
+- [ ] 5. Verify → субагент (только *-verify-code) (+ «Добавь и поправь…»)
+- [ ] 6. Verify-mock → только если gate OK; иначе SKIPPED → check
+- [ ] 7. Check-changes → отдельный субагент (+ правка)
+- [ ] 8. Commit → отдельный субагент
+- [ ] 9. Short final report
 ```
 
 ### Gate: когда запускать verify-mock
 
-Parent **перед** фазой 5 решает **оба** условия (AND). Если любое ложно — **не** запускать субагента verify-mock; сразу `phase: check`; в итоге `Verify-mock: SKIPPED (<причина>)`.
+Parent **перед** фазой mock решает **оба** условия (AND). Если любое ложно — **не** запускать субагента verify-mock; сразу `phase: check`; в итоге `Verify-mock: SKIPPED (<причина>)`.
 
 | # | Условие | Как понять |
 |---|---------|------------|
@@ -121,7 +127,7 @@ Parent **перед** фазой 5 решает **оба** условия (AND).
 3. `openspec instructions apply --change "<name>" --json`
 4. Прочитать все `contextFiles`.
 5. Если `state: "blocked"` (нет артефактов) — **прервать** (нужен человек / continue-change).
-6. Если `state: "all_done"` и незавершённых задач нет — пропустить фазу 3, сразу 4→5→6→7.
+6. Если `state: "all_done"` и незавершённых задач нет — пропустить фазу 3, сразу 4→5→6→7→8.
 7. Показать кратко: schema, progress N/M, список блоков tasks.
 
 **Override паузы apply:** пункты «Pause if unclear / ask / wait» из apply-скилла **не** действуют в этом оркестраторе, кроме правила прерывания выше. Субагенты apply должны доводить блок до конца или вернуть явный human-blocker.
@@ -142,24 +148,35 @@ Parent **перед** фазой 5 решает **оба** условия (AND).
    - **не** спрашивать пользователя; при невозможности без человека — вернуть `HUMAN_BLOCKER: …` и остановиться;
    - в ответе parent: что сделано, какие checkbox обновлены, `HUMAN_BLOCKER` или `OK`.
 3. Блоки запускать **последовательно** (следующий после завершения предыдущего) — типичные зависимости server→client→meta.
-4. Если субагент вернул `HUMAN_BLOCKER` — **прервать** весь пайплайн (не align/mock/check/commit).
+4. Если субагент вернул `HUMAN_BLOCKER` — **прервать** весь пайплайн (не align/verify/mock/check/commit).
 5. После всех блоков — `openspec instructions apply --change "<name>" --json` (или status): если остались pending без blocker — один retry-проход по оставшимся; иначе продолжить.
 
 Parent **не** реализует задачи сам, кроме микро-фикса checkbox/пути, если субагент явно попросил и это не код продукта.
 
-### 4. Align-code (отдельный субагент)
+### 4. Align (отдельный субагент)
 
 Один субагент:
 
-1. Прочитать и выполнить [`align-code`](../align-code/SKILL.md) для этого change (передать имя change).
+1. Выполнить **только** [`client-align-code`](../client/client-align-code/SKILL.md) + [`server-align-code`](../server/server-align-code/SKILL.md) (постановка / реактивные петли / async-гонки / overlays) — **не** вызывать полный [`align-code`](../align-code/SKILL.md) и **не** гонять `*-verify-code` здесь.
 2. Затем **в том же субагенте** выполнить промпт дословно:
 
    > Добавь и поправь что считаешь нужным
 
-   То есть по отчёту align/verify — внести правки в runtime/docs/skills, которые субагент считает нужными; не ждать подтверждения.
+   То есть по отчёту align — внести правки в runtime/docs/skills, которые субагент считает нужными; не ждать подтверждения.
 3. Вернуть parent краткий итог: findings + что поправлено, или `HUMAN_BLOCKER`.
 
-### 5. Verify-mock (отдельный субагент) — условно
+### 5. Verify (отдельный субагент)
+
+Отдельный субагент **после** align:
+
+1. Выполнить **только** [`client-verify-code`](../client/client-verify-code/SKILL.md) + [`server-verify-code`](../server/server-verify-code/SKILL.md) (compliance / lint / typecheck / tests / conventions) — **не** вызывать полный `align-code` и **не** повторять `*-align-code` здесь.
+2. Затем **в том же субагенте** выполнить промпт дословно:
+
+   > Добавь и поправь что считаешь нужным
+
+3. Вернуть parent краткий итог: violations/warnings + что поправлено, или `HUMAN_BLOCKER`.
+
+### 6. Verify-mock (отдельный субагент) — условно
 
 **Сначала gate G1∧G2** (см. выше). Если не проходит — не вызывать субагента; прогресс одной строкой `Verify-mock: SKIPPED (…)`; далее check.
 
@@ -178,7 +195,8 @@ Parent **не** реализует задачи сам, кроме микро-ф
 4. Вернуть parent краткий итог: сводка tier’ов + что поправлено, или `HUMAN_BLOCKER`. (Если субагент всё же не нашёл/не прочитал файл — `SKIPPED: no mock`; не стоп пайплайна.)
 
 Parent **не** запускает verify-mock с пустым набором путей/attachments при прошедшем G1 — G1 подразумевает, что path уже известен и его надо пробросить.
-### 6. Check-changes (отдельный субагент)
+
+### 7. Check-changes (отдельный субагент)
 
 Один субагент:
 
@@ -190,15 +208,15 @@ Parent **не** запускает verify-mock с пустым набором п
    То есть добавить/обновить skills, maps, docs, AGENTS по своим же рекомендациям; не ждать подтверждения.
 3. Вернуть parent краткий итог или `HUMAN_BLOCKER`.
 
-Override «только анализ» у align-code / verify-mock / check-changes: в рамках **этого** оркестратора субагент после отчёта **обязан** применить разумные правки по промпту выше (кроме случаев, когда фаза mock **не запускалась** по gate или субагент вернул `SKIPPED: no mock`). Не трогать секреты и не расширять scope за пределы findings.
+Override «только анализ» у align / verify / verify-mock / check-changes: в рамках **этого** оркестратора субагент после отчёта **обязан** применить разумные правки по промпту выше (кроме случаев, когда фаза mock **не запускалась** по gate или субагент вернул `SKIPPED: no mock`). Не трогать секреты и не расширять scope за пределы findings.
 
-### 7. Commit (отдельный субагент)
+### 8. Commit (отдельный субагент)
 
 Один субагент: прочитать и выполнить [`commit`](../commit/SKILL.md) целиком (stage → commit → push по dirty-репо экосистемы).
 
 Если commit/push требует решения человека (чужая ветка, секреты в diff, auth rejected) — `HUMAN_BLOCKER`, прервать.
 
-### 8. Финальный отчёт (parent)
+### 9. Финальный отчёт (parent)
 
 Кратко на русском:
 
@@ -208,6 +226,7 @@ Override «только анализ» у align-code / verify-mock / check-chang
 **Change:** <name>
 **Apply:** N/M tasks · блоки: …
 **Align:** OK | HUMAN_BLOCKER | skipped
+**Verify:** OK | HUMAN_BLOCKER | skipped
 **Verify-mock:** OK | SKIPPED (no mock attached) | SKIPPED (change not mock-driven) | SKIPPED (no mock) | HUMAN_BLOCKER | skipped
 **Check-changes:** OK | HUMAN_BLOCKER | skipped
 **Commit:** OK | HUMAN_BLOCKER | skipped
@@ -217,14 +236,16 @@ Override «только анализ» у align-code / verify-mock / check-chang
 
 ## Субагенты — общие правила
 
-- Каждый шаг 3/4/5/6/7 — **новый** субагент; не смешивать фазы в одном. Шаг 5 пропускается целиком, если gate G1∧G2 ложен.
-- Передавать полный контекст: change name, абсолютные/map-пути meta/client/server, что уже сделано в предыдущих фазах (кратко); для mock — **абсолютные пути + `file_attachments`** на изображения (фаза 5), не только текстовое упоминание макета.
+- Каждый шаг 3/4/5/6/7/8 — **новый** субагент; не смешивать фазы в одном. Шаг 6 (mock) пропускается целиком, если gate G1∧G2 ложен.
+- **Не** сливать align и verify в один субагент внутри этого оркестратора.
+- Передавать полный контекст: change name, абсолютные/map-пути meta/client/server, что уже сделано в предыдущих фазах (кратко); для mock — **абсолютные пути + `file_attachments`** на изображения (фаза mock), не только текстовое упоминание макета.
 - `run_in_background: false` — ждать результат перед следующей фазой.
 - Не резюмировать длинно вывод субагента пользователю между фазами — только прогресс одной строкой, затем следующая фаза.
 
 ## Не делать
 
-- Не пропускать align / check-changes / commit «чтобы быстрее».
+- Не сливать align и verify в один субагент / один вызов полного `align-code` внутри этого оркестратора.
+- Не пропускать align / verify / check-changes / commit «чтобы быстрее».
 - Не запускать verify-mock «на всякий случай», если нет прикреплённого макета или change не про реализацию макета (gate G1∧G2).
 - Не запускать commit, если apply остановился на `HUMAN_BLOCKER`.
 - Не архивировать change и не создавать PR в этом скилле.

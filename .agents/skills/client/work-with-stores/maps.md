@@ -113,4 +113,4 @@ HTTP in `maps` beyond cancel/preview helpers the editor already needs.
 - Server twin: `test/zz-contentMaps.test.ts` (mocha; staff-save clear working
   SC-MAP-64) — do not mix stacks.
 
-See meta `work-with-test` / `work-with-pages` / `work-with-localization` (`maps.*`).
+See meta `client-work-with-test` / `work-with-pages` / `work-with-localization` (`maps.*`).

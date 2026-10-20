@@ -65,8 +65,8 @@ updated: "<ISO-8601>"
 
 | Фаза | Skill |
 |------|--------|
-| 1. Align back | [`.agents/skills/align-implementability-back/SKILL.md`](../align-implementability-back/SKILL.md) |
-| 2. Align front | [`.agents/skills/align-implementability-front/SKILL.md`](../align-implementability-front/SKILL.md) |
+| 1. Align back | [`.agents/skills/server/align-implementability-back/SKILL.md`](../server/align-implementability-back/SKILL.md) |
+| 2. Align front | [`.agents/skills/client/align-implementability-front/SKILL.md`](../client/align-implementability-front/SKILL.md) |
 | 3. Align meta | [`.agents/skills/align-meta/SKILL.md`](../align-meta/SKILL.md) |
 
 Правила align живут в дочерних скиллах. Здесь — оркестрация, субагенты и override read-only.
@@ -106,7 +106,7 @@ Align-Change Progress:
 
 Один субагент:
 
-1. Прочитать и выполнить [`align-implementability-back`](../align-implementability-back/SKILL.md) для этого change (передать имя change + paths projects-map).
+1. Прочитать и выполнить [`align-implementability-back`](../server/align-implementability-back/SKILL.md) для этого change (передать имя change + paths projects-map).
 2. Затем **в том же субагенте** выполнить промпт дословно:
 
    > Добавь и поправь что считаешь нужным
@@ -118,7 +118,7 @@ Align-Change Progress:
 
 Один субагент:
 
-1. Прочитать и выполнить [`align-implementability-front`](../align-implementability-front/SKILL.md) для этого change.
+1. Прочитать и выполнить [`align-implementability-front`](../client/align-implementability-front/SKILL.md) для этого change.
 2. Затем **в том же субагенте** выполнить промпт дословно:
 
    > Добавь и поправь что считаешь нужным

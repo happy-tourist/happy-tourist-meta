@@ -229,5 +229,5 @@ Create: validate map/pack/≥1 set/`maxSeats` → `createGame({ mapId, packId, t
 
 - Card chrome: [listing-cards.md](listing-cards.md) + `work-with-styles/pack-cards.md`
 - Colyseus I/O / tourist reconnect / auth: `colyseus-client`, `work-with-rooms`, `client-work-with-auth`
-- Vitest: `work-with-test` (`LobbyRoomCardTile` + `LobbyCreateWire`)
+- Vitest: `client-work-with-test` (`LobbyRoomCardTile` + `LobbyCreateWire`)
 - Server: `lobby` + `tourist` + `.enableRealtimeListing()` + listing `taskCount`

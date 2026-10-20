@@ -36,16 +36,16 @@ OpenSpec: [`openspec/config.yaml`](../openspec/config.yaml); артефакты 
 | Skill | Когда |
 |-------|--------|
 | [`align-code`](skills/align-code/SKILL.md) | Client + server: `*-align-code` + `*-verify-code` → сводный отчёт (петли + async-гонки) |
-| [`align-implementability-back`](skills/align-implementability-back/SKILL.md) | Meta server claims vs `happy-tourist-server` (реализуемость) + `[fe-only-without-be]`; read-only |
-| [`align-implementability-front`](skills/align-implementability-front/SKILL.md) | Meta client claims vs `happy-tourist.github.io` (реализуемость) + `[be-without-fe]` + полнота Visual Spec (размеры/отступы/цвета) при mock-driven; read-only |
 | [`align-meta`](skills/align-meta/SKILL.md) | Качество созданных/изменённых meta-артефактов (OpenSpec/docs/skills/indexes); read-only |
 | [`verify-mock`](skills/verify-mock/SKILL.md) | Client UI vs макет + **строгие размеры и цвета (hex/rgba / icon ink)** Visual Spec → Violations / Warnings / Recommendations |
 | [`prepare-mock`](skills/prepare-mock/SKILL.md) | Снять с макета размеры/отступы/**hex·rgba цвета + icon ink**/copy/**все** dividers/колонки/высоту кнопок + **список недостающих иконок** → Visual Spec в design (+ specs); до propose/apply |
 | [`commit`](skills/commit/SKILL.md) | Status → stage → commit → **push** по meta + client + server (main/master) |
-| [`check-changes`](skills/check-changes/SKILL.md) | Unstaged client/server → add/change/delete/**split** (скоринг bloat ≥5 → обязательный план topic/sibling; запрет description-dump) + maps/docs/AGENTS |
+| [`check-changes`](skills/check-changes/SKILL.md) | Unstaged client/server → add/change/delete/**split** (скоринг bloat ≥5 → обязательный план topic/sibling; запрет description-dump) + maps/docs/AGENTS/`openspec/config.yaml` |
+| [`sync-changes`](skills/sync-changes/SKILL.md) | Двусторонний gap-анализ с другим meta: deep orchestration/OpenSpec + discovery (остальные skills, роли package-skills, indexes/docs/kilo) → что перенять сюда и туда |
 | [`prepare-changes`](skills/prepare-changes/SKILL.md) | До propose: чаще всего **один** change (норма); дробить только по нужде; пункты работ + проверяемый результат; ⛔ вне стека → изучить инструмент; skills + код |
+| [`brief-change`](skills/brief-change/SKILL.md) | Active change: brief-server → brief-client (субагенты + «Добавь и поправь…»); resume по state; без propose/apply |
 | [`align-change`](skills/align-change/SKILL.md) | Active change: align-back → align-front → align-meta (субагенты + «Добавь и поправь…»); resume по state; без propose/apply |
-| [`implement-change`](skills/implement-change/SKILL.md) | Активный change: apply → align → verify-mock (**если** макет прикреплён и change про макет) → check-changes → commit; resume — повторный запуск (state) |
+| [`implement-change`](skills/implement-change/SKILL.md) | Активный change: apply → **align** (`*-align-code`) → **verify** (`*-verify-code`) → verify-mock (**если** макет прикреплён и change про макет) → check-changes → commit; resume — state; standalone `align-code` не меняется |
 | [`end-implement-change`](skills/end-implement-change/SKILL.md) | Закрытие change: update → sync-specs → archive → commit (без вопросов) |
 | [`openspec-propose`](skills/openspec-propose/SKILL.md) | Propose: proposal → specs → design → tasks; при ровно одном active change — всегда дописывать в него (новый каталог только по явной просьбе) |
 | [`openspec-new-change`](skills/openspec-new-change/SKILL.md) | Создать change и начать артефакты по схеме |
@@ -70,6 +70,8 @@ OpenSpec: [`openspec/config.yaml`](../openspec/config.yaml); артефакты 
 
 | Skill | Когда |
 |-------|--------|
+| [`brief-client-scope`](skills/client/brief-client-scope/SKILL.md) | Digest постановки на client (UI/поля/binding/reuse + карточки gaps); read-only |
+| [`align-implementability-front`](skills/client/align-implementability-front/SKILL.md) | Meta client claims vs `happy-tourist.github.io` (реализуемость) + `[be-without-fe]` + полнота Visual Spec при mock-driven; read-only |
 | [`client-align-code`](skills/client/client-align-code/SKILL.md) | Audit ветки / диффа против требований, skills и аналогов; реактивные/async-петли; async-гонки (await до `onStateChange` / первый `ROOM_STATE`); Quasar nested slots/overlays (presence rings ↔ avatar) |
 | [`client-locate-change-points`](skills/client/client-locate-change-points/SKILL.md) | Где править (unified packs + favorites + author re-edit + staff take; CSV/tiles SC-PACK-210…255; compose dialogs SC-PACK-256…263; never-live draft + persisted lifecycle/`canHardDelete`/hidden shell SC-PACK-234/264…275; staff boot SC-PACK-231…238; maps SC-MAP-53…68; Vitest AnswerCompose/TaskCompose/AddTaskSetDraft/DraftLifecycle) |
 | [`client-verify-code`](skills/client/client-verify-code/SKILL.md) | Проверка кода / compliance skills + DRY/KISS/YAGNI (incl. sticky `.game-hud` presence + sibling avatar / SC-PRESENCE-12) |
@@ -86,7 +88,7 @@ OpenSpec: [`openspec/config.yaml`](../openspec/config.yaml); артефакты 
 | [`work-with-rooms`](skills/client/work-with-rooms/SKILL.md) | Room lifecycle, tourist reconnect token, consented leave (logo + `header-game-leave` confirm in App on Game) |
 | [`work-with-game-board`](skills/client/work-with-game-board/SKILL.md) | Board from synced `grid` (`lib/boardGeometry`) + pieceId pieces + presence HUD + focus affordance + shared peek Q&A / reusable chips SC-BOARD-49 (topic `peek.md`/`focus.md`) + grille/catapult anim + trap/rescue/push/return + say; brand-logo leave/status in App |
 | [`work-with-env-deploy`](skills/client/work-with-env-deploy/SKILL.md) | `VITE_*`, hash router, GitHub Pages |
-| [`work-with-test`](skills/client/work-with-test/SKILL.md) | Vitest; ContentUnifiedList/`neverLive` + CSV/tiles SC-PACK-210…255 + AnswerCompose/TaskCompose SC-PACK-256…263 + AddTaskSetDraft/DraftLifecycle/DirtySubmit SC-PACK-234/264…275 + staff boot SC-PACK-231…238 + maps/Lobby; details in topic `stores.md` |
+| [`client-work-with-test`](skills/client/client-work-with-test/SKILL.md) | Vitest; ContentUnifiedList/`neverLive` + CSV/tiles SC-PACK-210…255 + AnswerCompose/TaskCompose SC-PACK-256…263 + AddTaskSetDraft/DraftLifecycle/DirtySubmit SC-PACK-234/264…275 + staff boot SC-PACK-231…238 + maps/Lobby; details in topic `stores.md` |
 
 #### Server-wide skills (`.agents/skills/server/`)
 
@@ -94,6 +96,8 @@ OpenSpec: [`openspec/config.yaml`](../openspec/config.yaml); артефакты 
 
 | Skill | Когда |
 |-------|--------|
+| [`brief-server-scope`](skills/server/brief-server-scope/SKILL.md) | Digest постановки на server (контракт/поведение/reuse + карточки gaps); read-only |
+| [`align-implementability-back`](skills/server/align-implementability-back/SKILL.md) | Meta server claims vs `happy-tourist-server` (реализуемость) + `[fe-only-without-be]`; read-only |
 | [`server-align-code`](skills/server/server-align-code/SKILL.md) | Audit ветки / диффа против требований, skills и аналогов; handler/lifecycle-петли; first-sync races |
 | [`server-locate-change-points`](skills/server/server-locate-change-points/SKILL.md) | Где править (content unified list/favorites/author re-edit/staff take/`neverLive`/`openRequestType`; never-live draft + persisted lifecycle/`canHardDelete`/hidden shell D9–D14 SC-PACK-234/264…275; staff SC-PACK-230/233; `taskSetsPreview` SC-PACK-252/253; maps SC-MAP-64; grants retired SC-PACK-170) |
 | [`server-verify-code`](skills/server/server-verify-code/SKILL.md) | Проверка кода на соответствие skills + DRY/KISS/YAGNI |
@@ -124,6 +128,6 @@ Kilo Code: при появлении канона [`../kilo.template.jsonc`](../
 - Capability ID = продуктовый путь (auth/login, lobby/rooms, game/move, content/packs, …), не имя change.
 - Delta: `openspec/changes/<slug>/specs/<capability-id>/spec.md`
 - Main: `openspec/specs/<capability-id>/spec.md`
-- Типичный Cursor chat workflow: `/opsx-explore` → [`prepare-changes`](skills/prepare-changes/SKILL.md) (если scope широкий) → `/opsx-propose` → [`align-change`](skills/align-change/SKILL.md) (опционально) → review → `/opsx-apply` / [`implement-change`](skills/implement-change/SKILL.md) → `/opsx-sync` → `/opsx-archive`.
+- Типичный Cursor chat workflow: `/opsx-explore` → [`prepare-changes`](skills/prepare-changes/SKILL.md) (если scope широкий) → `/opsx-propose` → [`brief-change`](skills/brief-change/SKILL.md) (опционально, digest постановки) → [`align-change`](skills/align-change/SKILL.md) (опционально) → review → `/opsx-apply` / [`implement-change`](skills/implement-change/SKILL.md) → `/opsx-sync` → `/opsx-archive`.
 - Артефакты живут в **happy-tourist-meta**, не в siblings. Пути к runtime при apply — через [`docs/projects-map.md`](../docs/projects-map.md) (+ local YAML).
 - Always-on: [`AGENTS.md`](../AGENTS.md).

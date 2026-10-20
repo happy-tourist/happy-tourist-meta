@@ -2,25 +2,37 @@
 name: align-implementability-front
 description: >-
   Use when judging whether happy-tourist-meta client/FE claims are implementable
-  (possibility to build only — not doc quality, not that server already shipped).
-  Against current happy-tourist.github.io (+ FE-facing room/HTTP shapes via
-  projects-map). For mock-driven UI also audits Visual Spec completeness
-  (sizes, padding, colors hex/rgba, typography, alignment, dividers, icons,
-  hover) so FE can implement without inventing tokens (`[visual-spec-incomplete]`).
-  Treat missing server sibling changes as expected lag if meta may add them;
-  warn when FE-consumable server/HTTP/room claims lack UI (`[be-without-fe]`).
-  UI with no server/API in meta (`[fe-only-without-be]`) →
-  align-implementability-back. Verdict FEASIBLE|PARTIAL|INFEASIBLE|UNKNOWN.
-  Finding card: file + lines + issue + fix. Not server audit
-  (align-implementability-back), meta quality (align-meta), or pixel verify
-  of shipped UI (verify-mock). No file edits.
+  (possibility to build only — not doc quality, not that client/server already
+  shipped). Against happy-tourist.github.io (+ FE-facing room/HTTP via
+  projects-map). Meta is a постановка: do NOT warn that planned UI is absent in
+  client HEAD. For mock-driven UI audits Visual Spec completeness
+  (`[visual-spec-incomplete]`). Warn when FE-consumable server claims lack UI
+  in meta (`[be-without-fe]`). Large claim sets: optional fan-out by UI axis.
+  UI without server/API in meta → align-implementability-back. Verdict
+  FEASIBLE|PARTIAL|INFEASIBLE|UNKNOWN. Finding card: file + lines + issue +
+  fix. Not server audit, align-meta, or verify-mock. No file edits.
 ---
 
 # Align Implementability (Frontend / Client)
 
 Perform a read-only **client implementability** audit: can the **happy-tourist-meta** change be built **as written** against **happy-tourist.github.io** (and FE-facing contract shapes)? Report findings in Russian.
 
-**Scope of judgment — only possibility to implement.** Answers «можно ли реализовать client по этим claims», not «идеальны ли docs», not «уже ли лежит готовый server в siblings», not «совпадает ли уже написанный UI с макетом» (`verify-mock`). Completeness/quality of meta prose → **`align-meta`**. Deep server/DB/room realizability and UI→server gaps (`[fe-only-without-be]`) → **`align-implementability-back`**. Снять токены с картинки → **`prepare-mock`** (этот скилл только **проверяет**, хватает ли уже записанного канона).
+**Scope of judgment — only possibility to implement.** Answers «можно ли реализовать client по этим claims», not «идеальны ли docs», not «уже ли лежит готовый код в siblings», not «совпадает ли уже написанный UI с макетом» (`verify-mock`). Completeness/quality of meta prose → **`align-meta`**. Deep server/DB/room realizability and UI→server gaps (`[fe-only-without-be]`) → **`align-implementability-back`**. Снять токены с картинки → **`prepare-mock`** (этот скилл только **проверяет**, хватает ли уже записанного канона).
+
+### Постановка ≠ недоделанный client (запрет замечаний)
+
+Meta/OpenSpec change — **постановка к будущей реализации**. Sibling `happy-tourist.github.io` HEAD **ещё не обязан** содержать описываемый экран / store / компонент / binding.
+
+**Запрещено** писать finding-карточки (hard / warning / recommendation) вида:
+
+- «на Lobby/Game ещё нет блока / компонента, который описывает design»;
+- «ожидаемый extends: UI отсутствует, надо добавить»;
+- «в client HEAD нет store action / route — gap реализации»;
+- «в server HEAD ещё нет message/поля» / `[be-not-yet-in-siblings]` — это постановка server, не дефект client.
+
+Отсутствие planned UI (или planned server contract) в sibling HEAD — **норма**. Классифицируй как **`extends`** в доказательной базе **без** карточки «ещё нет в HEAD».
+
+Карточку пиши только если **нельзя** встроить как написано: нет аналога паттерна / **conflicts** с доказанным client/FE-facing контрактом / критический `unproven` / `[be-without-fe]` (контракт есть в meta, UI нет **в meta**) / hard `[visual-spec-incomplete]` при mock-driven.
 
 Output **one scope** with **three tiers** (hard → warnings → recommendations):
 
@@ -32,13 +44,13 @@ Every finding is a **card**: file link + line numbers + what is wrong + fix prop
 
 ## Server lag and BE-without-FE (обязательно)
 
-При проверке клиента **учитывай, что нужных изменений на сервере в sibling-коде ещё может не быть** — они часто появятся в параллельном/следующем server change. Это **не** hard `INFEASIBLE` само по себе.
+При проверке клиента **учитывай, что нужных изменений на сервере в sibling-коде ещё может не быть** — они часто появятся в параллельном/следующем server change. Это **не** hard `INFEASIBLE` и **не** finding-карточка само по себе.
 
 Проверяй направление **meta server/API → meta UI/client** в change set (+ Parent/Child):
 
 | Ситуация | Как судить |
 |----------|------------|
-| В UI/client docs есть поле/действие/message, которого нет в текущем server HEAD, но в meta есть (или ожидается) server claim в этом или связанном change | **Не** hard gap. Client: **extends** / `unproven`; при необходимости Warning `[be-not-yet-in-siblings]` + pointer на `align-implementability-back` |
+| В UI/client docs есть поле/действие/message, которого нет в текущем server HEAD, но в meta есть (или ожидается) server claim в этом или связанном change | **Не** hard gap. Client: **extends** в доказательной базе; **без** карточки `[be-not-yet-in-siblings]` |
 | В UI описаны данные, а в meta **нет** server/HTTP/room/schema claim | **Не** владелец этой метки → pointer: прогон **`align-implementability-back`** (`[fe-only-without-be]`) |
 | В server/HTTP/room analytics есть **FE-потребляемый** контракт (synced fields, private messages, HTTP list filters, create options, role gates для кнопок), а в UI/client docs **нет** экрана/контрола/binding | **Warning** `[be-without-fe]` — риск «контракт есть, UI не спроектирован». **Не** hard |
 | UI утверждает конкретный path/message/DTO, а **доказанный** client/server binding уже противоречит и meta не планирует сдвиг | Hard `conflicts` / `code-only` по FE-binding |
@@ -52,8 +64,8 @@ Every finding is a **card**: file link + line numbers + what is wrong + fix prop
 ## Runtime roots
 
 - **Claims subject:** changed / relevant `happy-tourist-meta` artifacts that assert **client** runtime: pages, routes, components, Pinia stores, Quasar UX, i18n, permissions on UI, Colyseus client I/O (paths/messages/DTO as client must call them), **and** (when mock-driven) Visual Spec / mock-linked design tokens. For `[be-without-fe]` also **read** FE-consumable server claims in the same change family as *supply* signals.
-- **Evidence code:** resolve via [`docs/projects-map.md`](../../../docs/projects-map.md) (+ local YAML). Primary: `client` → `../happy-tourist.github.io/`. Skills: `.agents/skills/client/`. Secondary for FE contract fit only: message/HTTP shapes the client must bind — do **not** deep-audit Drizzle/room internals here (pointer to `align-implementability-back`).
-- **Visual Spec evidence:** `openspec/changes/<name>/design.md` section **`## Visual Spec (from mock)`** (или эквивалент); linked mock assets near the change. Канон чеклиста — [`prepare-mock`](../prepare-mock/SKILL.md).
+- **Evidence code:** resolve via [`docs/projects-map.md`](../../../../docs/projects-map.md) (+ local YAML). Primary: `client` → `../happy-tourist.github.io/`. Skills: `.agents/skills/client/`. Secondary for FE contract fit only: message/HTTP shapes the client must bind — do **not** deep-audit Drizzle/room internals here (pointer to `align-implementability-back`).
+- **Visual Spec evidence:** `openspec/changes/<name>/design.md` section **`## Visual Spec (from mock)`** (или эквивалент); linked mock assets near the change. Канон чеклиста — [`prepare-mock`](../../prepare-mock/SKILL.md).
 - Do **not** treat client working tree as the primary diff to “fix”.
 
 ## Scope filter (claims)
@@ -123,7 +135,7 @@ Union is the claim file set. Narrow only when the user explicitly scopes. Then *
 После фильтра — быстрый проход **server → UI** по тому же change set (+ Parent/Child):
 
 1. **Server → UI (обязательно):** для каждого **FE-потребляемого** server claim есть ли UI/client claim? Нет → Warning `[be-without-fe]`. Не изобретай экраны, если ветка явно server-only без client children.
-2. **UI → server:** полный audit **не** здесь. Если заметно, что UI описывает данные без API в meta — one-line pointer на `align-implementability-back` (`[fe-only-without-be]`). Есть server в meta, нет в sibling HEAD → Warning `[be-not-yet-in-siblings]`, не hard.
+2. **UI → server:** полный audit **не** здесь. Если заметно, что UI описывает данные без API в meta — one-line pointer на `align-implementability-back` (`[fe-only-without-be]`). Есть server в meta, нет в sibling HEAD → **extends** в доказательной базе, **без** карточки «ещё нет в OpenAPI/server HEAD».
 3. **Mock / Visual Spec (обязательно, если mock-driven):** см. ось ниже. Иначе одна строка в отчёте: `Visual Spec: n/a (не mock-driven)`.
 
 ## Когда change mock-driven (триггер оси 3)
@@ -141,13 +153,48 @@ Union is the claim file set. Narrow only when the user explicitly scopes. Then *
 
 For each atomic client claim:
 
-1. Resolve `client` via projects-map (+ local YAML).
+1. Resolve `client` via projects-map (+ local YAML). Do **not** `ls`/`dir` the parent workspace folder.
 2. Grep/read Vue/TS pages, components, stores, router, i18n, tests, Colyseus client usage that prove or refute the claim.
 3. Prefer current HEAD of the sibling clone; if missing, **Warning** (`sibling-missing`), not a hard gap.
 
 Do not invent sibling screens/APIs. Absence of a clone ≠ proof that meta is wrong. Before deep reads — `{client}/AGENTS.md`.
 
-Для оси Visual Spec sibling-код **не** primary evidence: канон — `design.md` Visual Spec (+ наличие макета). Sibling смотри только чтобы понять, есть ли уже токены/Quasar vars как аналог **extends** (не заменяет отсутствующий Spec).
+Для оси Visual Spec sibling-код **не** primary evidence: канон — `design.md` Visual Spec (+ файл макета). Sibling смотри только чтобы понять, есть ли уже токены/Quasar vars как аналог **extends** (не заменяет отсутствующий Spec).
+
+## Main-window budget (read policy)
+
+Read in the main window only the **claims skeleton**: `proposal.md` (+ Parent/Child) and title/heading lines of UI/design/specs — just enough to enumerate atomic client claims. Bodies of long docs and deep reads of `happy-tourist.github.io` belong inside subagents when fan-out is used.
+
+## Delegation (optional, large change family only)
+
+Client has a **single evidence repo**, so repo fan-out is pointless. Delegate **only** when the change family is large (Parent + several children, or >~10 claim docs) **and** the client claims span several UI axes. For a typical single change, audit inline.
+
+When fanning out, split by **UI axis** (one subagent per axis present in the claims), with focused paths/globs:
+
+| UI axis | Target evidence (focused) | Claim axis |
+|---------|---------------------------|------------|
+| Screens / routes | `{client.pages}`, router, App shell | route / page / navigation |
+| Components / forms | components, Quasar forms, modals | form/validation/modal/empty-error |
+| State | `{client.stores}`, Pinia | store ownership / actions |
+| Room / HTTP binding | Colyseus client I/O in stores/boot | messages / HTTP paths / DTO as client binds |
+| Permissions | route guards, `requiresAuth`/`requiresStaff` | UI access / button enable-hide |
+| Visual Spec (mock-driven) | `design.md` Visual Spec + mock assets | tokens completeness only (facts: present/absent) |
+
+Keep in the main window: `Load Branch Work`, projects-map resolution, classification/verdict/`Код проекта N/10`, cards/`Report`, `[be-without-fe]` scan, and final Visual Spec severity judgment. Give each subagent explicit paths/globs + grep patterns, never an open «explore client».
+
+**Subagent prompt contract (required).** For each assigned claim return **evidence facts only**:
+
+```
+- claim: <verbatim from meta>
+- searched: <paths + grep patterns>
+- found: <sibling file> L<a>–L<b> — <what it proves: aligns / analogue for extends>
+   OR not-found: <what is absent in HEAD> (evidence, not a finding)
+- other places searched: <paths / «клона нет»>
+```
+
+**Subagents must NOT:** assign `gap | warning | recommendation | be-without-fe | visual-spec-incomplete`; phrase «не реализовано в sibling» as an issue (**Постановка ≠ недоделанный client**); touch server-only claims; edit files.
+
+**Synthesis.** The main agent merges per-claim evidence, then classifies, scores, and writes cards/Report. Maximum **2 levels** (collectors → main); do not nest subagents.
 
 ## Axis — Client implementability judgment
 
@@ -165,7 +212,7 @@ Classify each claim: **aligns** | **extends** | **conflicts** | **unproven**.
 
 Hard `gap` only with concrete client (or FE-facing contract) evidence + meta misstatement + required parity.
 
-**Do not** treat «в текущем server sibling ещё нет поля/метода» as hard `gap` / `INFEASIBLE` — см. **Server lag and BE-without-FE**.
+**Do not** treat «в текущем client/server sibling ещё нет экрана/поля/метода из постановки» as hard / warning / recommendation — см. **Постановка ≠ недоделанный client** и **Server lag**.
 
 ## Axis — Mock / Visual Spec completeness (обязательно если mock-driven)
 
@@ -173,7 +220,7 @@ Hard `gap` only with concrete client (or FE-facing contract) evidence + meta mis
 
 **Где искать канон:** `design.md` → `## Visual Spec (from mock)` (и подсекции). Specs/proposal могут дублировать поведение/copy, но **числа и hex = design**. Если Visual Spec пуст/отсутствует при mock-driven → Hard `[visual-spec-incomplete]` + предложение прогнать **`prepare-mock`**.
 
-Пройди чеклист (канон детализации — [`prepare-mock`](../prepare-mock/SKILL.md) A–F). Для **каждого** видимого на макете/описанного в UI surface элемента отметь: есть измеримый токен | отсутствует | явно «не на макете / Open Question».
+Пройди чеклист (канон детализации — [`prepare-mock`](../../prepare-mock/SKILL.md) A–F). Для **каждого** видимого на макете/описанного в UI surface элемента отметь: есть измеримый токен | отсутствует | явно «не на макете / Open Question».
 
 ### Чеклист обязательных токенов
 
@@ -200,7 +247,7 @@ Hard `gap` only with concrete client (or FE-facing contract) evidence + meta mis
 4. Не требуй pixel-sample confidence `high` — `med`/`approx` OK. Требуй **наличие** токена, не пересъёмку.
 5. Предложение в карточке: «дописать в Visual Spec …» или «прогнать `prepare-mock`» — **не** выдумывать конкретные px/hex в этом скилле.
 
-Score **Код проекта: N/10** only from hard `gap` / `conflicts` / required `code-only` **и** hard `[visual-spec-incomplete]` (когда mock-driven). Warnings `[be-without-fe]`, `[be-not-yet-in-siblings]`, soft Visual Spec gaps **не** снижают score. `[fe-only-without-be]` — зона back-скилла.
+Score **Код проекта: N/10** only from hard `gap` / `conflicts` / required `code-only` **и** hard `[visual-spec-incomplete]` (когда mock-driven). Warnings `[be-without-fe]`, soft Visual Spec gaps **не** снижают score сами по себе. **Не** заводить `[be-not-yet-in-siblings]`. `[fe-only-without-be]` — зона back-скилла.
 
 ### Суждение о реализуемости
 
@@ -218,8 +265,8 @@ Score **Код проекта: N/10** only from hard `gap` / `conflicts` / requi
 | Tier | When | Align cues |
 |------|------|------------|
 | **Hard gaps** | Required FE parity missing; claim conflicts proven sibling evidence; mock-driven без критичных Visual Spec токенов (sizes/pads/colors/typography/structure) | `gap`, `conflicts`, `code-only` (when parity required); `[visual-spec-incomplete]` |
-| **Warnings** | Strong lean without full proof; sibling missing; critical `unproven`; server lag; FE-consumable server without UI; soft Visual Spec gaps (hover absent, Material placeholder icons) | `[warning]`; `unproven`; `[be-without-fe]`; `[be-not-yet-in-siblings]`; soft `[visual-spec-incomplete]` |
-| **Recommendations** | Optional polish vs analogue; soft wording; Open Questions на макете | `[recommendation]` |
+| **Warnings** | Strong lean without full proof; sibling clone missing; critical path `unproven`; FE-consumable server without UI **в meta**; soft Visual Spec gaps (hover absent, Material placeholder icons) | `[warning]`; `unproven`; `[be-without-fe]`; soft `[visual-spec-incomplete]` — **не** «planned UI/server отсутствует в sibling HEAD» |
+| **Recommendations** | Optional polish vs analogue; soft wording; Open Questions на макете — **не** «надо реализовать то, что уже в постановке» | `[recommendation]` |
 
 Examples:
 
@@ -227,7 +274,7 @@ Examples:
 - Client docs send message `foo` but proven store/room uses `bar` and meta does not plan rename → hard **conflicts**.
 - UI показывает поле без server claim в meta → pointer на `align-implementability-back` / `[fe-only-without-be]`.
 - Server analytics описывает synced field / filter, а UI docs не показывают контрол → **Warning** `[be-without-fe]`.
-- Нужный message ещё нет в server HEAD, но design/spec планирует его → **Warning** `[be-not-yet-in-siblings]`, client всё ещё может быть **FEASIBLE**/**extends**.
+- Нужный message ещё нет в server HEAD, но design/spec планирует его → **extends** в доказательной базе, **без** карточки; client может быть **FEASIBLE**.
 - `happy-tourist.github.io` not cloned → **Warning** `[sibling-missing]`.
 - Mock-driven change, Visual Spec есть, но нет pad/gap между badge→title и нет hex для `divider` → Hard `[visual-spec-incomplete]`.
 - Цвета только «grey / amber» без hex/rgba при макете → Hard `[visual-spec-incomplete]`.
@@ -241,7 +288,7 @@ Examples:
 
 ```markdown
 ### <N>. <короткий заголовок>
-- Метка: `[gap|code-only|warning|recommendation|be-without-fe|be-not-yet-in-siblings|visual-spec-incomplete]` (+ обязательно `aligns|extends|conflicts|unproven` для runtime-claim; для Visual Spec — `unproven` если токена нет)
+- Метка: `[gap|code-only|warning|recommendation|be-without-fe|visual-spec-incomplete]` (+ обязательно `aligns|extends|conflicts|unproven` для runtime-claim; для Visual Spec — `unproven` если токена нет)
 - Файл: [`path/from/repo/root.ext`](path/from/repo/root.ext) — **L12–L18** (или **L12, L45**)
 - Связанные (если нужно): [`../happy-tourist.github.io/...`](../happy-tourist.github.io/...) — **L3–L5**
 - Что не так: <факт: meta / sibling / Visual Spec пробел / противоречие>

@@ -33,6 +33,7 @@ Runtime-код и пакетные `AGENTS.md` живут **в sibling-репо�
 ```yaml
 client: ../happy-tourist.github.io
 server: C:/Users/You/work/happy-tourist-server
+# опционально точечные ключи: client.src, server.rooms, … — см. projects-map.local.yaml.example
 ```
 
 **Resolution из корня `happy-tourist-meta`**

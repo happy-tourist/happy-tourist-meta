@@ -2,23 +2,39 @@
 name: align-implementability-back
 description: >-
   Use when judging whether happy-tourist-meta server/BE claims are implementable
-  (possibility to build only — not meta doc quality, not client UI layout).
-  Against current happy-tourist-server (Colyseus rooms/schema/messages/routes/
-  auth/DB/game via projects-map). Also warn when client/UI docs in the change
-  family describe data/actions with no server/HTTP/room/schema claim in meta
-  (`[fe-only-without-be]`). Classifies aligns/extends/conflicts/unproven;
-  verdict FEASIBLE|PARTIAL|INFEASIBLE|UNKNOWN. Finding card: file + lines +
-  issue + fix. Not client UI realizability (align-implementability-front; keeps
-  `[be-without-fe]`) or meta quality (align-meta). Does not edit files.
+  (possibility to build only — not meta doc quality, not client UI layout, not
+  that server already shipped). Against happy-tourist-server via projects-map.
+  Meta is a постановка for future apply: do NOT warn that planned
+  messages/routes/schema/algorithms are absent in sibling HEAD. Warn when
+  client/UI docs lack server/HTTP/room/schema claim in meta
+  (`[fe-only-without-be]`). Large claim sets: fan out evidence by contract axis
+  to subagents. Verdict FEASIBLE|PARTIAL|INFEASIBLE|UNKNOWN. Finding card:
+  file + lines + issue + fix. Not client UI realizability
+  (align-implementability-front) or align-meta. Does not edit files.
 ---
 
 # Align Implementability (Backend / Server)
 
 Perform a read-only **server implementability** audit: can the **happy-tourist-meta** change be built **as written** against **happy-tourist-server**? Report findings in Russian.
 
-**Scope of judgment — only possibility to implement.** Answers «можно ли реализовать server/контракт по этим claims», not «идеальны ли AC», not UI layout. Completeness/quality of meta → **`align-meta`**. Client screens/routes fit → **`align-implementability-front`** (там же `[be-without-fe]`).
+**Scope of judgment — only possibility to implement.** Answers «можно ли реализовать server/контракт по этим claims», not «идеальны ли AC», not «уже ли лежит готовый код в sibling», not UI layout. Completeness/quality of meta → **`align-meta`**. Client screens/routes fit → **`align-implementability-front`** (там же `[be-without-fe]`).
 
-Новый message/route/schema-поле/алгоритм, которого ещё нет в sibling HEAD, но есть ясный аналог для **extends** — нормальная реализуемость, не hard gap. Hard только при **conflicts** с доказанным контрактом/кодом или required parity misstatement.
+### Постановка ≠ недоделанный server (запрет замечаний)
+
+Meta/OpenSpec change — **постановка к будущей реализации**. Sibling `happy-tourist-server` HEAD **ещё не обязан** содержать описываемый message / route / schema-поле / auth flow / DB / game algorithm.
+
+**Запрещено** писать finding-карточки (hard / warning / recommendation) вида:
+
+- «в server ещё нет message / поля schema / HTTP route, который описывает spec»;
+- «ожидаемый extends: endpoint отсутствует, надо добавить»;
+- «в HEAD нет алгоритма / таблицы — gap реализации»;
+- любые формулировки «не реализовано в sibling», если meta как раз и планирует эту server-работу.
+
+Отсутствие planned server в sibling — **норма**. Классифицируй claim как **`extends`** (или `aligns`, если контракт/код уже есть) в вердикте / «Доказательная база» / «Карта аналогов», **без** отдельной карточки замечания.
+
+Карточку пиши только если **нельзя** реализовать как написано: нет аналога паттерна / **conflicts** с доказанным контрактом или кодом / критический `unproven` без пути реализации / `[fe-only-without-be]` (UI в meta без server/API **в meta**).
+
+Новый message/route/schema-поле/алгоритм, которого ещё нет в sibling HEAD, но есть ясный аналог для **extends** — нормальная реализуемость, не hard gap и **не** Warning. Hard только при **conflicts** с доказанным контрактом/кодом или required parity misstatement.
 
 Output **one scope** with **three tiers** (hard → warnings → recommendations):
 
@@ -34,7 +50,7 @@ Every finding is a **card**: file link + line numbers + what is wrong + fix prop
 | Ситуация | Как судить |
 |----------|------------|
 | В UI/client docs описано отображение или ввод данных (поле, статус, действие, HTTP/room message), а в **наборе claims ветки / change и связанных Parent/Child** нет соответствующего server/HTTP/room/schema/DB claim | **Warning** `[fe-only-without-be]` — риск «UI спроектирован, контракта/server-описания нет». **Не** hard |
-| В UI есть поле/действие, которого нет в sibling HEAD, но в meta BE/server claim **есть** | Не `[fe-only-without-be]`. Обычный **extends** / lag siblings |
+| В UI есть поле/действие, которого нет в sibling HEAD, но в meta BE/server claim **есть** | Не `[fe-only-without-be]`. Обычный **extends** (lag siblings до apply) — в доказательной базе, **без** карточки «в HEAD ещё нет» |
 | Ветка явно server-only **без** client children и без UI docs в change family | Не сканируй UI массово; `[fe-only-without-be]` не ставь |
 
 **Что считать потребностью в server для `[fe-only-without-be]`:** поле формы/таблицы, кнопка с действием по room message / HTTP, отображение schema-поля, create options (`mapId`/`packId`/…), auth/role gate, отдельная история/детали с API.
@@ -46,7 +62,7 @@ Every finding is a **card**: file link + line numbers + what is wrong + fix prop
 ## Runtime roots
 
 - **Claims subject:** changed / relevant `happy-tourist-meta` artifacts that assert **server** runtime: Colyseus rooms/lifecycle, `@colyseus/schema` fields, `onMessage`, HTTP routes (`/api/...`), auth (`@colyseus/auth`), Drizzle/DB, game algorithms, server skills. For `[fe-only-without-be]` also **read** UI/client analytics in the same change family as *demand* signals.
-- **Evidence code:** resolve via [`docs/projects-map.md`](../../../docs/projects-map.md) (+ `projects-map.local.yaml`). Primary: `server` → `../happy-tourist-server/`. Skills: `.agents/skills/server/`. **Not** `client` as primary evidence for axis 1.
+- **Evidence code:** resolve via [`docs/projects-map.md`](../../../../docs/projects-map.md) (+ `projects-map.local.yaml`). Primary: `server` → `../happy-tourist-server/`. Skills: `.agents/skills/server/`. **Not** `client` as primary evidence for axis 1.
 - Do **not** treat sibling working trees as the primary diff to “fix”.
 
 ## Scope filter (claims)
@@ -117,7 +133,7 @@ Union of commits + staged + unstaged + untracked is the claim file set. Narrow o
 После фильтра — быстрый проход **UI/client → server** по тому же change set (+ Parent/Child):
 
 1. Для каждого поля/действия/эндпоинта, которое UI обещает показать или вызвать, есть ли server/HTTP/room/schema claim в meta? Нет → Warning `[fe-only-without-be]`.
-2. Есть в meta, нет в sibling HEAD → не `[fe-only-without-be]`; судить как **extends** / lag.
+2. Есть в meta, нет в sibling HEAD → не `[fe-only-without-be]`; **extends** в доказательной базе, **без** finding «не реализовано в sibling» (см. **Постановка ≠ недоделанный server**).
 3. Ветка server-only без UI docs → шаг 1 не раздувать.
 
 Обратное (контракт есть, UI нет) **не** проверяй здесь → `align-implementability-front` / `[be-without-fe]`.
@@ -126,11 +142,58 @@ Union of commits + staged + unstaged + untracked is the claim file set. Narrow o
 
 For each atomic server claim:
 
-1. Resolve `server` via projects-map (+ local YAML).
+1. Resolve `server` via projects-map (+ local YAML). Do **not** `ls`/`dir` the parent workspace folder.
 2. Grep/read rooms, schema, messages, routes, auth, db, game libs, tests that prove or refute the claim.
 3. Prefer current HEAD of the sibling clone; if missing, **Warning** (`sibling-missing`), not a hard gap.
 
 Do not invent sibling APIs. Absence of a clone ≠ proof that meta is wrong. Before deep reads — `{server}/AGENTS.md`.
+
+Collect evidence via **contract fan-out to subagents** when the claim set is large (see **Delegation to subagents**), keeping claims-set construction and judgment in the main window.
+
+## Delegation to subagents (fan out by contract)
+
+Main-window budget goes to **judgment**, not raw evidence. Split evidence collection **by contract axis** — one subagent = one contract bucket with focused paths/globs, never «audit entire server».
+
+**Main-window read budget.** Read in the main window only the **claims skeleton**: `proposal.md` (+ Parent/Child names) and title/heading lines of specs/design — just enough to enumerate atomic server claims. Bodies of long specs/design and deep sibling reads happen **inside** subagents.
+
+**Large change family:** when the family is big (Parent + several children, or >~10 claim docs), first fan out **claim extraction** — one subagent per change returning a flat list of atomic server claims (claim text + doc path + line), facts only; then fan out the evidence buckets below. Extraction and evidence subagents are both level 1; do not nest.
+
+**Never delegate (keep in the main window):**
+
+- `Load Branch Work` — git commands, the union claim file set, server-claims filter.
+- projects-map resolution.
+- Classification `aligns|extends|conflicts|unproven`, severity, verdict, `Код проекта N/10`, finding cards, `Report`.
+- `[fe-only-without-be]` UI→server scan — cross-cutting over the whole change family.
+
+**Fan out** when the claims set has **≥3 atomic server claims** or evidence spans **≥2 contracts**. Below that, audit inline in the main window.
+
+**One subagent per contract bucket present in the claims** — dispatch them in parallel:
+
+| Bucket | Target evidence (focused) | Claim axis |
+|--------|---------------------------|------------|
+| Schema / sync | `{server.schema}`, rooms state | schema fields / synced state / private payloads |
+| Room messages | rooms `onMessage`, game helpers | message name / payload / auth gate |
+| Room lifecycle | `{server.rooms}` lifecycle hooks | onCreate/Join/Leave/Drop/Reconnect/Dispose |
+| HTTP / Express | routes, middleware, `/api/*` | path / method / status / body |
+| Auth / JWT | `@colyseus/auth`, onAuth, userdata | register/login/anonymous/Google / roles |
+| Persistence | `{server.db}`, Drizzle | tables / fields / persistence rules |
+| Game rules | `{server.game}`, tourist rules | move / traps / peek / budgets / … |
+
+**Large-repo rule:** give each subagent explicit paths/globs and grep patterns (e.g. `{server.rooms}/**` for `onMessage('move'`) — never an open «explore happy-tourist-server».
+
+**Subagent prompt contract (required).** For each assigned claim return **evidence facts only**:
+
+```
+- claim: <verbatim from meta>
+- searched: <paths + grep patterns>
+- found: <sibling file> L<a>–L<b> — <what it proves: aligns / analogue for extends>
+   OR not-found: <what is absent in HEAD> (evidence, not a finding)
+- other places searched: <paths / «клона нет»>
+```
+
+**Subagents must NOT:** assign `gap | warning | recommendation | fe-only-without-be`; phrase «не реализовано в sibling» as an issue (**Постановка ≠ недоделанный server**); touch client/UI claims; edit files.
+
+**Synthesis.** The main agent merges per-claim evidence, then classifies, scores, and writes cards/Report. Maximum **2 levels** (collectors → main); do not nest subagents.
 
 ## Axis — Server implementability judgment
 
@@ -148,9 +211,11 @@ Classify each claim: **aligns** | **extends** | **conflicts** | **unproven**.
 
 Hard `gap` only with concrete sibling evidence + meta misstatement + required parity. Use `code-only` when meta asserts a contract that proven sibling evidence contradicts.
 
-**Absence of the new API/field in sibling HEAD is not automatically a hard gap** when meta clearly specifies an **extends** path. Hard when the claim **conflicts** proven contract/code.
+**Absence of the new API/field in sibling HEAD is not automatically a hard gap** when meta clearly specifies an **extends** path. Hard when the claim **conflicts** proven contract/code or required parity is misstated.
 
-Score **Код проекта: N/10** only from hard `gap` / `conflicts` / required `code-only` items. `[fe-only-without-be]` **не** снижает score.
+**Do not** treat «в текущем sibling ещё нет message/поля/алгоритма из постановки» as hard / warning / recommendation — см. **Постановка ≠ недоделанный server**. Это ожидаемое состояние до apply; фиксируй только fit к паттернам (`extends` в базе доказательств) или реальные **conflicts**/невозможность встроить.
+
+Score **Код проекта: N/10** only from hard `gap` / `conflicts` / required `code-only` items. Warnings `[fe-only-without-be]` **не** снижают score сами по себе.
 
 ### Суждение о реализуемости
 
@@ -168,8 +233,8 @@ Score **Код проекта: N/10** only from hard `gap` / `conflicts` / requi
 | Tier | When | Align cues |
 |------|------|------------|
 | **Hard gaps** | Required parity missing or claim conflicts proven sibling evidence | `gap`, `conflicts`, `code-only` (when parity required) |
-| **Warnings** | Strong lean without full proof; sibling missing; critical `unproven`; UI in meta without server in meta | `[warning]`; `unproven`; `[fe-only-without-be]` |
-| **Recommendations** | Optional polish vs analogue; soft wording | `[recommendation]` |
+| **Warnings** | Strong lean without full proof; sibling clone missing; critical path `unproven` (нет пути реализации); UI in meta without server/API **в meta** | `[warning]`; `unproven`; `[fe-only-without-be]` — **не** «planned server отсутствует в sibling HEAD» |
+| **Recommendations** | Optional polish vs analogue; soft wording — **не** «надо реализовать то, что уже в постановке» | `[recommendation]` |
 
 Examples:
 

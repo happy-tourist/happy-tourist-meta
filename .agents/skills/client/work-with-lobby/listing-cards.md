@@ -47,4 +47,4 @@ Set rows: show at most **4**; overflow `content.packCardSetsOverflow` «ещё {
 
 - Lifecycle / create modal: [SKILL.md](SKILL.md)
 - Server `refreshMetadata` + `taskCount`: `.agents/skills/server/work-with-rooms/SKILL.md`
-- Vitest patterns: `../work-with-test/stores.md`
+- Vitest patterns: `../client-work-with-test/stores.md`

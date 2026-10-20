@@ -1,5 +1,5 @@
 ---
-name: work-with-test
+name: client-work-with-test
 description: >-
   Use when planning or writing Vue 3 / Quasar unit tests for the happy-tourist
   client (pages, components, Pinia stores, lib helpers): Vitest +
@@ -23,7 +23,7 @@ client** (`happy-tourist.github.io`). Start with a test plan, then implement
 tests from that plan.
 
 **Paths:** this skill lives in **happy-tourist-meta** at
-`.agents/skills/client/work-with-test/`. Runtime `src/…` paths are relative to
+`.agents/skills/client/client-work-with-test/`. Runtime `src/…` paths are relative to
 the **happy-tourist.github.io** sibling root (`../happy-tourist.github.io` from
 meta). Sibling server tests: `server-work-with-test` (mocha + `@colyseus/testing`)
 — do **not** mix stacks.

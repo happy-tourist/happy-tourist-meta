@@ -40,9 +40,9 @@ context: |
   Домены: auth (register/login/anonymous), lobby (rooms list/create/join), game (board, move, turn/status).
 
   Skills roots: .agents/skills/client/ (UI), .agents/skills/server/ (Colyseus),
-  .agents/skills/ (openspec-*, align-code, align-implementability-back, align-implementability-front,
-  align-meta, align-change, prepare-mock, verify-mock, check-changes, prepare-changes,
-  implement-change, end-implement-change, commit).
+  .agents/skills/ (openspec-*, align-code, align-meta, brief-change, align-change, prepare-mock,
+  verify-mock, check-changes, sync-changes, prepare-changes, implement-change, end-implement-change,
+  commit).
   AGENTS.md — индекс docs/, OpenSpec и .agents/skills/.
   Пакетный контекст: ../happy-tourist.github.io/AGENTS.md, ../happy-tourist-server/AGENTS.md.
   При /opsx-apply: читать applyContextFiles из этого config.yaml помимо contextFiles из CLI.
@@ -79,7 +79,7 @@ context: |
   Архитектура: src/pages/*Page → stores / boot / components; Colyseus I/O в Pinia (auth, game).
   Pages: LoginPage, LobbyPage, GamePage; guards requiresAuth / guest.
   Env: VITE_COLYSEUS_URL, VITE_API_URL; deploy GitHub Pages.
-  Тесты: skill `.agents/skills/client/work-with-test`; harness уже в client (`vitest.config.ts`, `test/setup.ts`).
+  Тесты: skill `.agents/skills/client/client-work-with-test`; harness уже в client (`vitest.config.ts`, `test/setup.ts`).
 
   --- Server (projects-map ключ server → ../happy-tourist-server/) ---
   Runtime: ../happy-tourist-server/ (AGENTS.md — продукт/стек/домены; project-map.md → happy-tourist-meta).
@@ -179,10 +179,12 @@ rules:
   # tasks.md — чеклист реализации
   tasks:
     - 'Дробить по пакетам (client / server) и слоям; не повторять архитектурные решения — ссылка на design.md'
-    - 'Изучение перед работой (skills, proposal/design/spec фрагменты, аналоги): пунктом в том же ##-блоке, где нужно; НЕ выносить всё чтение в первый «Контекст»-блок'
-    - 'В каждом блоке — только релевантное к шагам блока чтение; общие артефакты change можно кратко упомянуть в первом рабочем блоке'
+    - 'IMPORTANT / ОБЯЗАТЕЛЬНО: изучение перед работой (skills, proposal/design/spec фрагменты, reference-файлы, аналоги) — checkbox-пунктом ВНУТРИ того же ##-блока, где есть шаги с результатом. Формулировка: «Перед работой: …» как X.1, затем X.2+ реализация. ЗАПРЕЩЕНО сваливать всё чтение только в первый «Контекст»/первый блок.'
+    - 'IMPORTANT: в каждом ##-блоке — ТОЛЬКО релевантное к шагам ЭТОГО блока чтение; общие артефакты change можно кратко в первом рабочем блоке, БЕЗ дублирования длинных списков skills/reference по всем секциям.'
+    - 'HARD / ЗАПРЕЩЕНО: ##-блок только из изучения/чтения/«убедиться»/verify без deliverable. Критерий: каждый ##-блок рассчитан на отдельный apply-чат и MUST содержать ≥1 checkbox, который меняет код, конфиг, тесты или явный lint/test/build шаг. Если после «прочитать / сверить / убедиться» нечего коммитить — блока быть не должно: влить изучение в следующий рабочий ##-блок. Антипример: «## Контракт client» с одним пунктом «сверить messages» и без правок/тестов в том же блоке.'
+    - 'При генерации/правке tasks.md: самопроверка — для каждого ## посчитать checkbox-ы без изменения артефактов репозитория; если их 100% блока — смержить с соседним рабочим блоком до записи файла.'
     - 'Отдельные пункты на тесты где применимо (server: mocha + npm test; client: vitest + npm test по SC из Traceability, плюс lint/typecheck)'
-    - 'Client с UI/store/auth сценариями в Scope — обязательно пункты vitest (skill work-with-test); lint/typecheck alone недостаточно'
+    - 'Client с UI/store/auth сценариями в Scope — обязательно пункты vitest (skill client-work-with-test); lint/typecheck alone недостаточно'
     - 'НЕ добавлять пункты ручной проверки / manual smoke / «ручной сценарий» — coverage SC в specs Traceability + автотесты (mocha/vitest) + lint; ручной прогон вне tasks (verify/ops)'
     - 'Client skills при apply: из .agents/skills/client/ (locate/align/verify + topic skills)'
     - 'Server skills при apply: из .agents/skills/server/ (locate/align/verify + topic skills)'

@@ -9,7 +9,7 @@ description: >-
   Violations. Uses design Visual Spec from prepare-mock when present. Reports
   Violations / Warnings / Recommendations. Use when the user asks to
   verify-mock, check UI vs mock/макет/screenshot, or when implement-change
-  runs the mock phase after align-code.
+  runs the mock phase after align + verify.
 ---
 
 # Verify Mock — UI vs attached design mock
@@ -21,7 +21,7 @@ description: >-
 ## Когда применять
 
 - Пользователь запускает `verify-mock` / просит сверить UI с макетом / скрином
-- В пайплайне `implement-change` — фаза сразу **после** align-code
+- В пайплайне `implement-change` — фаза сразу **после** align + verify
 - Change/design ссылается на макет light/dark, а код уже (частично) реализован
 
 Не вызывать «на всякий случай», если нет макета и пользователь не просил визуальную сверку.

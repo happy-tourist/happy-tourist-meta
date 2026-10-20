@@ -5,22 +5,23 @@ description: >-
   then recommends whether to add, update, delete, or split bloated skills using
   a scored bloat checklist (topic files preferred; score ≥5 → mandatory split
   plan; forbid description-dumps into fat cores), and whether to fix
-  projects-map / project-map, docs, or AGENTS.md. Use when the user runs
-  check-changes, asks to review unstaged client/server diffs for skill/docs/agent
-  drift, wants a «что добавить / что изменить / что удалить / что разбить»
-  list, or asks which skills have grown too large to split.
+  projects-map / project-map, docs, AGENTS.md, or OpenSpec config. Use when
+  the user runs check-changes, asks to review unstaged client/server diffs for
+  skill/docs/agent/openspec drift, wants a «что добавить / что изменить / что
+  удалить / что разбить» list, or asks which skills have grown too large to
+  split.
 ---
 
-# Check Changes — навыки, maps, docs, AGENTS
+# Check Changes — навыки, maps, docs, AGENTS, OpenSpec
 
-Проверить **незастейдженные** (и untracked) изменения в **client** и **server**, сопоставить их с каноном skills / projects-map / docs / `AGENTS.md`, и выдать список предложений: **что добавить**, **что изменить**, **что удалить**, **что разбить** (раздувшиеся skills → отдельный skill или под-skills).
+Проверить **незастейдженные** (и untracked) изменения в **client** и **server**, сопоставить их с каноном skills / projects-map / docs / `AGENTS.md` / `openspec/config.yaml`, и выдать список предложений: **что добавить**, **что изменить**, **что удалить**, **что разбить** (раздувшиеся skills → отдельный skill или под-skills).
 
 Скилл **только анализирует и предлагает** — не правит файлы, не стейджит, не коммитит (для коммита — [`commit`](../commit/SKILL.md)).
 
 ## Когда применять
 
-- Пользователь запускает `check-changes` / просит проверить незастейдженные изменения client/server на drift skills/docs/agents
-- После локальной разработки, до `commit`, когда нужно понять, не устарели ли навыки и документация агентов
+- Пользователь запускает `check-changes` / просит проверить незастейдженные изменения client/server на drift skills/docs/agents/openspec
+- После локальной разработки, до `commit`, когда нужно понять, не устарели ли навыки, документация агентов и OpenSpec config
 - Явно спрашивают, какие skills раздулись и стоит ли вынести / разбить
 
 Не вызывать «на всякий случай» после каждой мелкой правки без запроса.
@@ -49,6 +50,7 @@ description: >-
 | Child maps | `{client}/project-map.md`, `{server}/project-map.md` |
 | Docs | `docs/README.md` и связанные `docs/**` |
 | AGENTS.md | meta корень + `.agents/AGENTS.md` + `{client}/AGENTS.md` + `{server}/AGENTS.md` |
+| OpenSpec config | [`openspec/config.yaml`](../../../openspec/config.yaml) (`context`, `rules`, `projectsMap`, skill path hints) |
 
 ## Scope diff
 
@@ -78,7 +80,7 @@ Check-Changes Progress:
 - [ ] 1. Resolve paths
 - [ ] 2. Collect unstaged/untracked (client + server)
 - [ ] 3. Summarize change themes
-- [ ] 4. Map themes → skills / maps / docs / AGENTS
+- [ ] 4. Map themes → skills / maps / docs / AGENTS / OpenSpec config
 - [ ] 5. Scan bloat candidates (touched + oversized skills)
 - [ ] 6. Decide add vs change vs delete vs split vs none
 - [ ] 7. Report «Что добавить» / «Что изменить» / «Что удалить» / «Что разбить»
@@ -121,8 +123,9 @@ Check-Changes Progress:
 | Новые пути/ключи сервисов? | `docs/projects-map.md`, child `project-map.md` |
 | Новые команды сборки / стек / домены пакета? | `{client\|server\|meta}/AGENTS.md`, `.agents/AGENTS.md` |
 | Канон docs устарел или нет ссылки? | `docs/README.md`, профильные `docs/**` |
+| OpenSpec context/rules/skill hints устарели? | `openspec/config.yaml` |
 
-Читать только релевантные skill/AGENTS/docs (не все подряд), но **не пропускать** индекс `.agents/AGENTS.md` и корневые AGENTS затронутых пакетов. Для кандидатов на удаление — сверить skill с **текущим** деревом client/server (не только с diff): пути/API из skill ещё существуют?
+Читать только релевантные skill/AGENTS/docs/OpenSpec config (не все подряд), но **не пропускать** индекс `.agents/AGENTS.md`, корневые AGENTS затронутых пакетов и `openspec/config.yaml` при темах, которые там отражены (тесты, projectsMap, context). Для кандидатов на удаление — сверить skill с **текущим** деревом client/server (не только с diff): пути/API из skill ещё существуют?
 
 ### 5. Scan bloat candidates (обязательный скоринг)
 
@@ -283,9 +286,18 @@ Description: «Core in SKILL.md; topic details in …».
 - сменились стек, команды, домены, ссылки на skills/docs;
 - always-on инструкции расходятся с фактическим diff-паттерном.
 
-**Ничего не предлагать**, если изменение полностью покрыто актуальными skills/docs/AGENTS и maps, мёртвых skills по diff не видно, и bloat-кандидатов нет (или явно «разбивать рано»). Явно написать: «покрытие достаточное» / «разбиение не требуется».
+**Поправить OpenSpec config** (`openspec/config.yaml`), если:
 
-Не предлагать дубликаты skills «на всякий случай». Не предлагать правки runtime-кода — только agent/docs/map артефакты. Не удалять и не дробить skills самому в этом прогоне — только рекомендовать.
+- `context` / `rules` ссылаются на устаревший skill path или имя (например после rename skill);
+- hints про harness/тесты/стек расходятся с фактическим client/server diff;
+- `projectsMap` или path hints в config не согласованы с `docs/projects-map.md` / child maps;
+- появились устойчивые OpenSpec workflow-правила, которые уже живут в skills/AGENTS, но config их ещё не отражает (или наоборот — config врёт).
+
+Не предлагать править delta/main specs или active change артефакты в этом скилле — только `openspec/config.yaml` как канон workflow.
+
+**Ничего не предлагать**, если изменение полностью покрыто актуальными skills/docs/AGENTS/OpenSpec config и maps, мёртвых skills по diff не видно, и bloat-кандидатов нет (или явно «разбивать рано»). Явно написать: «покрытие достаточное» / «разбиение не требуется».
+
+Не предлагать дубликаты skills «на всякий случай». Не предлагать правки runtime-кода — только agent/docs/map/OpenSpec-config артефакты. Не удалять и не дробить skills самому в этом прогоне — только рекомендовать.
 
 ### 7. Report
 
@@ -320,7 +332,7 @@ Description: «Core in SKILL.md; topic details in …».
 
 Каждый пункт — actionable: конкретный файл/skill-name и суть правки/удаления/разбиения. Без длинных цитат diff.
 
-Приоритет в списке: skills (add → change → delete → split) → AGENTS индексы → projects-map → docs.
+Приоритет в списке: skills (add → change → delete → split) → AGENTS индексы → projects-map → docs → `openspec/config.yaml`.
 
 ## Примеры триггеров
 
@@ -328,11 +340,11 @@ Description: «Core in SKILL.md; topic details in …».
 - «Проверь незастейдженные изменения client/server — нужны ли новые skills?»
 - «Какие skills устарели и можно удалить?»
 - «Какие skills раздулись — вынести или разбить на под-скиллы?»
-- «Что поправить в AGENTS/docs после моих локальных правок?»
+- «Что поправить в AGENTS/docs/OpenSpec config после моих локальных правок?»
 
 ## Не делать
 
-- Не редактировать и не удалять skills/docs/AGENTS/maps в этом скилле без отдельной просьбы применить предложения.
+- Не редактировать и не удалять skills/docs/AGENTS/maps/OpenSpec config в этом скилле без отдельной просьбы применить предложения.
 - Не предлагать массовое удаление skills без связи с diff или явной мёртвости относительно текущего client/server.
 - Не предлагать split «на всякий случай» без эвристик шага 5; не дробить process-skills (`*-align-code` / `*-verify-code`) только из-за `wc -l`.
 - Не анализировать staged / branch commits как основной scope.
