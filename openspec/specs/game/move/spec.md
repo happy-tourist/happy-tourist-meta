@@ -103,8 +103,8 @@
 | SC-MOVE-91 | covered (server mocha — auto-end deferred until trap pipeline idle) |
 | SC-MOVE-92 | covered (server mocha — deadline advance deferred until trap pipeline idle) |
 | SC-MOVE-93 | covered (server mocha — idle re-eval auto-end after grille removes peek) |
-| SC-MOVE-94 | covered (server mocha — flipped peek no spend) |
-| SC-MOVE-95 | covered (server mocha — auto-end considers flipped free peek) |
+| SC-MOVE-94 | covered (server mocha — flipped peek consumes peeks) |
+| SC-MOVE-95 | covered (server mocha — auto-end advances at flipped peeks=0) |
 
 Related: board peek / removed tiles / grilles / catapults — `game/board`; presence counters / end-turn — `game/presence`; solo finish / return / catapult→center — `game/finish`; trapped sync — `game/pieces`.
 
@@ -256,7 +256,7 @@ While phase is `playing`, at least two eligible seats remain, and it is a non-fi
 
 ### Requirement: Multiple peeks per turn while peeks remain
 
-While it is a seat’s turn in phase `playing`, that seat MAY successfully open as many **fresh (unbound)** peeks as its peeks budget (or solo infinite peeks) allows, each time an own unfinished free piece stands on a still-present **unbound** task cell (see `game/board`). Additionally, that seat MAY open peeks on **already flipped (bound)** still-present task cells under the free-peek rules of `game/board` even when peeks are 0. The server MUST NOT enforce a one-peek-per-turn limit. Each successful **fresh** open MUST still consume one peek in finite peeks mode; flipped opens MUST NOT.
+While it is a seat’s turn in phase `playing`, that seat MAY successfully open as many peeks as its peeks budget (or solo infinite peeks) allows, each time an own unfinished free piece stands on a still-present task cell (unbound or flipped — see `game/board`). The server MUST NOT enforce a one-peek-per-turn limit. Each successful open (fresh **or** flipped) MUST consume one peek in finite peeks mode. With peeks 0 (and not infinite), no further peek open is allowed on any task cell.
 
 #### Scenario [SC-MOVE-39]: Second peek in the same turn is allowed
 
@@ -265,26 +265,26 @@ While it is a seat’s turn in phase `playing`, that seat MAY successfully open 
 - **THEN** the server accepts the peek open
 - **AND** the shared peek modal is shown per `game/board`
 
-### Requirement: Flipped peek does not consume peeks budget
+### Requirement: Flipped peek consumes peeks budget
 
-Opening a peek on an already flipped task cell MUST NOT decrease the seat’s peeks budget.
+Opening a peek on an already flipped task cell MUST decrease the seat’s peeks budget by one in finite peeks mode (same as a fresh open). Solo infinite peeks MUST NOT decrement.
 
-#### Scenario [SC-MOVE-94]: Flipped peek does not consume peeks
+#### Scenario [SC-MOVE-94]: Flipped peek consumes peeks
 
 - **GIVEN** it is a multiplayer turn with peeks 1 and an own piece on a flipped task cell
 - **WHEN** that seat opens a peek on the flipped cell and later resolves it incorrectly
-- **THEN** peeks remain 1 (no consumption for the flipped open)
+- **THEN** peeks become 0 (the flipped open consumed one peek)
 
-### Requirement: Auto end-turn treats flipped peek as available action
+### Requirement: Auto end-turn gates flipped peek by peeks budget
 
-The server MUST treat a legal own peek on a flipped still-present task cell (even with peeks 0) as an available action that blocks multiplayer auto end-turn, the same way a fresh peek with peeks ≥ 1 blocks auto end-turn. When no legal move, rescue, return, push, fresh peek, or flipped peek remains, auto end-turn MUST apply as today.
+The server MUST treat a legal own peek on a flipped still-present task cell as an available action that blocks multiplayer auto end-turn **only when** peeks remain (or solo infinite peeks) — the same budget gate as a fresh peek. When peeks are 0 (and not infinite), a flipped cell MUST NOT block auto end-turn solely as a peek opportunity. When no legal move, rescue, return, push, or budgeted peek remains, auto end-turn MUST apply as today.
 
-#### Scenario [SC-MOVE-95]: Auto end-turn waits while flipped peek exists at zero peeks
+#### Scenario [SC-MOVE-95]: Auto end-turn advances when flipped peek at zero peeks
 
-- **GIVEN** it is a seated player’s multiplayer turn with steps 0, peeks 0, and an own unfinished free piece on a flipped still-present task cell
+- **GIVEN** it is a seated player’s multiplayer turn with steps 0, peeks 0, and an own unfinished free piece on a flipped still-present task cell, and no other legal move/rescue/return/push
 - **WHEN** the server evaluates auto end-turn
-- **THEN** the turn MUST NOT auto-advance solely because peeks are 0
-- **AND** the player MAY open the flipped peek
+- **THEN** the turn MAY auto-advance (flipped peek at peeks 0 is not an available action)
+- **AND** the player MUST NOT be able to open the flipped peek
 
 ### Requirement: Authoritative one-step tourist move
 

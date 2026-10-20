@@ -1,6 +1,6 @@
-## 0. Server (out of scope)
+## 0. Server (chrome phase — historical)
 
-- [x] 0.1 **Не трогать** `happy-tourist-server`: room messages (`peek` / `peekPlace` / `peekSubmit`), schema (`peekDifficulty` / `peekPlacements` / `answerCards` / …), resolve (+difficulty steps / keep bind), content HTTP/DB difficulty — всё as-is. Delta-сценарии SC-BOARD-43/44/47 в `specs/game/board` — baseline для chrome, не BE-работа. Verify: в diff apply нет правок sibling server.
+- [x] 0.1 **Chrome-only phase:** не трогать server для UI redesign (messages/schema/resolve KEEP). *Superseded for peeks spend by §7* — resolve Correct/Incorrect и payload’ы по-прежнему as-is.
 
 ## 1. Shared chrome + i18n (client)
 
@@ -32,3 +32,16 @@
 - [x] 5.3 Game peek: question font ~24–27px (SC-BOARD-54); compose question `q-input` **не** масштабировать — verify: peeker/spectator bindings intact
 - [x] 5.4 Vitest: обновить SC-BOARD-50/51/49/54 и SC-PACK-276/237/263/277 под word-only badge, half-size, filled primary border, no pool used-chrome — verify: `npm test` (peek + compose релевантные)
 - [x] 5.5 `npm run lint` и `npm run typecheck` в client — verify: exit 0
+
+## 6. Header layout revise (client)
+
+- [x] 6.1 Перед работой: design Visual Spec header (dots left-edge, badge center); SC-BOARD-50; SC-PACK-260/276
+- [x] 6.2 Game peek + PackTaskComposeDialog: dots top-left у левого края контента; word badge горизонтально по центру (не одна centered-группа) — verify: light/dark; Vitest layout assertions
+- [x] 6.3 Client eye/peek affordance: при peeks=0 (finite) **не** предлагать open на flipped клетке (зеркало server) — verify: unit/UI test or store gating
+
+## 7. Peeks spend on every open (server + tests)
+
+- [x] 7.1 Перед работой: delta `game/board` SC-BOARD-10/45; `game/move` SC-MOVE-94/95; `MyRoom` peek open + auto-end / hasLegalPeek helpers
+- [x] 7.2 Server: каждый успешный `peek` open в finite mode −1 peek (fresh **и** flipped); peeks=0 → reject любого open; solo `infinite` без decrement — verify: mocha SC-BOARD-45/10, SC-MOVE-94
+- [x] 7.3 Server: auto-end **не** блокируется flipped peek при peeks=0 — verify: mocha SC-MOVE-95
+- [x] 7.4 Client lint/typecheck + server `npm test` (релевантные board/move) — verify: exit 0

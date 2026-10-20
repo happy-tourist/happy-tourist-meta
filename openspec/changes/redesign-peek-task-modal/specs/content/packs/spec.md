@@ -8,7 +8,7 @@
 | SC-PACK-259 | covered (edit prefills — unchanged intent) |
 | SC-PACK-260 | modified (slot/pool chrome parity — polish) |
 | SC-PACK-263 | modified (reuse without used chrome — filled border only on slots) |
-| SC-PACK-276 | pending (difficulty dots + word-only badge, centered) |
+| SC-PACK-276 | covered (difficulty dots left + word-only badge center) |
 | SC-PACK-277 | pending (compose empty/filled slots + pool — half size + filled border) |
 
 Related game peek chrome: `game/board` SC-BOARD-50…54. List playing-card tiles SC-PACK-222…224 remain out of compose pool. **Apply scope:** client compose chrome only — task `difficulty` `1|2|3` and slot `answerCardId` persistence via existing `/api/content/*` remain unchanged (no new HTTP/DB fields, no server route/schema edits). Interactive dots (SC-PACK-276) only change the compose **control**; the persisted value stays `1|2|3` as today. Peek portrait unlabeled AR applies to compose dialog + game peek; **not** to `PackTaskTile` list rows (SC-PACK-238 carve-out). Game-only question ×1.5 (SC-BOARD-54) does **not** apply to compose `q-input`.
@@ -56,7 +56,7 @@ On task-set editing surfaces (creator/staff task-set editor and post-publish add
 
 - **GIVEN** a verified editor has the task compose dialog open with available answer cards
 - **WHEN** the dialog is shown
-- **THEN** the question and difficulty header (dots + word-only badge, centered) appear above a centered ordered slot row
+- **THEN** the question and difficulty header appear above a centered ordered slot row (dots at the left edge; word-only badge horizontally centered)
 - **AND** empty slots use dashed chrome without placeholder slot-label text
 - **AND** below the slots the answer choices appear as mini-cards comparable to the game peek answer pool (pack task-set portrait aspect ratio at the half-size band)
 - **AND** the dialog MUST NOT use a catalog playing-card tile grid as the answer picker
@@ -77,7 +77,7 @@ On task compose surfaces (task compose dialog on task-set editor and add-task-se
 
 ### Requirement: Task compose difficulty uses interactive dots and word badge
 
-In the task compose dialog, difficulty MUST be chosen with three dots matching the pack task-set difficulty indicator (resting: filled count = current difficulty; **all** dots use that level’s single color — green / amber / red for 1 / 2 / 3 — same as `PackTaskSetCardTile`). Hovering (or equivalent pointer preview) over the N-th dot MUST preview filled dots `1…N` **all** in that level’s color N; a **click/tap** on the N-th dot MUST set difficulty to N (works without hover on touch). Beside the dots the dialog MUST show a status badge with **only** the difficulty **word** for the current value (лёгкая / средняя / сложная) — **without** a `Сложность:` prefix and not a digit-only or `1 — …` select label. The dots+badge group SHOULD be horizontally centered like the game peek header. The previous primary difficulty dropdown MAY be removed; difficulty MUST remain constrained to 1|2|3.
+In the task compose dialog, difficulty MUST be chosen with three dots matching the pack task-set difficulty indicator (resting: filled count = current difficulty; **all** dots use that level’s single color — green / amber / red for 1 / 2 / 3 — same as `PackTaskSetCardTile`). Hovering (or equivalent pointer preview) over the N-th dot MUST preview filled dots `1…N` **all** in that level’s color N; a **click/tap** on the N-th dot MUST set difficulty to N (works without hover on touch). The dialog MUST show a status badge with **only** the difficulty **word** for the current value (лёгкая / средняя / сложная) — **without** a `Сложность:` prefix and not a digit-only or `1 — …` select label. Layout MUST match game peek: **dots at the left edge**, **badge horizontally centered** (not one centered dots+badge cluster). The previous primary difficulty dropdown MAY be removed; difficulty MUST remain constrained to 1|2|3.
 
 #### Scenario [SC-PACK-276]: Compose difficulty dots preview on hover and commit on click
 
@@ -87,6 +87,8 @@ In the task compose dialog, difficulty MUST be chosen with three dots matching t
 - **WHEN** the editor clicks the second difficulty dot
 - **THEN** the task difficulty becomes 2
 - **AND** the badge shows the medium difficulty word only (no `Сложность:` prefix)
+- **AND** the badge is horizontally centered in the dialog (not clustered with the dots)
+- **AND** the resting dots sit at the left edge of the dialog content
 - **AND** the resting dots show two filled amber dots and one empty outline
 
 ### Requirement: Compose slots and pool share peek mini-card chrome

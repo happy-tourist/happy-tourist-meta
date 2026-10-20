@@ -42,7 +42,7 @@
 | SC-BOARD-42 | covered (server mocha + client — flipped digit public) |
 | SC-BOARD-43 | covered (server mocha — correct ordered slots) |
 | SC-BOARD-44 | covered (server mocha — wrong keeps bind) |
-| SC-BOARD-45 | covered (server mocha — flipped free peek at 0) |
+| SC-BOARD-45 | covered (server mocha — flipped peek rejected at 0) |
 | SC-BOARD-46 | covered (client UX — shared modal) |
 | SC-BOARD-47 | covered (server mocha — leave mid-peek keeps bind) |
 | SC-BOARD-48 | covered (server mocha — cycle deck) |
@@ -199,17 +199,17 @@ While a shared peek modal is open, the peeker MUST be allowed to place the same 
 - **AND** the chip is not shown in a distinct already-used disabled or highlighted consumed state solely because it appears in a slot
 - **AND** other clients still see the placements in realtime and cannot edit slots
 
-### Requirement: Fresh peek spends peeks; flipped peek is free
+### Requirement: Every peek open spends peeks (fresh and flipped)
 
-Opening a peek on an **unbound** still-present task cell MUST require peeks remaining (or solo infinite peeks) and MUST consume one peek in finite mode for that first open. Opening a peek on an **already bound (flipped)** still-present task cell MUST be allowed even when peeks are **0** in finite mode, MUST NOT consume a peek, and still requires own turn and an own unfinished free piece on that cell. Peek on removed holes or trapped pieces remains rejected per existing rules.
+Opening a peek on a still-present task cell (whether **unbound** or **already bound / flipped**) MUST require peeks remaining or solo infinite peeks. In finite peeks mode each successful open MUST consume **one** peek. With peeks **0** (and not infinite), the server MUST reject the open for both unbound and flipped cells. Solo infinite peeks MUST allow opens without decrementing peeks. Peek on removed holes or trapped pieces remains rejected per existing rules. Bind-on-first-open and KEEP-on-incorrect rules are unchanged.
 
-#### Scenario [SC-BOARD-45]: Flipped peek allowed at zero peeks
+#### Scenario [SC-BOARD-45]: Flipped peek rejected at zero peeks
 
 - **GIVEN** it is a seated player’s turn with peeks 0 in finite mode and an own unfinished free piece on flipped still-present cell C
-- **WHEN** that player opens a peek on C
-- **THEN** the server accepts the open
+- **WHEN** that player attempts to open a peek on C
+- **THEN** the server rejects the peek
 - **AND** peeks remain 0
-- **AND** the same bound task is shown
+- **AND** the bound task on C is unchanged
 
 #### Scenario [SC-BOARD-10]: Fresh peek rejected without budget
 

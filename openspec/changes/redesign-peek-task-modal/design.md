@@ -1,17 +1,18 @@
 ## Context
 
-See `proposal.md` — Why. Shared peek UI lives inline on the game page; slot chrome is shared with task compose via global peek-slot styles. Pack task-set cards already define difficulty dots (6px, gap 2, green/amber/red) and `--pack-card-*` surface tokens / action height 30px. Prepare-mock extract (light+dark mock) plus explore decisions override mock’s 4 orange dots, landscape labeled slots, and neutral outline CTA. First apply shipped the redesign; this revision adds a polish pass (half-size tiles, centered word-only badge, larger game question, primary filled-slot border).
+See `proposal.md` — Why. Shared peek UI lives inline on the game page; slot chrome is shared with task compose via global peek-slot styles. Pack task-set cards already define difficulty dots (6px, gap 2, green/amber/red) and `--pack-card-*` surface tokens / action height 30px. First apply + polish shipped chrome; this revision adds **header layout** (dots left / badge center) and **peeks: every open consumes** (incl. flipped).
 
-**Пакет:** client only. Server peek contract unchanged — UI continues to bind to existing synced `peekDifficulty` / `peekQuestion` / `peekPlacements` / `answerCards` and messages `peek` / `peekPlace` / `peekSubmit` (no new fields). Compose difficulty stays `1|2|3` on the existing content task model.
+**Пакеты:** client + server (peeks budget on `peek` open + auto-end helpers). Compose difficulty stays `1|2|3` on the existing content task model.
 
-### Frozen server contract (as-is — do not extend in this change)
+### Server contract
 
 - **Room:** `tourist` (`MyRoom`) — peek session lifecycle already owned by server.
-- **Synced schema (bind UI only):** `peekActive`, `peekSessionId`, `peekPieceId`, `peekRow`/`peekCol`, `peekTaskId`, `peekQuestion`, `peekDifficulty` (`uint8`, 1|2|3 when open), `peekPlacements` (answerCardId or `""`), `answerCards`, `flippedCells`.
-- **Messages:** `peek` (open), `peekPlace` (slot fill/clear), `peekSubmit` (ordered check) — existing payloads; no new message names or fields.
-- **Resolve (unchanged):** correct ordered slots → `+difficulty` private steps + remove tile; wrong / force-incorrect / leave mid-peek → keep bind + same task (SC-BOARD-43/44/47 baseline).
-- **HTTP / DB (compose):** existing `/api/content/*` task `difficulty` `1|2|3` + slot `answerCardId` persist; no new columns/routes.
-- **Auth / roles:** no new gates; game peek uses seated turn rules already enforced; compose stays verified editor / staff as today.
+- **Synced schema (bind UI only):** `peekActive`, `peekSessionId`, `peekPieceId`, `peekRow`/`peekCol`, `peekTaskId`, `peekQuestion`, `peekDifficulty` (`uint8`, 1|2|3 when open), `peekPlacements` (answerCardId or `""`), `answerCards`, `flippedCells` — **no new fields**.
+- **Messages:** `peek` / `peekPlace` / `peekSubmit` — existing payloads; **behavior change:** successful `peek` open in finite mode **always** decrements peeks by 1 (fresh **and** flipped); peeks 0 (and not `infinite`) → reject open.
+- **Resolve (unchanged):** correct → `+difficulty` steps + remove tile; wrong / force-incorrect / leave mid-peek → KEEP bind (SC-BOARD-43/44/47).
+- **Solo:** `infinite` peeks∞ — opens still allowed without decrement (steps remain finite).
+- **HTTP / DB (compose):** unchanged.
+- **Auth / roles:** unchanged.
 
 ## Goals / Non-Goals
 
@@ -20,11 +21,13 @@ See `proposal.md` — Why. Shared peek UI lives inline on the game page; slot ch
 - Peek + compose visual parity with pack task-set language (dots, soft badge, card AR, action height).
 - Measurable Visual Spec for verify-mock.
 - Keep SC-BOARD-49 / SC-PACK-263 reuse semantics (pool never gets «used» chrome).
-- Polish: compact tiles (−50% width), centered status, word-only badge, filled-slot primary border, larger game-only question.
+- Polish: compact tiles (−50% width), word-only badge, filled-slot primary border, larger game-only question.
+- Header: dots left-edge; badge centered (peek + compose).
+- Peeks: every successful open consumes 1 peek in finite mode; peeks 0 blocks fresh and flipped.
 
 **Non-Goals:**
 
-- Server/schema/message changes (including any reimplementation of SC-BOARD-43/44/47 resolve rules restated in the delta for context).
+- New schema fields / new message names; changing Correct/Incorrect KEEP vs remove rules.
 - Redesigning catalog playing-card list tiles.
 - Scaling compose question `q-input` font with the game peek question.
 - Global Quasar palette rewrite.
@@ -36,13 +39,14 @@ See `proposal.md` — Why. Shared peek UI lives inline on the game page; slot ch
 3. **Empty slots** — dashed border only, no label text; AR = pack task-set **156∶206**; reuse existing dashed rgba borders (light/dark).
 4. **Filled slots & pool** — same mini-card surface (`--pack-card-*` bg/shadow/fg, radius 12; AR 156∶206 scaled; pool max **4 cols × 4 visible rows**, `overflow-y: auto`). **Filled slot only:** thin solid **primary** border `#1976d2` (same 1px weight as resting `answer.border` on pool cards) — distinguishes occupied slots from empty dashed and from pool cards. Pool cards keep neutral `answer.border` even when that answer id is placed in a slot (no used-chrome).
 5. **Tile size (polish)** — width **50%** of the first-shipped peek band (`max-width` ~86 → **~43px**); height from AR 156∶206. Shared by peek slots, compose slots, and pool mini-cards.
-6. **Header alignment (polish)** — dots + badge row **centered** horizontally (not left-aligned).
+6. **Header layout** — **dots** absolutely / flex-anchored at the **top-left** of the modal content (left edge); **word badge** horizontally **centered** in the modal (not grouped with dots as a single centered cluster). Compose dialog uses the same layout for its difficulty row.
 7. **Question type (polish)** — game peek question font-size **×1.5** vs first ship (~16 → **~24px**); weight/line-height stay in family. Compose question control: **unchanged** Quasar dense defaults.
 8. **Submit** — Quasar **primary** `#1976d2`, full width; height `--pack-card-action-h` (30) band 28–36px.
 9. **Parity** — compose dialog slot/pool/dots+badge/filled-border share peek tokens; carve-out so `PackTaskTile` list slots are not forced into unlabeled portrait AR.
 10. **Reuse** — pool cards never get “used” chrome when placed in slots (SC-BOARD-49 / SC-PACK-263).
+11. **Peeks spend on every open** — In finite peeks mode, **each** successful `peek` open (unbound **or** already flipped) **MUST** decrement peeks by 1. With peeks **0** (and not solo `infinite`), the server MUST reject `peek` on both unbound and flipped cells. Incorrect resolve still KEEP bind; re-open requires peeks ≥ 1 and spends again. Solo `infinite`: no decrement / no reject for budget. Update auto-end / legal-peek helpers so flipped-at-zero is **not** treated as an available action (SC-MOVE-95). Client eye affordance MUST NOT offer open when peeks=0 on flipped cells (mirror server).
 
-**Alternatives rejected:** mock’s 4 orange dots; landscape slots with «СЛОТ N»; neutral outline CTA; keeping flat chips for pool; badge with `Сложность:` prefix; thick/2px filled border; blue border on pool cards; −50px absolute width (~36px).
+**Alternatives rejected:** mock’s 4 orange dots; landscape slots with «СЛОТ N»; neutral outline CTA; keeping flat chips for pool; badge with `Сложность:` prefix; thick/2px filled border; blue border on pool cards; −50px absolute width (~36px); centered dots+badge group; free flipped peek at peeks 0; flipped open without consume.
 
 ## Risks / Trade-offs
 
@@ -50,22 +54,21 @@ See `proposal.md` — Why. Shared peek UI lives inline on the game page; slot ch
 - [Tall mini-cards in 4-col grid] → modal height grows → Mitigation: scroll only the pool region; constrain cell width from content width.
 - [Compose difficulty UX change vs q-select] → Mitigation: Vitest SC-PACK-276; keyboard: click/tap still works without hover.
 - [SC-PACK-260 carve-out text said “chips”] → Mitigation: delta specs redefine pool as mini-cards; list tiles unchanged via **SC-PACK-238** carve-out (compose stays peek-aligned via SC-PACK-237).
+- [Peeks spend on flipped] → fewer free re-reads → Mitigation: intentional product rule; mocha SC-BOARD-45/10 + SC-MOVE-94/95; client affordance mirrors reject.
 
 ## Migration Plan
 
-Client-only UI deploy. No data migration. Rollback = revert client CSS/components.
+Client + server deploy together for peeks rule. No data migration. Rollback = revert client CSS + server peek budget branch.
 
 ## Open Questions
 
-_(none blocking — polish resolved in explore)_
+_(none blocking — explore closed)_
 
-## Implementation touchpoints (client)
+## Implementation touchpoints
 
-- Game peek dialog markup/styles (difficulty header, slots, pool grid, submit, question type).
-- Task compose dialog (dots difficulty control, slots, pool, badge, filled border).
-- Shared CSS: peek-slot empty/filled + answer mini-card tokens (prefer `--pack-card-*`); filled primary border; half-size max-width.
-- i18n: difficulty word badge without «Сложность:» prefix for game + compose.
-- Vitest: board peek + task compose coverage for SC-IDs / polish assertions.
+- **Client:** Game peek header layout; compose difficulty row layout; eye/peek gating when peeks=0 on flipped; Vitest header + affordance.
+- **Server:** `MyRoom` peek open (consume always in finite; reject at 0 for flipped); auto-end / `hasLegalPeek` helpers; mocha SC-BOARD-45/10, SC-MOVE-94/95.
+- Shared CSS / i18n as in prior polish (already shipped).
 
 Checklist: `tasks.md`.
 
@@ -73,7 +76,7 @@ Checklist: `tasks.md`.
 
 **Source of truth for FE:** this Visual Spec + pack-card / PackTaskSetCardTile canon below.  
 **Mock frames:** prepare-mock extract (session); filenames like `Gemini_Generated_Image_3xs1nh3xs1nh3xs1-*.jpg` — **not committed** under this change dir; do not block apply on missing image files.  
-**Human overrides** (MUST over literal mock pixels): 3 pack dots (not 4 orange); empty slots unlabeled + AR pack card; pool AR pack card; CTA primary + pack action height; compose interactive dots; **polish:** half-size tiles, centered word-only badge, game question ×1.5, filled-slot primary thin border.
+**Human overrides** (MUST over literal mock pixels): 3 pack dots (not 4 orange); empty slots unlabeled + AR pack card; pool AR pack card; CTA primary + pack action height; compose interactive dots; **polish:** half-size tiles, word-only badge, game question ×1.5, filled-slot primary thin border; **header:** dots left-edge, badge centered (not one centered group).
 
 **Compose parity scope:** slot / pool / dots+badge / filled-border chrome shares these tokens. Compose-only chrome (dialog title, question `q-input`, slot +/−, Cancel/Save) stays Quasar dense defaults — question font-size polish is **game peek only**.
 
@@ -81,7 +84,7 @@ Checklist: `tasks.md`.
 
 ### Структура (сверху вниз)
 
-1. Header: dots (3) + word badge (one row, **centered** as a group)
+1. Header row: **dots** top-left at content left edge; **word badge** centered in modal width (same row / overlay layout OK)
 2. Question (center) — game peek larger type
 3. Slots row (centered)
 4. Answer pool grid (≤4×4 + scroll)
@@ -91,7 +94,8 @@ Checklist: `tasks.md`.
 
 | Элемент | Текст | Align |
 |---------|-------|-------|
-| Badge | `лёгкая\|средняя\|сложная` only (**MUST** sentence case; **no** `Сложность:`); UPPER **MAY** | center with dots |
+| Badge | `лёгкая\|средняя\|сложная` only (**MUST** sentence case; **no** `Сложность:`); UPPER **MAY** | **center** (modal) |
+| Dots | _(none)_ | **left** edge |
 | Question | task question | center |
 | Empty slot | _(none)_ | — |
 | Pool / filled | answer content (primary line); description secondary if present | center |
@@ -113,9 +117,10 @@ Checklist: `tasks.md`.
 | Элемент | W | H / min-H | Pad / gap | Notes | Confidence |
 |---------|---|-----------|-----------|-------|------------|
 | modal | 360–400 (≤92vw) | auto | **16–20 all sides** | radius 16–20 | med |
-| header row (dots+badge) | hug | 18–22 | gap dots→badge **6–8** | **centered** in modal | high (polish) |
-| dots | ≈22 lead | 6×6 | gap **2** between dots | pack canon `--pack-ts-dot-*` | high |
-| badge | hug | 18–22 | pad **2–6 × 8–10** | pill radius 999 | med |
+| header row | full width | 18–22 | — | dots left; badge centered independently | high |
+| dots cluster | hug | 6×6 | — | top-left content edge | high |
+| dots | ≈22 lead | 6×6 | gap **2** between dots | pack canon; top-left | high |
+| badge | hug | 18–22 | pad **2–6 × 8–10** | pill radius 999; centered | high |
 | empty/filled/pool tile | AR **156∶206**; **max-width ~43** (50% of prior ~86) | derived | filled pad **4–6** | radius **12** | high (polish) |
 | pool gap | — | — | **8–10** | max 4 cols | approx |
 | pool viewport | 100% | ≤4 rows visible | — | overflow-y auto | decision |

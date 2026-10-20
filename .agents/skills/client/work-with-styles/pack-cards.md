@@ -195,10 +195,13 @@ hover border+shadow only — **no** scale / **no** `--q-secondary`). Gate
 
 **Answer slots (SC-PACK-237/238 + redesign-peek-task-modal):** Game peek and
 task **compose** use `.peek-slot` / `.peek-slot-like` **plus** `--portrait`
-(unlabeled empty dashed; filled mini-card; AR 156∶206). `PackTaskTile` list
-slots keep the compact **labeled** base (~72×40) — **no** `--portrait`
-(SC-PACK-238 carve-out). Do **not** reintroduce dense `q-chip` as primary
-slot chrome. Do **not** reintroduce list `q-chip` for answer/task **bodies**.
+(unlabeled empty dashed; filled mini-card; AR 156∶206). Peeker empty slots
+keep `--interactive` (cursor pointer drop-target affordance; click still
+no-ops until filled). `PackTaskTile` list slots keep the compact **labeled**
+base (~72×40) — **no** `--portrait` (SC-PACK-238 carve-out). Do **not**
+reintroduce dense `q-chip` as primary slot chrome. Do **not** reintroduce
+list `q-chip` for answer/task **bodies**. Peek/compose dialog cards use
+`--pack-card-bg` / `fg` on the card root (not raw Quasar dark surface).
 
 **Task compose / game peek answer pool (SC-PACK-260 / 263 / 277; SC-BOARD-49/51/52):**
 pool = `.peek-answer-pool` grid of `.peek-answer-mini` cards (`--pack-card-*`,
@@ -209,8 +212,9 @@ AR 156∶206, half-size `--peek-tile-max-w` ~43, ≤4×4 + `overflow-y: auto`;
 Compose slots use `.peek-slot-like--portrait`; center the row
 (`justify-center`). Pool cards stay reusable across slots with **no** used /
 disabled chrome (SC-PACK-263; Game peek SC-BOARD-49). Difficulty header =
-3 pack dots + **word-only** badge (`content.difficultyWord.*`, centered;
-compose interactive SC-PACK-276; game read-only SC-BOARD-50). Game peek
+3 pack dots (**left edge**) + **word-only** badge (`content.difficultyWord.*`,
+horizontally **centered** — not one centered cluster; compose interactive
+SC-PACK-276; game read-only SC-BOARD-50). Game peek
 question ~24px (SC-BOARD-54) — compose `q-input` unchanged. List grids keep
 playing-card tiles. Contracts: meta `work-with-stores/content.md`;
 SC-PACK-222…227 / 237/238 / 256…263 / 276/277 / 239…248; SC-BOARD-46/49/50…54.

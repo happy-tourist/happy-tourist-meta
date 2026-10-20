@@ -4,13 +4,15 @@
 |-------|-----------------|
 | SC-BOARD-46 | modified (modal chrome — client) |
 | SC-BOARD-49 | modified (pool tiles reuse — client) |
-| SC-BOARD-50 | pending (client — difficulty header centered word-only) |
-| SC-BOARD-51 | pending (client — empty/filled slots half size + primary filled border) |
-| SC-BOARD-52 | pending (client — pool grid 4×4 half-size) |
-| SC-BOARD-53 | covered (submit primary full-width — first apply) |
-| SC-BOARD-54 | pending (client — game question ×1.5 type) |
+| SC-BOARD-10 | modified (server — reject any peek at peeks 0) |
+| SC-BOARD-45 | modified (server — flipped open also consumes peeks) |
+| SC-BOARD-50 | covered (client — dots left, word-only badge center) |
+| SC-BOARD-51 | covered (client — empty/filled half size + primary border) |
+| SC-BOARD-52 | covered (client — pool 4×4 half-size) |
+| SC-BOARD-53 | covered (submit primary full-width) |
+| SC-BOARD-54 | covered (game question ×1.5) |
 
-Related unchanged server peek rules: SC-BOARD-41…45, 47–48 (deck bind, flipped digit, correct/wrong resolve, leave mid-peek, cycle). **Apply scope for this change:** client chrome only — do **not** change room messages (`peek` / `peekPlace` / `peekSubmit`), schema (`peekDifficulty` / `peekPlacements` / `answerCards` / …), or resolve algorithms in `happy-tourist-server`. Scenarios SC-BOARD-43/44/47 appear under the MODIFIED parent requirement only so chrome (SC-BOARD-50…54 / 46/49) stays attached to the same modal contract — their **server** THEN clauses are baseline restatement, not new BE work (no server tests/tasks for this change). Compose parity: `content/packs` SC-PACK-260/263/276+.
+Related: resolve KEEP SC-BOARD-43/44/47 baseline unchanged. **Apply scope:** client chrome (header) + **server peeks spend** on `peek` open (no new message fields). Also `game/move` SC-MOVE-94/95. Compose: `content/packs`.
 
 ## MODIFIED Requirements
 
@@ -50,6 +52,25 @@ While it is a seated client’s own turn and a peek is allowed for an own unfini
 - **THEN** C remains present with the same bound task
 - **AND** a later peek on C shows the same question
 
+### Requirement: Every peek open spends peeks (fresh and flipped)
+
+Opening a peek on a still-present task cell (whether **unbound** or **already bound / flipped**) MUST require peeks remaining or solo infinite peeks. In finite peeks mode each successful open MUST consume **one** peek. With peeks **0** (and not infinite), the server MUST reject the open for both unbound and flipped cells. Solo infinite peeks MUST allow opens without decrementing peeks. Peek on removed holes or trapped pieces remains rejected per existing rules. Bind-on-first-open and KEEP-on-incorrect rules are unchanged.
+
+#### Scenario [SC-BOARD-45]: Flipped peek rejected at zero peeks
+
+- **GIVEN** it is a seated player’s turn with peeks 0 in finite mode and an own unfinished free piece on flipped still-present cell C
+- **WHEN** that player attempts to open a peek on C
+- **THEN** the server rejects the peek
+- **AND** peeks remain 0
+- **AND** the bound task on C is unchanged
+
+#### Scenario [SC-BOARD-10]: Fresh peek rejected without budget
+
+- **GIVEN** it is a seated player’s turn with peeks 0 in finite mode and an own unfinished free piece on an **unbound** still-present task cell
+- **WHEN** that player attempts to open a peek
+- **THEN** the server rejects the peek
+- **AND** no task is bound
+
 ### Requirement: Peek answer chips stay reusable without used-state chrome
 
 While a shared peek modal is open, the peeker MUST be allowed to place the same pack answer card into any number of empty answer slots (including every slot). After a card is placed in one slot, its pool mini-card MUST remain selectable for other empty slots. The client MUST NOT disable that pool card solely because it is already used in a slot, and MUST NOT present a distinct «already used» highlight or consumed-vs-resting state that marks the card as spent (including MUST NOT apply the filled-slot primary border to the pool card). Clearing a filled slot (peeker) remains allowed. Spectators still MUST NOT edit slots. Correct submit still requires the slot order to match the bound task’s defined slot order exactly (including when that definition repeats the same answer card).
@@ -67,15 +88,16 @@ While a shared peek modal is open, the peeker MUST be allowed to place the same 
 
 ### Requirement: Peek modal difficulty header
 
-While the shared peek modal is open, the client MUST show a **centered** header with exactly **three** difficulty dots matching the pack task-set difficulty indicator pattern (filled count equals the bound task’s difficulty 1|2|3; **resting** color for all three dots is the single level color for that difficulty — green / amber / red for 1 / 2 / 3 in light and dark, same as `PackTaskSetCardTile` — not a per-index rainbow) and a status badge whose copy is **only** the difficulty **word** (лёгкая / средняя / сложная), **without** a `Сложность:` prefix and not the bare digit alone. In the game peek modal the dots MUST be read-only (no hover preview, no click to change difficulty).
+While the shared peek modal is open, the client MUST show exactly **three** difficulty dots matching the pack task-set difficulty indicator pattern (filled count equals the bound task’s difficulty 1|2|3; **resting** color for all three dots is the single level color for that difficulty — green / amber / red for 1 / 2 / 3 in light and dark, same as `PackTaskSetCardTile` — not a per-index rainbow) and a status badge whose copy is **only** the difficulty **word** (лёгкая / средняя / сложная), **without** a `Сложность:` prefix and not the bare digit alone. The dots MUST sit at the **top-left** of the modal content (left edge). The word badge MUST be **horizontally centered** in the modal (not grouped with the dots as a single centered cluster). In the game peek modal the dots MUST be read-only (no hover preview, no click to change difficulty).
 
-#### Scenario [SC-BOARD-50]: Peek header shows three difficulty dots and word-only badge centered
+#### Scenario [SC-BOARD-50]: Peek header shows left dots and centered word-only badge
 
 - **GIVEN** a shared peek is open for a bound task with difficulty 2
 - **WHEN** any client views the peek modal
 - **THEN** the header shows three dots with the first two filled in the amber (medium) difficulty color and the third empty outline in that color family
+- **AND** those dots are aligned to the left edge of the modal content
 - **AND** the badge text is the medium difficulty word only (not `Сложность:` and not only the digit `2`)
-- **AND** the dots+badge group is horizontally centered in the modal
+- **AND** the badge is horizontally centered in the modal
 - **AND** interacting with the dots does not change the task difficulty
 
 ### Requirement: Peek slots empty dashed and filled as answer mini-cards

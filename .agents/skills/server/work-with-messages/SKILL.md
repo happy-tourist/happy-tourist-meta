@@ -61,9 +61,9 @@ Coordinate with: `work-with-rooms` (lifecycle / registration), `work-with-schema
 
 **`returnFromFinish`:** current turn + steps≥1 + `finishPlace===0` + own finished pieceId + legal ring cell + **pipeline idle** → −1 step; unfinish onto cell → paced pipeline.
 
-**`peek`:** current turn + peek budget (or solo peeks∞ / free flipped re-peek) + **pipeline idle**; **no** one-peek/turn gate; piece on present task cell and **not trapped**; bind deck task on first open; open shared peek session. Silent reject otherwise.
+**`peek`:** current turn + peek budget (or solo peeks∞) + **pipeline idle**; **no** one-peek/turn gate; piece on present task cell and **not trapped**; bind deck task on first open; **every** successful open (fresh **or** flipped) spends 1 peek in finite mode; peeks=0 rejects both. Silent reject otherwise.
 
-**`peekPlace` / `peekSubmit`:** peeker only; place updates slot placements; submit compares ordered answer card ids to task slots — correct → +difficulty steps + remove tile; wrong/leave/timeout KEEP bind. Fresh peek spends peeks; flipped free at peeks=0.
+**`peekPlace` / `peekSubmit`:** peeker only; place updates slot placements; submit compares ordered answer card ids to task slots — correct → +difficulty steps + remove tile; wrong/leave/timeout KEEP bind. Open spend is on `peek` (not place/submit); flipped is not free.
 
 **`endTurn`:** multi (≥2 eligible) + current + not finished/expired + **pipeline idle**; force-close open peek as incorrect KEEP if any; `advanceTurn` (next grant: multi +1/+1; solo become-current +1 step only). Solo peeks∞ → reject. While pipeline active → silent reject (board-lock parity).
 
@@ -109,8 +109,8 @@ this.onMessage('returnFromFinish', (client, message) => {
 });
 
 this.onMessage('peek', (client, message) => {
-  // 1. playing + current + peek budget (or solo peeks∞ / free flipped); no one-peek gate; not trapped
-  // 2. piece on present *; open shared peek session (schema peekActive*)
+  // 1. playing + current + peek budget (or solo peeks∞); no one-peek gate; not trapped
+  // 2. piece on present *; spend 1 peek (finite) for fresh or flipped; open shared peek session
 });
 
 this.onMessage('peekPlace', (client, message) => {

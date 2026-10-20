@@ -1,27 +1,29 @@
 ## Why
 
-Модалка задания в игре (shared peek) визуально отстаёт от карточек наборов и макета: плоские chips, текст «Сложность: N», подписи в пустых слотах, CTA не в ритме pack-actions. Нужен редизайн light/dark с консистентностью точек сложности, status-badge, соотношения сторон слотов/ответов и паритетом compose-диалога задачи. После первого apply — polish: компактнее слоты/пул, статус по центру без префикса «Сложность», крупнее вопрос в игре, выделение заполненного слота.
+Модалка задания в игре (shared peek) визуально отстаёт от карточек наборов и макета: плоские chips, текст «Сложность: N», подписи в пустых слотах, CTA не в ритме pack-actions. Нужен редизайн light/dark с консистентностью точек сложности, status-badge, соотношения сторон слотов/ответов и паритетом compose-диалога задачи. После apply/polish — уточнение шапки (точки слева, статус по центру) и правило peeks: каждый open (включая повтор на flipped) тратит просмотр; при 0 — открыть нельзя.
 
 ## What Changes
 
 - Обновить chrome shared peek-модалки: шапка (3 точки сложности + badge со словом), пустые слоты без текста, заполненные как мини-карточки ответа, пул ответов с AR карточки набора, сетка до 4×4 со скроллом, full-width primary «Ответить».
 - Синхронно адаптировать peek-like compose задачи (слоты + пул); выбор сложности — интерактивные точки (hover-превью, клик фиксирует) + badge со словом сложности.
-- **Polish (post-apply):** ширина слотов/пула **−50%** относительно первой реализации (~86→~43px), высота по AR 156∶206; header dots+badge **по центру**; badge copy = только слово (`лёгкая`/`средняя`/`сложная`), без «Сложность:»; вопрос в **game peek** ×1.5 (~24px); заполненный слот — тонкая primary-рамка (`#1976d2`), пул без used-chrome. Compose: те же размеры/badge/рамка/центрирование; шрифт вопроса compose **не** трогать.
-- Сохранить peek-поведение (shared modal, reuse одной карты в нескольких слотах, spectator read-only, серверный контракт без изменений).
+- **Polish:** ширина слотов/пула **−50%** (~86→~43px), AR 156∶206; badge = только слово; вопрос в game peek ×1.5 (~24px); заполненный слот — тонкая primary-рамка; пул без used-chrome.
+- **Header layout:** dots — **слева сверху у левого края**; word badge — **по центру** модалки/диалога (не одна centered-группа). Compose — то же.
+- **Peeks budget (server + client UX):** каждый успешный `peek` open — и **fresh**, и **flipped** — в finite mode **MUST consume 1 peek**; при peeks **0** (и не solo ∞) open **MUST** быть rejected на любой клетке. Неверный ответ по-прежнему KEEP bind; повтор возможен только если peeks ≥ 1 (и снова −1). Solo `infinite` peeks — без лимита (как сегодня). Auto end-turn / legal-peek helpers больше не считают flipped peek «бесплатным действием при 0».
+- Shared modal, reuse одной карты в нескольких слотах, spectator read-only — без смены payload’ов сообщений.
 
 ## Scope
 
-- **Capability ID:** `game/board` (peek modal UX), `content/packs` (task compose peek-like parity + difficulty picker chrome).
-- **Пакеты:** client only (`happy-tourist.github.io`); server / room messages (`peek` / `peekPlace` / `peekSubmit`) / schema (`peekDifficulty`, `peekPlacements`, `answerCards`, …) / content HTTP difficulty persist — **без изменений** (frozen list in `design.md`). Delta `game/board` may restate SC-BOARD-43/44/47 as baseline under a MODIFIED parent; that is **not** BE scope — apply must not touch `happy-tourist-server` and must not add server tasks/tests.
-- **Поверхности:** Game (peek modal), content task compose (creator/staff / add-task-set dialog).
+- **Capability ID:** `game/board` (peek modal UX + peeks spend rules), `game/move` (multi-peek / flipped consume / auto-end vs peeks), `content/packs` (task compose chrome parity).
+- **Пакеты:** client (`happy-tourist.github.io`) **и** server (`happy-tourist-server`) для peeks-на-`peek` + auto-end helpers; schema/message **names/payloads** без новых полей; content HTTP difficulty persist — без изменений.
+- **Поверхности:** Game (peek modal + eye affordance gating), content task compose, server `MyRoom` peek/budget/auto-end.
 
 ## Out of scope
 
-- Серверная логика peek / шаги за difficulty / deck bind.
-- Playing-card list tiles (`PackAnswerCardTile` / task list grids) вне compose/peek.
-- Редизайн HUD peeks, доски, других game-диалогов (кроме согласованного CTA-ритма).
+- Смена resolve Correct/Incorrect (KEEP vs remove tile / +difficulty steps) — as-is.
+- Playing-card list tiles вне compose/peek.
+- Редизайн HUD peeks copy, доски, других game-диалогов (кроме CTA-ритма).
 - Увеличение шрифта вопроса в compose `q-input`.
-- Новые npm-зависимости и смена Quasar theme tokens глобально.
+- Новые npm-зависимости и глобальная смена Quasar theme tokens.
 
 ## Capabilities
 
@@ -31,18 +33,19 @@ _(нет)_
 
 ### Modified Capabilities
 
-- `game/board`: визуальные и UX-требования shared peek modal (header dots+badge, slot/pool chrome, grid/scroll, submit; polish: size/center/badge copy/question size/filled-slot border).
-- `content/packs`: task compose — тот же slot/pool chrome; difficulty через точки + word badge; обновление carve-out пула; **SC-PACK-237/238** — compose остаётся peek-aligned, `PackTaskTile` list — compact labeled carve-out; polish parity (size/center/badge/filled border; не question font).
+- `game/board`: peek modal chrome (header layout dots-left / badge-center; polish size/badge/question/filled border) + **MODIFIED** peeks spend (SC-BOARD-45/10 — каждый open тратит; 0 = reject).
+- `game/move`: **MODIFIED** multi-peek / flipped consume / auto-end (SC-MOVE-39/94/95 и related requirement text).
+- `content/packs`: compose parity (slot/pool/dots+badge layout; header dots-left / badge-center; SC-PACK-237/238 carve-out).
 
 ## Impact
 
-- Client UI: Game peek dialog, task compose dialog, shared slot/answer chrome, i18n difficulty word form.
-- OpenSpec: delta `game/board`, `content/packs`; Visual Spec в design (макет + overrides консистентности + polish).
-- Тесты: client Vitest peek / task compose (layout/chrome assertions where covered).
+- Client UI: Game peek dialog, compose dialog, shared chrome, i18n; eye/peek affordance must respect peeks=0 on flipped cells.
+- Server: `MyRoom` peek open consume + reject at 0 for flipped; auto-end / `hasLegalPeek` helpers aligned.
+- OpenSpec: delta `game/board`, `game/move`, `content/packs`; Visual Spec + design decisions.
+- Тесты: client Vitest (header layout); server mocha SC-BOARD-45/10, SC-MOVE-94/95 (и связанные).
 
 ## References
 
-- Макет light+dark: prepare-mock extract (сессия); filenames `Gemini_Generated_Image_3xs1nh3xs1nh3xs1-*.jpg` — **не** обязательны в change dir; FE-канон = `design.md` Visual Spec + pack tokens.
-- Канон точек/карточки набора: `PackTaskSetCardTile` / `--pack-card-*` / `--pack-ts-dot-*` (SC-PACK-229/239…248/255).
-- Существующие peek/compose: SC-BOARD-42…49, SC-PACK-237/238/258…263; list tile slots (`PackTaskTile`) — carve-out (delta **MODIFIED** SC-PACK-238), не целевой chrome.
-- Sibling: `happy-tourist.github.io/AGENTS.md`; meta skills `work-with-game-board` / `work-with-styles` (pack-cards).
+- Макет + Visual Spec overrides в `design.md`.
+- Канон точек/карточки: `PackTaskSetCardTile` / `--pack-card-*`.
+- Sibling AGENTS + skills `work-with-game-board`, `work-with-game` / messages (peek).

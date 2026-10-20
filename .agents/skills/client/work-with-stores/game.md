@@ -86,7 +86,10 @@ export const useGameStore = defineStore('game', {
       this.room.send('move', { pieceId, row, col });
       return true;
     },
-    sendPeek(pieceId) { /* playing + isMyTurn → room.send('peek', { pieceId }) */ },
+    sendPeek(pieceId) {
+      /* playing + isMyTurn → room.send('peek', { pieceId });
+         finite: every open spends 1 (fresh|flipped); peeks=0 reject — eye gate on GamePage */
+    },
     sendPeekPlace(slotIndex, answerCardId) { /* room.send('peekPlace', …) */ },
     sendPeekSubmit() { /* room.send('peekSubmit', {}) */ },
     sendEndTurn() {

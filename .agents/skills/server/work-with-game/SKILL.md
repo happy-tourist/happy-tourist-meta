@@ -100,9 +100,9 @@ Behavior:
 - `push` `{ pusherSide, targetSessionId, targetSide, row, col }`: own free pusher + free adj target → far-side dest; −1 step; relocate **target only**; land side-effects like move (paced pipeline on target). Reject trapped pusher/target, hole, occupied, bad geometry. Solo = multi.
 - `returnFromFinish` `{ pieceId, row, col }`: `finishPlace===0` + finished piece + legal center-ring cell → −1 step; unfinish onto cell → paced pipeline.
 - All-jail (all pieces trapped): free pieces; clear holding grilles; re-place on free starts via the same `pickMinDistanceFloorRandomStarts` rule as materialize (SC-PIECE-25/50); keep turn/steps/timer; private `allJailWarning` to that seat only.
-- `peek` `{ pieceId }` → shared peek session; reject if trapped; bind deck task on first open; flipped re-peek free. `peekPlace`/`peekSubmit` → peeker places chips / validates order; Correct +difficulty + remove tile; Incorrect KEEP.
+- `peek` `{ pieceId }` → shared peek session; reject if trapped; bind deck task on first open; every open (fresh **or** flipped) −1 peek in finite mode (peeks=0 rejects both; solo ∞ no decrement). `peekPlace`/`peekSubmit` → peeker places chips / validates order; Correct +difficulty + remove tile; Incorrect KEEP.
 - `endTurn` (no payload): multi only; open peek → force incorrect KEEP first; then `advanceTurn` (+1/+1 next).
-- Auto-end (multi): advance only if no legal move **and not** (peeks≥1 ∧ unfinished on live `*`) **and not** legal rescue/return/push (SC-MOVE-38/47/62/73).
+- Auto-end (multi): advance only if no legal move **and not** ((peeks≥1 ∨ solo ∞) ∧ unfinished on live `*`) **and not** legal rescue/return/push — flipped at peeks=0 does **not** block (SC-MOVE-38/47/62/73/95).
 - Solo step-loss: `steps===0` ∧ ¬hasLegalPeek on live `*` ∧ no legal rescue/return/push → `timeExpired` (SC-MOVE-48); distinct from timer (SC-MOVE-45).
 - Timeout + open peek → force incorrect KEEP then advance / solo timer `timeExpired` (SC-MOVE-42).
 - Consented/permanent leave with open peek → same force incorrect KEEP before seat delete.

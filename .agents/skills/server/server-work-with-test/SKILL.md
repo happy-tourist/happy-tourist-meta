@@ -160,7 +160,7 @@ Use these categories only when the SUT has relevant behavior:
   time-expired / no-steps reject; **successful `move` does not advance turn**;
   `peek`/`peekPlace`/`peekSubmit`/`endTurn`; private `budgets`; grant multi +1/+1 /
   solo become-current +1 step (already-current→solo no re-grant — SC-MOVE-40/50);
-  solo peeks∞ / finite steps; auto-end (keep turn when peeks∧live `*`); timeout force incorrect KEEP open peek; permanent leave
+  solo peeks∞ / finite steps; auto-end (keep turn when (peeks≥1 ∨ ∞) ∧ live `*` — flipped at peeks=0 does **not** keep, SC-MOVE-95); timeout force incorrect KEEP open peek; permanent leave
   advances; offline grace keeps turn for non-finished; deadline keeps ticking;
   multi 60s auto-pass; solo 300s → `timeExpired`; solo step-loss → `timeExpired`). Also SC-BOARD-07… (reward bag,
   Correct removes tile / Incorrect KEEP, holes **not landable**). Use `forcePlaying` (clears deadline) /
@@ -229,9 +229,9 @@ Verify move / turn / timer / budgets (SC-MOVE + SC-BOARD):
   full-seat finish (skip finished / time-expired)
 - Legal orthogonal/diagonal one-step: piece row/col update; illegal/out-of-turn/
   spectator/pre-playing/finished/time-expired/no-steps: unchanged
-- `peek` → shared session; `peekSubmit` Correct → +difficulty steps + `"r,c"` in
+- `peek` → shared session; every open (fresh **or** flipped) spends 1 peek in finite mode (SC-BOARD-45 / SC-MOVE-94); peeks=0 rejects both (incl. flipped); solo ∞ no decrement; `peekSubmit` Correct → +difficulty steps + `"r,c"` in
   `removedTaskKeys` (**not landable**); Incorrect KEEP tile + reward; multi peeks while peeks remain;
-  solo peeks∞ / finite steps; become-current into solo → +1 step; already-current→solo carries steps; step-loss without live `*` → `timeExpired`
+  auto-end advances when only flipped at peeks=0 (SC-MOVE-95); solo peeks∞ / finite steps; become-current into solo → +1 step; already-current→solo carries steps; step-loss without live `*` → `timeExpired`
 - Permanent leave of current advances turn; offline grace does not (non-finished);
   turnUntil keeps ticking; open peek → force incorrect KEEP on timeout/leave/endTurn
 - ≥2 eligible: `turnBudgetSeconds===60`; timeout → advance without move; solo:
