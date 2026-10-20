@@ -31,3 +31,11 @@
 - [x] 4.3 Vitest SC-PACK-222/225/224/282 (+ page stubs asserting old sizes) — verify: `npm test` по PackAnswerCardTile / related editor suites
 - [x] 4.4 Skills: `.agents/skills/client/work-with-styles/pack-cards.md` + content stores/pages — answer list **150/300** + vertical split → portrait pack-card + outline actions — verify: нет устаревшего «answer MUST 150×200/300×200» для list tile
 - [x] 4.5 `npm run lint` + `npm run typecheck` + `npm test` (answer + task tile suites) в `happy-tourist.github.io` — verify: все зелёные
+
+## 5. Client — answer 24px + tile Edit «Редактировать»
+
+- [x] 5.1 Перед работой: `design.md` Decisions 7/13/14/16 + Visual Spec; delta SC-PACK-222/224/282/283; текущий `PackAnswerCardTile.vue` + `PackTaskTile.vue` + i18n `content.edit`
+- [x] 5.2 `PackAnswerCardTile`: content `font-size` **24px** (вес 600; desc ≈0.68rem muted без изменений layout) — verify: нет content ≈0.78rem как эталон list content; light/dark
+- [x] 5.3 `PackTaskTile` + `PackAnswerCardTile`: Edit label → `$t('content.edit')` («Редактировать»), **оставить** `icon="edit"`; Delete labels без смены; compose dialog titles (`editTask`/`editCard`) не трогать — verify: Vitest SC-PACK-224/283; нет `editTask`/`editCard` на tile Edit btn
+- [x] 5.4 Skills notes pack-cards / content: answer content **24px** + tile Edit `content.edit` — verify: нет «answer content ≈0.78rem» / «editCard on list tile» как MUST
+- [x] 5.5 `npm run lint` + `npm run typecheck` + `npm test` (answer + task tile suites) в `happy-tourist.github.io` — verify: все зелёные

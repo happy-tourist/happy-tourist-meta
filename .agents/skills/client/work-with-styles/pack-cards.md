@@ -26,16 +26,21 @@ tile = **portrait** pack-card W **156** / min-H ≈**206**, radius 12,
 `--pack-card-*` (one size with/without description — **not** former dual
 **150×200** / **300×200** or horizontal content|description splitter); column
 body: with desc → content top + desc bottom; without → content centered;
-content ≈**0.78rem** / desc ≈**0.68rem** muted; Edit/Delete **outline + icon**
-(`edit` / `delete`; Delete MAY negative) when editable (SC-PACK-222/224/225/282).
-Task **portrait** pack-card family W **156–180** / min-H ≈**206**, radius 12,
-`--pack-card-*` surface; peek-like dots + `content.difficultyWord.*` badge;
-question **24px** (peek parity); filled `.peek-slot-like--portrait` only,
-**centered** row + ≈8–12px air above actions (no flex-grow void pinning slots);
-Edit/Delete as bottom full-width **outline + icon** (`edit` / `delete`; Delete
-MAY negative) when editable. Create/edit of answers and tasks is a
-**dialog** (SC-PACK-256…260 / 279/281) — not an always-visible inline form
-above the grid; when compose is allowed, expose an add control above the list.
+content **24px** / weight 600 (task question / peek parity — **not** task-set
+title ≈0.78rem) / desc ≈**0.68rem** muted; Edit/Delete **outline + icon**
+(`edit` / `delete`; Edit label **`content.edit`** «Редактировать» — **not**
+`editCard` on the list tile; Delete MAY negative) when editable
+(SC-PACK-222/224/225/282/283). Task **portrait** pack-card family W **156–180** /
+min-H ≈**206**, radius 12, `--pack-card-*` surface; peek-like dots +
+`content.difficultyWord.*` badge; question **24px** (peek parity); filled
+`.peek-slot-like--portrait` only, **centered** row + ≈8–12px air above actions
+(no flex-grow void pinning slots); Edit/Delete as bottom full-width
+**outline + icon** (`edit` / `delete`; Edit label **`content.edit`** — **not**
+`editTask` on the list tile; Delete MAY negative) when editable. Create/edit of
+answers and tasks is a **dialog** (SC-PACK-256…260 / 279/281) — not an
+always-visible inline form above the grid; when compose is allowed, expose an
+add control above the list. Compose dialog **titles** MAY keep `editTask` /
+`editCard`.
 
 **Catalog packs (SC-PACK-228 / 249…255):** `PackListCardTile.vue` resting size
 about **180×260** (width near 180; height MAY grow with four set rows, overflow
@@ -213,10 +218,11 @@ still no-ops until filled). `PackTaskTile` list slots show **filled only** as
 question **24px** / weight 600 (SC-BOARD-54 parity — **not** 13–15px);
 empty slots omitted; zero filled → omit slots row (no `content.slotEmpty`
 body placeholder). Edit/Delete = slim **outline + icon** (task-set action
-parity; **not** flat text-only). Do **not** reintroduce dense `q-chip` as
-primary slot chrome. Do **not** reintroduce list `q-chip` for answer/task
-**bodies**. Peek/compose dialog cards use `--pack-card-bg` / `fg` on the card
-root (not raw Quasar dark surface).
+parity; Edit = `content.edit`; **not** flat text-only / **not** `editTask` on
+tile). Answer list content likewise **24px** (SC-PACK-283 — **not** ≈0.78rem).
+Do **not** reintroduce dense `q-chip` as primary slot chrome. Do **not**
+reintroduce list `q-chip` for answer/task **bodies**. Peek/compose dialog cards
+use `--pack-card-bg` / `fg` on the card root (not raw Quasar dark surface).
 
 **Task compose / game peek answer pool (SC-PACK-260 / 263 / 277; SC-BOARD-49/51/52):**
 pool = `.peek-answer-pool` grid of `.peek-answer-mini` cards (`--pack-card-*`,
@@ -240,5 +246,5 @@ peekSubmit-like chrome (`--pack-card-action-h`); labels `content.saveTask` /
 question ~24px (SC-BOARD-54) + peek submit — unchanged by compose polish;
 compose `q-input` unchanged. List grids keep portrait pack-card tiles
 (`PackAnswerCardTile` / `PackTaskTile`). Contracts: meta
-`work-with-stores/content.md`; SC-PACK-222…227 / 237/238 / 256…263 / 276…282 /
+`work-with-stores/content.md`; SC-PACK-222…227 / 237/238 / 256…263 / 276…283 /
 239…248; SC-BOARD-46/49/50…54.
