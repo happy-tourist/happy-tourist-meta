@@ -197,11 +197,11 @@ UGC-наборы (**набор карточек** + задания): одна р
 | SC-PACK-219 | covered (`ContentPackEditorCsv`) |
 | SC-PACK-220 | covered (`PackTasksCsvControls`) |
 | SC-PACK-221 | covered (Import → file picker; framed controls) |
-| SC-PACK-222 | covered (`PackAnswerCardTile` vertical split) |
-| SC-PACK-223 | covered (`PackTaskTile` chips row) |
-| SC-PACK-224 | covered (bottom full-width text Edit/Delete) |
-| SC-PACK-225 | covered (150×200 / 300×200 answer sizes) |
-| SC-PACK-226 | covered (task 300×200) |
+| SC-PACK-222 | covered (answer list portrait pack-card ≈156×206; content top / desc bottom) |
+| SC-PACK-223 | covered (task list portrait; dots + word badge; filled mini-slots) |
+| SC-PACK-224 | covered (outline+icon Edit/Delete; Edit = short «Редактировать») |
+| SC-PACK-225 | covered (answer one size ≈156×206; supersedes 150/300) |
+| SC-PACK-226 | covered (task portrait W&lt;H; supersedes 300×200) |
 | SC-PACK-227 | covered (contrast tokens) |
 | SC-PACK-228 | covered (client vitest — catalog pack card 180×260 + set preview) |
 | SC-PACK-229 | covered (client vitest — redesigned task-set card; shared chrome tokens) |
@@ -214,7 +214,7 @@ UGC-наборы (**набор карточек** + задания): одна р
 | SC-PACK-257 | covered (`ContentPackAnswerCompose`) |
 | SC-PACK-258 | covered (`ContentPackTaskCompose`) |
 | SC-PACK-259 | covered (`ContentPackTaskCompose`) |
-| SC-PACK-260 | covered (client vitest — compose slot/pool mini-card parity) |
+| SC-PACK-260 | covered (client vitest — compose pool + width slack + Save chrome; no Cancel) |
 | SC-PACK-261 | covered (`ContentPackTaskCompose` + `ContentFollowUp4`) |
 | SC-PACK-262 | covered (`ContentPackTaskCompose`) |
 | SC-PACK-263 | covered (client vitest — reuse without used-chrome; filled border on slots) |
@@ -233,9 +233,15 @@ UGC-наборы (**набор карточек** + задания): одна р
 | SC-PACK-235 | covered (client vitest live view no CSV) |
 | SC-PACK-236 | covered (client vitest staff Edit CSV) |
 | SC-PACK-237 | covered (client vitest — compose slots match peek half-size + filled border) |
-| SC-PACK-238 | covered (client vitest — PackTaskTile carve-out; list not peek AR) |
-| SC-PACK-276 | covered (client vitest — difficulty dots left + word-only badge center) |
-| SC-PACK-277 | covered (client vitest — compose empty/filled + pool half size) |
+| SC-PACK-238 | covered (client vitest — list filled peek-like mini-cards; empty omitted) |
+| SC-PACK-276 | covered (client vitest — difficulty dots left + word-only badge; compose ≈ badge height) |
+| SC-PACK-277 | covered (client vitest — compose empty/filled + pool; list filled mini-cards) |
+| SC-PACK-278 | covered (client vitest — task tile 24px question; centered raised slots) |
+| SC-PACK-279 | covered (client vitest — compose width = 4 mini-cards + pad + ≈50px) |
+| SC-PACK-280 | covered (client vitest — compose dots ≈ badge height; peek dots unchanged) |
+| SC-PACK-281 | covered (client vitest — compose Save peekSubmit-like; Cancel omitted) |
+| SC-PACK-282 | covered (client vitest — answer tile content top / desc bottom or centered) |
+| SC-PACK-283 | covered (client vitest — answer content 24px; tile Edit = content.edit) |
 | SC-PACK-239 | covered (client vitest — stats rows + colored dots + pale dividers) |
 | SC-PACK-240 | covered (client vitest — short status badges) |
 | SC-PACK-241 | covered (client vitest — outline icon actions; short Снять/Вернуть; slim) |
@@ -1088,13 +1094,15 @@ After an answers cascade clears one or more slots, the client MUST highlight bot
 
 ### Requirement: Answer slots visible on every question list row
 
-Wherever the client lists tasks/questions for review or editing (staff moderation hub preview, add-task-set page question list, task-set editor list, live pack drill-in task list), each task row MUST show its answer slots. A filled slot MUST display the referenced answer card’s textual content (same resolution as when viewing a live pack / task-set page). An empty slot MUST show an empty affordance. A generic filled placeholder (e.g. «заполнен») MUST NOT be shown when the card content is available. For staff preview of an add-task-set (`task_set`) request, answer cards used for slot resolution MUST come from the pack’s **live** answers (revision for add-task-set does not store cards). Staff MUST be able to see slot bindings without opening a separate nested tasks-only page. A separate top-level «Ответы» list on the staff hub for `task_set` is not required when slots already show card text.
+Wherever the client lists tasks/questions for review or editing (staff moderation hub preview, add-task-set page question list, task-set editor list, live pack drill-in task list), each task row MUST show its **filled** answer slots. A filled slot MUST display the referenced answer card’s textual content (same resolution as when viewing a live pack / task-set page), and MUST show the answer card’s description as secondary text when present (same product sense as peek/compose filled slots; omit secondary when description is empty). Empty slots MUST NOT be rendered on the list tile. When a task has **no** filled slots, the list tile MUST omit the slots row entirely and MUST NOT show muted empty-slot placeholder copy (e.g. `content.slotEmpty`) in the tile body. A generic filled placeholder (e.g. «заполнен») MUST NOT be shown when the card content is available. For staff preview of an add-task-set (`task_set`) request, answer cards used for slot resolution MUST come from the pack’s **live** answers (revision for add-task-set does not store cards). Staff MUST be able to see slot bindings without opening a separate nested tasks-only page. A separate top-level «Ответы» list on the staff hub for `task_set` is not required when slots already show card text.
 
 #### Scenario [SC-PACK-127]: Staff hub and add-task-set lists show slots
 
 - **GIVEN** a moderation preview or add-task-set page with tasks that have slots
 - **WHEN** the questions list renders
-- **THEN** each task row shows its answer slots (filled and/or empty)
+- **THEN** each task row shows its filled answer slots
+- **AND** empty slots are not shown on the list tile
+- **AND** when a filled slot’s answer card has a non-empty description, that description appears as secondary text on the mini-card
 - **AND** the same rule applies on staff request hub and on the author add-task-set list
 
 #### Scenario [SC-PACK-134]: Staff task_set preview shows answer text in slots
@@ -1102,7 +1110,7 @@ Wherever the client lists tasks/questions for review or editing (staff moderatio
 - **GIVEN** an open add-task-set (`task_set`) moderation request whose tasks reference live answer cards by id
 - **AND** those live cards have non-empty content
 - **WHEN** staff opens the staff request hub preview
-- **THEN** each filled slot chip shows that card’s content text
+- **THEN** each filled slot shows that card’s content text
 - **AND** MUST NOT show only a generic «filled» / «заполнен» placeholder for those slots
 
 ### Requirement: Add-task-set author sees moderation status and thread
@@ -1693,56 +1701,65 @@ On surfaces that expose CSV import/export, Export and Import MUST appear togethe
 
 ### Requirement: Playing-card presentation for answer cards and tasks
 
-Wherever the client shows a **list** of pack **answer cards** or **tasks** (cards editor grid, task list grid, live pack/tasks view, staff moderation views), each item MUST be rendered as a rounded playing-card tile in a wrapping row. An answer card tile MUST use a **vertical** splitter: content on one side and description on the other when description is present; when description is empty the tile MUST be **150×200** without an empty description half; when description is present the tile MUST be **300×200**. A task tile MUST be **300×200** with a **vertical** splitter between question and slots; filled slot answers MUST appear **side by side** as filled slot chips (not a vertical stack of lines); task difficulty MUST appear at the **top-left**. Content/question/slot type MUST be roughly twice the previous body size so tiles remain readable at these widths. Tile background and foreground MUST remain readable in both light and dark themes. On surfaces where the item is editable, Edit and Delete MUST appear as **full-width text buttons stacked at the bottom** of the tile (not icon buttons in a corner). Changing content MUST be available through Edit, not by treating a body click as edit. Overflow text MUST scroll inside its half rather than unbounded grow of the row.
+Wherever the client shows a **list** of pack **answer cards** or **tasks** (cards editor grid, task list grid, live pack/tasks view, staff moderation views), each item MUST be rendered as a rounded tile in a wrapping row. An **answer** card list tile MUST use **portrait** proportions and resting surface chrome in the same product family as pack task-set summary cards (shared pack-card surface tokens), with a **single** resting size comparable to task-set cards (**approximately 156×206**) whether or not a description is present — MUST NOT use the former dual **150×200** / **300×200** sizes or a **horizontal** content|description splitter. When description is present, answer **content** MUST sit toward the **top** of the body and **description** toward the **bottom**; when description is empty, content MUST be **centered** in the body. Answer **content** type MUST be approximately the **same font-size as the task list question / game peek question** (24 CSS px); description MUST use muted smaller type. A **task** tile MUST use **portrait** proportions (width strictly less than height), resting surface chrome in the same pack-card family, and MUST NOT use the former fixed **300×200** wide playing-card with a vertical question|slots splitter. Task difficulty MUST appear as **three difficulty dots at the top-left** plus a **word-only** difficulty badge **horizontally centered** in the tile header (same product sense as the game peek / task compose header — not a digit-only outline badge). The question MUST appear below the header at approximately the **same font-size as the game peek question** (24 CSS px). **Filled** answer slots on task tiles MUST appear as portrait mini-cards comparable to peek/compose filled slots (answer **content** primary and optional answer **description** secondary when present); empty slots MUST NOT be rendered on the list tile. Filled slots MUST be **horizontally centered** in the tile and MUST NOT sit flush against the actions divider — there MUST be visible air between the slots row and the actions section (or the tile bottom when not editable). When more filled slots than fit in one row, the slot row MUST scroll **horizontally**. Tile background and foreground MUST remain readable in both light and dark themes. On surfaces where a **task** or **answer** item is editable, Edit and Delete MUST appear as **full-width stacked outline buttons with icons** at the bottom of the tile (same product chrome as pack task-set summary card actions — not flat text-only and not corner icon-only). The Edit control label MUST be the short shared edit copy (**«Редактировать»** / `content.edit`) on both task and answer list tiles — MUST NOT use longer «Изменить вопрос» / «Изменить карточку» strings on those tile buttons. Delete MAY use a negative/red tint. Changing content MUST be available through Edit, not by treating a body click as edit (selectable answer tiles MAY still use body click for slot pick). Overflow body text MUST scroll inside its region rather than unbounded grow of the row.
 
 **Compose shell:** create/edit of answer cards and tasks MUST happen in a dialog (see SC-PACK-256…260), not as an always-visible inline form above the list. When compose is allowed, the surface MUST expose an **add control** above the corresponding list (not the full form). When compose is not allowed (read-only / live view-only / cards locked for `task_set_author`), the add control MUST be hidden and Edit on tiles MUST NOT open a compose dialog.
 
-**Task compose answer pool carve-out:** inside the task compose dialog, the selectable answer pool MUST be compact chips comparable to the game-board peek answer pool and MUST NOT be a playing-card tile grid. List surfaces and any non-dialog answer/task grids keep playing-card chrome unchanged.
+**Task compose answer pool carve-out:** inside the task compose dialog, the selectable answer pool MUST be mini-cards comparable to the game-board peek answer pool and MUST NOT be a catalog list-tile grid. Answer-card **list** grids use the portrait pack-card family (this requirement), not the former 150/300 playing-card chrome.
 
 #### Scenario [SC-PACK-222]: Answer cards render as vertically split playing-card tiles
 
 - **GIVEN** a surface that lists answer cards including one with description and one without
 - **WHEN** the user views the list
-- **THEN** each card is a rounded tile in a wrapping row
-- **AND** the card with description shows content and description side by side with a vertical splitter
-- **AND** the card without description is a 150×200 rectangle without an empty description half
-- **AND** long description text scrolls inside its half
+- **THEN** each card is a rounded portrait tile in a wrapping row with pack-card family surface chrome
+- **AND** both cards share the same resting size comparable to pack task-set cards (approximately 156 CSS px wide and at least ~206 CSS px tall) — not 150×200 / 300×200
+- **AND** the card with description shows content toward the top of the body and description toward the bottom (no horizontal vertical-splitter halves)
+- **AND** the card without description shows content centered in the body
+- **AND** answer content type is approximately 24 CSS pixels (task question / peek question parity)
+- **AND** long content or description text scrolls inside its region
 - **AND** create/edit fields for those cards are not an always-visible inline form above the list (dialog compose per SC-PACK-256/257)
 
 #### Scenario [SC-PACK-223]: Tasks render as vertically split tiles with horizontal slot chips
 
 - **GIVEN** a surface that lists tasks with difficulty and filled slots
 - **WHEN** the user views the list
-- **THEN** each task is a rounded 300×200 tile with the question and slots on either side of a vertical splitter
-- **AND** filled slot answers appear side by side as chips
-- **AND** difficulty is shown at the top-left of the tile
+- **THEN** each task is a rounded portrait tile (width less than height) with pack-card family surface chrome (not a 300×200 vertical question|slots splitter)
+- **AND** difficulty dots sit at the top-left and a word-only difficulty badge is horizontally centered in the header
+- **AND** the question appears below the header at approximately 24 CSS pixels (peek question parity)
+- **AND** filled slots appear as portrait answer mini-cards in a horizontally centered row (scroll when needed)
+- **AND** there is visible air between the slots row and the actions divider (or tile bottom when not editable)
+- **AND** empty slots are not shown on the tile
+- **AND** when a task has no filled slots, the tile omits the slots row (no muted empty-slot placeholder copy in the tile body)
 
 #### Scenario [SC-PACK-224]: Editable tiles expose bottom full-width text Edit and Delete
 
 - **GIVEN** an editable cards or tasks editor and a read-only live or staff view of the same kind of items
 - **WHEN** the user compares those surfaces
-- **THEN** editable tiles show Edit and Delete as stacked full-width text buttons at the bottom
-- **AND** live and staff views use the same playing-card chrome without Edit/Delete when not editable
-- **AND** answer/task **list** grids keep playing-card chrome
-- **AND** the task compose dialog answer pool uses mini-cards (not playing-card tiles) per SC-PACK-260
+- **THEN** editable **task** and **answer** tiles show Edit and Delete as stacked full-width outline buttons with icons at the bottom (task-set action chrome parity; Delete MAY be negative/red)
+- **AND** the Edit button label on those tiles is the short shared edit copy («Редактировать» / `content.edit`), not «Изменить вопрос» / «Изменить карточку»
+- **AND** live and staff views use the same list-tile chrome without Edit/Delete when not editable
+- **AND** answer **list** tiles use the portrait pack-card family chrome (SC-PACK-222/225/282/283)
+- **AND** task **list** tiles use the portrait pack-card family chrome (SC-PACK-223/278)
+- **AND** the task compose dialog answer pool uses mini-cards (not catalog list tiles) per SC-PACK-260
 
 #### Scenario [SC-PACK-225]: Answer tiles use fixed 150×200 or 300×200 sizes
 
 - **GIVEN** a surface listing an answer card without description and an answer card with description
 - **WHEN** the user views those tiles
-- **THEN** the card without description is 150 CSS pixels wide and 200 CSS pixels tall
-- **AND** the card with description is 300 CSS pixels wide and 200 CSS pixels tall with a vertical splitter between content and description
+- **THEN** both tiles are approximately 156 CSS pixels wide with min-height approximately 206 CSS pixels (portrait pack-card family — supersedes the former 150×200 / 300×200 dual sizes)
+- **AND** neither tile uses a horizontal vertical-splitter layout between content and description
 
 #### Scenario [SC-PACK-226]: Task tiles are 300×200
 
 - **GIVEN** a surface listing tasks
 - **WHEN** the user views a task tile
-- **THEN** the tile is 300 CSS pixels wide and 200 CSS pixels tall
+- **THEN** the tile width is strictly less than its height (portrait pack-card family — supersedes the former fixed 300×200 requirement)
+- **AND** the tile MUST NOT be fixed at 300 CSS pixels wide and 200 CSS pixels tall
 
 #### Scenario [SC-PACK-227]: Answer and task tiles stay readable in dark theme
 
 - **GIVEN** the application is in dark theme
-- **WHEN** the user views answer and task playing-card tiles including editable Edit controls
+- **WHEN** the user views answer and task list tiles including editable Edit controls
 - **THEN** tile text and edit controls remain visible against the tile background
 - **AND** the tile MUST NOT present light text on an unresolved white card background
 
@@ -2054,7 +2071,7 @@ On the live pack **view** drill-in into a task set (read-only live view for non-
 
 ### Requirement: Task answer slots match peek slot chrome
 
-On **task compose dialog** surfaces (slot row while creating/editing a question), answer slots MUST use the same approximate size and visual chrome as shared peek answer slots on the game board for this change: empty = dashed unlabeled; filled = answer mini-card with thin primary border; portrait aspect ratio ≈ pack task-set cards at the **half-size** tile band (see SC-PACK-260/277 and `game/board` SC-BOARD-51). Dense Quasar chips that read as a different scale from peek MUST NOT be the primary slot presentation on compose. On **task list / card tiles** that display slot labels (`PackTaskTile` and equivalent list rows), slots MAY keep compact labeled empty-slot chrome and MUST NOT be required to adopt the peek modal’s unlabeled portrait mini-card aspect ratio (readability carve-out — see SC-PACK-238).
+On **task compose dialog** surfaces (slot row while creating/editing a question), answer slots MUST use the same approximate size and visual chrome as shared peek answer slots on the game board for this change: empty = dashed unlabeled; filled = answer mini-card with thin primary border; portrait aspect ratio ≈ pack task-set cards at the **half-size** tile band (see SC-PACK-260/277 and `game/board` SC-BOARD-51). Dense Quasar chips that read as a different scale from peek MUST NOT be the primary slot presentation on compose. On **task list / card tiles**, **filled** slots MUST use portrait answer mini-card chrome comparable to peek/compose filled slots (including thin primary border and optional answer description secondary); empty slots MUST be omitted from the list tile (not compact labeled empty chrome).
 
 #### Scenario [SC-PACK-237]: Compose slots match peek scale
 
@@ -2065,11 +2082,11 @@ On **task compose dialog** surfaces (slot row while creating/editing a question)
 
 #### Scenario [SC-PACK-238]: Task tile slots match peek scale
 
-- **GIVEN** a task list or card tile (`PackTaskTile`) showing slot labels for a task
-- **WHEN** the slots are rendered after the peek/compose chrome redesign
-- **THEN** those slots MAY keep empty-slot label text and compact sizes
-- **AND** they MUST NOT be required to match the peek modal’s unlabeled portrait mini-card aspect ratio
-- **AND** the compose dialog slot row (not the list tile) remains the surface that matches peek chrome (SC-PACK-237)
+- **GIVEN** a task list or card tile showing a task with one or more filled slots (and optionally empty draft slots)
+- **WHEN** the slots are rendered after this redesign
+- **THEN** each filled slot uses portrait answer mini-card chrome comparable to peek/compose filled slots
+- **AND** empty slots are not shown on the tile
+- **AND** the compose dialog slot row remains the surface that also matches empty dashed peek chrome (SC-PACK-237)
 
 ### Requirement: Empty pack shell stays hidden until meaningful author work
 
@@ -2111,7 +2128,7 @@ On the pack cards editing surface, creating or editing an answer card MUST happe
 
 ### Requirement: Task compose uses a peek-like dialog
 
-On task-set editing surfaces (creator/staff task-set editor and post-publish add-task-set), creating or editing a task MUST happen in a dialog, not in an always-visible inline compose form above the task list. When compose is allowed, the surface MUST expose an add-question control above the task list that opens an empty create dialog; when compose is not allowed (`viewOnly` / `readOnly`), the add control MUST be hidden. Activating Edit on a task tile MUST open the same dialog prefilled for that task only when compose is allowed. Inside the dialog the client MUST present an editable question, a difficulty control rendered as **three interactive difficulty dots** plus a **word-only** difficulty badge (SC-PACK-276) instead of a standalone numeric-only selector as the primary control, then a **centered** ordered slot row, then below it an answer pool of mini-cards comparable to the shared game peek answer pool (same half-size portrait band, grid up to 4×4 with vertical scroll when needed — not a catalog playing-card tile grid and not flat outline chips as the primary pool chrome). Empty slots MUST be dashed with no placeholder label text; filled slots MUST show the chosen answer as a mini-card with the thin primary border. Slot fill/clear/add/remove behavior and draft persistence rules remain as today. Cancel or successful save MUST close the dialog. The compose question control font-size MUST NOT be required to match the game peek ×1.5 type (SC-BOARD-54).
+On task-set editing surfaces (creator/staff task-set editor and post-publish add-task-set), creating or editing a task MUST happen in a dialog, not in an always-visible inline compose form above the task list. When compose is allowed, the surface MUST expose an add-question control above the task list that opens an empty create dialog; when compose is not allowed (`viewOnly` / `readOnly`), the add control MUST be hidden. Activating Edit on a task tile MUST open the same dialog prefilled for that task only when compose is allowed. Inside the dialog the client MUST present an editable question, a difficulty control rendered as **three interactive difficulty dots** plus a **word-only** difficulty badge (SC-PACK-276 / SC-PACK-280) instead of a standalone numeric-only selector as the primary control, then a **centered** ordered slot row, then below it an answer pool of mini-cards comparable to the shared game peek answer pool (same half-size portrait band, grid up to 4×4 with vertical scroll when needed — not a catalog playing-card tile grid and not flat outline chips as the primary pool chrome). The dialog’s content width MUST be anchored to one row of **four** answer-pool mini-cards plus horizontal padding, with approximately **50 CSS px** extra slack allowed (SC-PACK-279). Empty slots MUST be dashed with no placeholder label text; filled slots MUST show the chosen answer as a mini-card with the thin primary border. Slot fill/clear/add/remove behavior and draft persistence rules remain as today. Successful save MUST close the dialog. The dialog MUST NOT show a Cancel button; dismissing without save MUST still be possible via backdrop click or Escape (SC-PACK-281). The primary Save / Add control MUST use full-width primary unelevated chrome comparable to the game peek submit button (SC-PACK-281). The compose question control font-size MUST NOT be required to match the game peek ×1.5 type (SC-BOARD-54). The **game peek** modal width and difficulty-dot size MUST remain unchanged by this requirement.
 
 #### Scenario [SC-PACK-258]: Add question opens dialog above the task list
 
@@ -2125,7 +2142,7 @@ On task-set editing surfaces (creator/staff task-set editor and post-publish add
 - **GIVEN** a verified editor viewing editable task tiles on a task-set editing surface
 - **WHEN** the editor activates Edit on a task tile
 - **THEN** the same task dialog opens prefilled with that task’s question, difficulty, and slots
-- **AND** saving or cancelling closes the dialog without leaving an inline form on the page
+- **AND** saving or dismissing (backdrop / Escape) closes the dialog without leaving an inline form on the page
 
 #### Scenario [SC-PACK-260]: Task dialog matches peek slot and answer-pool layout
 
@@ -2134,7 +2151,10 @@ On task-set editing surfaces (creator/staff task-set editor and post-publish add
 - **THEN** the question and difficulty header appear above a centered ordered slot row (dots at the left edge; word-only badge horizontally centered)
 - **AND** empty slots use dashed chrome without placeholder slot-label text
 - **AND** below the slots the answer choices appear as mini-cards comparable to the game peek answer pool (pack task-set portrait aspect ratio at the half-size band)
+- **AND** the dialog content width is anchored to one row of four pool mini-cards plus horizontal padding with approximately 50 CSS px slack
 - **AND** the dialog MUST NOT use a catalog playing-card tile grid as the answer picker
+- **AND** the primary Save / Add control is a full-width primary unelevated button comparable to game peek submit
+- **AND** no Cancel button is shown in the dialog actions
 
 ### Requirement: Add-task-set does not duplicate live answer cards above compose
 
@@ -2172,7 +2192,7 @@ On task compose surfaces (task compose dialog on task-set editor and add-task-se
 
 ### Requirement: Task compose difficulty uses interactive dots and word badge
 
-In the task compose dialog, difficulty MUST be chosen with three dots matching the pack task-set difficulty indicator (resting: filled count = current difficulty; **all** dots use that level’s single color — green / amber / red for 1 / 2 / 3 — same as pack task-set summary cards). Hovering (or equivalent pointer preview) over the N-th dot MUST preview filled dots `1…N` **all** in that level’s color N; a **click/tap** on the N-th dot MUST set difficulty to N (works without hover on touch). The dialog MUST show a status badge with **only** the difficulty **word** for the current value (лёгкая / средняя / сложная) — **without** a `Сложность:` prefix and not a digit-only or `1 — …` select label. Layout MUST match game peek: **dots at the left edge**, **badge horizontally centered** (not one centered dots+badge cluster). The previous primary difficulty dropdown MAY be removed; difficulty MUST remain constrained to 1|2|3.
+In the task compose dialog, difficulty MUST be chosen with three dots matching the pack task-set difficulty indicator (resting: filled count = current difficulty; **all** dots use that level’s single color — green / amber / red for 1 / 2 / 3 — same as pack task-set summary cards). Hovering (or equivalent pointer preview) over the N-th dot MUST preview filled dots `1…N` **all** in that level’s color N; a **click/tap** on the N-th dot MUST set difficulty to N (works without hover on touch). The dialog MUST show a status badge with **only** the difficulty **word** for the current value (лёгкая / средняя / сложная) — **without** a `Сложность:` prefix and not a digit-only or `1 — …` select label. Layout MUST match game peek: **dots at the left edge**, **badge horizontally centered** (not one centered dots+badge cluster). In the **task compose dialog only**, each difficulty dot’s visual diameter MUST be approximately the **same height** as the word difficulty badge (larger hit target than the 6px pack/peek resting dots). The previous primary difficulty dropdown MAY be removed; difficulty MUST remain constrained to 1|2|3. Game peek read-only dots MUST keep their existing size.
 
 #### Scenario [SC-PACK-276]: Compose difficulty dots preview on hover and commit on click
 
@@ -2185,10 +2205,11 @@ In the task compose dialog, difficulty MUST be chosen with three dots matching t
 - **AND** the badge is horizontally centered in the dialog (not clustered with the dots)
 - **AND** the resting dots sit at the left edge of the dialog content
 - **AND** the resting dots show two filled amber dots and one empty outline
+- **AND** each compose difficulty dot’s visual height approximately matches the word badge height
 
 ### Requirement: Compose slots and pool share peek mini-card chrome
 
-Task compose empty slots, filled slots, and the answer pool MUST share the same visual contract as the game peek modal for this change: empty = dashed blank; filled = answer mini-card with thin primary border; pool = mini-cards with pack task-set aspect ratio at the half-size band, at most four columns and four visible rows with vertical scroll when there are more answers. This contract applies to the **task compose dialog** only; catalog/list task tiles (`PackTaskTile`) MAY keep compact labeled empty slots and MUST NOT be required to adopt the peek portrait mini-card grid (same carve-out as SC-PACK-238).
+Task compose empty slots, filled slots, and the answer pool MUST share the same visual contract as the game peek modal for this change: empty = dashed blank; filled = answer mini-card with thin primary border; pool = mini-cards with pack task-set aspect ratio at the half-size band, at most four columns and four visible rows with vertical scroll when there are more answers. This contract applies to the **task compose dialog**; **task list tiles** show filled slots with the same filled mini-card product sense (SC-PACK-238) and omit empty slots.
 
 #### Scenario [SC-PACK-277]: Compose empty slot has no label; pool scrolls past 4×4
 
@@ -2197,6 +2218,81 @@ Task compose empty slots, filled slots, and the answer pool MUST share the same 
 - **THEN** each empty slot shows dashed chrome with no slot-label text
 - **AND** the answer pool shows at most four columns and four visible rows without scrolling
 - **AND** further answers are reachable by scrolling the pool downward
+
+### Requirement: Task list tile layout matches peek header and filled slots
+
+On every surface that lists tasks as tiles, each task tile MUST present, top to bottom: (1) a header with three difficulty dots at the left edge and a word-only difficulty badge centered horizontally; (2) the task question at approximately **24 CSS px** (game peek question parity); (3) a single horizontal row of **filled** answer mini-cards only, **horizontally centered**, with horizontal scroll when the row overflows and visible air above the actions divider so the row is not flush against the bottom chrome. The tile MUST be portrait (width &lt; height) and use pack-card family resting chrome comparable to pack task-set summary cards. Answer mini-cards on the tile MUST show answer content and, when present, answer description secondary — the same product sense as filled slots in the game peek and task compose dialogs. Edit/Delete stacking rules remain as in the playing-card presentation requirement (outline + icon for tasks).
+
+#### Scenario [SC-PACK-278]: Task tile shows dots, centered badge, question, filled slots with horizontal scroll
+
+- **GIVEN** a task list with a task of difficulty 2 that has three filled slots whose combined mini-card width exceeds the tile content width
+- **WHEN** the user views that task tile
+- **THEN** two difficulty dots are filled (level color for difficulty 2) at the left of the header
+- **AND** the word-only medium difficulty badge is horizontally centered in the header
+- **AND** the question text appears below the header at approximately 24 CSS pixels
+- **AND** three filled answer mini-cards appear in a horizontally centered row
+- **AND** there is visible air between the slots row and the actions divider (or tile bottom when not editable)
+- **AND** the slot row scrolls horizontally to reveal overflow without wrapping into a second row as the primary overflow strategy
+- **AND** a task with no filled slots omits the slots row (no empty-slot placeholder copy in the tile body)
+
+### Requirement: Task compose dialog is no wider than four answer mini-cards
+
+The task compose dialog’s content width MUST be anchored to one row of **four** answer-pool mini-cards at the shared half-size tile band plus the dialog’s own horizontal padding, and MAY be approximately **50 CSS px** wider than that strict sum (comfort slack). The four-column answer pool MUST remain the width anchor. The game peek modal width MUST NOT be changed by this requirement.
+
+#### Scenario [SC-PACK-279]: Compose dialog width fits four pool mini-cards
+
+- **GIVEN** a verified editor opens the task compose dialog
+- **WHEN** the dialog is shown at a desktop viewport
+- **THEN** the dialog content width equals approximately four half-size answer mini-cards in one row plus horizontal padding plus about 50 CSS px slack (not the former fixed 360/400)
+- **AND** the answer pool still lays out in at most four columns
+
+### Requirement: Compose difficulty dots match badge height for hit targets
+
+In the task compose dialog only, each interactive difficulty dot MUST render at approximately the same visual height as the word difficulty badge so pointer/touch targets are comfortable. Color, fill-count, hover preview, and click-to-commit behavior remain as in the interactive dots requirement. Game peek read-only dots MUST keep their existing smaller size.
+
+#### Scenario [SC-PACK-280]: Compose dots are approximately badge-tall
+
+- **GIVEN** a verified editor has the task compose dialog open
+- **WHEN** the difficulty header is shown
+- **THEN** each interactive difficulty dot’s visual height is approximately equal to the word badge’s height
+- **AND** the game peek modal (when opened separately) still uses its existing smaller read-only dot size
+
+### Requirement: Task compose Save matches peek submit; Cancel omitted
+
+In the task compose dialog, the primary Save / Add control MUST be a **full-width** primary **unelevated** button with slim pack-card action height chrome comparable to the game peek submit button. Labels MUST remain the content save/add copy (not the game peek «Ответить» string). The dialog MUST NOT show a Cancel button. Closing without save MUST still be possible via backdrop click or Escape. The game peek submit control itself MUST remain unchanged.
+
+#### Scenario [SC-PACK-281]: Compose Save is peek-like; Cancel is absent
+
+- **GIVEN** a verified editor has the task compose dialog open
+- **WHEN** the dialog actions are shown
+- **THEN** a full-width primary unelevated Save / Add button is present with slim action-height chrome comparable to game peek submit
+- **AND** no Cancel button is present in the dialog actions
+- **AND** dismissing the dialog via backdrop or Escape closes it without leaving an inline form on the page
+
+### Requirement: Answer list tile layout matches pack-card portrait family
+
+On every surface that lists answer cards as tiles, each answer tile MUST use portrait pack-card resting size comparable to pack task-set summary cards (approximately 156 CSS px wide, min-height approximately 206). When the card has a non-empty description, content MUST be pinned toward the top of the body and description toward the bottom. When description is empty, content MUST be centered in the body. Content type MUST match the task list question / game peek question scale (approximately 24 CSS px); description MUST be muted smaller type. Editable tiles MUST use outline+icon Edit/Delete as in the playing-card presentation requirement, with Edit labeled by the short shared edit copy. Peek/compose answer mini-cards are out of scope for this requirement.
+
+#### Scenario [SC-PACK-282]: Answer tile content top / description bottom or centered alone
+
+- **GIVEN** a list with one answer card that has a description and one answer card without description
+- **WHEN** the user views those tiles
+- **THEN** both tiles share the same portrait resting size (approximately 156×206 pack-card family)
+- **AND** the card with description shows content near the top of the body and description near the bottom
+- **AND** the card without description shows content centered in the body
+- **AND** neither card uses a horizontal content|description splitter or the former 150/300 dual widths
+
+### Requirement: Answer list content type and tile Edit copy parity
+
+On answer **list** tiles, primary content type MUST be approximately **24 CSS px** — the same product scale as the task list question and game peek question. Description remains muted smaller type. On editable **task** and **answer** list tiles, the Edit button MUST keep its outline + icon chrome and MUST use the short shared edit label («Редактировать» / `content.edit`). Longer compose titles («Изменить вопрос» / «Изменить карточку») MAY remain on dialog headers only.
+
+#### Scenario [SC-PACK-283]: Answer content is 24px; tile Edit says Редактировать
+
+- **GIVEN** editable task and answer list tiles and an answer card with visible content text
+- **WHEN** the user views those tiles
+- **THEN** the answer content type is approximately 24 CSS pixels (parity with the task list question)
+- **AND** both tiles’ Edit buttons show the short «Редактировать» label with an edit icon
+- **AND** the Edit buttons MUST NOT show «Изменить вопрос» or «Изменить карточку» as their labels
 
 ### Requirement: Add-task-set persists an author draft on any change before moderation
 
