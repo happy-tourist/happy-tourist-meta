@@ -19,7 +19,7 @@ live summary+drill-in / SC-PACK-261 AddTaskSet no top live grid + dialog mini-ca
 `content.back`),
 `ContentPackTasksHints.test.ts` (SC-PACK-115/119 staff session + stable hints),
 `ContentPackAnswerCompose.test.ts` / `ContentPackTaskCompose.test.ts`
-(SC-PACK-256…263/276/277 answer/task compose dialogs + peek mini-card pool + reusable pool cards + CSV outside dialog; Game peek SC-BOARD-49/50…53),
+(SC-PACK-256…263/276/277 answer/task compose dialogs + peek mini-card pool + reusable pool cards + CSV outside dialog; Game peek SC-BOARD-49/50…54),
 `ContentPackAddTaskSetDraft.test.ts` (SC-PACK-264…268/271…275 quiet autosave
 incomplete draft + leave flush + top delete/`discardAddTaskSetDraft` by
 `canHardDelete` + catalog draft mark + persisted dirty / pending→draft /

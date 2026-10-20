@@ -200,14 +200,17 @@ slots keep the compact **labeled** base (~72×40) — **no** `--portrait`
 (SC-PACK-238 carve-out). Do **not** reintroduce dense `q-chip` as primary
 slot chrome. Do **not** reintroduce list `q-chip` for answer/task **bodies**.
 
-**Task compose / game peek answer pool (SC-PACK-260 / 263 / 277; SC-BOARD-49/52):**
+**Task compose / game peek answer pool (SC-PACK-260 / 263 / 277; SC-BOARD-49/51/52):**
 pool = `.peek-answer-pool` grid of `.peek-answer-mini` cards (`--pack-card-*`,
-AR 156∶206, ≤4×4 + `overflow-y: auto`; col width via `cqw` so max-height tracks
-narrow modals) — **not** catalog `PackAnswerCardTile` / `slot-picker-grid` /
-flat `q-chip`. Compose slots use `.peek-slot-like--portrait`; center the row
+AR 156∶206, half-size `--peek-tile-max-w` ~43, ≤4×4 + `overflow-y: auto`;
+`max-height` from tile band) — **not** catalog `PackAnswerCardTile` /
+`slot-picker-grid` / flat `q-chip`. Filled portrait slots: thin primary
+`#1976d2` border; pool keeps neutral `--pack-card-border` (no used chrome).
+Compose slots use `.peek-slot-like--portrait`; center the row
 (`justify-center`). Pool cards stay reusable across slots with **no** used /
 disabled chrome (SC-PACK-263; Game peek SC-BOARD-49). Difficulty header =
-3 pack dots + word badge (compose interactive SC-PACK-276; game read-only
-SC-BOARD-50). List grids keep playing-card tiles. Contracts: meta
-`work-with-stores/content.md`; SC-PACK-222…227 / 237/238 / 256…263 / 276/277 /
-239…248; SC-BOARD-46/49/50…53.
+3 pack dots + **word-only** badge (`content.difficultyWord.*`, centered;
+compose interactive SC-PACK-276; game read-only SC-BOARD-50). Game peek
+question ~24px (SC-BOARD-54) — compose `q-input` unchanged. List grids keep
+playing-card tiles. Contracts: meta `work-with-stores/content.md`;
+SC-PACK-222…227 / 237/238 / 256…263 / 276/277 / 239…248; SC-BOARD-46/49/50…54.

@@ -24,3 +24,11 @@
 
 - [x] 4.1 Перед работой: краткий проход `client-verify-code` / lint expectations из client AGENTS
 - [x] 4.2 `npm run lint` и `npm run typecheck` в `happy-tourist.github.io` — verify: exit 0
+
+## 5. Polish pass (client) — post-apply revise
+
+- [x] 5.1 Перед работой: обновлённый `design.md` Visual Spec (half-size ~43, centered word-only badge, filled primary border, game question ×1.5); delta SC-BOARD-50…54 / SC-PACK-237/260/263/276/277
+- [x] 5.2 Shared CSS + i18n: tile/pool `max-width` ≈50% prior (~86→~43), AR 156∶206; filled-slot `1px solid #1976d2` (не на пуле); badge copy = только `content.difficultyWord.*` без префикса «Сложность:»; header dots+badge `justify-content: center` (peek + compose) — verify: light/dark; PackTaskTile list не затронут
+- [x] 5.3 Game peek: question font ~24–27px (SC-BOARD-54); compose question `q-input` **не** масштабировать — verify: peeker/spectator bindings intact
+- [x] 5.4 Vitest: обновить SC-BOARD-50/51/49/54 и SC-PACK-276/237/263/277 под word-only badge, half-size, filled primary border, no pool used-chrome — verify: `npm test` (peek + compose релевантные)
+- [x] 5.5 `npm run lint` и `npm run typecheck` в client — verify: exit 0

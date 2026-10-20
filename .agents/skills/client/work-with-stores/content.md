@@ -94,8 +94,9 @@ compose is allowed — not an always-visible inline form. **Task compose dialog
 answer pool:** `.peek-answer-mini` grid like Game peek (SC-PACK-260/277;
 SC-BOARD-52) — **not** `PackAnswerCardTile` / flat `q-chip`; same card MAY fill
 multiple slots with **no** used chrome (SC-PACK-263). Difficulty = interactive
-dots + word badge (SC-PACK-276). Add-task-set MUST NOT show a top read-only
-`live-answer-card-grid` (SC-PACK-261).
+dots + **word-only** badge via `content.difficultyWord.*` (no `Сложность:` /
+digit; SC-PACK-276; mirrors game peek SC-BOARD-50). Add-task-set MUST NOT show
+a top read-only `live-answer-card-grid` (SC-PACK-261).
 **Catalog packs** use `PackListCardTile` **~180×260** (status top, star TL,
 uppercase title + truncated description, **published-only** set-preview rows
 ≤4 + overflow with display ordinal 1…N and set-row ink = title.fg,

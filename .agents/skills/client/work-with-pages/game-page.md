@@ -16,7 +16,7 @@ Store I/O: `work-with-stores/game.md`. Leave/status chrome: [shell.md](shell.md)
 - Return → green `undo` when `canReturn` (no confirm modal); finish 2×2 → nearest
   legal center; peek eye top-center + shared Q&A (dots+word badge, portrait
   slots, `.peek-answer-mini` pool; testid `peek-answer-chip` on pool cards;
-  same answer MAY fill multiple slots; no used-state chrome — SC-BOARD-49/50…53;
+  same answer MAY fill multiple slots; no used-state chrome — SC-BOARD-49/50…54;
   details `work-with-game-board/peek.md`); end-turn `skip_next` right-center;
   budgets beside avatar; say top↓ / own↑.
 - Sync via `useGameStore()`; `rejoinGame(roomId)` on mount / soft-fail.

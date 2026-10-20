@@ -4,7 +4,7 @@ description: >-
   Use when creating, changing, reviewing, or debugging the tourist board UI in
   the happy-tourist client — GamePage CSS Grid from synced map `grid`
   (`lib/boardGeometry`), seat pieces by pieceId, presence HUD + focus
-  affordance, shared peek Q&A (mini-card pool + reusable answers SC-BOARD-49/50…53; see peek.md),
+  affordance, shared peek Q&A (mini-card pool + reusable answers SC-BOARD-49/50…54; see peek.md),
   grille/catapult anim, trap/rescue/push/return, say bubbles, strip by piece
   index (HUD ≤~420 → 2×2). Core in SKILL.md; topic details in peek.md / focus.md.
   Brand-logo leave + match status in App.vue.

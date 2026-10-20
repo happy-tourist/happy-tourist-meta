@@ -7,7 +7,7 @@ description: >-
   crumbs/leave), content-pages.md (packs/maps UI; answer/task compose dialogs
   PackTaskComposeDialog SC-PACK-256…263; draft lifecycle/`canHardDelete`/hidden
   shell SC-PACK-234/264…275), game-page.md (GamePage wiring; peek mini-card pool
-  SC-BOARD-49/50…53). Pack/map store contracts → work-with-stores topics; board
+  SC-BOARD-49/50…54). Pack/map store contracts → work-with-stores topics; board
   chrome → work-with-game-board.
 ---
 

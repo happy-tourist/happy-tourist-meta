@@ -8,7 +8,7 @@ description: >-
   pack-cards.md (cascade yellow + answer/task tiles + catalog
   PackListCardTile ~180×260 + PackTaskSetCardTile + MapListCardTile + lobby
   LobbyRoomCardTile shared `--pack-card-*` SC-LOBBY-33; peek/compose mini-card
-  pool SC-PACK-260/277 + SC-BOARD-50…53; quoted Vite mask `url("${…}")`).
+  pool SC-PACK-260/277 + SC-BOARD-50…54; quoted Vite mask `url("${…}")`).
 ---
 
 # Work With Styles
