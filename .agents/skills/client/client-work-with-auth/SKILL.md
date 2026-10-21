@@ -2,14 +2,11 @@
 name: client-work-with-auth
 description: >-
   Use when adding, changing, reviewing, or debugging client authentication:
-  LoginPage register/login/anonymous guest/Google one-click, forgot-password,
-  ConfirmEmailPage / ResetPasswordPage (SPA + JSON, password policy + meter),
-  AccountPage (displayName, change-password, confirm button + change email),
-  session verify modal → cabinet, Pinia auth store, client.auth from
-  @colyseus/sdk, colyseus-auth-token, whenReady, router requiresAuth / guest /
-  requiresStaff / requiresAdmin guards, userdata `role` / `isStaff` / `isAdmin`
-  (nav only — server enforces), or logout in this Quasar Vue 3 tourist SPA.
-  No auto mail on register; confirm/reset UX is client SPA not API HTML.
+  LoginPage register/login/anonymous/Google, forgot/confirm/reset SPA + JSON,
+  AccountPage, session verify modal, Pinia auth store, client.auth /
+  colyseus-auth-token / whenReady, userdata role/isStaff/isAdmin (nav only),
+  logout. Router silent-guest + Login upgrade + staff/admin meta: topic
+  guards.md. No auto mail on register; confirm/reset is client SPA not API HTML.
 ---
 
 # Work With Auth
@@ -19,6 +16,15 @@ Use this skill for **authentication** in the happy-tourist client (`happy-touris
 Auth is **token-based Colyseus Auth** via `client.auth` from `@colyseus/sdk`. The token is persisted under `colyseus-auth-token`. There is **no** cookie session, XSRF, captcha, or Qrator layer.
 
 **Important:** `@colyseus/auth` is a **server-side** package. The client never imports it; all client auth goes through `client.auth` on the SDK `Client` from `src/boot/colyseus.ts`. Confirm/reset **product UX** is **client SPA** + JSON (`POST /api/auth/confirm-email`, `POST /api/auth/reset-password`) — do **not** rely on Colyseus API HTML pages.
+
+## Specialized Topics
+
+Read the matching file in this folder when the change involves that area
+(do not load every file at once):
+
+| Topic | File |
+|-------|------|
+| Router silent guest / Login upgrade / staff-admin meta (`authGuard.ts`) | [guards.md](guards.md) |
 
 ## Map Of Pieces
 
@@ -33,7 +39,8 @@ Auth is **token-based Colyseus Auth** via `client.auth` from `@colyseus/sdk`. Th
 | Reset | `src/pages/ResetPasswordPage.vue` | Public hash route; same policy + meter → `resetPassword`; success → login; RU errors |
 | Cabinet | `src/pages/AccountPage.vue` | displayName form; change-password if `canChangePassword` (hide Google/anonymous); email confirm + change-email; soft-verify (no hard-gate); logout |
 | App shell | `src/App.vue` | Session reminder modal → cabinet (once per `sessionStorage`; mark seen **when shown**); skip anonymous + auth-email public routes |
-| Router | `src/router/index.ts` | `beforeEach` awaits `whenReady()`; `requiresAuth` / `guest` / `requiresStaff` / `requiresAdmin` (staff/admin → `/support` if denied; **nav only**) |
+| Guard | `src/router/authGuard.ts` | `authBeforeEach` — details in [guards.md](guards.md) |
+| Router | `src/router/index.ts` | Wires `Router.beforeEach(authBeforeEach)` |
 | Routes | `src/router/routes.ts` | `/login`, `/forgot-password` `guest`; `/confirm-email`, `/reset-password` **public** (no `guest` redirect — logged-in confirm must run); `/lobby`, `/account`, `/support` (+ staff/ticket), `/admin/users`, `/game/:roomId` `requiresAuth` |
 | Token | SDK storage key `colyseus-auth-token` | Persisted by `@colyseus/sdk` Auth; synced via `onChange` |
 
@@ -48,10 +55,15 @@ App boot → Client(VITE_COLYSEUS_URL)
   auth store: client.auth.onChange → token + user; ready = true
         │
         ▼
-  Router beforeEach → await whenReady()
+  Router beforeEach (authGuard) → await whenReady()
         │
-        ├─ meta.requiresAuth && !isAuthenticated → /login
-        ├─ meta.guest && isAuthenticated → /lobby
+        ├─ requiresAuth && !isAuthenticated
+        │     ├─ requiresStaff|requiresAdmin → /login?redirect=fullPath  (no anonymous)
+        │     └─ else → loginAnonymously(); stay on target
+        │           (fail → /login + store error)
+        ├─ meta.guest && isAuthenticated
+        │     ├─ name===login && user.anonymous → stay (upgrade)
+        │     └─ else → /lobby  (incl. anonymous on forgot-password)
         ├─ meta.requiresAdmin && !isAdmin → /support
         ├─ meta.requiresStaff && !isStaff → /support
         └─ else → proceed  (confirm-email / reset-password have neither meta)
@@ -61,7 +73,7 @@ App boot → Client(VITE_COLYSEUS_URL)
         │
         ├─ register → client.auth.registerWithEmailAndPassword  (NO auto confirm mail)
         ├─ login    → client.auth.signInWithEmailAndPassword
-        ├─ guest    → client.auth.signInAnonymously
+        ├─ guest    → client.auth.signInAnonymously  (hidden if already anonymous)
         ├─ Google   → client.auth.signInWithProvider('google')
         └─ forgot link → /forgot-password
                 │
@@ -95,10 +107,10 @@ App boot → Client(VITE_COLYSEUS_URL)
 1. Quasar boots; `colyseus` boot creates shared `Client`.
 2. Auth store subscribes to `client.auth.onChange`. SDK restores token from `colyseus-auth-token` and fetches userdata → first `onChange` sets `ready`.
 3. Any navigation awaits `whenReady()` before applying guards.
-4. Unauthenticated user hitting `/lobby`, `/account`, or `/game/...` is sent to `/login`.
-5. On LoginPage: register, email/password login, anonymous guest, or Google one-click via store actions. Register does **not** imply mail was sent — no post-register mail hint.
+4. Unauthenticated user hitting ordinary `requiresAuth` (`/lobby`, `/account`, `/game/...`, packs/maps, …) gets silent `loginAnonymously` and **stays** on the target. Staff/admin without session → `/login` with `?redirect=` (no anonymous). Silent-guest failure → `/login` + store `error`.
+5. On LoginPage: register, email/password login, anonymous guest (omit control if already anonymous), or Google one-click via store actions. Register does **not** imply mail was sent — no post-register mail hint.
 6. Success → `onChange` fills `token`/`user` → page `replace`s to `?redirect` or `/lobby`.
-7. Authenticated user opening `/login` or `/forgot-password` (`meta.guest`) is redirected to `/lobby`.
+7. Registered user opening `/login` (`meta.guest`) → `/lobby`. Anonymous **may** stay on Login to upgrade. Any authenticated (incl. anonymous) opening `/forgot-password` or other non-Login `meta.guest` → `/lobby`.
 8. Unverified registered users may see a one-shot session modal pointing to the cabinet; confirm mail is sent only from the cabinet button.
 9. Opening a confirm mail link loads `ConfirmEmailPage`, which immediately calls JSON confirm (no second button) and navigates to lobby on success.
 
@@ -162,11 +174,11 @@ File: `src/pages/LoginPage.vue`.
 - Login: required email; password required only (no complexity / meter).
 - Errors: `q-banner` bound to `auth.error`; clear on mode toggle.
 - Submit → `auth.register` or `auth.login` → `goAfterLogin()`.
-- Guest → `auth.loginAnonymously(options?)` → same redirect.
-- Google → one button (`$t('login.google')`) → `auth.loginWithGoogle()` → same redirect; cancel/failure → store `error` + existing `q-banner`. Email/password and guest stay (do not remove).
+- Guest → `auth.loginAnonymously(options?)` → same redirect. **Hide** «Войти как гость» when `auth.user?.anonymous` (already guest upgrading — SC-AUTH-14); unauthenticated Login still shows it.
+- Google → one button (`$t('login.google')`) → `auth.loginWithGoogle()` → same redirect; cancel/failure → store `error` + existing `q-banner`. Email/password stay (do not remove); guest control as above.
 - Forgot link → route `forgot-password` (`$t('auth.forgotLink')`).
 - **Do not** show a post-register hint that mail was already sent (confirm is button-only in cabinet).
-- Redirect: `route.query.redirect` if string, else `/lobby`.
+- Redirect: `route.query.redirect` if string, else `/lobby` (`goAfterLogin` — header login / staff deep-link set `redirect`).
 
 Catch blocks intentionally empty — store already holds `error`.
 
@@ -221,43 +233,7 @@ File: `src/App.vue`.
 
 ## Router Guards
 
-File: `src/router/index.ts`.
-
-```ts
-Router.beforeEach(async (to) => {
-  const auth = useAuthStore();
-  await auth.whenReady();
-
-  if (to.meta.requiresAuth && !auth.isAuthenticated) {
-    return '/login';
-  }
-
-  if (to.meta.guest && auth.isAuthenticated) {
-    return '/lobby';
-  }
-
-  // Client nav gating only — server still enforces (SC-ROLE-08).
-  if (to.meta.requiresAdmin && !auth.isAdmin) {
-    return '/support';
-  }
-
-  if (to.meta.requiresStaff && !auth.isStaff) {
-    return '/support';
-  }
-});
-```
-
-Route meta (`src/router/routes.ts`):
-
-| Path | Meta |
-|------|------|
-| `/login`, `/forgot-password` | `guest: true` |
-| `/confirm-email`, `/reset-password` | public (neither `guest` nor `requiresAuth`) |
-| `/lobby`, `/account`, `/support`, `/support/:id`, `/game/:roomId` | `requiresAuth: true` |
-| `/support/staff` | `requiresAuth` + `requiresStaff` |
-| `/admin/users` | `requiresAuth` + `requiresAdmin` |
-
-Router mode is **hash** (`/#/login`, `/#/confirm-email`, `/#/reset-password`, `/#/lobby`, `/#/support`). Always await `whenReady()` before deciding auth redirects — otherwise a restored token looks logged-out on first paint. Staff/admin meta gates **nav only** — HTTP still enforces on the server.
+Canon: [guards.md](guards.md) (`authGuard.ts` + silent guest / Login upgrade / staff-admin meta). Core summary: ordinary `requiresAuth` → silent `loginAnonymously` (stay); staff/admin without session → `/login?redirect=`; Login bounce only for registered; other `meta.guest` → `/lobby` for any authenticated.
 
 ## Client Singleton
 
@@ -293,7 +269,9 @@ Coordinate register options and userdata shape (`email`, `emailVerified`) with [
 |----|--------|
 | Call auth only via `stores/auth` actions | Scatter `client.auth.*` / `client.http.*` across many components |
 | Await `whenReady()` before guard decisions | Redirect on first tick before `onChange` |
-| Use `meta.requiresAuth` / `meta.guest` | Re-implement cookie/XSRF or Bearer axios auth |
+| Silent `loginAnonymously` on ordinary `requiresAuth`; staff/admin → Login + `redirect` | Treat every `requiresAuth` without session as `/login` only |
+| Login bounce only for registered; other `meta.guest` bounce any authenticated | Bounce anonymous off Login; let anonymous open forgot-password |
+| Use `meta.requiresAuth` / `meta.guest` / staff-admin meta | Re-implement cookie/XSRF or Bearer axios auth |
 | Keep token key as SDK default `colyseus-auth-token` | Import `@colyseus/auth` in the client |
 | Surface errors in store `error` + page banner | Swallow failures without setting `error` |
 | Confirm mail only from cabinet button + dialog | Auto-mail UX on register |
@@ -305,12 +283,12 @@ Coordinate register options and userdata shape (`email`, `emailVerified`) with [
 
 When touching auth:
 
-1. Which piece? store / LoginPage / ForgotPasswordPage / ConfirmEmailPage / ResetPasswordPage / AccountPage / App modal / router guard / colyseus boot / server Auth hooks.
+1. Which piece? store / LoginPage / ForgotPasswordPage / ConfirmEmailPage / ResetPasswordPage / AccountPage / App modal / `authGuard` / colyseus boot / server Auth hooks.
 2. Keep all client auth through `client.auth` / store `http` helpers (`@colyseus/sdk`), not `@colyseus/auth`.
 3. Preserve `onChange` → `token`/`user`/`ready` and `whenReady()` for the router.
 4. Preserve `isAuthenticated === Boolean(token && user)`.
-5. Keep `requiresAuth` → `/login` and `guest` → `/lobby` behavior; keep confirm/reset **public**.
-6. Update Login / forgot / confirm / reset / cabinet + store together; keep anonymous guest and Google one-click paths.
+5. Keep silent guest on ordinary `requiresAuth`; staff/admin unauthenticated → Login + `redirect`; Login `guest` exception for anonymous only; other `meta.guest` → `/lobby` for any authenticated; keep confirm/reset **public**. Do not leave «requiresAuth → /login» as the only documented path.
+6. Update Login / forgot / confirm / reset / cabinet + store together; keep anonymous guest (hide when already guest) and Google one-click paths; preserve `goAfterLogin` + `query.redirect`.
 7. Never imply auto mail on register; never document API HTML as the product confirm/reset path.
 8. If register/userdata options or `emailVerified` change, coordinate with `happy-tourist-server`.
 9. Prefer store `error` + existing `q-banner` / dialogs over a new toast layer.

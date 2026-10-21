@@ -43,7 +43,7 @@ Scaffold leftovers (`EssentialLink.vue`, `example-store.ts`) are not part of the
 
 ### Routes
 
-Router mode: hash (`/#/lobby`, `/#/support`, `/#/content/packs`, `/#/content/staff`, `/#/game/...`). Guards in `src/router/index.ts` await `auth.whenReady()`, then enforce `meta.requiresAuth` / `meta.guest` / `meta.requiresStaff` / `meta.requiresAdmin`.
+Router mode: hash (`/#/lobby`, `/#/support`, `/#/content/packs`, `/#/content/staff`, `/#/game/...`). Guards in `src/router/authGuard.ts` (`authBeforeEach`, wired from `index.ts`): await `auth.whenReady()`; ordinary `requiresAuth` → silent `loginAnonymously`; staff/admin without session → Login + `redirect`; Login bounce only for registered; other `meta.guest` / staff-admin meta as in [guards.md](../client-work-with-auth/guards.md).
 
 | Path | Name | Page / meta |
 |------|------|-------------|
@@ -77,10 +77,10 @@ Use these rules to pick the layer before naming files.
 
 | If the change is… | Prefer |
 |-------------------|--------|
-| A new screen / URL | `src/router/routes.ts` (+ guard meta in `index.ts` if needed) + new `src/pages/FooPage.vue` |
+| A new screen / URL | `src/router/routes.ts` (+ guard meta; logic in `authGuard.ts`) + new `src/pages/FooPage.vue` |
 | Page-specific UI / interaction | owning `src/pages/*Page.vue` |
 | Reusable across pages | `src/components/` (only when reuse is real; avoid premature extraction) |
-| Global shell / brand logo / section nav / breadcrumbs / theme / leave | `src/App.vue` (elevated `q-header`: logo ≥60px; Packs/Maps/Support + staff Модерация; narrow burger **rightmost** + Acc/Theme/Logout in menu SC-BRAND-19; wide account+theme+session logout; Game status + `header-game-leave`; `app-breadcrumbs` **inside** `q-page-container` SC-BRAND-17…18; `theme.error` banner; logo leave/toLobby/noop; syncs `auth` → `theme`) |
+| Global shell / brand logo / section nav / breadcrumbs / theme / leave | `src/App.vue` (elevated `q-header`: logo ≥60px; Packs/Maps/Support + staff Модерация; narrow burger **rightmost** + Acc/Theme/Logout **or** guest login SC-BRAND-19/22/24; wide registered account+theme+logout / guest theme+login; Game status + `header-game-leave` (no guest login); `app-breadcrumbs` **inside** `q-page-container` SC-BRAND-17…18 + `--with-crumbs` flex SC-BRAND-23; `theme.error` banner; logo leave/toLobby/noop; syncs `auth` → `theme`) |
 | Brand asset / title / favicon | `src/assets/brand/logo.png`; `package.json` `productName` = `Happy Tourist`; `public/favicon.ico` + `index.html` (no PNG favicon set) |
 | Theme / Dark preference | `boot/theme.ts`, `stores/theme.ts`, `quasar.config.ts` (`Dark` plugin); guest `localStorage`; registered `GET`/`POST` `/api/theme` (restore ≠ JWT-only) |
 | Theme / global styles | `src/css/quasar.variables.scss`, `src/css/app.scss` (`.text-muted`) |

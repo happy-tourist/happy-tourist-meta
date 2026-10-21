@@ -202,7 +202,7 @@ no staff thread reply until Submit creates clean `pending`.
 
 | Surface | Who | Store / route |
 |---------|-----|----------------|
-| Unified packs list | any auth | `listCatalog` → `content-catalog`; filters all/moderation/drafts/mine/favorites (identity-only filters disabled for guests) |
+| Unified packs list | any auth | `listCatalog` → `content-catalog`; filters all/moderation/drafts/mine/favorites — identity-only filters **hidden** for guests (`v-if="!identityOnly \|\| !isGuest"`, not `:disable`; **all** stays visible — SC-PACK-153/286); maps list same pattern for moderation/drafts/mine (SC-MAP-69) |
 | Star / unstar | registered non-anonymous | `starPack` / `unstarPack` on in-catalog rows + detail |
 | Unpublished / draft editor | creator | `loadDraft` / `saveDraft` / `submitPack` → `content-pack-edit` |
 | Post-publish pack Edit | pack creator (non-staff) | acquire lock → working copy; `editorKind=creator`; submit reopens moderation |
@@ -216,10 +216,13 @@ no staff thread reply until Submit creates clean `pending`.
 ## UI contracts
 
 - **Catalog (= primary «Наборы»):** App header / Lobby crumbs → `content-catalog`
-  (not collection). Filters + status badges for draft / pending / needs_revision /
-  unpublished only — **published / `in_catalog` rows show no badge** (SC-PACK-148/
-  185); catalog **revise** uses short `taskSetCardBadge.needs_revision`
-  «ДОРАБОТАТЬ» red outline (not long `statuses.needs_revision` — SC-PACK-251).
+  (not collection). Filters: **all** always visible; identity filters
+  (moderation/drafts/mine/favorites) rendered only when `!isGuest` via `v-if`
+  (not `:disable` — SC-PACK-153/286). Status badges for draft / pending /
+  needs_revision / unpublished only — **published / `in_catalog` rows show no
+  badge** (SC-PACK-148/185); catalog **revise** uses short
+  `taskSetCardBadge.needs_revision` «ДОРАБОТАТЬ» red outline (not long
+  `statuses.needs_revision` — SC-PACK-251).
   Pass `taskSetsPreview` into `PackListCardTile` (tile omits soft-unpub/
   neverLive; set ink = title.fg — SC-PACK-254); soft-unpub packs
   `:muted="Boolean(hasLive && inCatalog === false)"` (whole-card, not set-row).

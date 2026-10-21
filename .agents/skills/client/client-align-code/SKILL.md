@@ -227,7 +227,7 @@ For reachable behavior, examine permitted empty/null/zero/false states, constrai
 
 Runtime facts that often create defects:
 
-- router `beforeEach` awaits `auth.whenReady()` then enforces `requiresAuth` / `guest`;
+- router `authBeforeEach` (`authGuard.ts`) awaits `auth.whenReady()`; ordinary `requiresAuth` → silent `loginAnonymously`; staff/admin → Login + `redirect`; Login bounce only for registered;
 - `leaveGame` swallows leave errors on already-closed rooms;
 - `GamePage` calls `rejoinGame(roomId)` if Pinia lost the room (token → `joinById`); failed rejoin → lobby;
 - Game board mirrors seats + `currentTurnSessionId`; local select/hints on `isMyTurn`; submit only via `game.sendMove` (not page `room.send`).

@@ -114,7 +114,7 @@ Pages already wired:
 | `LoginPage` | `auth.register` / `login` / `loginAnonymously` / `loginWithGoogle` |
 | `LobbyPage` | `subscribeLobby` / `unsubscribeLobby`, `createGame`, `joinGame`, `leaveGame` (session logout → App header, not this page) |
 | `GamePage` | `game.rejoinGame(roomId)` on remount / soft-fail; pieces + grilles + presence + budgets + peek from store; move → `sendMove`; rescue/push/return → `sendRescue` / `sendPush` / `sendReturnFromFinish`; peek → `sendPeek` / `sendPeekPlace` / `sendPeekSubmit`; end-turn → `sendEndTurn`; say → `sendSay`; `leaveGame` |
-| Router | `auth.whenReady()` before `requiresAuth` / `guest` guards |
+| Router | `authGuard.ts`: `whenReady()` then silent guest / Login upgrade / staff-admin meta ([guards.md](../client-work-with-auth/guards.md)) |
 
 ## Auth (`client.auth`)
 
@@ -137,7 +137,7 @@ client.auth.onChange((data) => {
 | `signInWithProvider('google')` | `loginWithGoogle` |
 | `signOut()` | `logout` |
 
-`whenReady()` resolves after the first `onChange` (session restore). Router `beforeEach` must `await auth.whenReady()` before deciding login vs lobby.
+`whenReady()` resolves after the first `onChange` (session restore). Router `authBeforeEach` must `await auth.whenReady()` before silent guest / Login bounce / staff-admin redirects ([guards.md](../client-work-with-auth/guards.md)).
 
 Pattern for auth actions — loading + error + `finally`:
 
@@ -436,7 +436,7 @@ Show `auth.error` in a `q-banner`. Router already blocks until `whenReady()`.
 | Inventing client-local seat assignment | Mirror `seats`/`phase`/`maxSeats`/`currentTurnSessionId` from schema only |
 | Hardcoding room name in pages | Use `TOURIST_ROOM` / `LOBBY_ROOM` from `stores/game` |
 | Leaving `listing` / `loading` true after error | Always `finally` |
-| Skipping `whenReady` in router | Await before `requiresAuth` / `guest` redirects |
+| Skipping `whenReady` in router | Await in `authGuard` before silent guest / Login / staff-admin redirects |
 | Inventing axios/BFF helpers | Stay on LobbyRoom + room messages (`client.http` only if needed) |
 | Calling `room.send(…)` from GamePage | Use `game.sendMove` / `sendRescue` / `sendPush` / `sendReturnFromFinish` / `sendPeek` / `sendPeekPlace` / `sendPeekSubmit` / `sendEndTurn` / `sendSay` only |
 | Skipping `lint` / `typecheck` after Colyseus client changes | Run `npm run lint` / `typecheck` from client package root; fix failures |

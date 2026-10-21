@@ -55,8 +55,9 @@ HTTP in `maps` beyond cancel/preview helpers the editor already needs.
 
 ## UI contracts
 
-- **List:** filters all / moderation / drafts / mine (identity-only disabled for
-  guests); short card badges via `content.taskSetCardBadge.*` (ЧЕРНОВИК / НА
+- **List:** filters all / moderation / drafts / mine — identity-only **hidden**
+  for guests (`v-if`, not `:disable`; **all** stays — SC-MAP-69); short card
+  badges via `content.taskSetCardBadge.*` (ЧЕРНОВИК / НА
   ПРОВЕРКЕ / ДОРАБОТАТЬ / СНЯТО) for draft / pending / needs_revision /
   soft-unpublished only — **not** long `content.statuses.*` /
   `maps.draftOnly` / `maps.unpublishedByStaff` on the pill; **published /

@@ -46,7 +46,7 @@ When the task is only about creating or wiring a page:
 1. Add the page as a single file `src/pages/<Name>Page.vue` (optional scoped `<style>` in the same file).
 2. Register a route in `src/router/routes.ts` with `path`, `name`, lazy `component`, and `meta` when needed.
 3. Do **not** enable filename-based routing — `quasar.config.ts` keeps `filenameBasedRouting: false`; routes stay manual.
-4. Keep the global shell in `App.vue` — details in [shell.md](shell.md). Do not duplicate theme toggle, section/logout toolbar, or page «В лобби» when crumbs cover the path.
+4. Keep the global shell in `App.vue` — details in [shell.md](shell.md). Do not duplicate theme toggle, section / logout-or-guest-login toolbar, or page «В лобби» when crumbs cover the path.
 5. Prefer: `pages` → `stores` / `boot` / `components`. Keep Colyseus I/O in Pinia, not scattered across new pages.
 6. Wrap page content in Quasar `q-page` (match nearby pages).
 
@@ -59,11 +59,11 @@ From `src/router/routes.ts` (hash mode via `createWebHashHistory` when `vueRoute
 | Path | Name | Page | Notes |
 |------|------|------|-------|
 | `/` | — | — | redirect → `/lobby` |
-| `/login` | `login` | `LoginPage` | `meta.guest` |
-| `/forgot-password` | `forgot-password` | `ForgotPasswordPage` | `meta.guest` |
+| `/login` | `login` | `LoginPage` | `meta.guest`; anonymous may stay (upgrade); registered bounce → lobby |
+| `/forgot-password` | `forgot-password` | `ForgotPasswordPage` | `meta.guest`; any authenticated (incl. anonymous) → lobby |
 | `/confirm-email` | `confirm-email` | `ConfirmEmailPage` | **public** (no `guest`) |
 | `/reset-password` | `reset-password` | `ResetPasswordPage` | **public** |
-| `/lobby` | `lobby` | `LobbyPage` | `requiresAuth`; room list only — sections/logout in App header |
+| `/lobby` | `lobby` | `LobbyPage` | `requiresAuth` (silent guest if no session); room list only — sections + logout/login in App header |
 | `/account` | `account` | `AccountPage` | `requiresAuth`; anonymous → lobby |
 | `/support` | `support` | `SupportPage` | `requiresAuth` |
 | `/support/staff` | `support-staff` | `SupportStaffPage` | `requiresStaff` |
@@ -111,24 +111,14 @@ Do not put a second app shell inside a page — `App.vue` already mounts `router
 
 ## Router Patterns
 
-- `src/router/routes.ts` — route table; `src/router/index.ts` — `defineRouter` + `beforeEach`.
+- `src/router/routes.ts` — route table; `src/router/index.ts` — `defineRouter` + `beforeEach(authBeforeEach)`.
+- Guard logic: `src/router/authGuard.ts` — full canon in [`client-work-with-auth/guards.md`](../client-work-with-auth/guards.md).
 - Lazy imports; lowercase `name`; `meta.requiresAuth` / `guest` / `requiresStaff` / `requiresAdmin`.
 - Keep catch-all last. Do not switch away from `hash` unless asked.
 
-### Auth `beforeEach`
+### Auth `beforeEach` (`authGuard.ts`)
 
-```ts
-Router.beforeEach(async (to) => {
-  const auth = useAuthStore();
-  await auth.whenReady();
-  if (to.meta.requiresAuth && !auth.isAuthenticated) return '/login';
-  if (to.meta.guest && auth.isAuthenticated) return '/lobby';
-  if (to.meta.requiresAdmin && !auth.isAdmin) return '/lobby';
-  if (to.meta.requiresStaff && !auth.isStaff) return '/lobby';
-});
-```
-
-Staff/admin meta gates nav only — server still enforces on HTTP.
+Ordinary `requiresAuth` without session → silent guest (stay on target); staff/admin without session → Login + `redirect` (no anonymous); silent-guest fail → Login + `redirect`; Login bounce only for registered; other `meta.guest` bounce any authenticated. Staff/admin meta gates nav only — server still enforces on HTTP. Do **not** document «requiresAuth → /login» as the only path. Details + code: [guards.md](../client-work-with-auth/guards.md).
 
 ## Navigation
 

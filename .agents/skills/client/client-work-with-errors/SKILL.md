@@ -323,4 +323,4 @@ setting `error`. Document with a short comment.
 | `src/pages/LobbyPage.vue` | `q-banner` + `game.error`; join/create catch |
 | `src/pages/GamePage.vue` | `q-banner` + rejoin fail → lobby |
 | `src/boot/colyseus.ts` | Shared `Client` instance |
-| `src/router/index.ts` | Auth `whenReady` gate (not an error UI) |
+| `src/router/authGuard.ts` | Auth `whenReady` + silent guest / redirect gate (not an error UI; silent-guest fail leaves store `error`) |

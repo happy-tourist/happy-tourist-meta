@@ -140,7 +140,7 @@ async function onSuccessClear() {
 - Toggle `isRegister`: same form for register vs login; clear `auth.error` in `toggleMode`.
 - Register: required `displayName` (trim ≥ 1) → `auth.register(email, password, { name })`; password uses shared policy + `PasswordStrengthMeter` (Submit only when policy OK — not zxcvbn score).
 - Login: `auth.login(email, password)` — no complexity / meter.
-- Anonymous: **outside** the form (`q-card-actions`) → `auth.loginAnonymously(options)`; still uses `:loading="auth.loading"`. Does not go through `q-form` submit / email-password rules.
+- Anonymous: **outside** the form (`q-card-actions`) → `auth.loginAnonymously(options)`; still uses `:loading="auth.loading"`. Does not go through `q-form` submit / email-password rules. **Hide** when `auth.user?.anonymous` (upgrade on Login — SC-AUTH-14); unauthenticated Login still shows it.
 - Google one-click: **outside** the form (same `q-card-actions`) → `auth.loginWithGoogle()`; label via `$t('login.google')`; same loading/error/redirect pattern as guest.
 - API failures: store sets `auth.error`; page shows `q-banner` (map `password_policy_failed` → `$t('auth.passwordPolicy')`). Handlers `catch` empty after store throw.
 - Success: `router.replace(route.query.redirect || '/lobby')`.
@@ -181,7 +181,7 @@ Keep I/O in `stores/auth` (`register` / `login` / `loginAnonymously` / `loginWit
 - Clear store error when switching register ↔ login.
 - Register: always pass trimmed `{ name }` (required); anonymous may omit empty name.
 - Reuse `passwordPolicyRule` + `PasswordStrengthMeter` on register / reset / change-password.
-- Keep anonymous login and Google one-click as buttons outside the form.
+- Keep anonymous login and Google one-click as buttons outside the form; omit guest CTA when already anonymous.
 
 ## Don't
 

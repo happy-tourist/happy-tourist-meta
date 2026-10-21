@@ -18,6 +18,7 @@ to auto in v1).
 | Auth wiring | `App.vue`: `watch([() => auth.ready, () => auth.user?.id, () => auth.user?.anonymous], …)` — stable multi-source (not `() => […]` which allocates a new array each run); not on `user.theme` → `theme.syncFromAuthUser` | do not call HTTP from page templates |
 | Board | Unchanged — tourist tile fills are **fixed colors**, not app Dark mode | `GamePage.vue` scoped CSS (`.tourist-board` / `.tile-*`) |
 | Shell page bg (SC-BRAND-21) | Fixed cover on `App.vue` `q-layout.app-page-bg`; asset = theme (`body.body--dark`) × viewport (`max-width: 599px` = mobile); four JPGs under `src/assets/packs/`; transparent Quasar page canvas under the art | `src/css/app.scss` `.app-page-bg` |
+| Crumbs flex (SC-BRAND-23 / D7) | When breadcrumbs show, `q-page-container--with-crumbs`: flex column + `min-height: 100vh`; child `.q-page` `min-height: 0 !important` so Quasar viewport−header min-height does not stack under crumbs (phantom scroll on short packs/maps). Lobby (no crumbs) keeps Quasar defaults. Prefer flex/min-height — **not** `overflow: hidden` on `body` | `App.vue` class bind + `src/css/app.scss` |
 | Board holes (SC-THEME-07) | Removed cells stay transparent — atmospheric shell art is the page background after SC-BRAND-21 | `GamePage.vue` `.tile--removed` |
 
 `AuthUser` may include optional `theme?: string | null` from userdata (login /

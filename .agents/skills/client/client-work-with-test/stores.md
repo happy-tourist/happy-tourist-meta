@@ -84,11 +84,17 @@ meta `work-with-stores/maps.md` — shared staff queue still mocked via `content
 when testing type-badge / my-moderation map rows).
 App shell crumbs + page bg: `src/__tests__/AppHeaderChrome.test.ts` — breadcrumbs **inside**
 `q-page-container` (not elevated `q-header`; SC-BRAND-17…20 / SC-PACK-193 / SC-MAP-52);
-narrow burger fold Acc/Theme/Logout (SC-BRAND-19); **SC-BRAND-21** `q-layout` class
-`app-page-bg` + `app.scss` source-match (fixed cover, four `pack-bg-*.jpg` urls,
-`@media` 599px / `body.body--dark`, transparent canvas) + assets exist under
-`src/assets/packs/`; **SC-PACK-285** underlay rgba/pad/radius only on `.pack-card-grid`
-(not `.peek-chrome`). Moderation pages omit `content.catalogNav`:
+narrow burger fold Acc/Theme/Logout **or** guest login (SC-BRAND-19/22/24); **SC-BRAND-23**
+`q-page-container--with-crumbs` flex + `app.scss` min-height override (no body
+`overflow:hidden`); **SC-BRAND-21** `q-layout` class `app-page-bg` + `app.scss`
+source-match (fixed cover, four `pack-bg-*.jpg` urls, `@media` 599px /
+`body.body--dark`, transparent canvas) + assets exist under `src/assets/packs/`;
+**SC-PACK-285** underlay rgba/pad/radius only on `.pack-card-grid` (not
+`.peek-chrome`). Auth guard: `src/router/__tests__/authGuard.test.ts` (silent
+guest / staff Login redirect / Login upgrade); Login hide guest CTA when
+already anonymous: `src/pages/__tests__/LoginPageSilentGuest.test.ts`. Catalog /
+maps guest filters: `ContentUnifiedList` SC-PACK-153/286 + `ContentMaps` SC-MAP-69
+(`v-if` hide identity filters). Moderation pages omit `content.catalogNav`:
 `ContentModerationUx` SC-PACK-194/195.
 Lobby create/list ordinals (no set author): `LobbyCreateWire` SC-LOBBY-24/26
 (`taskSetOption` / `taskSetLabel` «Набор заданий #{n}» / pack-index ordinals when soft sets hide ahead).
