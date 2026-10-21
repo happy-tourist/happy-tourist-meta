@@ -37,3 +37,26 @@
 
 - [x] 6.1 Обновить client skills под новый SC-PACK-286 / SC-MAP-69 (весь filter row скрыт для guest, не «Все» остаётся): `.agents/skills/client/work-with-pages/content-pages.md`, `work-with-stores/content.md`, `work-with-stores/maps.md`, `client-work-with-test/stores.md`
 - [x] 6.2 В тех же skills кратко: client omit soft-unpublished list rows для `!isStaff` (`hasLive && inCatalog === false`, D2); anonymous+unverified add-task-set CTA→login/verify gate (D3 / SC-PACK-287/290) + live view-only без `checkGate` на `view=live` (D8 / SC-PACK-288/291)
+
+## 7. Follow-up — soft-unpublished task sets staff-only (D6 revise / SC-PACK-132/292)
+
+- [x] 7.1 Перед работой: delta packs SC-PACK-132/292; `design.md` D6; `ContentPackPage.vue` task-set grid; тесты SoftUnpublish / ContentPackAcl / related asserting muted СНЯТО for non-staff
+- [x] 7.2 На live pack detail: для `!isStaff` не рендерить soft-unpublished task sets (`inCatalog === false`); staff оставляют muted «СНЯТО» + Edit/Вернуть; ordinals среди видимых; deep-link non-enterable unchanged
+- [x] 7.3 Vitest: revise SC-PACK-132 (omit for non-staff; staff keep card); add SC-PACK-292; `npm test` (затронутые)
+
+## 8. Follow-up — create = lobby primary + translucent catalog underlay (D9/D10)
+
+- [x] 8.1 Перед работой: delta branding SC-BRAND-27/28; design D9/D10; `ContentCatalogPage.vue` / `MapsListPage.vue` create; `app.scss` `.catalog-list-create` + solid `.catalog-list-page .pack-card-grid`
+- [x] 8.2 Убрать `unelevated` и custom `.catalog-list-create` sizing — create как Lobby (`color="primary" icon="add"`); title band layout сохранить
+- [x] 8.3 Удалить solid cream/navy override на catalog `.pack-card-grid` — снова SC-PACK-285 `rgba(…,0.78)`; обновить тесты SC-BRAND-27/28 / underlay assertions; `npm test` (затронутые)
+
+## 9. Follow-up — translucent game HUD (D11 / SC-PRESENCE-34)
+
+- [x] 9.1 Перед работой: delta `specs/game/presence/spec.md` SC-PRESENCE-34; `GamePage.vue` `.game-hud` CSS (сейчас solid `#fff` / `#121212`)
+- [x] 9.2 Сделать sticky bottom `.game-hud` translucent: light `rgba(255,255,255,0.78)`, dark `rgba(18,18,18,0.78)`; top presence row не трогать
+- [x] 9.3 Vitest / source-match assertion для SC-PRESENCE-34 (или расширение Game chrome теста); `npm test` (затронутые)
+
+## 10. Follow-up quality + skills
+
+- [x] 10.1 Traceability: SC-PACK-132/292, SC-BRAND-27/28, SC-PRESENCE-34 → covered; `npm run lint`, `typecheck`, `npm test` из client — починить регрессии follow-up
+- [x] 10.2 Skills: content-pages / pack-cards / board (presence HUD) — staff-only soft-unpub task sets; create=lobby; translucent underlay + `.game-hud` alpha 0.78

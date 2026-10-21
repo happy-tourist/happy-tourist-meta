@@ -20,16 +20,18 @@ is a hard defect. Contracts: meta `work-with-stores/content.md`.
 ## Pack card grid (`app.scss` + tile components)
 
 Answer/task **lists** use global wrap class `.pack-card-grid` (`display: flex;
-flex-wrap: wrap; gap: 0.75rem`) in `src/css/app.scss`. **Underlay (SC-PACK-285):**
-layout-only `.pack-card-grid` also gets translucent `background` light
-`rgba(255,255,255,0.78)` / dark `rgba(18,18,18,0.78)`, `padding: 0.75rem`,
-`border-radius: 8px` — between shell page art (SC-BRAND-21) and tiles. Paint
-underlay **only** on `.pack-card-grid`, **not** on `.peek-chrome` (shared
-`--pack-card-*` token selector stays joint; underlay does not). **Catalog lists
-exception (SC-BRAND-25/26):** `.catalog-list-page .pack-card-grid` uses solid
-cream `#f7f4ec` / dark navy `#141b2b` canvas instead of the translucent underlay
-(packs + maps list only — see [theme.md](theme.md)). Tile chrome lives in
-scoped styles on `PackAnswerCardTile.vue` / `PackTaskTile.vue`. Answer list
+flex-wrap: wrap; gap: 0.75rem`) in `src/css/app.scss`. **Underlay (SC-PACK-285 /
+SC-BRAND-28 / D10):** layout-only `.pack-card-grid` also gets translucent
+`background` light `rgba(255,255,255,0.78)` / dark `rgba(18,18,18,0.78)`,
+`padding: 0.75rem`, `border-radius: 8px` — between shell page art (SC-BRAND-21)
+and tiles. Paint underlay **only** on `.pack-card-grid`, **not** on
+`.peek-chrome` (shared `--pack-card-*` token selector stays joint; underlay
+does not). Catalog packs/maps lists **keep** this translucent underlay —
+**do not** reintroduce solid cream/navy on `.catalog-list-page .pack-card-grid`
+(SC-BRAND-28). Create CTA on catalog title band = Lobby Quasar primary
+(`color="primary" icon="add"` — **no** `unelevated` / custom sizing —
+SC-BRAND-27 / D9; see [theme.md](theme.md)). Tile chrome lives in scoped styles
+on `PackAnswerCardTile.vue` / `PackTaskTile.vue`. Answer list
 tile = **portrait** pack-card W **156** / min-H ≈**206**, radius 12,
 `--pack-card-*` (one size with/without description — **not** former dual
 **150×200** / **300×200** or horizontal content|description splitter); column

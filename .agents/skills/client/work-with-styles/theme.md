@@ -28,10 +28,10 @@ Shared classes in `app.scss` (packs + maps list pages):
 
 | Class | Role |
 |-------|------|
-| `.catalog-list-page` | `q-page` host; cream/navy `.pack-card-grid` canvas under cards (overrides SC-PACK-285 translucent underlay on these lists only) |
+| `.catalog-list-page` | `q-page` host; `.pack-card-grid` keeps SC-PACK-285 translucent underlay (SC-BRAND-28 / D10 — **no** solid cream/navy override) |
 | `.catalog-list-title-band` | Title + subtitle + create CTA row (gap ~12; mb ~20 guest / filters tighten registered) |
 | `.catalog-list-title` / `.catalog-list-subtitle` | ~34px / ~14px; light navy / muted; dark white / `#a8c0d0` |
-| `.catalog-list-create` | Unelevated primary create (~38px min-height, radius ~7) |
+| create CTA | Lobby Quasar primary (`color="primary" icon="add"`) — **no** `unelevated` / custom `.catalog-list-create` sizing (SC-BRAND-27 / D9) |
 | `.catalog-list-filters` | Registered filter row spacing (hidden entirely for guest — SC-PACK-286 / SC-MAP-69) |
 
 Header under `.app-page-bg`: light `#d6eafb` / ink `#1c2e44`; dark `#172236` / `#a8c0d0`; toolbar `min-height` ~56. Crumb strip: muted blue ink (`#5a8fb8` / dark `#8aa4bc`), pad ~8/4, ~13px — size/color in `app.scss`, not only `App.vue` scoped.

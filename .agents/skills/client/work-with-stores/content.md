@@ -244,7 +244,10 @@ no staff thread reply until Submit creates clean `pending`.
 - **Live detail:** breadcrumbs replace «К наборам»; favorite star; author Edit
   (creator) / set-row Edit (task-set author); set-row `moderationStatus` badges
   for set author+staff; `neverLive` ghost → add-task-set Edit (GET restores
-  draft\|legacy cancelled — SC-PACK-196/265/267); staff Edit gated
+  draft\|legacy cancelled — SC-PACK-196/265/267); soft-unpub sets
+  (`neverLive !== true && inCatalog === false`) **staff-only** on live cards /
+  Tasks gate / `publishedSetCount` / `canUnpublish*` (SC-PACK-132/292 / D6 —
+  never-live ghosts stay visible/enterable); staff Edit gated
   by open author request; add-task-set beside «Задания» when in-catalog —
   anonymous+unverified **see** CTA → login/verify gate (`ensureEligible` /
   D3 — SC-PACK-287/290; **not** `inCollection`); live published task-set

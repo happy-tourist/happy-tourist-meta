@@ -10,10 +10,10 @@ Product store conventions: meta skill `work-with-stores`. Domains: `auth`,
 staff lock+save / soft-unpublish pack+set/`inCatalog` / needs_revision; cascadeGap* / hasLive confirm; simplify ACL
 SC-PACK-100…136 — pages `Content*Acl.test.ts` incl. `ContentCatalogAcl` /
 `ContentCollectionAcl` / `ContentPackAcl`, `ContentSoftUnpublish.test.ts`
-(SC-PACK-120…125 staff unpublish/republish + soft-unpublished gray/non-nav;
+(SC-PACK-120…125 staff unpublish/republish + staff-muted soft-unpub chrome;
 catalog card actions assert short `taskSetCardUnpublish`/`taskSetCardRepublish`
 SC-PACK-250 — confirm dialog keeps long `unpublish`/`republish`),
-`ContentFollowUp4.test.ts` (SC-PACK-129…133 + SC-PACK-139 unpublishConfirm warns open requests / set soft-hide /
+`ContentFollowUp4.test.ts` (SC-PACK-129…133 + SC-PACK-139 unpublishConfirm warns open requests / SC-PACK-132/292 soft-unpub task sets **staff-only omit** for non-staff /
 live summary+drill-in / SC-PACK-261 AddTaskSet no top live grid + dialog mini-card pool), `ContentFollowUp5.test.ts`
 (SC-PACK-134…136 slot card text / ordinal `taskSetLabel` no author / Tasks
 `content.back`),
@@ -92,16 +92,23 @@ source-match (fixed cover, four `pack-bg-*.jpg` urls, `@media` 599px /
 **SC-BRAND-25** brand logo is image mark only (no wordmark label / no
 «СЧАСТЛИВЫЙ ТУРИСТ» text); height ~44px in `App.vue`;
 **SC-PACK-285** underlay rgba/pad/radius only on `.pack-card-grid` (not
-`.peek-chrome`; catalog lists may use cream/navy `.catalog-list-page` canvas).
+`.peek-chrome`; catalog lists keep the same translucent underlay — **no** solid
+cream/navy `.catalog-list-page .pack-card-grid` override — SC-BRAND-28 / D10);
+**SC-BRAND-27** catalog create = Lobby Quasar `color="primary" icon="add"` (no
+`unelevated` / `.catalog-list-create` sizing); **SC-PRESENCE-34** sticky
+`.game-hud` translucent rgba α 0.78 (same as underlay; not opaque `#fff` /
+`#121212`).
 Auth guard: `src/router/__tests__/authGuard.test.ts` (silent
 guest / staff Login redirect / Login upgrade); Login hide guest CTA when
 already anonymous: `src/pages/__tests__/LoginPageSilentGuest.test.ts`. Catalog /
 maps guest chrome: `ContentUnifiedList` SC-PACK-153/286/289 + `ContentMaps`
 SC-MAP-69/70 (**entire** filter row hidden for anonymous — not «Все» alone;
-client omit soft-unpub `hasLive && inCatalog === false` for `!isStaff` / D2).
+client omit soft-unpub `hasLive && inCatalog === false` for `!isStaff` / D2;
+SC-BRAND-27/28 create=lobby + translucent underlay).
 Pack detail add-task-set CTA+gate + live view-only: `ContentPackAcl` /
 related SC-PACK-165/287/288/290/291 (anonymous+unverified see CTA →
-login/verify gate / D3; `view=live` skips boot `checkGate` / D8). Moderation
+login/verify gate / D3; `view=live` skips boot `checkGate` / D8); soft-unpub
+task sets staff-only omit SC-PACK-132/292 / D6. Moderation
 pages omit `content.catalogNav`: `ContentModerationUx` SC-PACK-194/195.
 Lobby create/list ordinals (no set author): `LobbyCreateWire` SC-LOBBY-24/26
 (`taskSetOption` / `taskSetLabel` «Набор заданий #{n}» / pack-index ordinals when soft sets hide ahead).

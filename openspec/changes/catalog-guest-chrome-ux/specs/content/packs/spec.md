@@ -1,4 +1,4 @@
-# content/packs — delta: guest filter chrome, СНЯТО list, add-task-set gate, view-only task-set
+# content/packs — delta: guest filter chrome, СНЯТО list/detail, add-task-set gate, view-only task-set
 
 ## Traceability
 
@@ -11,8 +11,10 @@
 | SC-PACK-289 | covered (ContentUnifiedList — non-staff packs list hides soft-unpublished) |
 | SC-PACK-290 | covered (ContentPackAcl — unverified add-task-set CTA + verify gate) |
 | SC-PACK-291 | covered (ContentPackTasksCsvHide — unverified view-only task-set; no verify gate) |
+| SC-PACK-132 | covered (ContentFollowUp4 — non-staff omit soft-unpublished task-set cards; staff keep СНЯТО) |
+| SC-PACK-292 | covered (ContentFollowUp4 — guest omits soft-unpublished task-set card on live) |
 
-Related: `content/maps` (same guest filter / СНЯТО list); `ui/branding` (list page chrome); create/add-task-set gates unchanged on server (`registered_user_required` via `requireVerifiedEditor`). Soft-unpublish server rules — SC-PACK-120… (unchanged). `GET /api/content/packs` (`listCatalog`) already omits soft-unpublished for non-staff; this delta adds **client** list omit as defense-in-depth. Guest view-only task-set (SC-PACK-288) reuses existing `GET /api/content/packs/:id` (`getLivePack`) for anonymous JWT — **no** new read endpoint.
+Related: `content/maps` (same guest filter / СНЯТО list); `ui/branding` (list page chrome + translucent underlay); `game/presence` (HUD translucent). Create/add-task-set gates unchanged on server. Soft-unpublish **storage** rules — SC-PACK-120… (unchanged); this delta **revises** live task-set **visibility** for non-staff (SC-PACK-132). `listCatalog` already omits soft-unpublished packs for non-staff; client list omit remains defense-in-depth. Guest view-only (SC-PACK-288) reuses `getLivePack` — **no** new read endpoint.
 
 ## MODIFIED Requirements
 
@@ -40,7 +42,7 @@ The packs list MUST support filters: **all** (default); **on moderation** (calle
 - **AND** starring / favorites filter MUST NOT grant a personal favorites set
 - **AND** the favorites filter control MUST NOT be visible
 
-#### Scenario [SC-PACK-286]: Guest sees no filter chrome on packs list
+#### Scenario [SC-PACK-286]: Guest sees only the All filter control
 
 - **GIVEN** an anonymous guest on the packs list
 - **WHEN** the list page renders
@@ -119,7 +121,7 @@ On the unified packs catalog list, soft-unpublished packs (`hasLive` and not in 
 
 ### Requirement: Guest may view published task set read-only
 
-An anonymous guest or unverified user MUST be able to open a **published in-catalog** task set on an in-catalog non-blocked pack for **view-only** inspection (questions and slots visible; no compose, CSV write, delete, or submit). The client MUST NOT block that live drill-in (`query.view=live` / equivalent) with the login or verify-email gate — today `ContentPackTasksPage.checkGate()` would otherwise block both; live boot MUST skip that gate and load `liveViewMode`. Auth gates remain for create / add-task-set / edit / mutate. Soft-unpublished task sets MUST remain non-enterable for non-staff as already specified.
+An anonymous guest or unverified user MUST be able to open a **published in-catalog** task set on an in-catalog non-blocked pack for **view-only** inspection (questions and slots visible; no compose, CSV write, delete, or submit). The client MUST NOT block that live drill-in (`query.view=live` / equivalent) with the login or verify-email gate — today `ContentPackTasksPage.checkGate()` would otherwise block both; live boot MUST skip that gate and load `liveViewMode`. Auth gates remain for create / add-task-set / edit / mutate. Soft-unpublished task sets MUST NOT appear in the live list for non-staff (see staff soft-unpublish task set requirement) and MUST remain non-enterable if reached by deep link.
 
 #### Scenario [SC-PACK-288]: Guest opens published task set view-only
 
@@ -136,3 +138,36 @@ An anonymous guest or unverified user MUST be able to open a **published in-cata
 - **THEN** the client opens the task-set surface in view-only mode
 - **AND** a verify-email dialog MUST NOT block that open
 - **AND** compose / add-question / destructive controls MUST NOT be available
+
+## MODIFIED Requirements
+
+### Requirement: Staff soft-unpublish and republish task set
+
+Moderator and admin MUST be able to soft-unpublish an entire **task set** on a live pack and to republish it without a new moderation request. Soft-unpublish of a task set MUST NOT remove individual questions as a separate product action. Soft-unpublish MUST keep the set stored. Soft-unpublished task sets MUST be shown **only to staff** on the live pack task-set list (and editor/staff surfaces as already specified): non-staff viewers (including anonymous and the pack creator after first publish) MUST NOT see a card for a soft-unpublished set — same product sense as soft-unpublished packs/maps on catalog lists. Staff MUST see the set card as muted with a short unpublished status badge (product sense «СНЯТО»), MUST NOT treat it as enterable for non-staff deep links, MUST still be able to Edit the soft-unpublished set (staff-save / lock session), and MUST have republish on the **task-set card** (editor and live list) and **inside** the task-set page. Staff MUST confirm before unpublishing a set; republish MUST NOT require confirmation. The system MUST reject unpublishing a task set when it is the **only** published task set on the pack. Soft-unpublish of individual tasks/questions MUST NOT be offered. Staff moderation queue MUST NOT expose task-set unpublish controls. Hard-delete of published or soft-unpublished task sets is out of scope for this requirement. On **task-set summary cards**, soft-unpublish and republish action labels MUST use short product copy («Снять» / «Вернуть» or equivalent i18n). Pack/catalog soft-unpublish copy and confirmation dialog wording MAY remain longer («Снять с публикации» / set confirm titles) and MUST NOT be required to match the card short labels. Display ordinals for visible sets MAY renumber among sets shown to that viewer (staff sees soft-unpublished in sequence; non-staff only published).
+
+#### Scenario [SC-PACK-131]: Staff cannot unpublish the only published task set
+
+- **GIVEN** live pack P with exactly one published task set S and an authenticated staff user
+- **WHEN** the staff user attempts to soft-unpublish S
+- **THEN** the system rejects the attempt (or the client disables the control)
+- **AND** S remains published
+
+#### Scenario [SC-PACK-132]: Soft-unpublished task set is gray and non-enterable
+
+- **GIVEN** live pack P with published task set S1 and soft-unpublished task set S2
+- **WHEN** a non-staff viewer (including anonymous) opens live P
+- **THEN** S2 MUST NOT appear as a task-set card for that viewer (staff-only visibility — same product sense as soft-unpublished packs/maps lists)
+- **AND** S1 remains visible and enterable per published rules
+- **AND WHEN** staff opens live P
+- **THEN** S2’s card is muted with a short unpublished badge (e.g. «СНЯТО»)
+- **AND** activating S2 for non-staff MUST NOT open the questions view (deep link / staff surfaces unchanged for staff Edit)
+- **AND** staff MAY still Edit S2 and choose republish on the card or inside the task-set page without confirmation
+- **AND WHEN** staff chooses unpublish on a published set that is not the last published set
+- **THEN** the client asks for confirmation before the API call
+
+#### Scenario [SC-PACK-292]: Guest does not see soft-unpublished task-set card
+
+- **GIVEN** an anonymous guest on live pack P with soft-unpublished task set S2 and published set S1
+- **WHEN** the tasks section renders
+- **THEN** S2 MUST NOT appear in the task-set grid
+- **AND** S1 remains listed

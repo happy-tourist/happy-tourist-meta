@@ -27,7 +27,7 @@ The Maps list MUST support filters: **all** (default); **on moderation** (caller
 - **WHEN** A applies the mine filter
 - **THEN** both M1 and M2 appear for A
 
-#### Scenario [SC-MAP-69]: Guest sees no filter chrome on maps list
+#### Scenario [SC-MAP-69]: Guest sees only All filter on maps
 
 - **GIVEN** an anonymous guest on the maps list
 - **WHEN** the list page renders

@@ -102,7 +102,7 @@ Sync-driven markers (SC-PRESENCE-01…25 / redesign-game-hud phase 2). Page read
 |------|----------|
 | Who | One marker per **occupied** seat (including offline-in-grace). Empty slots not rendered. |
 | Avatar | Seat `touristId` → same tourist PNG as pieces; **image box = 72px** (SC-PRESENCE-13) |
-| Seated viewer | **Top** `.presence-row--top`: opponents only, tight to board; **always reserve row `min-height` (~96px) when seated** even if 0 opponents — no empty avatars (SC-PRESENCE-26). Sticky bottom `.game-hud`: **own** marker (+ budgets beside avatar) → **strip**. **No** opponents in bottom bar; **no** chip/`q-menu` (SC-PRESENCE-02/22) |
+| Seated viewer | **Top** `.presence-row--top`: opponents only, tight to board; **always reserve row `min-height` (~96px) when seated** even if 0 opponents — no empty avatars (SC-PRESENCE-26). Sticky bottom `.game-hud` (translucent rgba α 0.78 — SC-PRESENCE-34): **own** marker (+ budgets beside avatar) → **strip**. **No** opponents in bottom bar; **no** chip/`q-menu` (SC-PRESENCE-02/22) |
 | Spectator | All occupied seats → **top** row L→R by join order; **no** bottom presence HUD; no alone min-height reserve (SC-PRESENCE-03) |
 | Join order | Array order from sync map `forEach` as mirrored into `seats[]` |
 | Offline | `!connected && reconnectUntil > 0` → **inner** warning `QCircularProgress` (`min=0`, `max=30`, `value` = remaining from `reconnectUntil − now`) |
