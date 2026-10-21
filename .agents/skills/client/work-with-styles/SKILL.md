@@ -4,8 +4,9 @@ description: >-
   Use when adding, changing, reviewing, or debugging Vue 3 / Quasar 2 styles in
   the happy-tourist client: Quasar Dark, quasar.variables.scss, app.scss, scoped
   page CSS, Quasar utilities, Material Icons / Roboto. Core in SKILL.md; topic
-  details in theme.md (Dark + /api/theme), board.md (GamePage tourist CSS),
-  pack-cards.md (cascade yellow + portrait PackAnswerCardTile SC-PACK-222/225/282/283
+  details in theme.md (Dark + /api/theme + app-page-bg SC-BRAND-21), board.md
+  (GamePage tourist CSS), pack-cards.md (`.pack-card-grid` underlay SC-PACK-285;
+  cascade yellow + portrait PackAnswerCardTile SC-PACK-222/225/282/283
   + portrait PackTaskTile SC-PACK-278/283 + compose width/dots/Save SC-PACK-279…281
   + catalog PackListCardTile ~180×260 + PackTaskSetCardTile + MapListCardTile
   + lobby LobbyRoomCardTile shared `--pack-card-*` SC-LOBBY-33; peek/compose
@@ -33,9 +34,9 @@ Read the matching file in this folder when the change involves that area
 
 | Topic | File |
 |-------|------|
-| Quasar Dark + GET/POST `/api/theme` + header toggle wiring | [theme.md](theme.md) |
+| Quasar Dark + GET/POST `/api/theme` + header toggle + shell `.app-page-bg` (SC-BRAND-21) | [theme.md](theme.md) |
 | Tourist board / presence / HUD / say CSS on GamePage | [board.md](board.md) |
-| Cascade yellow + `.pack-card-grid` / `.peek-chrome` + portrait `PackAnswerCardTile` SC-PACK-282/283 + portrait `PackTaskTile` + catalog/list + `PackTaskSetCardTile` + map tiles + lobby `LobbyRoomCardTile` + peek/compose mini-card pool SC-PACK-260/277…281 (SC-MAP-68 mask `url`) | [pack-cards.md](pack-cards.md) |
+| Cascade yellow + `.pack-card-grid` underlay (SC-PACK-285) / `.peek-chrome` + portrait `PackAnswerCardTile` SC-PACK-282/283 + portrait `PackTaskTile` + catalog/list + `PackTaskSetCardTile` + map tiles + lobby `LobbyRoomCardTile` + peek/compose mini-card pool SC-PACK-260/277…281 (SC-MAP-68 mask `url`) | [pack-cards.md](pack-cards.md) |
 
 ## Project Style Model
 
@@ -44,7 +45,7 @@ Read the matching file in this folder when the change involves that area
 | Quasar Dark (runtime) | Chrome light / dark / device `auto` | See [theme.md](theme.md) |
 | Brand logo / breadcrumbs CSS | ≥60px logo; `.app-breadcrumbs` inside `q-page-container` | `App.vue` scoped (+ `work-with-pages/shell.md`) |
 | Quasar theme Sass variables | `$primary`, `$negative`, … | `src/css/quasar.variables.scss` |
-| Global app CSS | `.text-muted`, `.pack-card-grid` | `src/css/app.scss` |
+| Global app CSS | `.text-muted`, `.app-page-bg`, `.pack-card-grid` (+ underlay) | `src/css/app.scss` |
 | Page / component CSS | Board, login card, tiles | `<style scoped>` / topic files |
 | Template layout | Quasar utility / color props | Template `class` / `color` / `icon` |
 
@@ -89,8 +90,10 @@ the Quasar palette on purpose.
 .body--dark .text-muted { color: rgba(255, 255, 255, 0.7); }
 ```
 
-Also hosts `.pack-card-grid` + shared `--pack-card-*` resting tokens
-(SC-PACK-255; see [pack-cards.md](pack-cards.md)).
+Also hosts:
+
+- `.app-page-bg` — shell fixed theme×viewport page backgrounds (SC-BRAND-21; see [theme.md](theme.md) / [shell.md](../work-with-pages/shell.md))
+- `.pack-card-grid` + shared `--pack-card-*` resting tokens (SC-PACK-255) and layout-only translucent underlay (SC-PACK-285; **not** on `.peek-chrome` — see [pack-cards.md](pack-cards.md))
 
 ## Fonts And Icons
 
@@ -172,3 +175,7 @@ Prefer Quasar helpers already in login / lobby / game:
   [pack-cards.md](pack-cards.md)).
 - Soft status pills left on Quasar solid `color` fills without transparent
   reset before tone classes (map / task-set / catalog badges).
+- Per-page background classes instead of shared `q-layout.app-page-bg`
+  (SC-BRAND-21); painting underlay on `.peek-chrome` or the joint
+  `.pack-card-grid, .peek-chrome` token selector (SC-PACK-285 — underlay
+  layout-only on `.pack-card-grid`).

@@ -6,7 +6,7 @@ Read with the [core pages skill](SKILL.md) when changing header, brand logo, bre
 Every route renders inside:
 
 ```vue
-<q-layout view="hHh lpR fFf">
+<q-layout view="hHh lpR fFf" class="app-page-bg">
   <q-header bordered>
     <q-toolbar>
       <!-- Brand logo left (≥60px); always same button (auth/other → lobby; lobby noop; Game leave) -->
@@ -33,6 +33,8 @@ Every route renders inside:
 ```
 
 
+
+**Shell page background (SC-BRAND-21):** `class="app-page-bg"` on `q-layout` (all routes). CSS in `src/css/app.scss`: fixed `cover` from `src/assets/packs/pack-bg-{desktop|mobile}-{light|dark}.jpg`; dark via `body.body--dark`; mobile `@media (max-width: 599px)` (Quasar `sm` − 1, independent of header burger `md`); transparent page canvas (`.q-page` / `.q-page-container` / `.app-breadcrumbs` / `--q-page-bg`) so art shows through. Elevated header/toolbar MAY stay opaque. Do **not** add per-page background classes. Card-grid underlay: see [pack-cards.md](../work-with-styles/pack-cards.md) (SC-PACK-285). Game board holes still show page bg (SC-THEME-07).
 
 Brand logo (`@/assets/brand/logo.png`, height ≥60px, `width: auto; object-fit: contain`) is always left as one interactive control. Click modes (`brandLogoMode`): **Game** → `leave` (`onExitClick` / confirm / `leaveGame`); **auth** routes (`login` / `forgot-password` / `confirm-email` / `reset-password`) → `toLobby` (`router.push({ name: 'lobby' })`; guest may bounce via `requiresAuth`); **lobby** → `noop` (same button, click ignored); other authenticated → `toLobby`. Aria: Game → `game.leave`; non-Game → `auth.backToLobby` (key kept for aria; no page «В лобби» buttons on Account/Support).
 

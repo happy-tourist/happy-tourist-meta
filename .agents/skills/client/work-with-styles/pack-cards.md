@@ -20,7 +20,12 @@ is a hard defect. Contracts: meta `work-with-stores/content.md`.
 ## Pack card grid (`app.scss` + tile components)
 
 Answer/task **lists** use global wrap class `.pack-card-grid` (`display: flex;
-flex-wrap: wrap; gap: 0.75rem`) in `src/css/app.scss`. Tile chrome lives in
+flex-wrap: wrap; gap: 0.75rem`) in `src/css/app.scss`. **Underlay (SC-PACK-285):**
+layout-only `.pack-card-grid` also gets translucent `background` light
+`rgba(255,255,255,0.78)` / dark `rgba(18,18,18,0.78)`, `padding: 0.75rem`,
+`border-radius: 8px` — between shell page art (SC-BRAND-21) and tiles. Paint
+underlay **only** on `.pack-card-grid`, **not** on `.peek-chrome` (shared
+`--pack-card-*` token selector stays joint; underlay does not). Tile chrome lives in
 scoped styles on `PackAnswerCardTile.vue` / `PackTaskTile.vue`. Answer list
 tile = **portrait** pack-card W **156** / min-H ≈**206**, radius 12,
 `--pack-card-*` (one size with/without description — **not** former dual

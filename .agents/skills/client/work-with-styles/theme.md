@@ -17,6 +17,8 @@ to auto in v1).
 | Header control | Shared `q-header` + `q-btn` icons `dark_mode` / `light_mode` | `App.vue` |
 | Auth wiring | `App.vue`: `watch([() => auth.ready, () => auth.user?.id, () => auth.user?.anonymous], …)` — stable multi-source (not `() => […]` which allocates a new array each run); not on `user.theme` → `theme.syncFromAuthUser` | do not call HTTP from page templates |
 | Board | Unchanged — tourist tile fills are **fixed colors**, not app Dark mode | `GamePage.vue` scoped CSS (`.tourist-board` / `.tile-*`) |
+| Shell page bg (SC-BRAND-21) | Fixed cover on `App.vue` `q-layout.app-page-bg`; asset = theme (`body.body--dark`) × viewport (`max-width: 599px` = mobile); four JPGs under `src/assets/packs/`; transparent Quasar page canvas under the art | `src/css/app.scss` `.app-page-bg` |
+| Board holes (SC-THEME-07) | Removed cells stay transparent — atmospheric shell art is the page background after SC-BRAND-21 | `GamePage.vue` `.tile--removed` |
 
 `AuthUser` may include optional `theme?: string | null` from userdata (login /
 display); restore after reload must use **GET** `/api/theme`, not JWT claims

@@ -4,7 +4,7 @@ description: >-
   Use when creating or changing Vue page views under src/pages/*Page.vue, routes in
   src/router/routes.ts, router guards, or App.vue shell wiring in the happy-tourist
   Quasar Vue 3 client. Core in SKILL.md; topic details in shell.md (header/brand/
-  crumbs/leave), content-pages.md (packs/maps UI; portrait PackAnswerCardTile
+  crumbs/leave + app-page-bg SC-BRAND-21), content-pages.md (packs/maps UI; portrait PackAnswerCardTile
   SC-PACK-222/225/282/283 + PackTaskTile SC-PACK-278/283; PackTaskComposeDialog
   SC-PACK-256…263/276…281; draft lifecycle/`canHardDelete`/hidden shell
   SC-PACK-234/264…275), game-page.md (GamePage wiring; peek mini-card pool
@@ -27,7 +27,7 @@ Read the matching file in this folder when the change involves that area
 
 | Topic | File |
 |-------|------|
-| App shell — brand logo, section nav, breadcrumbs, Game leave/status, theme banner | [shell.md](shell.md) |
+| App shell — brand logo, section nav, breadcrumbs, Game leave/status, theme banner, `app-page-bg` (SC-BRAND-21) | [shell.md](shell.md) |
 | Content packs + maps pages / routes / list-card UI + answer/task compose dialogs | [content-pages.md](content-pages.md) |
 | GamePage composition + route (board details → `work-with-game-board`) | [game-page.md](game-page.md) |
 

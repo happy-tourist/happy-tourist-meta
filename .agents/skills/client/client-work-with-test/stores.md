@@ -82,10 +82,14 @@ ghost `pack-task-set-ghost-*` → add-task-set Edit SC-PACK-188…190),
 `maps.paint.test.ts` SC-MAP-04; errors via `mapsErrorI18nKey` → `maps.errors.*`;
 meta `work-with-stores/maps.md` — shared staff queue still mocked via `content`
 when testing type-badge / my-moderation map rows).
-App shell crumbs: `src/__tests__/AppHeaderChrome.test.ts` — breadcrumbs **inside**
+App shell crumbs + page bg: `src/__tests__/AppHeaderChrome.test.ts` — breadcrumbs **inside**
 `q-page-container` (not elevated `q-header`; SC-BRAND-17…20 / SC-PACK-193 / SC-MAP-52);
-narrow burger fold Acc/Theme/Logout (SC-BRAND-19). Moderation pages omit
-`content.catalogNav`: `ContentModerationUx` SC-PACK-194/195.
+narrow burger fold Acc/Theme/Logout (SC-BRAND-19); **SC-BRAND-21** `q-layout` class
+`app-page-bg` + `app.scss` source-match (fixed cover, four `pack-bg-*.jpg` urls,
+`@media` 599px / `body.body--dark`, transparent canvas) + assets exist under
+`src/assets/packs/`; **SC-PACK-285** underlay rgba/pad/radius only on `.pack-card-grid`
+(not `.peek-chrome`). Moderation pages omit `content.catalogNav`:
+`ContentModerationUx` SC-PACK-194/195.
 Lobby create/list ordinals (no set author): `LobbyCreateWire` SC-LOBBY-24/26
 (`taskSetOption` / `taskSetLabel` «Набор заданий #{n}» / pack-index ordinals when soft sets hide ahead).
 Lobby room **card listing**: `LobbyRoomCardTile` + `LobbyCreateWire` SC-LOBBY-25/26/33/34/35/36

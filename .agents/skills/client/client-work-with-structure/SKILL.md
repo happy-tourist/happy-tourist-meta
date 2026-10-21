@@ -55,8 +55,8 @@ may also host copies later).
 | Boot | `src/boot/` | Quasar boot: `theme`, `i18n`, `colyseus` (registered in `quasar.config.ts`; `framework.plugins: ['Dark']`) |
 | Router | `src/router/` | `routes.ts` + guards in `index.ts` (`filenameBasedRouting: false`) |
 | i18n | `src/i18n/` | Locale message trees (`en-US`) |
-| CSS | `src/css/` | `app.scss` (`.pack-card-grid` wrap + shared `--pack-card-*` resting chrome SC-PACK-255 for catalog/task-set tiles), `quasar.variables.scss` |
-| Assets | `src/assets/` | Static assets (`brand/logo.png`, `tourists/…`, `grilles/grille.png`, `catapults/catapult.png` + `catapult-broken.png`, `content/task-set-card-tasks.svg` + `content/task-set-badge-{revise,pending,unpublished,draft}.svg` for `PackTaskSetCardTile` CSS masks — SC-PACK-248; `content/map-card-players.svg` + `content/map-card-tourists.svg` for `MapListCardTile` capacity masks — SC-MAP-55; `content/lobby-room-card-seats.svg` for `LobbyRoomCardTile` seats mask — SC-LOBBY-25/36, …) |
+| CSS | `src/css/` | `app.scss` (`.app-page-bg` shell theme×viewport fixed cover SC-BRAND-21; `.pack-card-grid` wrap + shared `--pack-card-*` SC-PACK-255 + layout-only translucent underlay SC-PACK-285 — **not** on `.peek-chrome`), `quasar.variables.scss` |
+| Assets | `src/assets/` | Static assets (`brand/logo.png`; `packs/pack-bg-{desktop|mobile}-{light|dark}.jpg` shell page art SC-BRAND-21; `tourists/…`, `grilles/grille.png`, `catapults/catapult.png` + `catapult-broken.png`, `content/task-set-card-tasks.svg` + `content/task-set-badge-{revise,pending,unpublished,draft}.svg` for `PackTaskSetCardTile` CSS masks — SC-PACK-248; `content/map-card-players.svg` + `content/map-card-tourists.svg` for `MapListCardTile` capacity masks — SC-MAP-55; `content/lobby-room-card-seats.svg` for `LobbyRoomCardTile` seats mask — SC-LOBBY-25/36, …) |
 
 Outside `src`: `public/` (product `favicon.ico` only — no scaffold PNG icon set), `quasar.config.ts`, `package.json` (`productName` = `Happy Tourist`), `.env.development` / `.env.production`, `.github/workflows/`.
 
@@ -73,7 +73,7 @@ pages       →  stores / boot / components / router (params)
 components  →  other components (keep lean; prefer props over store)
 stores      →  boot/colyseus (client); theme store also uses boot/theme helpers
 boot        →  env / SDK / i18n / early Dark apply only
-App.vue     →  layout + elevated header (logo ≥60px; sections; wide Acc/Theme/Logout; narrow burger fold SC-BRAND-19; Game status + header-game-leave) + crumbs inside q-page-container (SC-BRAND-17) + banner + auth→theme sync
+App.vue     →  layout (`q-layout.app-page-bg` SC-BRAND-21) + elevated header (logo ≥60px; sections; wide Acc/Theme/Logout; narrow burger fold SC-BRAND-19; Game status + header-game-leave) + crumbs inside q-page-container (SC-BRAND-17) + banner + auth→theme sync
 ```
 
 Also normal:
