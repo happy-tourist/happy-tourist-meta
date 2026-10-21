@@ -141,7 +141,8 @@ UGC-наборы (**набор карточек** + задания): одна р
 | SC-PACK-150 | covered (mocha) |
 | SC-PACK-151 | covered (vitest) |
 | SC-PACK-152 | covered (vitest) |
-| SC-PACK-153 | covered (vitest) |
+| SC-PACK-153 | covered (client vitest — `ContentUnifiedList` identity filters hidden) |
+| SC-PACK-286 | covered (client vitest — guest sees only All filter) |
 | SC-PACK-154 | covered (mocha/vitest) |
 | SC-PACK-155 | covered (mocha/vitest) |
 | SC-PACK-156 | covered (mocha) |
@@ -1264,7 +1265,7 @@ The client MUST expose a single **packs list** (reachable from the lobby as the 
 
 ### Requirement: Packs list filters
 
-The packs list MUST support filters: **all** (default); **on moderation** (caller’s own open pending or needs_revision requests — packs and add-task-set as applicable); **drafts** (caller’s never-published packs without an open request, or equivalently never-published not yet submitted); **mine** (packs where the caller is `createdBy` OR has contributed at least one task set on that pack); **favorites** (packs the caller has starred). Guests and anonymous users MUST only see the public catalog subset; filters that require identity beyond catalog (mine / favorites / moderation / drafts) MUST yield empty or be unavailable for guests. Staff soft-unpublished visibility rules MUST still apply when staff use filters.
+The packs list MUST support filters: **all** (default); **on moderation** (caller’s own open pending or needs_revision requests — packs and add-task-set as applicable); **drafts** (caller’s never-published packs without an open request, or equivalently never-published not yet submitted); **mine** (packs where the caller is `createdBy` OR has contributed at least one task set on that pack); **favorites** (packs the caller has starred). Guests and anonymous users MUST only see the public catalog subset. Filters that require identity beyond catalog (mine / favorites / moderation / drafts) MUST be **hidden from the UI** for guests (MUST NOT remain visible as disabled controls). Staff soft-unpublished visibility rules MUST still apply when staff use filters.
 
 #### Scenario [SC-PACK-151]: Filter on moderation shows only own open items
 
@@ -1284,6 +1285,14 @@ The packs list MUST support filters: **all** (default); **on moderation** (calle
 - **WHEN** the guest views the list
 - **THEN** only in-catalog packs are shown
 - **AND** starring / favorites filter MUST NOT grant a personal favorites set
+- **AND** the favorites filter control MUST NOT be visible
+
+#### Scenario [SC-PACK-286]: Guest sees only the All filter control
+
+- **GIVEN** an anonymous guest on the packs list
+- **WHEN** the filter chrome renders
+- **THEN** the **all** filter control remains visible (identity filters use `v-if` / equivalent — MUST NOT remain as disabled controls)
+- **AND** on-moderation, drafts, mine, and favorites filter controls are not shown
 
 ### Requirement: Pack favorites (star)
 

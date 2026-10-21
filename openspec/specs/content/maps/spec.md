@@ -66,6 +66,7 @@ UGC-карты поля 10×10 (старт / игровое / финиш / ды�
 | SC-MAP-66 | covered (client vitest — centered overlay status; short badge copy) |
 | SC-MAP-67 | covered (client vitest — pack-card chrome; muted dashed; outline+icon actions) |
 | SC-MAP-68 | covered (client vitest / visual — lead + badge SVG masks show silhouette, not solid square) |
+| SC-MAP-69 | covered (client vitest — `ContentMaps` identity filters hidden) |
 | SC-MAP-56 | covered (client vitest centered editor seats) |
 | SC-MAP-60 | covered (server mocha — soft-unpublished reject) |
 | SC-MAP-61 | covered (server mocha — create uses live map) |
@@ -362,11 +363,11 @@ The Maps list MUST show status badges for **pending**, **needs_revision**, **dra
 
 ### Requirement: Maps list filters
 
-The Maps list MUST support filters: **all** (default); **on moderation** (caller’s own open pending or needs_revision map requests); **drafts** (caller’s never-published maps without an open request); **mine** (maps where the caller is `createdBy`). There MUST NOT be a favorites filter or star for maps. Guests MUST only see in-catalog maps; identity filters MUST be empty or unavailable for guests.
+The Maps list MUST support filters: **all** (default); **on moderation** (caller’s own open pending or needs_revision map requests); **drafts** (caller’s never-published maps without an open request); **mine** (maps where the caller is `createdBy`). There MUST NOT be a favorites filter or star for maps. Guests MUST only see in-catalog maps. Filters that require identity beyond catalog (moderation / drafts / mine) MUST be **hidden from the UI** for guests (MUST NOT remain visible as disabled controls).
 
 #### Scenario [SC-MAP-33]: Filter on moderation shows own pending maps
 
-- **GIVEN** author A has map M pending and user B has map N pending
+- **GIVEN** creator A has map M pending and user B has map N pending
 - **WHEN** A applies the on-moderation filter
 - **THEN** A sees M and MUST NOT see N solely via that filter
 
@@ -375,6 +376,14 @@ The Maps list MUST support filters: **all** (default); **on moderation** (caller
 - **GIVEN** creator A has in-catalog map M1 and never-published map M2
 - **WHEN** A applies the mine filter
 - **THEN** both M1 and M2 appear for A
+
+#### Scenario [SC-MAP-69]: Guest sees only All filter on maps
+
+- **GIVEN** an anonymous guest on the maps list
+- **WHEN** the filter chrome renders
+- **THEN** the **all** filter control remains visible (identity filters use `v-if` / equivalent — MUST NOT remain as disabled controls)
+- **AND** on-moderation, drafts, and mine filter controls are not shown
+- **AND** only in-catalog maps are listed
 
 ### Requirement: Author may re-edit published map through moderation
 
