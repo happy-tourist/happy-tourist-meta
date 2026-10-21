@@ -89,13 +89,20 @@ narrow burger fold Acc/Theme/Logout **or** guest login (SC-BRAND-19/22/24); **SC
 `overflow:hidden`); **SC-BRAND-21** `q-layout` class `app-page-bg` + `app.scss`
 source-match (fixed cover, four `pack-bg-*.jpg` urls, `@media` 599px /
 `body.body--dark`, transparent canvas) + assets exist under `src/assets/packs/`;
+**SC-BRAND-25** brand logo is image mark only (no wordmark label / no
+«СЧАСТЛИВЫЙ ТУРИСТ» text); height ~44px in `App.vue`;
 **SC-PACK-285** underlay rgba/pad/radius only on `.pack-card-grid` (not
-`.peek-chrome`). Auth guard: `src/router/__tests__/authGuard.test.ts` (silent
+`.peek-chrome`; catalog lists may use cream/navy `.catalog-list-page` canvas).
+Auth guard: `src/router/__tests__/authGuard.test.ts` (silent
 guest / staff Login redirect / Login upgrade); Login hide guest CTA when
 already anonymous: `src/pages/__tests__/LoginPageSilentGuest.test.ts`. Catalog /
-maps guest filters: `ContentUnifiedList` SC-PACK-153/286 + `ContentMaps` SC-MAP-69
-(`v-if` hide identity filters). Moderation pages omit `content.catalogNav`:
-`ContentModerationUx` SC-PACK-194/195.
+maps guest chrome: `ContentUnifiedList` SC-PACK-153/286/289 + `ContentMaps`
+SC-MAP-69/70 (**entire** filter row hidden for anonymous — not «Все» alone;
+client omit soft-unpub `hasLive && inCatalog === false` for `!isStaff` / D2).
+Pack detail add-task-set CTA+gate + live view-only: `ContentPackAcl` /
+related SC-PACK-165/287/288/290/291 (anonymous+unverified see CTA →
+login/verify gate / D3; `view=live` skips boot `checkGate` / D8). Moderation
+pages omit `content.catalogNav`: `ContentModerationUx` SC-PACK-194/195.
 Lobby create/list ordinals (no set author): `LobbyCreateWire` SC-LOBBY-24/26
 (`taskSetOption` / `taskSetLabel` «Набор заданий #{n}» / pack-index ordinals when soft sets hide ahead).
 Lobby room **card listing**: `LobbyRoomCardTile` + `LobbyCreateWire` SC-LOBBY-25/26/33/34/35/36

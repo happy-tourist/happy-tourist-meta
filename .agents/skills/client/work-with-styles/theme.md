@@ -18,8 +18,23 @@ to auto in v1).
 | Auth wiring | `App.vue`: `watch([() => auth.ready, () => auth.user?.id, () => auth.user?.anonymous], …)` — stable multi-source (not `() => […]` which allocates a new array each run); not on `user.theme` → `theme.syncFromAuthUser` | do not call HTTP from page templates |
 | Board | Unchanged — tourist tile fills are **fixed colors**, not app Dark mode | `GamePage.vue` scoped CSS (`.tourist-board` / `.tile-*`) |
 | Shell page bg (SC-BRAND-21) | Fixed cover on `App.vue` `q-layout.app-page-bg`; asset = theme (`body.body--dark`) × viewport (`max-width: 599px` = mobile); four JPGs under `src/assets/packs/`; transparent Quasar page canvas under the art | `src/css/app.scss` `.app-page-bg` |
+| Catalog chrome tokens (SC-BRAND-25) | Soft blue/navy header + muted crumb ink + catalog list title/create band — **Quasar Dark only** (no second theme engine). Logo mark ~44px (40–48); **no** wordmark (D4) | `src/css/app.scss` (`.app-page-bg > .q-header`, `.app-breadcrumbs`, `.catalog-list-*`); logo height in `App.vue` scoped |
 | Crumbs flex (SC-BRAND-23 / D7) | When breadcrumbs show, `q-page-container--with-crumbs`: flex column + `min-height: 100vh`; child `.q-page` `min-height: 0 !important` so Quasar viewport−header min-height does not stack under crumbs (phantom scroll on short packs/maps). Lobby (no crumbs) keeps Quasar defaults. Prefer flex/min-height — **not** `overflow: hidden` on `body` | `App.vue` class bind + `src/css/app.scss` |
 | Board holes (SC-THEME-07) | Removed cells stay transparent — atmospheric shell art is the page background after SC-BRAND-21 | `GamePage.vue` `.tile--removed` |
+
+### Catalog list chrome (SC-BRAND-25/26)
+
+Shared classes in `app.scss` (packs + maps list pages):
+
+| Class | Role |
+|-------|------|
+| `.catalog-list-page` | `q-page` host; cream/navy `.pack-card-grid` canvas under cards (overrides SC-PACK-285 translucent underlay on these lists only) |
+| `.catalog-list-title-band` | Title + subtitle + create CTA row (gap ~12; mb ~20 guest / filters tighten registered) |
+| `.catalog-list-title` / `.catalog-list-subtitle` | ~34px / ~14px; light navy / muted; dark white / `#a8c0d0` |
+| `.catalog-list-create` | Unelevated primary create (~38px min-height, radius ~7) |
+| `.catalog-list-filters` | Registered filter row spacing (hidden entirely for guest — SC-PACK-286 / SC-MAP-69) |
+
+Header under `.app-page-bg`: light `#d6eafb` / ink `#1c2e44`; dark `#172236` / `#a8c0d0`; toolbar `min-height` ~56. Crumb strip: muted blue ink (`#5a8fb8` / dark `#8aa4bc`), pad ~8/4, ~13px — size/color in `app.scss`, not only `App.vue` scoped.
 
 `AuthUser` may include optional `theme?: string | null` from userdata (login /
 display); restore after reload must use **GET** `/api/theme`, not JWT claims

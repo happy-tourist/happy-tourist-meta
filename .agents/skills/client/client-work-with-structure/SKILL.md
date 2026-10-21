@@ -4,7 +4,7 @@ description: >-
   Use when placing or moving UI in the happy-tourist Vue 3 client: pages
   (*Page.vue), components, Pinia stores, Quasar boot files, dependency
   direction between layers, or deciding whether new UI belongs in pages vs
-  components vs stores vs App shell (always-button brand logo ≥60px; Game leave via logo + status;
+  components vs stores vs App shell (always-button brand logo ~44px SC-BRAND-25; Game leave via logo + status;
   auth→lobby; theme; no page «В лобби»; unified packs list + favorites + author
   re-edit + staff take + maps list filters; pack/map details in work-with-stores
   topics; soft-unpublish/`inCatalog`; cascade/slot chips SC-PACK-126…136; pack
@@ -39,7 +39,7 @@ may also host copies later).
 3. Place UI by layer role (route page vs reusable widget vs store-owned I/O).
 4. Respect **allowed dependency direction** (see below). Never invert layers.
 5. Import `.vue` / `.ts` by direct path. No per-feature `index.ts` barrels required.
-6. Keep `App.vue` as the shared shell: `q-layout` → shared elevated `q-header` (brand logo ≥60px left always as the **same** interactive button; section Packs/Maps/Support + staff Модерация off-Game; **wide** theme + registered logout **or** guest login rightmost SC-BRAND-22; **narrow** section burger rightmost with Acc/Theme/Logout **or** Theme/login inside menu — SC-BRAND-19/24; on **Game** centered match status + right-side leave, no section-burger fold / no guest login; leave = logo click **and** `header-game-leave` + confirm) → `q-page-container` (packs/maps/**moderation** breadcrumbs first — SC-BRAND-17…18 / D13 + `--with-crumbs` flex SC-BRAND-23; not sibling above container; not inside `q-header`) → theme `q-banner` + `<router-view />`. Logo click modes: auth → lobby / lobby noop / Game leave / other authenticated → lobby (never swap to bare decorative `img`). Page banners stay **inside each page**; do **not** reintroduce Lobby section/logout toolbar, Material `logout` as Game leave, page-level «В лобби» / list «К наборам» / «К картам» / moderation `catalogNav` when crumbs cover the path, or a page-local Game leave/status header; do not duplicate the theme toggle per page.
+6. Keep `App.vue` as the shared shell: `q-layout` → shared elevated `q-header` (brand logo ~44px / 40–48 SC-BRAND-25 left always as the **same** interactive button; section Packs/Maps/Support + staff Модерация off-Game; **wide** theme + registered logout **or** guest login rightmost SC-BRAND-22; **narrow** section burger rightmost with Acc/Theme/Logout **or** Theme/login inside menu — SC-BRAND-19/24; on **Game** centered match status + right-side leave, no section-burger fold / no guest login; leave = logo click **and** `header-game-leave` + confirm) → `q-page-container` (packs/maps/**moderation** breadcrumbs first — SC-BRAND-17…18 / D13 + `--with-crumbs` flex SC-BRAND-23; not sibling above container; not inside `q-header`) → theme `q-banner` + `<router-view />`. Logo click modes: auth → lobby / lobby noop / Game leave / other authenticated → lobby (never swap to bare decorative `img`). Page banners stay **inside each page**; do **not** reintroduce Lobby section/logout toolbar, Material `logout` as Game leave, page-level «В лобби» / list «К наборам» / «К картам» / moderation `catalogNav` when crumbs cover the path, or a page-local Game leave/status header; do not duplicate the theme toggle per page.
 7. Keep Colyseus auth/room/theme/support/content I/O inside Pinia stores (`auth`, `theme`, `game`, `support`, `content`). Prefer `import { client } from '@/boot/colyseus'` over `$colyseus` in script.
 8. Use Quasar auto-imported components (`q-page`, `q-btn`, …). Do not manually register Quasar UI components.
 9. Prefer Composition API + `<script setup lang="ts">`. Do not introduce Options API pages.
@@ -55,7 +55,7 @@ may also host copies later).
 | Boot | `src/boot/` | Quasar boot: `theme`, `i18n`, `colyseus` (registered in `quasar.config.ts`; `framework.plugins: ['Dark']`) |
 | Router | `src/router/` | `routes.ts` + `authGuard.ts` (`authBeforeEach`; wired from `index.ts`; `filenameBasedRouting: false`) |
 | i18n | `src/i18n/` | Locale message trees (`en-US`) |
-| CSS | `src/css/` | `app.scss` (`.app-page-bg` shell theme×viewport fixed cover SC-BRAND-21; `.q-page-container--with-crumbs` flex SC-BRAND-23; `.pack-card-grid` wrap + shared `--pack-card-*` SC-PACK-255 + layout-only translucent underlay SC-PACK-285 — **not** on `.peek-chrome`), `quasar.variables.scss` |
+| CSS | `src/css/` | `app.scss` (`.app-page-bg` shell theme×viewport fixed cover SC-BRAND-21; catalog chrome `.catalog-list-*` + header/crumb tokens SC-BRAND-25; `.q-page-container--with-crumbs` flex SC-BRAND-23; `.pack-card-grid` wrap + shared `--pack-card-*` SC-PACK-255 + layout-only translucent underlay SC-PACK-285 — **not** on `.peek-chrome`), `quasar.variables.scss` |
 | Assets | `src/assets/` | Static assets (`brand/logo.png`; `packs/pack-bg-{desktop|mobile}-{light|dark}.jpg` shell page art SC-BRAND-21; `tourists/…`, `grilles/grille.png`, `catapults/catapult.png` + `catapult-broken.png`, `content/task-set-card-tasks.svg` + `content/task-set-badge-{revise,pending,unpublished,draft}.svg` for `PackTaskSetCardTile` CSS masks — SC-PACK-248; `content/map-card-players.svg` + `content/map-card-tourists.svg` for `MapListCardTile` capacity masks — SC-MAP-55; `content/lobby-room-card-seats.svg` for `LobbyRoomCardTile` seats mask — SC-LOBBY-25/36, …) |
 
 Outside `src`: `public/` (product `favicon.ico` only — no scaffold PNG icon set), `quasar.config.ts`, `package.json` (`productName` = `Happy Tourist`), `.env.development` / `.env.production`, `.github/workflows/`.
@@ -73,7 +73,7 @@ pages       →  stores / boot / components / router (params)
 components  →  other components (keep lean; prefer props over store)
 stores      →  boot/colyseus (client); theme store also uses boot/theme helpers
 boot        →  env / SDK / i18n / early Dark apply only
-App.vue     →  layout (`q-layout.app-page-bg` SC-BRAND-21) + elevated header (logo ≥60px; sections; wide Acc/Theme/Logout or guest login SC-BRAND-22; narrow burger fold SC-BRAND-19/24; Game status + header-game-leave) + crumbs inside q-page-container (SC-BRAND-17 + `--with-crumbs` SC-BRAND-23) + banner + auth→theme sync
+App.vue     →  layout (`q-layout.app-page-bg` SC-BRAND-21) + elevated header (logo ~44px SC-BRAND-25; sections; wide Acc/Theme/Logout or guest login SC-BRAND-22; narrow burger fold SC-BRAND-19/24; Game status + header-game-leave) + crumbs inside q-page-container (SC-BRAND-17 + `--with-crumbs` SC-BRAND-23) + banner + auth→theme sync
 ```
 
 Also normal:
@@ -203,7 +203,7 @@ Registered in `quasar.config.ts` boot array: `theme`, `i18n`, `colyseus` (+ `fra
 
 **Game** — `GamePage` shows tourist board (scroll region) + top presence (opponents / spectator all) + sticky seated `.game-hud` (own + strip row/2×2; dual rings; **no** chip/`q-menu`) + grille overlays from `holdingGrilleKeys` (`GRILLE_ANIM_MS=1000`; defer drop while catapult queue busy) + catapult sequential overlays from `revealingCatapultKeys` / `brokenCatapultKeys` (`CATAPULT_ANIM_MS=1000`, land→overlay→fling, D13 atomic mirror, board-busy incl. pending grille) + push icons + return strip icon (no confirm modal) when seated; on `isMyTurn` local select/hints and `game.sendMove` / `sendRescue` / `sendPush` / `sendReturnFromFinish`; seated+online own marker may `game.sendSay` (preset bubbles from `sayEvents`); `rejoinGame(roomId)` on mount / soft-fail gated by store `consentedLeaving` (reconnect token → `joinById`).
 
-**App shell** — `App.vue` hosts `q-layout` → shared elevated `q-header` (logo ≥60px; Packs/Maps/Support + staff Модерация; wide Acc/Theme/Logout **or** guest login SC-BRAND-22; narrow burger fold SC-BRAND-19/24; Game status + `header-game-leave`) → `q-page-container` with packs/maps/moderation breadcrumbs (SC-BRAND-17…18 + `--with-crumbs` SC-BRAND-23) → leave confirm → theme banner → `router-view`; stable auth→theme watch.
+**App shell** — `App.vue` hosts `q-layout` → shared elevated `q-header` (logo ~44px SC-BRAND-25; Packs/Maps/Support + staff Модерация; wide Acc/Theme/Logout **or** guest login SC-BRAND-22; narrow burger fold SC-BRAND-19/24; Game status + `header-game-leave`) → `q-page-container` with packs/maps/moderation breadcrumbs (SC-BRAND-17…18 + `--with-crumbs` SC-BRAND-23) → leave confirm → theme banner → `router-view`; stable auth→theme watch.
 
 **Boot** — `theme.ts` applies early Dark (`readStoredTheme` / `clearStoredTheme`); `colyseus.ts` exports singleton `client`; stores import them.
 
@@ -275,7 +275,7 @@ Board geometry from synced `grid` via `src/lib/boardGeometry.ts` (+ `focusAction
 | Importing a page from a component | Invert: page imports the component |
 | Duplicating theme toggle on every page | Keep shared toggle in `App.vue` |
 | Reintroducing page-local Game leave/status or Lobby section/logout toolbar | Keep leave via brand logo **and** `header-game-leave` + status/sections/logout in `App.vue` (`work-with-pages`) |
-| Swapping logo button ↔ bare `img` / decorative auth | Keep one always-button control (≥60px); auth/other → lobby, lobby noop (`work-with-pages`) |
+| Swapping logo button ↔ bare `img` / decorative auth | Keep one always-button control (~44px SC-BRAND-25); auth/other → lobby, lobby noop (`work-with-pages`) |
 | Adding page «В лобби» buttons | Use App brand logo (`auth.backToLobby` aria-only) |
 | Using removed scaffold `pages/index*` / Quasar logo for new routes | Add `*Page.vue` + `routes.ts` entry |
 | Reintroducing Vuex or axios for Colyseus | Pinia + `client` / `client.http` |
@@ -300,4 +300,4 @@ For structure-only placement tasks, confirm:
 - [ ] Dependency direction respected
 - [ ] Colyseus I/O stays in stores (`auth` / `theme` / `game` / `support` / `content`)
 - [ ] Route registered in `routes.ts` with correct meta
-- [ ] Shared logo ≥60px + section nav + crumbs + theme + registered logout / guest login stay in `App.vue`; Game leave via logo **and** `header-game-leave` + status in App; no page «В лобби» / Lobby section toolbar; other route chrome stays in pages
+- [ ] Shared logo ~44px (SC-BRAND-25) + section nav + crumbs + theme + registered logout / guest login stay in `App.vue`; Game leave via logo **and** `header-game-leave` + status in App; no page «В лобби» / Lobby section toolbar; other route chrome stays in pages

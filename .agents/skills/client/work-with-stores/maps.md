@@ -55,19 +55,21 @@ HTTP in `maps` beyond cancel/preview helpers the editor already needs.
 
 ## UI contracts
 
-- **List:** filters all / moderation / drafts / mine — identity-only **hidden**
-  for guests (`v-if`, not `:disable`; **all** stays — SC-MAP-69); short card
-  badges via `content.taskSetCardBadge.*` (ЧЕРНОВИК / НА
-  ПРОВЕРКЕ / ДОРАБОТАТЬ / СНЯТО) for draft / pending / needs_revision /
-  soft-unpublished only — **not** long `content.statuses.*` /
+- **List:** filters all / moderation / drafts / mine — **entire** filter row
+  hidden for anonymous (`v-if="!isGuest"` on the row — not empty wrapper, not
+  «Все» alone — SC-MAP-69); for `!isStaff`, omit soft-unpub list rows
+  (`hasLive && inCatalog === false` — SC-MAP-70 / D2; defense-in-depth vs
+  `listMaps`); short card badges via `content.taskSetCardBadge.*` (ЧЕРНОВИК /
+  НА ПРОВЕРКЕ / ДОРАБОТАТЬ / СНЯТО) for draft / pending / needs_revision /
+  soft-unpublished (staff) only — **not** long `content.statuses.*` /
   `maps.draftOnly` / `maps.unpublishedByStaff` on the pill; **published /
   `in_catalog` rows show no badge** (SC-MAP-45); card grid via
   `MapListCardTile` ~**180** wide — mini `MapGridPreview` + centered overlay
   status (SC-MAP-66; gate `#status` via `hasMapCardStatus`), two capacity rows (`players` / `touristsPerPlayer` +
   `maps.mapCardPlayers` / `mapCardTourists`; **no author** on card), soft-unpub
-  `:muted` when `hasLive && inCatalog === false`, bottom full-width
-  **outline + icon** actions (`content.edit` / `maps.staffEdit` / short
-  `taskSetCardUnpublish` / `taskSetCardRepublish`; gate `#actions` via
+  `:muted` when `hasLive && inCatalog === false` (staff-visible rows), bottom
+  full-width **outline + icon** actions (`content.edit` / `maps.staffEdit` /
+  short `taskSetCardUnpublish` / `taskSetCardRepublish`; gate `#actions` via
   `hasMapCardActions`; confirm keeps long `maps.unpublish*`) + shared
   `--pack-card-*` chrome (SC-MAP-55/67); lead/badge SVG masks via quoted
   `` `url("${imported}")` `` `iconMaskVars` (SC-MAP-68 — also pack list /
@@ -105,6 +107,7 @@ HTTP in `maps` beyond cancel/preview helpers the editor already needs.
 
 - Paint pure: `src/stores/__tests__/maps.paint.test.ts` (SC-MAP-04).
 - Pages/UI: `src/pages/__tests__/ContentMaps.test.ts` (list filters/statuses +
+  guest filter-row hide / soft-unpub omit SC-MAP-69/70 +
   `MapListCardTile` SC-MAP-55/66/67/68 + tile unit `MapListCardTile.test.ts` + view
   meta / title-row Edit / author pending→Edit / crumbs / cancel→draft /
   centered seats SC-MAP-56 + SC-MAP-41…54 + SC-MAP-06…08, 14, 17, 21, 24–25,

@@ -202,13 +202,13 @@ no staff thread reply until Submit creates clean `pending`.
 
 | Surface | Who | Store / route |
 |---------|-----|----------------|
-| Unified packs list | any auth | `listCatalog` → `content-catalog`; filters all/moderation/drafts/mine/favorites — identity-only filters **hidden** for guests (`v-if="!identityOnly \|\| !isGuest"`, not `:disable`; **all** stays visible — SC-PACK-153/286); maps list same pattern for moderation/drafts/mine (SC-MAP-69) |
+| Unified packs list | any auth | `listCatalog` → `content-catalog`; **entire** filter row hidden for anonymous (`v-if="!isGuest"` on the row — SC-PACK-153/286); client omit soft-unpub (`hasLive && inCatalog === false`) for `!isStaff` (SC-PACK-289 / D2); maps list same filter-row hide (SC-MAP-69) + omit (SC-MAP-70) |
 | Star / unstar | registered non-anonymous | `starPack` / `unstarPack` on in-catalog rows + detail |
 | Unpublished / draft editor | creator | `loadDraft` / `saveDraft` / `submitPack` → `content-pack-edit` |
 | Post-publish pack Edit | pack creator (non-staff) | acquire lock → working copy; `editorKind=creator`; submit reopens moderation |
 | Post-publish task-set Edit | set `authorUserId` (not pack creator) | lock + draft; `editorKind=task_set_author`; cards read-only; only own sets |
-| Add-task-set | verified non-anonymous + in-catalog | **no** collection membership (SC-PACK-164) → `content-pack-add-task-set` |
-| Soft-unpublished non-staff | any | list badge / no live; trash OK for never-approved |
+| Add-task-set | in-catalog (CTA); mutate = verified non-anonymous | anonymous+unverified **see** CTA → login/verify gate (`ensureEligible` / D3 — SC-PACK-287/290); verified → `content-pack-add-task-set` (**no** collection membership SC-PACK-164) |
+| Soft-unpublished non-staff | any | **omit** from list UI (`hasLive && inCatalog === false` — D2); no live; trash OK for never-approved |
 | Staff Edit | staff, **no** open author request | published (`hasLive`) → `enterStaffEdit` / staff-save **before** creator path even if staff is creator (SC-PACK-231); never-published staff creator keeps Submit (SC-PACK-232); `acquireEditLock` → `loadStaffEdit` / `staffSavePack`; else disabled + `staffEditBlockedAuthorRequest` |
 | Staff soft-unpublish | staff | `unpublishPack` / `republishPack` / task-set twins + confirms; **card** labels (catalog + task-set) `taskSetCardUnpublish`/`taskSetCardRepublish` («Снять»/«Вернуть» SC-PACK-250); pack **header** + confirm keep long `unpublish`/`republish` |
 | Staff queue | staff | **take** before approve/needs_revision/cancel; take badge when held by other |
@@ -216,15 +216,19 @@ no staff thread reply until Submit creates clean `pending`.
 ## UI contracts
 
 - **Catalog (= primary «Наборы»):** App header / Lobby crumbs → `content-catalog`
-  (not collection). Filters: **all** always visible; identity filters
-  (moderation/drafts/mine/favorites) rendered only when `!isGuest` via `v-if`
-  (not `:disable` — SC-PACK-153/286). Status badges for draft / pending /
-  needs_revision / unpublished only — **published / `in_catalog` rows show no
-  badge** (SC-PACK-148/185); catalog **revise** uses short
+  (not collection). Filters: **entire** filter row hidden for anonymous
+  (`v-if="!isGuest"` on the row — not empty wrapper, not «Все» alone —
+  SC-PACK-153/286). For `!isStaff`, omit soft-unpub list rows
+  (`hasLive && inCatalog === false` — SC-PACK-289 / D2; defense-in-depth vs
+  `listCatalog`).   Status badges for draft / pending / needs_revision /
+  unpublished only — **published / `in_catalog` rows show no badge**
+  (SC-PACK-148/185); catalog **revise** uses short
   `taskSetCardBadge.needs_revision` «ДОРАБОТАТЬ» red outline (not long
-  `statuses.needs_revision` — SC-PACK-251).
+  `statuses.needs_revision` — SC-PACK-251); staff soft-unpub uses short
+  `taskSetCardBadge.unpublished` «СНЯТО» + `pack-task-set-status-badge`
+  / `--unpublished` (parity maps — **not** long `content.unpublishedByStaff`).
   Pass `taskSetsPreview` into `PackListCardTile` (tile omits soft-unpub/
-  neverLive; set ink = title.fg — SC-PACK-254); soft-unpub packs
+  neverLive; set ink = title.fg — SC-PACK-254); soft-unpub packs (staff only)
   `:muted="Boolean(hasLive && inCatalog === false)"` (whole-card, not set-row).
   Set rows non-navigating (bubble to whole-card open). Gate `#actions` with
   `hasCatalogCardActions` (omit empty chrome). Star on in-catalog rows (stop
@@ -241,8 +245,11 @@ no staff thread reply until Submit creates clean `pending`.
   (creator) / set-row Edit (task-set author); set-row `moderationStatus` badges
   for set author+staff; `neverLive` ghost → add-task-set Edit (GET restores
   draft\|legacy cancelled — SC-PACK-196/265/267); staff Edit gated
-  by open author request; add-task-set beside «Задания» when verified+in-catalog
-  (**not** `inCollection`); no Collect.
+  by open author request; add-task-set beside «Задания» when in-catalog —
+  anonymous+unverified **see** CTA → login/verify gate (`ensureEligible` /
+  D3 — SC-PACK-287/290; **not** `inCollection`); live published task-set
+  (`view=live`) → view-only **without** boot `checkGate` for anonymous+
+  unverified (D8 — SC-PACK-288/291); mutate paths still gate; no Collect.
 - **Editor:** `cardsReadOnly` when `editorKind === 'task_set_author'`; author
   pending/dirty/delete contracts → [pack-lifecycle.md](pack-lifecycle.md).
 - **Staff hub / request / pack moderation / my-moderation:** Take / Release;
