@@ -2,7 +2,7 @@
 
 | Scenario ID | Coverage |
 |-------------|----------|
-| SC-BRAND-21 | planned (client vitest — app shell theme×viewport fixed page background on all routes) |
+| SC-BRAND-21 | covered — `AppHeaderChrome.test.ts` (layout `app-page-bg` + `app.scss` source-match theme×viewport fixed bg + transparent canvas + four JPG) |
 
 Related underlay on card grids: delta `content/packs` (SC-PACK-285). Board holes / page background under tiles: `ui/theme` (SC-THEME-07).
 

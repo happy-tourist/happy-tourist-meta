@@ -242,6 +242,7 @@ UGC-наборы (**набор карточек** + задания): одна р
 | SC-PACK-281 | covered (client vitest — compose Save peekSubmit-like; Cancel omitted) |
 | SC-PACK-282 | covered (client vitest — answer tile content top / desc bottom or centered) |
 | SC-PACK-283 | covered (client vitest — answer content 24px; tile Edit = content.edit) |
+| SC-PACK-285 | covered — `AppHeaderChrome.test.ts` (`app.scss` source-match underlay rgba/pad/radius on `.pack-card-grid` only, not `.peek-chrome`) |
 | SC-PACK-239 | covered (client vitest — stats rows + colored dots + pale dividers) |
 | SC-PACK-240 | covered (client vitest — short status badges) |
 | SC-PACK-241 | covered (client vitest — outline icon actions; short Снять/Вернуть; slim) |
@@ -260,7 +261,7 @@ UGC-наборы (**набор карточек** + задания): одна р
 | SC-PACK-254 | covered (client vitest — catalog omits soft-unpub/neverLive; set-row ink = title.fg) |
 | SC-PACK-255 | covered (client vitest — shared pack-card resting chrome; catalog muted dashed) |
 
-Related: create picker — `lobby/rooms`; peek Q&A — `game/board` (chip reuse SC-BOARD-49). Difficulty remains the peek step reward (`SC-PACK-32`). CSV / playing-card chrome — SC-PACK-210…227; catalog pack cards — SC-PACK-228 / 249…255; task-set summary chrome — SC-PACK-229/239…248; staff published path / dirty Submit / live-view CSV / peek slot chrome — SC-PACK-231…238; compose dialogs / chip reuse / draft lifecycle — SC-PACK-256…275.
+Related: create picker — `lobby/rooms`; peek Q&A — `game/board` (chip reuse SC-BOARD-49). Difficulty remains the peek step reward (`SC-PACK-32`). CSV / playing-card chrome — SC-PACK-210…227; catalog pack cards — SC-PACK-228 / 249…255; task-set summary chrome — SC-PACK-229/239…248; staff published path / dirty Submit / live-view CSV / peek slot chrome — SC-PACK-231…238; compose dialogs / chip reuse / draft lifecycle — SC-PACK-256…275; card-grid underlay over page bg — SC-PACK-285 (`ui/branding` SC-BRAND-21).
 
 ## Requirements
 
@@ -2363,3 +2364,17 @@ When staff or the set author cancels an open never-live add-task-set moderation 
 - **THEN** U sees the work as draft (never-live ghost / drafts filter)
 - **AND** GET add-task-set restores the retained tasks and slots
 - **AND** the staff open queue no longer lists that request
+
+### Requirement: Pack card grids sit on a translucent underlay
+
+Wherever the client shows a wrapping row of pack-related cards via the shared pack card grid chrome (catalog packs, answer cards, task-set summaries, tasks — and the same shared grid used on maps list and lobby room lists), that card block MUST sit on a translucent underlay between the page background and the cards. The underlay MUST soften the artwork enough that card labels, badges, and actions remain readable in both light and dark themes (product sense roughly three-quarters opaque: light `rgba(255, 255, 255, 0.78)`; dark `rgba(18, 18, 18, 0.78)`; modest pad ~`0.75rem` and radius ~`8px` on the grid wrapper). Implementation sense: paint underlay CSS on the **layout** class `.pack-card-grid` only (already separated from the shared token selector `.pack-card-grid, .peek-chrome`). The underlay MUST apply to that shared pack card wrapping grid only — MUST NOT paint the same underlay on peek answer-pool / peek-slot / `.peek-chrome` that shares pack-card resting tokens but is not a list card grid. The underlay MUST NOT replace shared pack-card resting surface tokens on the tiles themselves (`--pack-card-bg` and siblings stay on tiles). Empty states without a card grid MAY omit the underlay.
+
+#### Scenario [SC-PACK-285]: Card grid underlay keeps tiles readable over the background
+
+- **GIVEN** an authenticated user on a surface with at least one visible shared pack card grid and an active app page background
+- **WHEN** the user views the grid in light theme
+- **THEN** a translucent underlay appears behind the card block (between artwork and cards)
+- **AND** tile text and controls remain readable against the underlay
+- **AND WHEN** the user switches to dark theme
+- **THEN** the underlay uses a dark-theme translucent surface and tiles remain readable
+- **AND** individual card resting chrome continues to use the shared pack-card surface tokens

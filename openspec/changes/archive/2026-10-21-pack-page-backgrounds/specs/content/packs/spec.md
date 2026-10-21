@@ -2,7 +2,7 @@
 
 | Scenario ID | Coverage |
 |-------------|----------|
-| SC-PACK-285 | planned (client vitest — card-grid underlay translucent; tiles stay readable light/dark) |
+| SC-PACK-285 | covered — `AppHeaderChrome.test.ts` (`app.scss` source-match underlay rgba/pad/radius on `.pack-card-grid` only, not `.peek-chrome`) |
 
 App-wide page background: see delta `ui/branding` (SC-BRAND-21).
 

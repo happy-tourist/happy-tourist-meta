@@ -90,15 +90,14 @@ Vitest: source-match `app.scss` / `App.vue` на `app-page-bg`, `background-atta
 
 **Якоря тестов (reuse):** класс на layout — расширить `src/__tests__/AppHeaderChrome.test.ts` (уже монтирует `App.vue`); CSS/ассеты — source-match по образцу `PackListCardTile.test.ts` / `LobbyCreateWire.test.ts` (`readFileSync` `app.scss`, class на grid). Новые сценарии помечать `SC-BRAND-21` / `SC-PACK-285`.
 
-### D8 — Existing client anchors (reuse scan)
+### D8 — Client anchors (as implemented)
 
-Уже есть, менять минимально:
-
-- JPG D1: `src/assets/packs/pack-bg-{desktop|mobile}-{light|dark}.jpg` (четыре файла на месте)
-- Shell: `App.vue` → `<q-layout>` без `app-page-bg`; `.app-breadcrumbs { background: var(--q-page-bg, transparent); }`
-- CSS: `src/css/app.scss` — shared tokens на `.pack-card-grid, .peek-chrome`; **layout**-блок только `.pack-card-grid` (`display: flex; flex-wrap; gap: 0.75rem`) — сюда underlay (D5), не на `.peek-chrome`
-- Хосты `.pack-card-grid` (underlay появится автоматически): `LobbyPage`, `ContentCatalogPage`, `MapsListPage`, `ContentPackPage`, `ContentPackEditorPage`, `ContentPackTasksPage`, `ContentPackAddTaskSetPage`, `ContentStaffRequestPage` (+ любые будущие с тем же классом)
-- Header / toolbar / opaque board tile fills / HUD — не в scope transparent canvas (D4 перечисляет page/container/breadcrumbs)
+- JPG D1: `src/assets/packs/pack-bg-{desktop|mobile}-{light|dark}.jpg`
+- Shell: `App.vue` → `<q-layout class="app-page-bg">`; под `.app-page-bg` прозрачны `.q-page` / `.q-page-container` / `.app-breadcrumbs` (и `--q-page-bg`)
+- CSS: `src/css/app.scss` — `.app-page-bg` (D4) + shared tokens на `.pack-card-grid, .peek-chrome`; underlay (D5) только на layout-блоке `.pack-card-grid`
+- Хосты `.pack-card-grid`: `LobbyPage`, `ContentCatalogPage`, `MapsListPage`, `ContentPackPage`, `ContentPackEditorPage`, `ContentPackTasksPage`, `ContentPackAddTaskSetPage`, `ContentStaffRequestPage` (+ любые будущие с тем же классом)
+- Header / toolbar / opaque board tile fills / HUD — не в scope transparent canvas
+- Tests: `AppHeaderChrome.test.ts` — SC-BRAND-21 / SC-PACK-285
 
 ## Risks / Trade-offs
 
