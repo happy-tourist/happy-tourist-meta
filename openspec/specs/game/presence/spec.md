@@ -29,7 +29,8 @@
 | SC-PRESENCE-19 | covered (client UX — peeks-unlimited modal) |
 | SC-PRESENCE-20 | covered (client UX — +N anim ~2s) |
 | SC-PRESENCE-21 | covered (client UX — timer vs steps-loss copy) |
-| SC-PRESENCE-22 | covered (client sticky bottom HUD — own+strip when seated) |
+| SC-PRESENCE-22 | covered (client sticky bottom HUD — own+strip when seated; surface fill revised by SC-PRESENCE-34) |
+| SC-PRESENCE-34 | covered (`AppHeaderChrome.test.ts` — sticky bottom HUD translucent underlay ~0.78 alpha) |
 | SC-PRESENCE-23 | covered (client match status in shared header) |
 | SC-PRESENCE-24 | covered (client no room id in chrome) |
 | SC-PRESENCE-25 | covered (client UX — not in budgets stack; not above-panel dock label) |
@@ -270,7 +271,7 @@ When the user’s seat becomes time-expired in solo (`game/move`), the client MU
 
 ### Requirement: Sticky bottom game HUD panel
 
-While the user is on the Game screen as a **seated** viewer, the bottom HUD panel that holds the own presence marker, budgets beside the avatar, and personal strip (when present) MUST remain pinned to the bottom of the viewport so it stays visible while the board area above may scroll or resize. Opponent markers MUST use the row above the board, not this sticky panel — laid out tightly against the board (no large reserved empty band under the markers for say chrome). For a **spectator**, there MUST NOT be a bottom presence HUD row; markers stay above the board.
+While the user is on the Game screen as a **seated** viewer, the bottom HUD panel that holds the own presence marker, budgets beside the avatar, and personal strip (when present) MUST remain pinned to the bottom of the viewport so it stays visible while the board area above may scroll or resize. Opponent markers MUST use the row above the board, not this sticky panel — laid out tightly against the board (no large reserved empty band under the markers for say chrome). For a **spectator**, there MUST NOT be a bottom presence HUD row; markers stay above the board. The sticky bottom HUD surface MUST use a **translucent** fill so the shell / page artwork remains visible through it — product sense the same alpha as pack card-grid underlay (about three-quarters opacity light white / dark near-black). The panel MUST NOT use an opaque solid white / near-black (or equivalent fully opaque theme canvas) that fully hides the art behind the HUD.
 
 #### Scenario [SC-PRESENCE-22]: Bottom HUD stays pinned while board scrolls
 
@@ -279,6 +280,13 @@ While the user is on the Game screen as a **seated** viewer, the bottom HUD pane
 - **THEN** the bottom HUD panel remains pinned to the bottom of the viewport
 - **AND** the user’s own marker and strip remain inside that panel
 - **AND** opponent markers remain above the board
+
+#### Scenario [SC-PRESENCE-34]: Bottom HUD underlay is translucent
+
+- **GIVEN** a seated user on the Game screen over the shell page background
+- **WHEN** the sticky bottom seated HUD panel renders
+- **THEN** the HUD background is translucent (artwork visible through it) at approximately three-quarters opacity matching SC-PACK-285 underlay alphas
+- **AND** MUST NOT present as a fully opaque white/near-black bar that completely hides the page art behind the panel
 
 ### Requirement: Match status in shared application header
 

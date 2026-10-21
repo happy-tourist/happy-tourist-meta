@@ -42,7 +42,7 @@ The packs list MUST support filters: **all** (default); **on moderation** (calle
 - **AND** starring / favorites filter MUST NOT grant a personal favorites set
 - **AND** the favorites filter control MUST NOT be visible
 
-#### Scenario [SC-PACK-286]: Guest sees only the All filter control
+#### Scenario [SC-PACK-286]: Guest sees no filter chrome
 
 - **GIVEN** an anonymous guest on the packs list
 - **WHEN** the list page renders

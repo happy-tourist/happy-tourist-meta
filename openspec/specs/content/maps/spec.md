@@ -66,7 +66,8 @@ UGC-карты поля 10×10 (старт / игровое / финиш / ды�
 | SC-MAP-66 | covered (client vitest — centered overlay status; short badge copy) |
 | SC-MAP-67 | covered (client vitest — pack-card chrome; muted dashed; outline+icon actions) |
 | SC-MAP-68 | covered (client vitest / visual — lead + badge SVG masks show silhouette, not solid square) |
-| SC-MAP-69 | covered (client vitest — `ContentMaps` identity filters hidden) |
+| SC-MAP-69 | covered (ContentMaps — guest sees **no** filter chrome) |
+| SC-MAP-70 | covered (ContentMaps — non-staff maps list hides soft-unpublished) |
 | SC-MAP-56 | covered (client vitest centered editor seats) |
 | SC-MAP-60 | covered (server mocha — soft-unpublished reject) |
 | SC-MAP-61 | covered (server mocha — create uses live map) |
@@ -363,7 +364,7 @@ The Maps list MUST show status badges for **pending**, **needs_revision**, **dra
 
 ### Requirement: Maps list filters
 
-The Maps list MUST support filters: **all** (default); **on moderation** (caller’s own open pending or needs_revision map requests); **drafts** (caller’s never-published maps without an open request); **mine** (maps where the caller is `createdBy`). There MUST NOT be a favorites filter or star for maps. Guests MUST only see in-catalog maps. Filters that require identity beyond catalog (moderation / drafts / mine) MUST be **hidden from the UI** for guests (MUST NOT remain visible as disabled controls).
+The Maps list MUST support filters: **all** (default); **on moderation** (caller’s own open pending or needs_revision map requests); **drafts** (caller’s never-published maps without an open request); **mine** (maps where the caller is `createdBy`). There MUST NOT be a favorites filter or star for maps. Guests MUST only see in-catalog maps. For anonymous guests, the client MUST **hide the entire filter chrome** — including the **all** control — and MUST NOT leave identity filters visible as disabled controls.
 
 #### Scenario [SC-MAP-33]: Filter on moderation shows own pending maps
 
@@ -377,13 +378,25 @@ The Maps list MUST support filters: **all** (default); **on moderation** (caller
 - **WHEN** A applies the mine filter
 - **THEN** both M1 and M2 appear for A
 
-#### Scenario [SC-MAP-69]: Guest sees only All filter on maps
+#### Scenario [SC-MAP-69]: Guest sees no filter chrome on maps
 
 - **GIVEN** an anonymous guest on the maps list
-- **WHEN** the filter chrome renders
-- **THEN** the **all** filter control remains visible (identity filters use `v-if` / equivalent — MUST NOT remain as disabled controls)
+- **WHEN** the list page renders
+- **THEN** no filter controls are shown (including **all** / «Все»)
+- **AND** the filter row chrome itself is absent (not an empty button row)
 - **AND** on-moderation, drafts, and mine filter controls are not shown
-- **AND** only in-catalog maps are listed
+- **AND** only in-catalog maps are listed (effective filter remains **all**)
+
+### Requirement: Maps list hides soft-unpublished for non-staff
+
+On the Maps list, soft-unpublished maps (`hasLive` and not in catalog) MUST be shown **only to staff**. Non-staff users (including anonymous) MUST NOT see those maps as list cards. The server list already omits them for non-staff; the client MUST still omit any such row defensively if present in the payload. Staff MUST retain soft-unpublished chrome and unpublish/republish actions as already specified. Live deep-link reject for non-staff is unchanged (SC-MAP-21).
+
+#### Scenario [SC-MAP-70]: Non-staff maps list omits soft-unpublished cards
+
+- **GIVEN** soft-unpublished map M (`hasLive` and not in catalog) and a non-staff authenticated user U (including anonymous)
+- **WHEN** U opens the Maps list
+- **THEN** M MUST NOT appear as a list card for U
+- **AND** staff MUST still see M with soft-unpublished chrome when applicable
 
 ### Requirement: Author may re-edit published map through moderation
 
