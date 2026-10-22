@@ -28,6 +28,7 @@
 | SC-FINISH-18 | covered (client UX — move onto center seeds lastKnown; travel+disappear parity) |
 | SC-FINISH-19 | covered (server mocha + client UX — finish after land + catapult vanish; paced hop) |
 | SC-FINISH-20 | covered (client UX — always finish travel after vanish when paced finish arrives late) |
+| SC-FINISH-21 | covered (server mocha — fourth piece via catapult→center: place + turn leave; client modal covered-by-reuse) |
 
 Related: seating gate — `game/pieces` (new seats only in `waiting`); return geometry and steps — `game/move`; push finish — `game/move` SC-MOVE-76; catapult fling onto center — `game/move` / `game/board`.
 
@@ -69,7 +70,7 @@ When the room start phase is `playing` and the server accepts a legal **move or 
 
 ### Requirement: Completing all four pieces assigns finish place
 
-When a seated player’s fourth piece becomes finished, the server SHALL assign that seat a finish place equal to one plus the number of seats that already hold a finish place in this room (monotonic order of full finishes). The place MUST be synchronized. The client of that seat MUST show a modal congratulating the player on finishing in that place (product Russian sense: first / second / …). Closing the modal MUST leave the player in the room as a finished seat. The room MUST NOT disconnect or dispose solely because one or all seats became finished.
+When a seated player’s fourth piece becomes finished, the server SHALL assign that seat a finish place equal to one plus the number of seats that already hold a finish place in this room (monotonic order of full finishes). The place MUST be synchronized. The client of that seat MUST show a modal congratulating the player on finishing in that place (product Russian sense: first / second / …). Closing the modal MUST leave the player in the room as a finished seat. The room MUST NOT disconnect or dispose solely because one or all seats became finished. When that fourth-piece finish happens via a catapult fling onto a center cell under paced trap rules (`game/move` / `game/board`), the same place assignment and modal rules MUST apply; after the trap pipeline is idle, turn eligibility MUST follow `game/move` (finished seat MUST NOT keep the current turn while another eligible seat remains — SC-MOVE-96).
 
 #### Scenario [SC-FINISH-03]: First full finisher gets place one
 
@@ -92,6 +93,15 @@ When a seated player’s fourth piece becomes finished, the server SHALL assign 
 - **WHEN** no further consented leave or grace timeout has removed seats
 - **THEN** the room remains available
 - **AND** seated clients are not forcibly disconnected solely because all seats are finished
+
+#### Scenario [SC-FINISH-21]: Catapult fourth-piece finish assigns place and releases turn
+
+- **GIVEN** a tourist room in phase `playing` with at least two eligible seated players and no seat yet has a finish place
+- **AND** seated player A has exactly three finished pieces and one unfinished free piece (`finishPlace` still `0`) whose paced catapult fling lands on a free center cell
+- **WHEN** that catapult relocate finishes A’s fourth piece (place assigned mid-pipeline via center finish) and the presentation pipeline then becomes idle
+- **THEN** A’s synchronized finish place is `1`
+- **AND** A’s client shows the place congratulation modal
+- **AND** after the trap pipeline is idle the synchronized current turn is not A while another eligible seat remains
 
 ### Requirement: Finished seat keeps seat capacity and limited agency
 

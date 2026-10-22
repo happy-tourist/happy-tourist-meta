@@ -2,12 +2,14 @@
 
 See `proposal.md` — Why. Runtime: server `../happy-tourist-server` (room `tourist`). Client только зеркалит `finishPlace` / `currentTurnSessionId`; UI place-модалки менять не нужно.
 
-Сейчас:
+Было (до фикса):
 
 - Обычный ход на центр: `applyCenterFinish` → сразу `ensureCurrentEligibleOrAdvance()` в `handleMove` / push / return / peek-path.
 - Катапульта → центр: `fireCatapultAfterPresentation` → `applyCenterFinish` → `onTrapPipelineIdle()` → только `maybeAutoEndTurn()` / solo exhaustion.
 - `maybeAutoEndTurn` при `!isEligibleForTurn(current)` делает early `return` **без** передачи хода.
 - Если `pendingTurnAdvance` уже true (deadline / early no-actions), idle вызывает `advanceTurn` и баг маскируется — отсюда плавающий симптом.
+
+Стало: idle следует канону D1 (`wasCurrent` → `ensureCurrentEligibleOrAdvance` → pending absorb / условный `advanceTurn`); mocha SC-MOVE-96 / SC-FINISH-21 + pending-absorb зелёные.
 
 ## Goals / Non-Goals
 
