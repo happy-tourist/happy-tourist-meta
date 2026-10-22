@@ -1,0 +1,11 @@
+## 1. Server: idle trap-pipeline — снять ход с finish place
+
+- [x] 1.1 Перед работой: `design.md` D1 (канон-формула + анти-паттерн); delta `specs/game/move/spec.md` SC-MOVE-96; delta `specs/game/finish/spec.md` SC-FINISH-21; skills `server-locate-change-points`, `work-with-rooms`, `work-with-game`, `work-with-messages`; в `../happy-tourist-server` — точка врезки `onTrapPipelineIdle` (~L1593); reuse уже существующих `ensureCurrentEligibleOrAdvance` / `maybeAutoEndTurn` / `advanceTurn` / `isEligibleForTurn` в `src/rooms/MyRoom.ts` (не дублировать eligibility)
+- [x] 1.2 В `onTrapPipelineIdle` реализовать **канон-формулу D1** (`wasCurrent` → `ensureCurrentEligibleOrAdvance` → pending absorb vs `advanceTurn` только если `current == wasCurrent` и seat eligible): не вызывать `advanceTurn` «вслепую» после ensure на finish-place path — verify: код = канон D1; комментарий idle обновлён под D1 (SC-MOVE-91…93 + finish-place absorb)
+- [x] 1.3 Mocha SC-MOVE-96 / SC-FINISH-21 рядом с SC-MOVE-89 / SC-FINISH-19: два seat; у A три piece уже `finished`, четвёртый free, до fling `finishPlace === 0` (seat ещё eligible); путь к catapult→center (фикстура fling как SC-MOVE-89); `setBudgetsForTests` так, чтобы после land остались actions (steps/peeks > 0) — **без** раннего `pendingTurnAdvance`; после idle assert `finishPlace === 1` (или `> 0`), `currentTurnSessionId ===` next eligible (≠ A), `!isTrapPipelineActiveForTests()` — verify: красный до 1.2 / зелёный после
+- [x] 1.4 Регрессия SC-MOVE-91/93 (pending / idle re-eval) не сломана; **рекомендуемый** точечный кейс: finish-place mid-pipeline **с** уже выставленным `pendingTurnAdvance` → после idle ход ушёл с A **ровно один раз** (pending absorb, нет второго `advanceTurn`) — verify: существующие mocha idle зелёные; assert `currentTurnSessionId` стабилен на сопернике и `!isPendingTurnAdvanceForTests()`
+- [x] 1.5 Из `../happy-tourist-server`: `npm test` (полный прогон room/move) — verify: exit 0
+
+## 2. Client (вне scope)
+
+Нет задач. Place-модалка и turn chrome уже зеркалят синхронизированные `finishPlace` / `currentTurnSessionId` (`design.md` D3; SC-FINISH-03/21 covered-by-reuse). Не трогать `GamePage` / game store / i18n. Не гейтить модалку idle; краткое перекрытие модалка↔chrome до idle — ожидаемо, не FE-фикс.
