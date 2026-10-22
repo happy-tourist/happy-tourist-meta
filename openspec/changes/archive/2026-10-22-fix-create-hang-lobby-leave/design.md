@@ -1,8 +1,8 @@
 ## Context
 
-См. `proposal.md` — Why. Сейчас в client Pinia `game` store путь `_enterRoom` после успешного `client.create` / `joinById` / `reconnect` делает `_attachRoom(room)`, затем **`await this.unsubscribeLobby()`**, а `unsubscribeLobby` делает **`await lobby.leave()`** без timeout. UI Lobby (`onConfirmCreate` / join) ждёт полный `createGame`/`joinGame`, поэтому зависший leave держит диалог и не пускает на Game, хотя tourist room уже жива и seat выдан.
+См. `proposal.md` — Why. **До фикса** в client Pinia `game` store путь `_enterRoom` после успешного `client.create` / `joinById` / `reconnect` делал `_attachRoom(room)`, затем **`await this.unsubscribeLobby()`**, а `unsubscribeLobby` — **`await lobby.leave()`** без timeout. UI Lobby ждал полный `createGame`/`joinGame`, поэтому зависший leave держал диалог. **Реализовано (D1/D3):** sync clear + `Promise.race(leave, LOBBY_LEAVE_TIMEOUT_MS)` в `unsubscribeLobby` (leave также `.catch`, чтобы late reject после timeout не был unhandled); `_enterRoom` после `_attachRoom` — `void this.unsubscribeLobby()` и сразу `return room`. Vitest: `game.lobbyEnter.test.ts` (SC-LOBBY-05 / SC-LOBBY-37). LobbyPage не менялся.
 
-Порядок attach-before-unsubscribe намеренный: не пропустить первый `ROOM_STATE` в gap leave. Его сохраняем; меняем только блокирующее ожидание leave.
+Порядок attach-before-unsubscribe намеренный: не пропустить первый `ROOM_STATE` в gap leave. Сохранён; меняется только блокирующее ожидание leave.
 
 **Пакет:** client only. Server / room contract без изменений.
 
@@ -41,7 +41,7 @@ Main: `openspec/specs/lobby/rooms/spec.md` (SC-LOBBY-04, SC-LOBBY-08). Runtime: 
 
 Разделить **локальный teardown** и **ожидание сети**:
 
-1. `unsubscribeLobby` (все callers): **синхронно до первого `await`** — `lobbyWanted = false`, очистить `rooms`, обнулить `lobbyRoom`; если был lobby room — `leave()` через `Promise.race(leave, timeout)` (или helper) с константой D3; ошибки leave глотать как сейчас. Таким образом `leaveGame` / старт `subscribeLobby` тоже не висят forever на leave.
+1. `unsubscribeLobby` (все callers): **синхронно до первого `await`** — `lobbyWanted = false`, очистить `rooms`, обнулить `lobbyRoom`; если был lobby room — `leave().catch(…)` через `Promise.race(leave, timeout)` с константой D3; ошибки leave глотать (в т.ч. late reject после timeout). Таким образом `leaveGame` / старт `subscribeLobby` тоже не висят forever на leave.
 2. `_enterRoom` после `_attachRoom`: **инициировать** `unsubscribeLobby` **без** ожидания его завершения (`void this.unsubscribeLobby()` или эквивалент) → **сразу `return room`**. Не `await unsubscribeLobby()` до конца — иначе UI снова ждёт leave (даже с bound 1–2s create-диалог «подвис» бы на timeout). Вызов `void unsubscribeLobby()` всё равно выполняет синхронный teardown из п.1 **до** return `_enterRoom` (async-функция бежит до первого `await`) — SC-LOBBY-37 «local listing state cleared» без ожидания сети.
 3. Порядок attach → initiate unsubscribe сохранить (D4).
 4. Двойной вызов безопасен: LobbyPage `onUnmounted` тоже `void unsubscribeLobby()` после navigate; после п.1 `lobbyRoom` уже `null` — второй leave no-op.
