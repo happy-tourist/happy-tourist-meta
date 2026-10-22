@@ -74,7 +74,7 @@
 | SC-MOVE-62 | covered (server mocha — auto-end waits for rescue/return) |
 | SC-MOVE-63 | covered (client UX — all-jail modal self only) |
 | SC-MOVE-64 | covered (server mocha — solo same rules) |
-| SC-MOVE-65 | covered (client UX — finish-block click → nearest legal center) |
+| SC-MOVE-65 | covered (client vitest GameBoardWire — per-cell finish click / outline) |
 | SC-MOVE-66 | covered (server mocha — push costs 1 step, relocates target) |
 | SC-MOVE-67 | covered (server mocha + unit — collinear through geometry) |
 | SC-MOVE-68 | covered (server mocha + unit — cannot push trapped) |
@@ -544,16 +544,18 @@ While it is a seated client’s own turn, that client SHALL be able to select on
 - **AND** red destination outlines update for the newly selected piece
 - **AND** any prior return-mode is cancelled without spending a step
 
-### Requirement: Finish-block click resolves to nearest legal center cell
+### Requirement: Finish-cell click submits that cell only
 
-The central finish area MAY be presented as one visual 2×2 block. While the client is submitting a move (not return-mode) and the selected piece has at least one legal destination among the four center cells, activating **any** point on that finish block MUST submit a move to the **nearest** of those **legal** center cells relative to the selected piece’s current cell (Chebyshev distance; ties broken by lower row, then lower column). The client MUST NOT require the user to hit a specific quadrant of the block matching that cell. If none of the four center cells is a legal destination for the selected piece, activating the finish block MUST NOT submit a move.
+Finish cells on the Game board MUST behave like other playable tiles for local move selection chrome and move submission (they are **not** one visual 2×2 block). While the client is submitting a move (not return-mode) and a finish cell F is a legal one-step destination for the selected piece, activating **that** cell MUST submit a move to F. Activating a different finish cell that is not legal MUST NOT submit a move to F via nearest-center remapping. Red destination outlines MUST appear only on finish cells that are legal for the selected piece. White selection outline MUST follow the selected piece’s cell only. Room message `move` payload `{ pieceId, row, col }` and server validation of that destination cell remain unchanged (existing per-cell `7` playable centers); this requirement is client chrome only.
 
-#### Scenario [SC-MOVE-65]: Any click on finish picks nearest legal center
+#### Scenario [SC-MOVE-65]: Finish click targets the activated cell
 
-- **GIVEN** it is the user’s turn, an own piece is selected, and exactly one of the four center cells is a legal one-step destination for that piece
-- **WHEN** the user activates any point on the visual finish 2×2 block
-- **THEN** the client submits a move to that legal center cell
-- **AND** the submission does not depend on which quadrant of the block was clicked
+- **GIVEN** it is the user’s turn, an own unfinished piece is selected, and exactly one of several finish cells is a legal one-step destination for that piece
+- **WHEN** the user activates that legal finish cell
+- **THEN** the client submits a move to that same cell
+- **AND** only that legal finish cell shows the red destination outline among finish cells
+- **AND WHEN** the user activates a different finish cell that is not a legal destination
+- **THEN** the client MUST NOT submit a move to the legal finish cell via nearest-center remapping
 
 ### Requirement: Keep local selection after a successful non-finishing move
 

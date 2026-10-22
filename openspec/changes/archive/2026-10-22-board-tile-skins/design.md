@@ -30,7 +30,7 @@ See `proposal.md` — Why. Client board and map previews use flat CSS fills (`#4
 | task flipped | `.tile-task.tile--flipped` (class already on GamePage) | `src/assets/tiles/tile-back.png` |
 | finish | `.tile-center` | `src/assets/tiles/finish.png` |
 
-Import like grille/catapult PNGs; apply as `background-image` (`background-size: 100% 100%`, no repeat). Playable board tiles MUST use `border-radius: 0` (drop prior `--radius: 2` / `var(--radius)` on `.tile`) so notched art is not clipped. Removed tasks stay transparent holes (no skin). Prefer **one shared import** of the four PNGs (or a tiny shared style module) reused by GamePage, `MapGridPreview`, and map palette — do not copy divergent URL strings.
+Import like grille/catapult PNGs; apply as `background-image` (`background-size: 100% 100%`, no repeat). Playable board tiles MUST use `border-radius: 0` (drop prior `--radius: 2` / `var(--radius)` on `.tile`) so notched art is not clipped. Removed tasks stay transparent holes (no skin). **As-built:** shared module `src/lib/tileSkins.ts` (`TILE_SKINS` + `tileSkinCssVars()` / `TILE_SKIN_CSS_VARS`) reused by GamePage, `MapGridPreview`, and map palette — do not copy divergent URL strings.
 
 **Alternatives:** inline SVG / CSS-only — rejected; art is shipped PNG.
 
