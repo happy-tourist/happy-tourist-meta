@@ -51,21 +51,21 @@ Read the matching file in this folder when the change involves that area
 | Return UX | Green `undo` over finished strip when `canReturn(pieceId)` → return-mode + ring `.tile--target` → `sendReturnFromFinish(pieceId, row, col)` (no confirm modal; SC-FINISH-09/13/15/16) |
 | Peek UX | See [peek.md](peek.md) — shared Q&A modal (`sendPeek` / `sendPeekPlace` / `sendPeekSubmit`), not Correct/Wrong |
 | Focus UX | See [focus.md](focus.md) — `center_focus_strong` on own avatar → nearest actionable pieceId |
-| Finish UX | Center land (move **or** push) → slide from last board cell + fade (`disappearingKeys` / `finishAnimFromByKey`); own move seeds `lastKnownBoardCellByKey` at submit (D11 / SC-FINISH-18; finish watch owns `finishAnimFrom`); own `finishPlace` 0→N → place modal; stay in room after close. Click any point on visual finish 2×2 → submit **nearest legal center** vs selected piece (Chebyshev; no quadrant mapping — SC-MOVE-63) |
+| Finish UX | Center land (move **or** push) → slide from last board cell + fade (`disappearingKeys` / `finishAnimFromByKey`); own move seeds `lastKnownBoardCellByKey` at submit (D11 / SC-FINISH-18; finish watch owns `finishAnimFrom`); own `finishPlace` 0→N → place modal; stay in room after close. Activate the **clicked finish cell** only (`cellKey`); no nearest-legal remap / no `nearestLegalCenterCell` (SC-MOVE-65) |
 | All-jail | Own seat only: informational modal from `game.allJailWarning` |
-| Center | One element with `span 2` / `span 2` (solid 2×2), not four cells |
+| Center | One `BoardTile` per grid `7` with `kind: 'center'` + finish skin; **no** contiguous merge / `span 2` (SC-BOARD-55) |
 | Room enter | Out of scope — see `work-with-lobby` / `work-with-rooms` (`rejoinGame`) |
 
 ## Layout And Tiles
 
 - Grid: **10×10** sparse; empty corners are holes (no tile element; page background shows through).
-- Kinds: `start` (green), `task` (brown), `center` (yellow).
-- After **correct** peek only: synced `game.removedTaskKeys` (`"r,c"`) → task tile omitted (same hole chrome as empty corners); cell is **not** a legal landing target (red hints exclude it). A piece already on that cell **remains** (stand-on-hole OK — SC-BOARD-12). Incorrect / forced-incorrect KEEP leaves the brown tile and hidden reward (no hole).
-- `.tourist-board`: `width: 100%`, `max-width: calc(10 * 60px + 9 * 2px)`, `aspect-ratio: 1`, `--gap: 2px`, `--radius: 2px`, `grid-template-*: repeat(10, 1fr)`; tile `border-radius: var(--radius)`. Do **not** size rows with `%` of auto height (tracks collapse to 0).
+- Kinds: `start` / `task` / `center` (finish) — PNG skins from `src/assets/tiles/` via shared `src/lib/tileSkins.ts` (`start.png`, `tile.png`, `tile-back.png` when flipped, `finish.png`); bind `tileSkinCssVars()` on `.tourist-board`; see `work-with-styles/board.md`.
+- After **correct** peek only: synced `game.removedTaskKeys` (`"r,c"`) → task tile omitted (same hole chrome as empty corners); cell is **not** a legal landing target (red hints exclude it). A piece already on that cell **remains** (stand-on-hole OK — SC-BOARD-12). Incorrect / forced-incorrect KEEP leaves the unbound/flipped task skin and hidden reward (no hole).
+- `.tourist-board`: `width: 100%`, `max-width: calc(10 * 60px + 9 * 2px)`, `aspect-ratio: 1`, `--gap: 2px`, `grid-template-*: repeat(10, 1fr)`; playable tile `border-radius: 0` (do not clip notched skins with `--radius: 2`). Do **not** size rows with `%` of auto height (tracks collapse to 0).
 - Container: full width of Game content (no side presence gutters); mobile edge-to-edge relative to page content; wide screens capped by max tile 60px (via board max-width + square aspect).
-- Tile colors are **fixed fills**, independent of Quasar Dark chrome (see `work-with-styles` / theme specs).
+- Tile skins are **theme-independent**, not retinted by Quasar Dark chrome (see `work-with-styles` / theme specs).
 
-## Move Interaction (current turn only — D5 / SC-MOVE-11…13/46/63, SC-BOARD-05/06/14)
+## Move Interaction (current turn only — D5 / SC-MOVE-11…13/46/65, SC-BOARD-05/06/14)
 
 | Rule | Behavior |
 |------|----------|
@@ -74,7 +74,7 @@ Read the matching file in this folder when the change involves that area
 | Hints | Legal one-step neighbors (Chebyshev 1, playable via board geometry **excluding** removed-task holes, unoccupied) → red outline; **local only**; hidden while `steps === 0`. Return-mode same `.tile--target` |
 | Reselect | May change `selectedPieceId` among own unfinished non-trapped until submit |
 | Submit | Activate red destination → `game.sendMove(pieceId, row, col)`; **turn stays** |
-| Center finish click | Any click on visual center 2×2 → nearest legal center (SC-MOVE-63) |
+| Center finish click | Activate that finish cell only (`cellKey` / legal-key membership); **no** nearest-legal remap (SC-MOVE-65) |
 | Keep-focus | After successful **non-finishing** move: **do not** clear `selectedPieceId` (SC-MOVE-46). Center finish → clear |
 | Peek / Focus | See [peek.md](peek.md) / [focus.md](focus.md) |
 | Rescue / Push / Return | `sendRescue` / `sendPush` / `sendReturnFromFinish` with **pieceId** payloads |
@@ -177,7 +177,7 @@ Picker open state (`sayPickerOpen`) is page-local; close if the local seat is lo
 - Full-screen countdown overlay while `phase === 'countdown'`.
 - Show strip inside HUD when `mySeat` and pieces exist (**no** caption; **no** chip/`q-menu`); finish flag on finished slots; dim finished only if `!canReturn`; return via **green strip icon** (no confirm modal; slot body finished → noop); grille chrome on strip when trapped (`GRILLE_ANIM_MS = 1000`); wide row / HUD ≤~420 → 2×2; on own turn **in playing** select unfinished non-trapped from strip or board.
 - Board overlay: unfinished pieces only when seats have pieces (none in waiting/countdown).
-- On own turn in playing (not finished / not time-expired): white selection + red targets; center click → nearest legal center; submit via `sendMove(pieceId,…)`; push via `sendPush`; keep-focus after non-finishing move/push; peek eye + shared Q&A modal (see [peek.md](peek.md)); focus control (see [focus.md](focus.md)).
+- On own turn in playing (not finished / not time-expired): white selection + red targets; finish click → that cell only (SC-MOVE-65); submit via `sendMove(pieceId,…)`; push via `sendPush`; keep-focus after non-finishing move/push; peek eye + shared Q&A modal (see [peek.md](peek.md)); focus control (see [focus.md](focus.md)).
 - Animate piece travel; on center finish (move or push) keep DOM key for slide from last board cell then fade (`FINISH_FADE_MS` / `finishAnimFromByKey`; own move/push seeds `lastKnown` only — D10/D11); clear selection; on return animate from nearest center; catapult: land→overlay→fling (yield own move anim; pin during overlay → travel after vanish); ignore input while `isBoardBusy` (SC-BOARD-27/28).
 - Own `finishPlace` 0→N → place `q-dialog` (`game.finishPlaceModal*`); own `timeExpired` false→true → dual end `q-dialog` (`game.timeExpiredModal*` vs `game.stepsExhaustedModal*`); solo peeks∞ modal when `budgetsInfinite` becomes true; **no** return-confirm dialog; close keeps player in room; clear selection on expiry.
 - Budget +N fall ≈ 2 s (`BUDGET_FALL_MS` / `.budget-fall` CSS — SC-PRESENCE-20).
@@ -185,8 +185,8 @@ Picker open state (`sayPickerOpen`) is page-local; close if the local seat is lo
 
 ## Do
 
-- Keep geometry in `lib/boardGeometry` from synced `grid`; center as a single 2×2 grid area.
-- Preserve max tile 60px, gap 2, radius 2, hole = page background (incl. removed `*`).
+- Keep geometry in `lib/boardGeometry` from synced `grid`; one `BoardTile` per finish/`7` (`kind: 'center'`, no multi-cell span — SC-BOARD-55).
+- Preserve max tile 60px, gap 2, playable `border-radius: 0`, hole = page background (incl. removed `*`).
 - Keep Colyseus I/O in `stores/game`; page reads seats/phase/turn/strip/presence/`sayEvents`/`steps`/`peeks`/`budgetsInfinite`/`openPeek`/`removedTaskKeys`/`holdingGrilleKeys`/`revealingCatapultKeys`/`brokenCatapultKeys` from store only.
 - Gate move interactivity with `isPlaying && isMyTurn && !isMySeatFinished && !isMySeatTimeExpired` (and `!isBoardBusy`); never select finished pieces/slots as board movers; gate say with own seated+connected; ready via `sendReady`; end-turn via `canSendEndTurn` icon on own avatar.
 - Map `touristId` 1…4 to `tourist{N}.png`; strip only after pieces exist; finish icon on finished sides; return via green strip icon + same red targets as move (no confirm modal).
@@ -199,7 +199,7 @@ Picker open state (`sayPickerOpen`) is page-local; close if the local seat is lo
 - Call `room.send` from the page — only `game.sendMove` / `sendPush` / `sendPeek` / `sendPeekPlace` / `sendPeekSubmit` / `sendEndTurn` / `sendSay` / `sendReady` / `sendRescue` / `sendReturnFromFinish`.
 - Show white/red move chrome before `playing`, to spectators, non-current players, finished seats, or finished pieces (except return-mode red ring targets).
 - Show say send affordance or budget counters on other players’ markers or to spectators.
-- Put **all** markers in the bottom HUD; reintroduce compact chip / `q-menu` / `touristChipAria` picker; put return **confirm modal**; use orange-only return targets; dim finished slots when `canReturn` is true; map finish 2×2 clicks by quadrant; start return from finished slot body click.
+- Put **all** markers in the bottom HUD; reintroduce compact chip / `q-menu` / `touristChipAria` picker; put return **confirm modal**; use orange-only return targets; dim finished slots when `canReturn` is true; merge finish into a spanning 2×2 / nearest-legal finish remap; start return from finished slot body click.
 - Put end-turn inside the budgets row or reintroduce `.end-turn-dock` / labeled «Завершить ход» button — keep icon-only `skip_next` right-center on the own avatar.
 - Assume a successful move ends the turn — use end-turn / auto / timeout.
 - Clear `selectedPieceId` after every successful non-finishing move — keep-focus (SC-MOVE-46).

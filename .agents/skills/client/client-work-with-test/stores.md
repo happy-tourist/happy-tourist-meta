@@ -74,14 +74,18 @@ task_set→live SC-PACK-191/192; cancel→draft; no published badge),
 ghost `pack-task-set-ghost-*` → add-task-set Edit SC-PACK-188…190),
 `maps` (HTTP maps via `client.http`; paint helpers; pages
 `ContentMaps.test.ts` SC-MAP-06…08 / 14 / 17 / 21 / 24–25 / 29–30 / 41…56 /
-  62…65
+  62…65 / 71/72
   (cancel→draft, view meta, title-row Edit SC-MAP-51, author pending→Edit
-  SC-MAP-50, paint race SC-MAP-53, palette under SC-MAP-54, `MapListCardTile`
-  SC-MAP-55/66/67/68 (quoted mask `url("`…), centered seats SC-MAP-56, staff published boot SC-MAP-62,
-  never-published Submit SC-MAP-63, dirty gate SC-MAP-65, no published badge); store
+  SC-MAP-50, paint race SC-MAP-53, palette under + shared `tileSkinCssVars` SC-MAP-54/71/72,
+  `MapListCardTile` SC-MAP-55/66/67/68 (quoted mask `url("`…), centered seats SC-MAP-56,
+  staff published boot SC-MAP-62, never-published Submit SC-MAP-63, dirty gate SC-MAP-65,
+  no published badge); store
 `maps.paint.test.ts` SC-MAP-04; errors via `mapsErrorI18nKey` → `maps.errors.*`;
 meta `work-with-stores/maps.md` — shared staff queue still mocked via `content`
 when testing type-badge / my-moderation map rows).
+Game board geometry/skins: `src/lib/__tests__/boardGeometry.test.ts` (one center
+tile per finish cell SC-BOARD-55) + `GameBoardWire.test.ts` (skin CSS vars /
+radius 0 / dark flip digit SC-BOARD-56/57 + per-cell finish click SC-MOVE-65).
 App shell crumbs + page bg: `src/__tests__/AppHeaderChrome.test.ts` — breadcrumbs **inside**
 `q-page-container` (not elevated `q-header`; SC-BRAND-17…20 / SC-PACK-193 / SC-MAP-52);
 narrow burger fold Acc/Theme/Logout **or** guest login (SC-BRAND-19/22/24); **SC-BRAND-23**

@@ -263,9 +263,12 @@ Apply always; sibling skills win when they exist and conflict on a detail.
   HUD ≤~420 → 2×2 — **no** chip/`q-menu`); dual rings from
   `turnUntil` / `reconnectUntil` around 72px avatar in 96px chrome; avatar as
   sibling `<img class="presence-avatar">` on top — not only in `q-circular-progress`
-  default slot without `show-value` (SC-PRESENCE-12); board `--gap`/`--radius` 2;
-  local selection / hints when `isMyTurn` and eligible; travel + return-from-nearest-center
-  animation; finish 2×2 → nearest legal center; submit only via `game.sendMove`.
+  default slot without `show-value` (SC-PRESENCE-12); board `--gap: 2`, playable
+  `border-radius: 0` + kind PNG skins via shared `lib/tileSkins` (also
+  `MapGridPreview` / map palette — no divergent `url(...)`); local selection /
+  hints when `isMyTurn` and eligible; travel + return-from-nearest-center
+  animation; finish click per-cell (SC-BOARD-55 / SC-MOVE-65, no nearest remap /
+  no finish `span`); submit only via `game.sendMove`.
   Brand logo (always-button ~44px SC-BRAND-25, image mark only — no wordmark; no decorative/bare-`img` swap) + match status in App header; Game leave via logo; auth/other → lobby, lobby noop (not Material `logout`, not page-local «В лобби»).
   Return: confirm modal → same red `.tile--target` as move; `GRILLE_ANIM_MS = 1000`
   on board + strip chrome.

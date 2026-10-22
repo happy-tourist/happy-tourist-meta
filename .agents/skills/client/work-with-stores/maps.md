@@ -3,7 +3,8 @@
 Read with the [core stores skill](SKILL.md) when changing UGC map HTTP, paint
 helpers, staff lock/save, soft-unpublish, or list statuses/filters. Pages:
 `MapsListPage` / `MapEditorPage`; shared staff hub still uses `content` store for
-queue/preview/take (type `map`). Component: `MapGridPreview.vue`.
+queue/preview/take (type `map`). Component: `MapGridPreview.vue` (shared
+`lib/tileSkins` kind faces — SC-MAP-71/72).
 
 ## Ownership
 
@@ -89,7 +90,10 @@ HTTP in `maps` beyond cancel/preview helpers the editor already needs.
   `staffMode` / staff-save **before** creator path even if staff is creator
   (SC-MAP-62); never-published staff creator keeps Submit (SC-MAP-63).
 - **Editor edit:** board-comparable field + under-map paint tiles with labels
-  under each tool (SC-MAP-54); **centered** editor column (field + palette +
+  under each tool; tool faces = same kind skins as board via shared
+  `lib/tileSkins` / `tileSkinCssVars()`, swatch `border-radius: 0` (SC-MAP-54/71/72);
+  `MapGridPreview` binds the same CSS vars (start/task/finish only — **no**
+  flipped task skin; holes stay empty chrome); **centered** editor column (field + palette +
   seats) with usable-width seat selects (SC-MAP-56); interactive preview +
   seats; quiet autosave while creator-editable — **block paint while save in
   flight** and **anti-stale** skip applying older save echoes (SC-MAP-53;
@@ -111,7 +115,8 @@ HTTP in `maps` beyond cancel/preview helpers the editor already needs.
   `MapListCardTile` SC-MAP-55/66/67/68 + tile unit `MapListCardTile.test.ts` + view
   meta / title-row Edit / author pending→Edit / crumbs / cancel→draft /
   centered seats SC-MAP-56 + SC-MAP-41…54 + SC-MAP-06…08, 14, 17, 21, 24–25,
-  29–36 + submit starts gate + paint race / palette under + staff published
+  29–36 + submit starts gate + paint race / palette under + shared kind skins
+  SC-MAP-54/71/72 (`tileSkinCssVars` / no flat hex) + staff published
   boot / never-published Submit / dirty gate SC-MAP-62/63/65). App crumbs
   inside `q-page-container`: `AppHeaderChrome` SC-MAP-52 / SC-BRAND-17…20.
 - Server twin: `test/zz-contentMaps.test.ts` (mocha; staff-save clear working

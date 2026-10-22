@@ -8,9 +8,9 @@ description: >-
   SC-PACK-228/249…255 + `PackTaskSetCardTile` SC-PACK-247/248 SVG masks,
   AnswerCompose/TaskCompose + `PackTaskComposeDialog` SC-PACK-256…263/276…281 +
   portrait `PackAnswerCardTile` SC-PACK-222/225/282/283 + portrait
-  `PackTaskTile`/`taskFilledSlots` SC-PACK-278/283 + AddTaskSetDraft SC-PACK-264…268 + DraftLifecycle/DirtySubmit SC-PACK-234/269…275 + GameBoardWire peek SC-BOARD-45/49/50…54 (peeks=0 hides eye on flipped; left-edge dots),
-  lobby `LobbyRoomCardTile` / `LobbyCreateWire` SC-LOBBY-24…26/33…36, game
-  board wire, App header chrome); Colyseus
+  `PackTaskTile`/`taskFilledSlots` SC-PACK-278/283 + AddTaskSetDraft SC-PACK-264…268 + DraftLifecycle/DirtySubmit SC-PACK-234/269…275 + GameBoardWire peek/skins/per-cell finish SC-BOARD-45/49/50…54/55/56/57 + SC-MOVE-65 (peeks=0 hides eye on flipped; left-edge dots),
+  lobby `LobbyRoomCardTile` / `LobbyCreateWire` SC-LOBBY-24…26/33…36, maps
+  palette/preview skins SC-MAP-71/72, App header chrome); Colyseus
   client.auth / client.http / room I/O spies; store error + q-banner;
   vue-i18n / router. Harness: `vitest.config.ts`, `test/setup.ts`, `npm test`.
   Core in SKILL.md; SC/file details in topics: forms.md, stores.md,

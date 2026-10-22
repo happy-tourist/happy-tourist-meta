@@ -13,14 +13,15 @@ Board UI is custom CSS Grid (not Quasar widgets). Keep selectors local and class
 | `.end-turn-affordance` | Icon-only `skip_next` **right-center** on own avatar (`right: -8px`, 36px hit) — **not** in budgets row, **no** labeled dock (SC-PRESENCE-17/25) |
 | `.presence-slot--own` | Own HUD cluster: avatar | budgets; **`gap: 20px`** (≥ end-turn hit so `skip_next` does not cover budgets — SC-PRESENCE-25) |
 | `.game-hud` / `__scroll` / `__bar--seated` | Sticky bottom **seated** panel only (`container-name: game-hud`); **translucent underlay** light `rgba(255,255,255,0.78)` / dark `rgba(18,18,18,0.78)` — not opaque `#fff` / `#121212` (SC-PRESENCE-34 / D11; same alpha as SC-PACK-285); top `.presence-row--top` unchanged; scroll wrapper owns `overflow-x` so say chrome is not clipped (SC-SAY-15); spectator has **no** bottom HUD |
-| `.tourist-board` | 10×10 CSS Grid; `--cell` / `--gap` / `--radius`; `aspect-ratio: 1`; transparent holes |
+| `.tourist-board` | 10×10 CSS Grid; `--cell` / `--gap: 2px`; `aspect-ratio: 1`; transparent holes; playable tiles `border-radius: 0` (skin silhouette, not `--radius: 2`) |
 | `.grille-overlay` / `--drop` / `--rise` | Revealed holding grille from `src/assets/grilles/grille.png`; duration via `--grille-anim-ms` (`GRILLE_ANIM_MS = 1000`) for drop/rise incl. leave-clear (SC-BOARD-18/19/21) |
 | `.catapult-overlay` / `--reveal` / `--intact` / `--broken-hold` / `--vanish` | Catapult presentation from `src/assets/catapults/catapult.png` (+ `catapult-broken.png`); successful fade via `--catapult-anim-ms` (`CATAPULT_ANIM_MS = 1000`); broken timeline uses intact → hold → broken-hold → vanish classes; land→overlay→fling sequencing is page logic (SC-BOARD-22…28) |
 | `.piece--trapped` | Trapped tourist still visible under grille (SC-PIECE-27); no own-select chrome |
-| `.tile` | Rounded tile (`border-radius: var(--radius)`); `pointer-events` only when interactive |
-| `.tile-start` | Green start tile (`#4caf50`) |
-| `.tile-task` | Brown task tile (`#8d6e63`) |
-| `.tile-center` | Yellow center (`#ffeb3b`); one element with `span 2` / `span 2` |
+| `.tile` | Playable cell (`border-radius: 0`); `pointer-events` only when interactive; skin via `background-image` (`background-size: 100% 100%`) |
+| `.tile-start` | Start skin via shared `src/lib/tileSkins.ts` → `src/assets/tiles/start.png` |
+| `.tile-task` | Unbound task skin via `tileSkins` → `tile.png` |
+| `.tile-task.tile--flipped` | Flipped task skin via `tileSkins` → `tile-back.png` + difficulty digit ink `#212121` (no light text-shadow) |
+| `.tile-center` | Finish skin via `tileSkins` → `finish.png`; **one tile per** grid `7` cell (`kind: 'center'` — do **not** merge contiguous finish into a multi-cell `span`) |
 | `.tile--selected` / `.tile--target` | Local white / red move **and** return-mode ring chrome (same red class — SC-FINISH-13 / SC-MOVE-12) |
 | `.tile-task.tile--removed` | Removed-task hole = page background; may keep `.tile--selected` while piece stands; **never** combine with `.tile--target` (holes not landable — SC-BOARD-15) |
 | `.piece` | Absolute `left`/`top` from `--pcol`/`--prow` + `--cell`; ~250ms transition (incl. return from nearest center) |
@@ -41,15 +42,16 @@ Board UI is custom CSS Grid (not Quasar widgets). Keep selectors local and class
 | `.say-bubbles--top` | Top-row markers: bubbles grow **down** toward the board |
 | `.say-bubbles--bottom` | Own bottom marker: bubbles grow **up** toward the board |
 
-Current-turn interactivity, dual turn/reconnect rings, top presence + seated sticky `.game-hud` (own + strip), own budgets beside avatar / end-turn icon right-center, peek/rescue/push top-center, removed-task holes, grille overlays + catapult sequential presentation CSS + strip chrome grille + return-icon, say top↓/own↑, nearest-center finish click, and travel/return/push-finish animation live in `work-with-game-board` — do not reintroduce draughts `.cell` / selection classes, all-markers-bottom HUD, compact chip / `q-menu`, page-local `.game-header`, orange-only return targets, return confirm modal, `.end-turn-dock`, `GRILLE_ANIM_MS = 1500`, or a static blue turn outline.
+Current-turn interactivity, dual turn/reconnect rings, top presence + seated sticky `.game-hud` (own + strip), own budgets beside avatar / end-turn icon right-center, peek/rescue/push top-center, removed-task holes, grille overlays + catapult sequential presentation CSS + strip chrome grille + return-icon, say top↓/own↑, **per-cell** finish click/outline (SC-MOVE-65), and travel/return/push-finish animation live in `work-with-game-board` — do not reintroduce draughts `.cell` / selection classes, all-markers-bottom HUD, compact chip / `q-menu`, page-local `.game-header`, orange-only return targets, return confirm modal, `.end-turn-dock`, `GRILLE_ANIM_MS = 1500`, a static blue turn outline, flat hex tile fills, finish `span 2×2` merge, or nearest-center finish remapping.
 
 When editing board visuals:
 
 - Prefer adjusting existing tourist classes over new global CSS.
-- Preserve max tile 60px, gap 2, radius 2; holes show page background; do not style `.tile--removed` as a red landing target.
+- Preserve max tile 60px, gap 2, `border-radius: 0` on playable tiles; holes show page background; do not style `.tile--removed` as a red landing target.
+- Shared map previews / editor palette reuse the same kind PNGs via `tileSkinCssVars()` / `TILE_SKIN_CSS_VARS` from `src/lib/tileSkins.ts` (`MapGridPreview`, palette faces also `border-radius: 0`) — see `content/maps` SC-MAP-54/71/72. Do **not** copy divergent `url(...)` strings into page CSS.
 - Do not replace the board with Quasar grid components unless explicitly asked.
-- Do **not** retune tile fills for app Dark mode — chrome theme must not
+- Do **not** retune tile skins for app Dark mode — chrome theme must not
   change the tourist board look.
 - Say bubbles/picker **may** use `body.body--dark` overrides (readable chrome);
   keep them comic bubbles near presence, not Quasar Notify toasts.
-- See `work-with-game-board` for layout constant / center span / say rules.
+- See `work-with-game-board` for layout constants / per-cell finish / say rules.
