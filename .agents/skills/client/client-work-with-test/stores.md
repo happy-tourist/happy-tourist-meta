@@ -120,6 +120,10 @@ Lobby room **card listing**: `LobbyRoomCardTile` + `LobbyCreateWire` SC-LOBBY-25
 (preview, seats/tourists metric rows = set-row rhythm with `…-label`/`…-count`
 testids + plural by maxSeats / touristsPerPlayer, pack + `taskCount` rows,
 ~180/`--pack-card-*`/outline join, status overlay ОЖИДАНИЕ/ИГРА, set overflow ≤4).
+Lobby enter hang leave (SC-LOBBY-05/37): store
+`src/stores/__tests__/game.lobbyEnter.test.ts` — hang `lobby.leave` + fake
+timers; `createGame`/`joinGame` resolve without awaiting leave → topic
+[colyseus.md](colyseus.md).
 
 ## Testing a page / component that uses a store
 

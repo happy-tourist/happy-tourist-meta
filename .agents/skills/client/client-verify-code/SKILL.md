@@ -254,10 +254,13 @@ Apply always; sibling skills win when they exist and conflict on a detail.
 - Lobby listing: `client.http.get('/rooms/tourist')` (not removed
   `getAvailableRooms`).
 - Room type constant `TOURIST_ROOM = 'tourist'` in `stores/game`.
-- Room lifecycle: `create` / `joinById` / `joinOrCreate`, `onStateChange`,
+-   Room lifecycle: `create` / `joinById` / `joinOrCreate`, `onStateChange`,
   `leave`, `sendMove` → `room.send('move', { pieceId, row, col })`. `_enterRoom`
   must `_attachRoom` immediately after `connect()` — no `await` (e.g.
   `unsubscribeLobby`) before the listener, or the first `ROOM_STATE` is missed.
+  After attach: **`void unsubscribeLobby()`** only (SC-LOBBY-05/37) — do **not**
+  `await unsubscribeLobby()` before returning the room (hang leave blocks
+  create/join UX even with `LOBBY_LEAVE_TIMEOUT_MS`).
 - GamePage: tourist board with synced seat pieces; top presence (opponents /
   spectator all) + sticky seated `.game-hud` (own + strip row N,E,W,S / narrow
   HUD ≤~420 → 2×2 — **no** chip/`q-menu`); dual rings from

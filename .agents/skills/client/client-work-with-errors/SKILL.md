@@ -100,9 +100,10 @@ this.error = null;
 try {
   await this._leaveTouristRoom(); // keep lobby live during attempt
   const room = await connect();
-  // Attach BEFORE lobby leave: ROOM_STATE can arrive during any await gap.
+  // Attach BEFORE initiating lobby leave: ROOM_STATE can arrive during any await gap.
   this._attachRoom(room);
-  await this.unsubscribeLobby(); // SC-LOBBY-05 — only on success
+  // SC-LOBBY-05/37: initiate only — do not await leave (hang would block UX).
+  void this.unsubscribeLobby();
   return room;
 } catch (e) {
   this.status = 'idle';

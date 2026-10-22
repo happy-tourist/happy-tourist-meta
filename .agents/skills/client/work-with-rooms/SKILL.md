@@ -4,8 +4,9 @@ description: >-
   Use when adding, changing, reviewing, or debugging Colyseus room lifecycle in
   the happy-tourist tourist client: createGame / joinGame / rejoinGame /
   leaveGame, localStorage tourist reconnection token, _enterRoom /
-  _attachRoom / _resetRoomState, onStateChange / onError / onLeave, GamePage
-  reconnect-then-joinById after refresh / browser reopen, or TOURIST_ROOM wiring.
+  _attachRoom / void unsubscribeLobby (SC-LOBBY-05/37) / _resetRoomState,
+  onStateChange / onError / onLeave, GamePage reconnect-then-joinById after
+  refresh / browser reopen, or TOURIST_ROOM wiring.
 ---
 
 # Work With Rooms
@@ -42,7 +43,7 @@ createGame / joinGame(roomId?) / joinGame() / rejoinGame(roomId)
         │  await _leaveTouristRoom()  ← prior tourist only; lobby stays live
         │  room = await connect()      ← create | joinById | joinOrCreate | reconnect
         │  _attachRoom(room)           ← BEFORE any await; save tourist token
-        │  await unsubscribeLobby()    ← SC-LOBBY-05 only on success
+        │  void unsubscribeLobby()     ← SC-LOBBY-05/37 initiate only (no await leave)
         ▼
   listeners (store only)
         │  onStateChange → seats (incl. connected/reconnectUntil/ready) / phase / maxSeats / countdownRemaining / sessionId / currentTurnSessionId
@@ -79,7 +80,7 @@ Three private helpers own the room session (`_enterRoom`, `_attachRoom`, `_reset
 2. **`await this._leaveTouristRoom()`** — detach prior tourist room; **keep** lobby subscription during the attempt.
 3. `const room = await connect()`.
 4. **`this._attachRoom(room)`** — immediately after connect (before any other await) so the first `ROOM_STATE` is not missed.
-5. **`await this.unsubscribeLobby()`** — only after success (SC-LOBBY-05); return `room`.
+5. **`void this.unsubscribeLobby()`** — initiate only after success (SC-LOBBY-05/37); sync clear runs before first await inside; **do not** `await` leave to completion — return `room` immediately.
 6. On failure: `status = 'idle'`, set `error`, rethrow (lobby stays subscribed on LobbyPage).
 
 ```ts
@@ -89,10 +90,11 @@ async _enterRoom(connect: () => Promise<Room>) {
   try {
     await this._leaveTouristRoom();
     const room = await connect();
-    // MUST attach before await unsubscribeLobby — first ROOM_STATE can arrive
-    // during that gap; missing the listener leaves seats[] empty on Game.
+    // MUST attach before initiating unsubscribe — first ROOM_STATE can arrive
+    // during any await gap; missing the listener leaves seats[] empty on Game.
     this._attachRoom(room);
-    await this.unsubscribeLobby();
+    // SC-LOBBY-05/37: initiate (sync clear before first await); do not await leave.
+    void this.unsubscribeLobby();
     return room;
   } catch (e) {
     this.status = 'idle';
@@ -101,6 +103,9 @@ async _enterRoom(connect: () => Promise<Room>) {
   }
 }
 ```
+
+`unsubscribeLobby` itself: sync `lobbyWanted=false`, `rooms=[]`, `lobbyRoom=null`, then `Promise.race(leave.catch(…), LOBBY_LEAVE_TIMEOUT_MS)` (1500); swallow leave errors (incl. late reject after timeout wins). Callers like `leaveGame` / `subscribeLobby` MAY `await` that bound; `_enterRoom` MUST NOT.
+
 ### `_attachRoom(room)`
 
 Wire listeners **once** in the store (never in `GamePage`):
@@ -112,7 +117,7 @@ Wire listeners **once** in the store (never in `GamePage`):
 5. `room.onError` — set `this.error`.
 6. `room.onLeave` — call `_resetRoomState()` **without** clearing the tourist token (unexpected drop / soft disconnect — F5 may still `reconnect`).
 
-**Ordering:** call `_attachRoom` immediately after `connect()` succeeds — **before** any other `await` (including `unsubscribeLobby`).
+**Ordering:** call `_attachRoom` immediately after `connect()` succeeds — **before** initiating `unsubscribeLobby` (and before any other `await`).
 
 ### `_resetRoomState()`
 
@@ -258,7 +263,7 @@ Normal lobby → game navigation already has `game.room` set; skip rejoin.
 | Persist tourist token in `localStorage` only | Persist lobby token or use `sessionStorage` for reconnect |
 | Clear token on consented `leaveGame` and failed `reconnect` | Clear token on unexpected `onLeave` (blocks F5 / reopen revive) |
 | Mirror `connected` / `reconnectUntil` into `seats[]` | Invent client-only offline flags without schema |
-| Leave before enter (`_leaveTouristRoom` inside `_enterRoom`; unsubscribe lobby on success) | Attach a second tourist room without leaving the first |
+| Leave before enter (`_leaveTouristRoom` inside `_enterRoom`; `void unsubscribeLobby` on success — never await leave to block entry) | Attach a second tourist room without leaving the first; `await unsubscribeLobby()` in `_enterRoom` after attach (hangs create/join — SC-LOBBY-05/37) |
 | Wire `onStateChange` / `onError` / `onLeave` in `_attachRoom` | Put room listeners in `GamePage` or components |
 | Rejoin with `rejoinGame(roomId)` when Pinia lost room | Assume `game.room` survives refresh; skip reconnect and only `joinById` |
 | On rejoin failure → lobby | Leave the user on `/game/:id` without a room |
@@ -269,7 +274,7 @@ Normal lobby → game navigation already has `game.room` set; skip rejoin.
 ## Change Checklist
 
 1. Belongs in `stores/game` (listeners + connect), not the page.
-2. New connect path still goes through `_enterRoom` (`_leaveTouristRoom` → connect → `_attachRoom` → `unsubscribeLobby`).
+2. New connect path still goes through `_enterRoom` (`_leaveTouristRoom` → connect → `_attachRoom` → `void unsubscribeLobby`).
 3. State fields / connectivity / `move` payload match `../happy-tourist-server`.
 4. Consented `leaveGame` clears tourist token; unexpected `onLeave` keeps it; failed `reconnect` clears stale then `joinById`.
 5. `GamePage` uses `rejoinGame` on mount and when Pinia loses the room unexpectedly (reconnect → `joinById`); fail → lobby; consented leave guarded against auto-rejoin.

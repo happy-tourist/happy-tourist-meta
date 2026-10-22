@@ -2,7 +2,8 @@
 name: work-with-lobby
 description: >-
   Guides live lobby via LobbyRoom subscribe/unsubscribe, quiet resubscribe
-  (no reconnect hold), leave-before-enter tourist, create modal
+  (no reconnect hold), leave-before-enter tourist, void unsubscribeLobby after
+  attach (LOBBY_LEAVE_TIMEOUT_MS; no await leave — SC-LOBBY-05/37), create modal
   (mapId/packId/taskSetIds + maxSeats 1…map.players + grille/catapult density)
   / join-by-id (no Play shortcut), and lobby room card listing pointer
   (`LobbyRoomCardTile` + `taskCount` — topic listing-cards.md). Use when
@@ -49,7 +50,7 @@ file at once):
 | Live list | `subscribeLobby` → `joinOrCreate('lobby', { filter: { name: TOURIST_ROOM } })` + handlers `rooms` / `+` / `-` |
 | SDK auto-reconnect | After join: `lobby.reconnection.enabled = false` (avoid reservation churn) |
 | Drop while on Lobby | Clear `lobbyRoom`; if `lobbyWanted` → `_quietResubscribeLobby` (no user-facing reservation text) |
-| Leave lobby | `unsubscribeLobby` after successful tourist connect (`_enterRoom`); also on LobbyPage unmount and `leaveGame` / logout |
+| Leave lobby | `_enterRoom` initiates `void unsubscribeLobby()` after attach (sync clear + timeout-bound leave; no await leave); also LobbyPage unmount and `leaveGame` / logout (those MAY await the bound leave) |
 | Create | Modal: **map** picker (option + **selected-item** mini `MapGridPreview` — SC-LOBBY-31; players × tourists in option caption only — SC-LOBBY-29) + **maxSeats** radios `1…map.players` (default `min(2, map.players)` — SC-LOBBY-28) + **pack** + multi-check published sets (exactly one → auto-check — SC-LOBBY-30; labels `taskSetOption` / ordinal `taskSetLabel` **without** set author — SC-LOBBY-24) + **grille**/ **catapult** density few/medium/many (default medium; server seeds **12/22/35%**) → `createGame({ mapId, packId, taskSetIds, maxSeats, grilleDensity, catapultDensity })` |
 | Join by id | Card body / outline «Войти» → `joinGame(roomId)` → `client.joinById(roomId)` — card chrome in [listing-cards.md](listing-cards.md) |
 | Listing card | `LobbyRoomCardTile` in `.pack-card-grid` (SC-LOBBY-25/26/33/34/35/36; metric rows = set-row rhythm) — details in [listing-cards.md](listing-cards.md) |
@@ -69,7 +70,7 @@ file at once):
 | Set `lobby.reconnection.enabled = false` after lobby join | Persist lobby `reconnectionToken` in `sessionStorage` / `localStorage` |
 | Quiet-resubscribe on drop while `lobbyWanted` | Surface `seat reservation expired` / `FAILED_TO_RECONNECT` as listing `error` |
 | Mount → `subscribeLobby`; unmount → `unsubscribeLobby` | Leave lobby WS open after navigate to game or login |
-| Call `unsubscribeLobby` after successful `tourist` connect (`_enterRoom`); keep lobby on failed enter | Keep lobby + tourist sockets both live on GamePage |
+| Initiate `void unsubscribeLobby()` after successful `tourist` connect (`_enterRoom`); keep lobby on failed enter | `await unsubscribeLobby()` in `_enterRoom` (blocks create/join on hang leave — SC-LOBBY-05/37); keep lobby + tourist sockets both live on GamePage |
 | Create modal → `createGame({ mapId, packId, taskSetIds, maxSeats, grilleDensity, catapultDensity })`; list click → `joinGame(roomId)` | Invent parallel enter helpers; restore «Играть» / bare `joinOrCreate`; force maxSeats = map.players without picker |
 | Navigate to `/game/:roomId` only after a successful enter | Stay on lobby with a live room and no route change |
 | Bind listing loading / `creating` / `joining` | Leave buttons clickable during connect |
@@ -127,13 +128,17 @@ async _joinLobbyRoom() {
 }
 
 async unsubscribeLobby() {
+  // Sync clear before first await (SC-LOBBY-37).
   this.lobbyWanted = false;
   this.rooms = []; // SC-LOBBY-20
   const lobby = this.lobbyRoom;
   this.lobbyRoom = null;
   if (lobby) {
     try {
-      await lobby.leave();
+      await Promise.race([
+        lobby.leave().catch(() => undefined), // swallow if timeout wins race
+        new Promise<void>((r) => setTimeout(r, LOBBY_LEAVE_TIMEOUT_MS)), // 1500
+      ]);
     } catch {
       /* already closed */
     }
@@ -169,11 +174,13 @@ No `setInterval`. Returning to `/lobby` remounts and resubscribes (SC-LOBBY-06).
 ## Leave policy (enter game)
 
 `_enterRoom` detaches any prior tourist room via `_leaveTouristRoom()` (lobby
-stays subscribed during the attempt), then `connect()`, then
-`unsubscribeLobby()` **only on success** (SC-LOBBY-05). Failed enter keeps the
+stays subscribed during the attempt), then `connect()`, `_attachRoom`, then
+**`void unsubscribeLobby()`** only on success (SC-LOBBY-05/37) — initiate close
+and sync-clear listing state; **do not** await leave completion before returning
+the room (create/join UX must not hang on lobby leave). Failed enter keeps the
 live list. GamePage has only the `tourist` socket. Logout / leave uses
-`leaveGame()` → `unsubscribeLobby` + leave tourist (tourist reconnect token —
-see `work-with-rooms`).
+`leaveGame()` → `await unsubscribeLobby` (bounded timeout) + leave tourist
+(tourist reconnect token — see `work-with-rooms`).
 
 ## Enter flows
 

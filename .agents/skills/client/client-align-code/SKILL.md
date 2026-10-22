@@ -287,7 +287,7 @@ Report as hard `[defect]` when a reachable path deterministically storms HTTP/SD
 3. **Регистрация listener / mirror** — где вешается `onStateChange` / `onMessage` / `onChange`; есть ли одноразовый mirror текущего `room.state` / уже известного snapshot.
 4. **Await-gap** — есть ли `await` (lobby leave, navigation, лишний I/O, `nextTick`) **между** resolve connect и attach listener / mirror. Любой gap → подозревай missed first event.
 5. **Идемпотентность после пропуска** — если первый sync пропущен, придёт ли повторный patch сам, или состояние «застынет» (типично для seating: один full state, дальше тишина) → hard defect.
-6. **Порядок в `_enterRoom`** — канон: `await connect()` → **сразу** `_attachRoom(room)` (listener + optional `room.state` mirror) → только потом `await unsubscribeLobby()` / прочий cleanup. Обратный порядок (`unsubscribe`/`await` → потом `_attachRoom`) — hard `[defect]`.
+6. **Порядок в `_enterRoom`** — канон: `await connect()` → **сразу** `_attachRoom(room)` (listener + optional `room.state` mirror) → **`void unsubscribeLobby()`** (initiate; sync clear before first await inside) → сразу `return room`. Обратный порядок (`unsubscribe`/`await` → потом `_attachRoom`) — hard `[defect]`. **`await unsubscribeLobby()` после attach в `_enterRoom`** — тоже hard `[defect]` (SC-LOBBY-05/37): даже с timeout create/join UX ждёт leave; hang leave блокирует modal/навигацию.
 
 Типичные гонки для флага:
 
@@ -295,6 +295,12 @@ Report as hard `[defect]` when a reachable path deterministically storms HTTP/SD
 await connect()           // JOIN_ROOM done, ACK sent
 await unsubscribeLobby()  // ← gap: ROOM_STATE arrives, no listener
 _attachRoom(room)         // onStateChange too late → seats stay []
+```
+
+```text
+_attachRoom(room)
+await unsubscribeLobby()  // ← SC-LOBBY-05/37 defect: entry waits on leave (even with timeout)
+return room
 ```
 
 - `await connect()` → `await router.push` / page mount → только там `onStateChange` (listeners must stay in store, and before other awaits);
@@ -392,6 +398,7 @@ Typical regression patterns to flag:
 - calling `room.send('move')` from GamePage instead of `game.sendMove`, or inventing alternate turn/move shapes;
 - `onStateChange` regresses leave/rejoin or invents unsynced authority on the client;
 - `_enterRoom` awaits lobby leave (or anything else) before `_attachRoom` / `onStateChange` → missed first `ROOM_STATE`;
+- `_enterRoom` does `await unsubscribeLobby()` after `_attachRoom` → SC-LOBBY-05/37 defect (entry/UX waits on leave);
 - guard no longer awaits `whenReady()` or ignores `requiresAuth`/`guest`;
 - `leaveGame` / rejoin path breaks refresh recovery;
 - shared util return shape changed; callers assume old shape;
@@ -420,6 +427,7 @@ Examples:
 - `watch` on auth identity fires `GET /api/theme`, then success replaces `auth.user` and re-triggers the same watch → hard `[defect]` (request storm / feedback loop).
 - Watch source returns a fresh array each run and any invalidate of deps re-fires I/O even when primitives unchanged → hard `[defect]` when that I/O is proven; otherwise **Warning**.
 - `await connect()` then `await unsubscribeLobby()` then `_attachRoom` → hard `[defect]` (missed first `ROOM_STATE` / empty `seats` on Game).
+- `_attachRoom` then `await unsubscribeLobby()` before `return room` in `_enterRoom` → hard `[defect]` (SC-LOBBY-05/37 — create/join hangs on leave).
 - `GamePage` `.tourist-board` sets `grid-template-rows` from `--tile` with `100%` while the board has auto height → hard `[defect]` (tile height 0 / invisible board).
 - Nested `q-circular-progress` → inner `<img class="presence-avatar">` never paints while outer/inner rings show empty chrome → hard `[defect]` (hidden presence avatars).
 - `<img>` (or label) only in `q-circular-progress` default slot **without** `show-value` → hard `[defect]` (slot not in DOM; only SVG rings in markup).

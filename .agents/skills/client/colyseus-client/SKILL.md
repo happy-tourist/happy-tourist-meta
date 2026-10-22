@@ -172,7 +172,7 @@ lobby.onMessage('-', (roomId) => { /* remove */ });
 - Room constants: `LOBBY_ROOM = 'lobby'`, `TOURIST_ROOM = 'tourist'`.
 - `listing` flag during subscribe connect; clear in `finally`.
 - LobbyPage: `onMounted` → `subscribeLobby`; `onUnmounted` → `unsubscribeLobby`. **No** `setInterval` poll.
-- After successful tourist connect, `_enterRoom` calls `unsubscribeLobby` (failed enter keeps lobby live).
+- After successful tourist connect, `_enterRoom` does `void unsubscribeLobby()` (failed enter keeps lobby live; do not await leave).
 
 ### HTTP fallback (unused by LobbyPage)
 
@@ -205,10 +205,10 @@ All connect paths go through `_enterRoom`:
 
 1. Set `status = 'connecting'`, clear `error`.
 2. `await _leaveTouristRoom()` to detach any previous tourist room (lobby stays live during the attempt).
-3. `await connect()`, then **immediately** `_attachRoom(room)` (register `onStateChange` / mirror before any other await), then `await unsubscribeLobby()` on success.
+3. `await connect()`, then **immediately** `_attachRoom(room)` (register `onStateChange` / mirror before any other await), then **`void unsubscribeLobby()`** on success (SC-LOBBY-05/37 — initiate sync clear + timeout-bound leave; **do not** await leave completion before returning the room).
 4. On failure: `status = 'idle'`, set `error`, rethrow (lobby subscription remains).
 
-Do **not** `await unsubscribeLobby()` (or any other await) between `connect()` resolve and `_attachRoom` — the first `ROOM_STATE` can arrive in that gap and leave `seats` empty forever.
+Do **not** await anything between `connect()` resolve and `_attachRoom` — the first `ROOM_STATE` can arrive in that gap and leave `seats` empty forever. Do **not** `await unsubscribeLobby()` in `_enterRoom` after attach either — hang leave would block create/join UX.
 
 ### State sync (`_attachRoom`)
 

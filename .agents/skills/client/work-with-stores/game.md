@@ -66,7 +66,10 @@ export const useGameStore = defineStore('game', {
   },
   actions: {
     async subscribeLobby() { /* lobbyWanted + joinOrCreate lobby + quiet resubscribe */ },
-    async unsubscribeLobby() { /* lobbyWanted=false; leave lobbyRoom */ },
+    async unsubscribeLobby() {
+      /* sync: lobbyWanted=false, rooms=[], lobbyRoom=null;
+         then Promise.race(leave.catch(…), LOBBY_LEAVE_TIMEOUT_MS=1500) — SC-LOBBY-37 */
+    },
     async createGame(options: { mapId: string; packId: string; taskSetIds: string[]; maxSeats: number; grilleDensity?: 'few' | 'medium' | 'many'; catapultDensity?: 'few' | 'medium' | 'many' }) {
       return this._enterRoom(() => client.create(TOURIST_ROOM, options));
     },
@@ -113,6 +116,7 @@ export const useGameStore = defineStore('game', {
 
 Notes:
 - Live lobby listing uses `subscribeLobby` / LobbyRoom messages — not LobbyPage HTTP poll. `refreshRooms` HTTP remains unused fallback. Set `lobby.reconnection.enabled = false`; filter reservation/reconnect noise (see `work-with-lobby`).
+- **SC-LOBBY-05/37:** `_enterRoom` after `_attachRoom` does `void unsubscribeLobby()` (initiate sync clear + timeout-bound leave) and returns the room immediately — do **not** `await unsubscribeLobby()` in `_enterRoom` (hang leave would block create/join UX). `leaveGame` / `subscribeLobby` MAY `await` the bounded leave.
 - **Listing card types (SC-LOBBY-26/32):** `GameRoomMeta.taskSetLabels?: [{ taskSetId, authorDisplayName?, taskCount? }]` — UI shows ordinals + `taskCount`, never author (`work-with-lobby/listing-cards.md`).
 - **SC-LOBBY-20:** clear `rooms = []` on subscribe start / unsubscribe / quiet resubscribe; keep `listing` true until the first fresh `rooms` snapshot (clear `listing` in `onMessage('rooms')`, not in a subscribe `finally`).
 - Mirror `seats` (incl. connectivity + `ready` + `finishPlace` + `timeExpired` + piece `trapped`) / `phase` / `maxSeats` / `countdownRemaining` / `currentTurnSessionId` / `turnUntil` / `turnBudgetSeconds` / `removedTaskKeys` / `holdingGrilleKeys` / `revealingCatapultKeys` / `brokenCatapultKeys` / `sessionId` in the store; **D13:** `$patch` seats + revealing/broken catapult keys in one tick (avoid split mirror). Listen `budgets` / `peekOpen` / `allJailWarning` privately. Keep tile geometry + presence + selection/hints + peek/rescue/push/return/end-turn chrome + catapult sequential overlays (land→overlay→fling / continuous board-busy) + say/timeout/place/solo/all-jail modals on `GamePage` (not Pinia). Ephemeral `sayEvents` stay in the store (room I/O).

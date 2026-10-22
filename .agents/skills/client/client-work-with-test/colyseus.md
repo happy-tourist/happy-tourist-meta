@@ -87,6 +87,26 @@ Verify theme POST /api/theme on toggle for registered user:
 - On error: theme.error set; Dark preference not left inconsistent with store contract
 ```
 
+## Lobby enter / hang leave (SC-LOBBY-05 / SC-LOBBY-37)
+
+Store SUT: `src/stores/__tests__/game.lobbyEnter.test.ts`. After tourist
+`create` / `joinById` succeeds, `_enterRoom` must **initiate**
+`void unsubscribeLobby()` (sync clear + `LOBBY_LEAVE_TIMEOUT_MS` race) and
+**resolve without awaiting** a hung `lobby.leave()`.
+
+Pattern:
+
+- Seed `lobbyRoom` whose `leave()` returns a never-settling Promise.
+- Stub `client.create` / `client.joinById` to resolve a fake tourist room.
+- `vi.useFakeTimers()` — prove `createGame` / `joinGame` resolve **before**
+  advancing `LOBBY_LEAVE_TIMEOUT_MS` (if the test awaits leave, timers hang).
+- Assert: `leave` called once; `lobbyRoom` null; `lobbyWanted` false; `rooms`
+  `[]`; tourist `roomId` / `sessionId` attached.
+
+Do **not** write tests that `await unsubscribeLobby()` as the enter success
+gate — that regresses the hang UX. Product canon: `work-with-lobby` /
+`work-with-rooms` / `work-with-stores/game.md`.
+
 ## Room messages
 
 When testing `game` store send helpers (`sendMove`, `sendSay`, …), stub the

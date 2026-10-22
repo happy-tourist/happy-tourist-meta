@@ -1,0 +1,16 @@
+## 0. Server — none
+
+- Нет server-задач и нет правок `happy-tourist-server`: reuse as-is room `lobby` (`LobbyRoom`, без reconnect hold) + room `tourist` (`MyRoom` + `enableRealtimeListing`), create/join/reconnect/seating/grace, leave listing = стандартный Colyseus `leave()` — main SC-LOBBY-04 / SC-LOBBY-08; `design` «Reused BE contract»; без новых messages/schema/HTTP.
+
+## 1. Client store — non-blocking lobby leave after enter
+
+- [x] 1.1 Перед работой: прочитать `proposal.md`, `design.md` (D1–D4), delta `specs/lobby/rooms/spec.md` (SC-LOBBY-05, SC-LOBBY-37); skills `work-with-lobby`, `work-with-stores`, `work-with-rooms`, `colyseus-client`; фрагменты `../happy-tourist.github.io/src/stores/game.ts` — `_enterRoom`, `unsubscribeLobby` и другие `await unsubscribeLobby()`. **Канон для кода — D1/delta, не старый skill-snippet с blocking `await unsubscribeLobby()` в `_enterRoom`**
+- [x] 1.2 В `game.ts` реализовать D1/D3: (a) константа `LOBBY_LEAVE_TIMEOUT_MS = 1500`; `unsubscribeLobby` — синхронно до первого `await`: `lobbyWanted=false`, `rooms=[]`, `lobbyRoom=null`, затем `Promise.race(leave, timeout)`; ошибки leave глотать; (b) `_enterRoom` после `_attachRoom` — `void this.unsubscribeLobby()` (или эквивалент **без** `await` до конца) и сразу `return room`. Порядок attach → initiate unsubscribe сохранить. Проверка: `_enterRoom` / `createGame` / `joinGame` resolve сразу после attach при never-resolving `lobby.leave`; локальный lobby state уже очищен
+- [x] 1.3 LobbyPage: **не трогать**, если после 1.2 `onConfirmCreate` / `onJoin` закрывают modal / сбрасывают `creating`/`joining` и делают `router.push` сразу после resolve store (текущий `try/finally` достаточен). Править page только если UX всё ещё ждёт leave вне store. Проверка: успешный create закрывает диалог и ведёт на Game без ожидания leave
+- [x] 1.4 В meta `.agents/skills/client/` обновить канон под D1/SC-LOBBY-05/37 (обязательно, иначе apply скопирует blocking snippet): `work-with-rooms` (ASCII flow + `_enterRoom` steps/snippet: после `_attachRoom` — `void unsubscribeLobby()`, не `await`; timeout в `unsubscribeLobby`), `work-with-lobby` (Leave policy / enter), `colyseus-client` (enter sequence п.3), `client-work-with-errors` (пример `_enterRoom`), `client-align-code` (порядок attach → **initiate** unsubscribe; `await unsubscribeLobby()` в `_enterRoom` после attach — дефект SC-LOBBY-05/37, даже с timeout). Проверка: skills не требуют `await unsubscribeLobby()` до return room в `_enterRoom`
+
+## 2. Client vitest + lint
+
+- [x] 2.1 Перед работой: skill `client-work-with-test`; аналоги `src/stores/__tests__/` и mock-паттерны LobbyPage tests; Traceability SC-LOBBY-05 / SC-LOBBY-37
+- [x] 2.2 Добавить vitest store-level в `../happy-tourist.github.io/src/stores/__tests__/game.lobbyEnter.test.ts` (нового файла нет — рядом с `game.boardPeek.test.ts`; page `LobbyCreateWire` не дублировать): успешный enter инициирует close lobby и resolve без ожидания hang leave (SC-LOBBY-05); при never-resolving `lobby.leave` create/join всё равно завершается и локальный lobby state очищен (SC-LOBBY-37); fake timers + timeout D3. Проверка: тесты с теми же SC-ID проходят
+- [x] 2.3 Из `../happy-tourist.github.io`: `npm test` (затронутые/все unit), `npm run lint`, `npm run typecheck` — зелёные
