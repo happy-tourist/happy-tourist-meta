@@ -1,5 +1,5 @@
 change: fix-solo-steps-exhaustion
-phase: commit
+phase: done
 apply_block: null
 blocker: null
-updated: "2026-10-22T16:15:00Z"
+updated: "2026-10-22T16:25:00Z"
