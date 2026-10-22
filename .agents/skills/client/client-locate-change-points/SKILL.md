@@ -151,7 +151,7 @@ Do not invent room schemas, HTTP routes, or move payloads — note the server pa
 | App shell Vitest | `src/__tests__/AppHeaderChrome.test.ts` (sections/burger fold SC-BRAND-19 / crumbs in page-container / Lobby crumb SC-BRAND-20 / leave/logout) |
 | i18n copy | `src/i18n/`, boot `i18n` |
 
-Today: GamePage board + dual presence rings (outer turn from `turnUntil`/`turnBudgetSeconds`, inner reconnect) + unfinished pieces from synced `seats` (`touristId` + `pieces` (+ `finished`; empty until playing) + `connected` / `reconnectUntil` / `ready` / `finishPlace` / `timeExpired`) / `phase` / `maxSeats` / `countdownRemaining` / `currentTurnSessionId`; top opponents / spectator presence + seated strip (row / HUD ≤~420 → 2×2; no chip/`q-menu`) once own pieces exist; place + timeout + return-confirm modals; countdown overlay; ready affordance; on `isPlaying && isMyTurn && !isMySeatFinished && !isMySeatTimeExpired` select/hints → `sendMove`. Tourist reconnect via `localStorage` token. Room name `tourist`.
+Today: GamePage board + dual presence rings (outer turn from `turnUntil`/`turnBudgetSeconds`, inner reconnect) + unfinished pieces from synced `seats` (`touristId` + `pieces` (+ `finished`; empty until playing) + `connected` / `reconnectUntil` / `ready` / `finishPlace` / `timeExpired`) / `phase` / `maxSeats` / `countdownRemaining` / `currentTurnSessionId`; top opponents / spectator presence + seated strip (row / HUD ≤~420 → 2×2; no chip/`q-menu`) once own pieces exist; place + dual solo-end modals (`lib/soloEndModalKind` SC-PRESENCE-21/35); countdown overlay; ready affordance; on `isPlaying && isMyTurn && !isMySeatFinished && !isMySeatTimeExpired` select/hints → `sendMove`. Tourist reconnect via `localStorage` token. Room name `tourist`.
 
 ## Workflow
 

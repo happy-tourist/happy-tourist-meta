@@ -9,6 +9,8 @@ description: >-
   AnswerCompose/TaskCompose + `PackTaskComposeDialog` SC-PACK-256…263/276…281 +
   portrait `PackAnswerCardTile` SC-PACK-222/225/282/283 + portrait
   `PackTaskTile`/`taskFilledSlots` SC-PACK-278/283 + AddTaskSetDraft SC-PACK-264…268 + DraftLifecycle/DirtySubmit SC-PACK-234/269…275 + GameBoardWire peek/skins/per-cell finish SC-BOARD-45/49/50…54/55/56/57 + SC-MOVE-65 (peeks=0 hides eye on flipped; left-edge dots),
+  solo end infer SC-PRESENCE-21/35 (`soloEndModalKind` / exclude trapped — pure lib,
+  not full GamePage mount; see composables.md),
   lobby `LobbyRoomCardTile` / `LobbyCreateWire` SC-LOBBY-24…26/33…36, maps
   palette/preview skins SC-MAP-71/72, App header chrome); Colyseus
   client.auth / client.http / room I/O spies; store error + q-banner;

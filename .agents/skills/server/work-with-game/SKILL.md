@@ -98,7 +98,7 @@ Behavior:
 - `peek` `{ pieceId }` → shared peek session; reject if trapped; bind deck task on first open; every open (fresh **or** flipped) −1 peek in finite mode (peeks=0 rejects both; solo ∞ no decrement). `peekPlace`/`peekSubmit` → peeker places chips / validates order; Correct +difficulty + remove tile; Incorrect KEEP.
 - `endTurn` (no payload): multi only; open peek → force incorrect KEEP first; then `advanceTurn` (+1/+1 next).
 - Auto-end (multi): advance only if no legal move **and not** ((peeks≥1 ∨ solo ∞) ∧ unfinished on live `*`) **and not** legal rescue/return/push — flipped at peeks=0 does **not** block (SC-MOVE-38/47/62/73/95).
-- Solo step-loss: `steps===0` ∧ ¬hasLegalPeek on live `*` ∧ no legal rescue/return/push → `timeExpired` (SC-MOVE-48); distinct from timer (SC-MOVE-45).
+- Solo step-loss: `steps===0` ∧ `!hasLegalPeek` (free unfinished on still-present `*` only; **trapped**/start/path do **not** keep the seat) → `timeExpired` + **clear** solo deadline immediately (SC-MOVE-48/97/98); distinct from timer (SC-MOVE-45). Orphaned/`openPeek` MUST NOT block that end — `resolveOpenPeek(false)` (incorrect KEEP) then expire (mocha: orphaned openPeek after piece left the `*`). Do **not** route solo end through multi `seatHasAvailableActions` / `maybeAutoEndTurn` (`countEligible < 2` no-op). Rescue/return/push need steps≥1 so they cannot keep a steps=0 seat alive. Mocha gate-only: `evaluateSoloStepsExhaustedForTests` → `maybeSoloStepsExhausted` (mirror `evaluateAutoEndForTests`).
 - Timeout + open peek → force incorrect KEEP then advance / solo timer `timeExpired` (SC-MOVE-42).
 - Consented/permanent leave with open peek → same force incorrect KEEP before seat delete.
 

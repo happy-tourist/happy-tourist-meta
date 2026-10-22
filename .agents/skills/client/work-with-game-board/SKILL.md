@@ -119,7 +119,7 @@ Sync-driven markers (SC-PRESENCE-01…25 / redesign-game-hud phase 2). Page read
 | +N anim | Local fall animation when finite `steps`/`peeks` increase (multi grant +1/+1, solo become-current +1 step only, peek Correct reward); steps always; peeks skipped while peeks∞; duration ≈ **2 s** (`BUDGET_FALL_MS` + CSS) — page-local, no sync event (SC-PRESENCE-20 / SC-MOVE-50) |
 | End-turn | Icon-only `skip_next` **right-center** on own avatar when `canSendEndTurn` → `sendEndTurn` immediately (no dialog / no visible label); **not** in budgets row; **no** `.end-turn-dock`; hide in solo; keep `.presence-slot--own` gap ≥ end-turn hit so icon does not cover budgets (SC-PRESENCE-17/18/25) |
 | Solo peeks∞ modal | When `budgetsInfinite` flips false→true → peeks-unlimited / steps-finite modal (SC-PRESENCE-19); close keeps player in room |
-| Solo end modals | Own `timeExpired` false→true → timer-expired **or** steps-exhausted copy (infer: steps=0 ∧ ¬on live `*` → steps; else timer) — SC-PRESENCE-21 / SC-MOVE-45/48 |
+| Solo end modals | Own `timeExpired` false→true → timer-expired **or** steps-exhausted copy via pure `src/lib/soloEndModalKind.ts` (`inferSoloEndModalKind` / `hasOwnUnfinishedOnLiveTask`; inject `isPresentTaskCell`; legal peek = unfinished ∧ **!trapped** ∧ present `*`; steps=0 ∧ no legal peek → steps; else timer) — SC-PRESENCE-21/35 / SC-MOVE-45/48; vitest without mounting GamePage |
 
 Tick `nowMs` on an interval (~200 ms) while Game is mounted so turn + reconnect rings animate from **server** `turnUntil` / `reconnectUntil`.
 

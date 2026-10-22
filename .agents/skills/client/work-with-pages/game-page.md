@@ -22,6 +22,9 @@ Store I/O: `work-with-stores/game.md`. Leave/status chrome: [shell.md](shell.md)
   end-turn `skip_next` right-center;
   budgets beside avatar; say top↓ / own↑.
 - Sync via `useGameStore()`; `rejoinGame(roomId)` on mount / soft-fail.
+- Solo end copy (timer vs steps): watch own `timeExpired` → `inferSoloEndModalKind` from
+  `src/lib/soloEndModalKind.ts` (legal peek = free unfinished on present `*`; **!trapped** —
+  SC-PRESENCE-21/35); details in `work-with-game-board`.
 - **No** page-local leave/status/roomId — App brand-logo + `header-game-leave` + status.
 
 ## Domain notes
@@ -31,3 +34,4 @@ Store I/O: `work-with-stores/game.md`. Leave/status chrome: [shell.md](shell.md)
 | Route | `/game/:roomId` → `GamePage`; `meta.requiresAuth`; `roomId` reconnect only — not chrome |
 | Store actions | `rejoinGame` / `sendMove` / `sendRescue` / `sendPush` / `sendReturnFromFinish` / `sendPeek*` / `sendEndTurn` / `sendSay` |
 | Room | name `tourist`; mirror seats / turn / `removedTaskKeys` / grilles/catapults; private `budgets` / `peekOpen` / `allJailWarning` |
+| Solo end | Page-local `endModalKind` via `lib/soloEndModalKind` (not Pinia); vitest pure lib — `client-work-with-test` / `composables.md` |
