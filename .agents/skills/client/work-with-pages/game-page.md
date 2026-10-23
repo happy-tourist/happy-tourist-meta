@@ -15,13 +15,14 @@ Store I/O: `work-with-stores/game.md`. Leave/status chrome: [shell.md](shell.md)
 - Rescue / push affordances **top-center**; **top** presence row (seated reserves
   height — SC-PRESENCE-26); sticky bottom `.game-hud` only when seated (strip row /
   HUD ≤~420 → 2×2; **no** chip/`q-menu`).
-- Return → green `undo` when `canReturn` (no confirm modal); finish cells per-cell
-  click/outline (SC-MOVE-65); peek eye top-center + shared Q&A (dots+word badge, portrait
-  slots, `.peek-answer-mini` pool; testid `peek-answer-chip` on pool cards;
-  same answer MAY fill multiple slots; no used-state chrome — SC-BOARD-49/50…54;
-  peeks=0 finite: hide eye on flipped too; details `work-with-game-board/peek.md`);
-  presence clock: say **12** / focus **9** / end-turn `skip_next` **3**;
-  budgets beside avatar; say top↓ / own↑.
+- Return → illustrated `return.png` when `canReturn` (no confirm modal; no green circle);
+  finish cells per-cell click/outline (SC-MOVE-65); peek illustrated icon top-center +
+  shared Q&A (dots+word badge, portrait slots, `.peek-answer-mini` pool; testid
+  `peek-answer-chip` on pool cards; same answer MAY fill multiple slots; no used-state
+  chrome — SC-BOARD-49/50…54; peeks=0 finite: hide peek affordance on flipped too;
+  details `work-with-game-board/peek.md`); presence clock: say **12** / focus **9** /
+  end-turn **3** (illustrated board-action icons, no solid colored circle); budgets
+  beside avatar; say top↓ / own↑.
 - Sync via `useGameStore()`; `rejoinGame(roomId)` on mount / soft-fail.
 - Solo end copy (timer vs steps): watch own `timeExpired` → `inferSoloEndModalKind` from
   `src/lib/soloEndModalKind.ts` (legal peek = free unfinished on present `*`; **!trapped** —

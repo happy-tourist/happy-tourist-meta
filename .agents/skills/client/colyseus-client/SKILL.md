@@ -407,7 +407,7 @@ Catch at the page only if you need extra UI beyond `game.error`.
 ```ts
 // GamePage: synced grid + pieces + presence + budgets + shared peek + say; remount → rejoinGame(roomId)
 // Own turn: select → red targets → game.sendMove(pieceId, row, col); eye → sendPeek / place / submit
-// Multi: skip_next on own avatar (aria game.endTurn) → game.sendEndTurn(); solo hides end-turn
+// Multi: end-turn affordance on own avatar (aria game.endTurn) → game.sendEndTurn(); solo hides end-turn
 // Own online marker: picker → game.sendSay('hello'|'luck'); bubbles from game.sayEvents
 await game.leaveGame(); // consented — clears tourist reconnect token
 await router.push({ name: 'lobby' });

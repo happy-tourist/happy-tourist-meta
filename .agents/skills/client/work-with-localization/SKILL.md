@@ -141,7 +141,7 @@ export default {
     stepsCounterAria: 'Шаги',
     peeksCounterAria: 'Просмотры',
     budgetInfinity: '∞',
-    endTurn: 'Завершить ход', // aria-only for skip_next on own avatar
+    endTurn: 'Завершить ход', // aria-only for end-turn affordance on own avatar
     focusActionable: 'Выбрать ближайшего туриста',
     peekDifficulty: 'Сложность: {n}', // legacy digit — badge uses content.difficultyWord.{n} directly (no peekDifficultyBadge)
     peekQuestionFallback: 'Вопрос',

@@ -19,7 +19,7 @@ live summary+drill-in / SC-PACK-261 AddTaskSet no top live grid + dialog mini-ca
 `content.back`),
 `ContentPackTasksHints.test.ts` (SC-PACK-115/119 staff session + stable hints),
 `ContentPackAnswerCompose.test.ts` / `ContentPackTaskCompose.test.ts`
-(SC-PACK-256…263/276/277 answer/task compose dialogs + peek mini-card pool + reusable pool cards + CSV outside dialog; left-edge dots + centered word badge SC-PACK-276; GameBoardWire peek SC-BOARD-45/49/50…54 — peeks=0 finite hides eye on flipped, left-edge dots + centered badge via `.peek-diff-header`),
+(SC-PACK-256…263/276/277 answer/task compose dialogs + peek mini-card pool + reusable pool cards + CSV outside dialog; left-edge dots + centered word badge SC-PACK-276; GameBoardWire peek SC-BOARD-45/49/50…54 — peeks=0 finite hides peek affordance on flipped; illustrated `assets/board` / `.board-action-icon`; left-edge dots + centered badge via `.peek-diff-header`),
 `ContentPackAddTaskSetDraft.test.ts` (SC-PACK-264…268/271…275 quiet autosave
 incomplete draft + leave flush + top delete/`discardAddTaskSetDraft` by
 `canHardDelete` + catalog draft mark + persisted dirty / pending→draft /
@@ -88,7 +88,9 @@ tile per finish cell SC-BOARD-55) + `GameBoardWire.test.ts` (skin CSS vars /
 radius 0 / dark flip digit SC-BOARD-56/57 + per-cell finish click SC-MOVE-65 +
 catapult timings 1500/450/300 + overlay `drop-shadow` SC-BOARD-23/24/58) +
 `GamePresenceFocus.test.ts` (presence clock say **12** / focus **9** / end-turn **3**;
-CSS + hit boxes — SC-PRESENCE-14/30/33 / SC-SAY-07; not DOM-order alone).
+illustrated `img.board-action-icon` — not Material `q-icon`; CSS + hit boxes —
+SC-PRESENCE-14/30/33 / SC-SAY-07; not DOM-order alone) + `GameBoardWire` board-action
+asset imports under `src/assets/board/` + transparent affordance chrome.
 App shell crumbs + page bg: `src/__tests__/AppHeaderChrome.test.ts` — breadcrumbs **inside**
 `q-page-container` (not elevated `q-header`; SC-BRAND-17…20 / SC-PACK-193 / SC-MAP-52);
 narrow burger fold Acc/Theme/Logout **or** guest login (SC-BRAND-19/22/24); **SC-BRAND-23**
