@@ -13,7 +13,7 @@ See `proposal.md` — Why. Пакет: **client only** (`../happy-tourist.github
 - Theme-aware wordmark в header; tight-crop ассеты с нормальными именами.
 - Удалить маскот `logo.png` из brand folder.
 - Icon-only: session login/logout в wide toolbar, Game leave справа, Account logout.
-- Высота mark почти на всю content band шапки (≥ 60 CSS px).
+- Высота mark 28 CSS px с inset в content band шапки (~40 CSS px min-height).
 
 **Non-Goals:**
 

@@ -20,6 +20,7 @@
 | SC-LEAVE-10 | covered (vitest) |
 | SC-LEAVE-11 | covered (vitest) |
 | SC-LEAVE-12 | covered (vitest) |
+| SC-LEAVE-13 | covered (vitest — Game right leave icon-only + `game.leave` aria) |
 
 Related: time-expired lock — `game/move`; finished leave — `game/finish`; match status — `game/presence`; brand chrome — `ui/branding` (header chrome; section nav hidden on Game).
 
@@ -101,7 +102,7 @@ The shared application header MUST apply leave-to-lobby semantics (confirmation 
 
 ### Requirement: Explicit leave control on the right of Game header
 
-While the user is on the Game screen of a tourist room, the shared header MUST show an explicit leave-from-room control on the **right**. Activating it MUST follow the same confirmation and consented-leave rules as the existing Game leave capability. This control is leave-from-room, NOT session logout.
+While the user is on the Game screen of a tourist room, the shared header MUST show an explicit leave-from-room control on the **right**. The control MUST be **icon-only** (no visible text label such as «Выход из игры» beside the icon) and MUST expose an accessible name equivalent to leaving the game (product key `game.leave`, Russian «Выход из игры», localized per client locale files). Activating it MUST follow the same confirmation and consented-leave rules as the existing Game leave capability. This control is leave-from-room, NOT session logout.
 
 #### Scenario [SC-LEAVE-09]: Leave control on the right on Game
 
@@ -109,6 +110,13 @@ While the user is on the Game screen of a tourist room, the shared header MUST s
 - **WHEN** the shared header renders
 - **THEN** an explicit leave-from-room control appears on the right
 - **AND** activating it follows the confirm / consented-leave rules of this capability
+
+#### Scenario [SC-LEAVE-13]: Right leave control is icon-only
+
+- **GIVEN** the user is on the Game screen of a tourist room
+- **WHEN** the right-side leave-from-room control is observed
+- **THEN** the control shows an icon and no visible text label beside the icon
+- **AND** the control exposes an accessible name for leaving the game (`game.leave`)
 
 ### Requirement: Brand logo on Game also leaves
 
