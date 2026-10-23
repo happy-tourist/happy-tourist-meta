@@ -96,7 +96,7 @@ Local defaults: `.env.development` → `localhost:2567`. Production: `.env.produ
 | HTTP fallback | `stores/game.ts` → `refreshRooms` | `client.http.get('/rooms/tourist')` (unused by LobbyPage) |
 | Room lifecycle | `stores/game.ts` → `createGame` / `joinGame` / `leaveGame` | `client.create` / `joinById` / `joinOrCreate`, `room.leave` |
 | Game board UI | `pages/GamePage.vue` | Layout + pieces / strip / presence / grilles / budgets / peek / rescue / push / return icon / say; calls store sends (no direct `room.send`) |
-| Live state | `stores/game.ts` → `_attachRoom` | `onStateChange` (`seats`/`phase`/`maxSeats`/`grid`/`touristsPerPlayer`/peek session/`countdownRemaining`/`currentTurnSessionId`/`removedTaskKeys`/`holdingGrilleKeys`/`revealingCatapultKeys`/`brokenCatapultKeys`); `onMessage('say'|'budgets'|'allJailWarning')` (+ synced peek); `onError`, `onLeave` |
+| Live state | `stores/game.ts` → `_attachRoom` | `onStateChange` (`seats`/`phase`/`maxSeats`/`grid`/`touristsPerPlayer`/peek session/`countdownRemaining`/`currentTurnSessionId`/`removedTaskKeys`/`holdingGrilleKeys`/`revealingCatapultKeys`/`brokenCatapultKeys`); `onMessage('say'|'budgets'|'allJailWarning'|'peekClose')` (+ synced peek); `onError`, `onLeave` |
 
 Allowed dependency direction: `pages` → `stores` / `boot` / `components`. Keep all `client.*` and `room.*` I/O in stores.
 
@@ -254,6 +254,7 @@ room.onStateChange((state) => {
 
 room.onMessage('budgets', (message) => { /* steps / peeks / budgetsInfinite=peeks∞ / peekedThisTurn legacy */ });
 room.onMessage('peekOpen', (message) => { /* openPeek */ });
+room.onMessage('peekClose', (message) => { /* clear openPeek; peekStatusFlash from correct + reason */ });
 room.onMessage('allJailWarning', () => { this.allJailWarning = true; });
 ```
 
@@ -273,6 +274,7 @@ room.onMessage('allJailWarning', () => { this.allJailWarning = true; });
 | Client → server | `say` | `{ presetId }` via `sendSay` |
 | Server → owner | `budgets` | `{ steps, peeks, infinite, peekedThisTurn }` |
 | Server → owner | `peekOpen` | legacy optional; prefer synced peek session |
+| Server → all | `peekClose` | `{ sessionId, correct, row, col, reason?: 'wrong' \| 'timeout' }` → clear `openPeek` + 10s header `peekStatusFlash` (SC-BOARD-70 / SC-PRESENCE-36) |
 | Server → owner | `allJailWarning` | `{}` |
 | Server → clients | `say` | `{ sessionId, presetId, at }` → `sayEvents` (incl. readiness preset from ready) |
 
@@ -445,7 +447,7 @@ Show `auth.error` in a `q-banner`. Router already blocks until `whenReady()`.
 
 1. Belongs in `stores/auth` or `stores/game` (not a page).
 2. Uses shared `client` from `@/boot/colyseus`.
-3. Lobby list: LobbyRoom subscribe; rooms: `create({ mapId, packId, taskSetIds, grilleDensity, catapultDensity })` / `joinById` (no Play shortcut); Game `sendMove` → `move` `{ pieceId, row, col }`; `sendRescue` / `sendPush` / `sendReturnFromFinish`; `sendPeek` / `sendPeekPlace` / `sendPeekSubmit` / `sendEndTurn`; `sendReady` → `ready`; `sendSay` → `say` + `onMessage('say'|'budgets'|'allJailWarning')`. HTTP only as unused fallback.
+3. Lobby list: LobbyRoom subscribe; rooms: `create({ mapId, packId, taskSetIds, grilleDensity, catapultDensity })` / `joinById` (no Play shortcut); Game `sendMove` → `move` `{ pieceId, row, col }`; `sendRescue` / `sendPush` / `sendReturnFromFinish`; `sendPeek` / `sendPeekPlace` / `sendPeekSubmit` / `sendEndTurn`; `sendReady` → `ready`; `sendSay` → `say` + `onMessage('say'|'budgets'|'allJailWarning'|'peekClose')`. HTTP only as unused fallback.
 4. Room types use `TOURIST_ROOM` / `LOBBY_ROOM`.
 5. Loading flag cleared in `finally`; failures set store `error`.
 6. State fields / message payloads match `../happy-tourist-server` (lockstep), including `currentTurnSessionId` / `removedTaskKeys` / `holdingGrilleKeys` / `revealingCatapultKeys` / `brokenCatapultKeys` / piece `trapped` / private budgets.

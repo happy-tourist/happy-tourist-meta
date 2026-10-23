@@ -8,7 +8,9 @@ Read with the [core stores skill](SKILL.md). Board UI: `work-with-game-board`; l
 state: seats (pieces by **pieceId**) / `phase` / `maxSeats` / `grid` /
 `touristsPerPlayer` / `packTitle` / `flippedCells` / `answerCards` / peek session /
 turn / `removedTaskKeys` / grilles/catapults; private `budgets` + `openPeek` /
-`allJailWarning`; `createGame({ mapId, packId, taskSetIds, maxSeats,
+`allJailWarning`; `peekStatusFlash` from room `peekClose` (`correct` +
+`reason?: 'wrong'|'timeout'` → 10s header flash; legacy no-reason skip);
+`createGame({ mapId, packId, taskSetIds, maxSeats,
 grilleDensity?, catapultDensity? })` (`maxSeats` `1…map.players`; server omit →
 `min(2, map.players)`); `sendMove` / `sendRescue` / `sendPush` /
 `sendReturnFromFinish` / `sendPeek*` / `sendEndTurn` / `sendReady` / `sendSay`.
@@ -43,6 +45,7 @@ export const useGameStore = defineStore('game', {
     budgetsInfinite: false,
     peekedThisTurn: false,
     openPeek: null,
+    peekStatusFlash: null, // correct|wrong|timeout + until; 10s header flash
     status: 'idle',
     error: null,
     listing: false,

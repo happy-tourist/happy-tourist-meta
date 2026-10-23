@@ -47,6 +47,7 @@ Coordinate with: `work-with-rooms` (lifecycle / registration), `work-with-schema
 | Client → server | `say` | `{ presetId: 'hello' \| 'luck' }` — via `sendSay`; whitelist only (no free text; **not** `ready`); finished seats may still say |
 | Server → owner | `budgets` | `{ steps, peeks, infinite, peekedThisTurn }` — private; `infinite` = **peeks∞ only** (steps always finite); `peekedThisTurn` legacy (no gate) |
 | Server → owner | `peekOpen` | legacy private name may still fire; prefer **synced** peek session (`peekActive*` / broadcasts) for shared Q&A modal |
+| Server → all clients | `peekClose` | `{ sessionId, correct, row, col, reason?: 'wrong' \| 'timeout' }` — via `resolveOpenPeek`; `correct:true` → omit/ignore reason; wrong submit / leave / endTurn force → `'wrong'`; turn/solo timeout while open → `'timeout'` (SC-BOARD-70 / SC-MOVE-42); FE flash from reason (SC-PRESENCE-36) |
 | Server → owner | `allJailWarning` | `{}` — private; seat just freed from all-jail (informational modal) |
 | Server → clients | Schema sync | `phase` / `maxSeats` / `grid` / peek session / `countdownRemaining` / `seats` (pieces by pieceId) / turn / `removedTaskKeys` / grilles/catapults → `onStateChange` |
 | Server → all clients | `say` | `broadcast('say', { sessionId, presetId, at })` — ephemeral; includes readiness preset from successful `ready` |
@@ -63,7 +64,7 @@ Coordinate with: `work-with-rooms` (lifecycle / registration), `work-with-schema
 
 **`peek`:** current turn + peek budget (or solo peeks∞) + **pipeline idle**; **no** one-peek/turn gate; piece on present task cell and **not trapped**; bind deck task on first open; **every** successful open (fresh **or** flipped) spends 1 peek in finite mode; peeks=0 rejects both. Silent reject otherwise.
 
-**`peekPlace` / `peekSubmit`:** peeker only; place updates slot placements; submit compares ordered answer card ids to task slots — correct → +difficulty steps + remove tile; wrong/leave/timeout KEEP bind. Open spend is on `peek` (not place/submit); flipped is not free.
+**`peekPlace` / `peekSubmit`:** peeker only; place updates slot placements; submit compares ordered answer card ids to task slots — correct → +difficulty steps + remove tile + `peekClose` without reason; wrong → KEEP bind + `reason:'wrong'`; leave/endTurn force-close → `'wrong'`; timeout callers → `'timeout'`. Open spend is on `peek` (not place/submit); flipped is not free.
 
 **`endTurn`:** multi (≥2 eligible) + current + not finished/expired + **pipeline idle**; force-close open peek as incorrect KEEP if any; `advanceTurn` (next grant: multi +1/+1; solo become-current +1 step only). Solo peeks∞ → reject. While pipeline active → silent reject (board-lock parity).
 

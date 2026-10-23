@@ -87,12 +87,18 @@ Game board geometry/skins: `src/lib/__tests__/boardGeometry.test.ts` (one center
 tile per finish cell SC-BOARD-55) + `GameBoardWire.test.ts` (skin CSS vars /
 radius 0 / dark flip digit SC-BOARD-56/57 + per-cell finish click SC-MOVE-65 +
 catapult timings 1500/450/300 + overlay `drop-shadow` SC-BOARD-23/24/58) +
-`GamePresenceFocus.test.ts` (presence clock say **12** / focus **9** / end-turn **3**;
+`GamePresenceFocus.test.ts` (presence clock say **12** / focus **9** / end-turn **3** —
+hit-centers on marker circumference `translate(-50%,-50%)`; glyph ~36 / hit ~60;
 illustrated `img.board-action-icon` — not Material `q-icon`; CSS + hit boxes —
 SC-PRESENCE-14/30/33 / SC-SAY-07; not DOM-order alone) + `GameBoardWire` board-action
-asset imports under `src/assets/board/` + transparent affordance chrome.
+asset imports under `src/assets/board/` + transparent affordance chrome + ×2 glyph/hit
+(~36 / ~52 board+return; flag ~18 unchanged) +
+`src/stores/__tests__/game.peekStatusFlash.test.ts` (`peekClose` → `peekStatusFlash`
+10s; legacy `correct:false` without `reason` skips — SC-PRESENCE-36 / SC-BOARD-70).
 App shell crumbs + page bg: `src/__tests__/AppHeaderChrome.test.ts` — breadcrumbs **inside**
 `q-page-container` (not elevated `q-header`; SC-BRAND-17…20 / SC-PACK-193 / SC-MAP-52);
+**SC-PRESENCE-36** `game-status` flash copy + Quasar positive/negative/warning while
+`peekStatusFlash` active;
 narrow burger fold Acc/Theme/Logout **or** guest login (SC-BRAND-19/22/24); **SC-BRAND-23**
 `q-page-container--with-crumbs` flex + `app.scss` min-height override (no body
 `overflow:hidden`); **SC-BRAND-21** `q-layout` class `app-page-bg` + `app.scss`

@@ -10,8 +10,7 @@ Board UI is custom CSS Grid (not Quasar widgets). Keep selectors local and class
 |-------|------|
 | `.game-page` | Column page: board scroll region (top presence + board) + sticky seated HUD |
 | `.presence-row--top` | Opponents (seated) or all occupied (spectator) above the board |
-| `.end-turn-affordance` | Icon-only illustrated `end-turn.png` **right-center** on own avatar (`right: -8px`, 36px transparent hit; no solid colored circle) — **not** in budgets row, **no** labeled dock (SC-PRESENCE-17/25) |
-| `.presence-slot--own` | Own HUD cluster: avatar | budgets; **`gap: 20px`** (≥ end-turn hit so end-turn icon does not cover budgets — SC-PRESENCE-25) |
+| `.presence-slot--own` | Own HUD cluster: avatar | budgets; gap ≥ end-turn half-hit past rim (~30px+) so **3** icon does not cover budgets (SC-PRESENCE-25) |
 | `.game-hud` / `__scroll` / `__bar--seated` | Sticky bottom **seated** panel only (`container-name: game-hud`); **translucent underlay** light `rgba(255,255,255,0.78)` / dark `rgba(18,18,18,0.78)` — not opaque `#fff` / `#121212` (SC-PRESENCE-34 / D11; same alpha as SC-PACK-285); top `.presence-row--top` unchanged; scroll wrapper owns `overflow-x` so say chrome is not clipped (SC-SAY-15); spectator has **no** bottom HUD |
 | `.tourist-board` | 10×10 CSS Grid; `--cell` / `--gap: 2px`; `aspect-ratio: 1`; transparent holes; playable tiles `border-radius: 0` (skin silhouette, not `--radius: 2`) |
 | `.grille-overlay` / `--drop` / `--rise` | Revealed holding grille from `src/assets/grilles/grille.png`; duration via `--grille-anim-ms` (`GRILLE_ANIM_MS = 1000`) for drop/rise incl. leave-clear; **`filter: drop-shadow(...)`** edge contrast (SC-BOARD-18/19/21/58 — no opaque underlay) |
@@ -35,10 +34,11 @@ Board UI is custom CSS Grid (not Quasar widgets). Keep selectors local and class
 | `.my-tourist-chrome-grille` / `--drop` / `--rise` | Grille overlay on strip slots when `trapped`; same `--grille-anim-ms` / `GRILLE_ANIM_MS = 1000` + **`filter: drop-shadow(...)`** as board (SC-PIECE-31 / SC-BOARD-58) |
 | `.presence-place-badge` / `.ready-affordance` | Top-left corners (SC-PRESENCE-14) |
 | `.presence-budgets` / `.budget-counter` / `.budget-fall` | Own steps/peeks **beside** own avatar (SC-PRESENCE-15…16); `.budget-fall` ≈ **2 s** (keep CSS in sync with `BUDGET_FALL_MS` / SC-PRESENCE-20); not on opponents; end-turn is **not** here |
-| `.board-action-icon` | Shared ~18×18 `object-fit: contain` glyph inside transparent affordance hits (`pointer-events: none`); used by peek/rescue/push/return/say/focus/end-turn `<img>` |
-| `.peek-affordance` / `.rescue-affordance` / `.push-affordance` / `.return-affordance` | Top-center above piece/strip; illustrated `src/assets/board/{peek,rescue,push,return}.png` as `<img class="board-action-icon">`; transparent hit (~32 board/strip); **no** solid colored circular fill / medallion `box-shadow` (SC-BOARD-13 / SC-MOVE-74/77 / SC-FINISH-13) |
-| `.say-affordance` | Own marker **top-center (12)** (`top: -40px; left: 50%; translateX(-50%)`) — clears ready TL; illustrated `say.png`; SC-SAY-07 / SC-SAY-15 / SC-PRESENCE-14/33; hit-area ~36 CSS px; transparent chrome; z-index above rings/avatar |
-| `.focus-affordance` | Own marker **left-center (9)** (`top: 50%; left: -8px; translateY(-50%)`, 36px transparent hit — SC-PRESENCE-30/33); illustrated `focus.png`; see `work-with-game-board/focus.md` |
+| `.board-action-icon` | Shared ~36×36 `object-fit: contain` glyph (×2) inside transparent affordance hits (`pointer-events: none`); used by peek/rescue/push/return/say/focus/end-turn `<img>`; **flag** stays `.my-tourist-finish-icon` ~18 (unchanged) |
+| `.peek-affordance` / `.rescue-affordance` / `.push-affordance` / `.return-affordance` | Top-center above piece/strip; illustrated `src/assets/board/{peek,rescue,push,return}.png` as `<img class="board-action-icon">`; transparent hit ~48–56 (~52 typical); **no** solid colored circular fill / medallion `box-shadow` (SC-BOARD-13 / SC-MOVE-74/77 / SC-FINISH-13) |
+| `.say-affordance` | Own marker **12** — hit-center on circumference: `left:50%; top:0; transform: translate(-50%,-50%)`; illustrated `say.png`; SC-SAY-07 / SC-SAY-15 / SC-PRESENCE-14/33; hit ~56–64 (~60); transparent chrome; z-index above rings/avatar |
+| `.focus-affordance` | Own marker **9** — `left:0; top:50%; transform: translate(-50%,-50%)`; hit ~56–64 (~60); SC-PRESENCE-30/33; illustrated `focus.png`; see `work-with-game-board/focus.md` |
+| `.end-turn-affordance` | Own marker **3** — `left:100%; top:50%; transform: translate(-50%,-50%)`; hit ~56–64 (~60); SC-PRESENCE-17/25/33; illustrated `end-turn.png`; gap to budgets ≥ half-hit past rim |
 | `.say-bubble` / `.say-picker` | Presence comic bubbles + picker; chrome follows Dark via `body.body--dark` overrides (not tile fills) |
 | `.say-bubbles--top` | Top-row markers: bubbles grow **down** toward the board |
 | `.say-bubbles--bottom` | Own bottom marker: bubbles grow **up** toward the board |

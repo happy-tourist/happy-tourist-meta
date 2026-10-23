@@ -20,14 +20,15 @@ Store I/O: `work-with-stores/game.md`. Leave/status chrome: [shell.md](shell.md)
   shared Q&A (dots+word badge, portrait slots, `.peek-answer-mini` pool; testid
   `peek-answer-chip` on pool cards; same answer MAY fill multiple slots; no used-state
   chrome — SC-BOARD-49/50…54; peeks=0 finite: hide peek affordance on flipped too;
-  details `work-with-game-board/peek.md`); presence clock: say **12** / focus **9** /
-  end-turn **3** (illustrated board-action icons, no solid colored circle); budgets
-  beside avatar; say top↓ / own↑.
+  details `work-with-game-board/peek.md`); presence clock **12/9/3** hit-centers on
+  marker circumference (glyph ~36 / presence hit ~56–64; board/strip hit ~48–56;
+  flag unchanged); budgets beside avatar; say top↓ / own↑.
 - Sync via `useGameStore()`; `rejoinGame(roomId)` on mount / soft-fail.
 - Solo end copy (timer vs steps): watch own `timeExpired` → `inferSoloEndModalKind` from
   `src/lib/soloEndModalKind.ts` (legal peek = free unfinished on present `*`; **!trapped** —
   SC-PRESENCE-21/35); details in `work-with-game-board`.
-- **No** page-local leave/status/roomId — App brand-logo + `header-game-leave` + status.
+- **No** page-local leave/status/roomId — App brand-logo + `header-game-leave` + status
+  (incl. 10s peek outcome flash from store `peekStatusFlash` — SC-PRESENCE-36).
 
 ## Domain notes
 
