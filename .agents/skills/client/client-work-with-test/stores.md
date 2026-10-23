@@ -85,7 +85,10 @@ meta `work-with-stores/maps.md` — shared staff queue still mocked via `content
 when testing type-badge / my-moderation map rows).
 Game board geometry/skins: `src/lib/__tests__/boardGeometry.test.ts` (one center
 tile per finish cell SC-BOARD-55) + `GameBoardWire.test.ts` (skin CSS vars /
-radius 0 / dark flip digit SC-BOARD-56/57 + per-cell finish click SC-MOVE-65).
+radius 0 / dark flip digit SC-BOARD-56/57 + per-cell finish click SC-MOVE-65 +
+catapult timings 1500/450/300 + overlay `drop-shadow` SC-BOARD-23/24/58) +
+`GamePresenceFocus.test.ts` (presence clock say **12** / focus **9** / end-turn **3**;
+CSS + hit boxes — SC-PRESENCE-14/30/33 / SC-SAY-07; not DOM-order alone).
 App shell crumbs + page bg: `src/__tests__/AppHeaderChrome.test.ts` — breadcrumbs **inside**
 `q-page-container` (not elevated `q-header`; SC-BRAND-17…20 / SC-PACK-193 / SC-MAP-52);
 narrow burger fold Acc/Theme/Logout **or** guest login (SC-BRAND-19/22/24); **SC-BRAND-23**

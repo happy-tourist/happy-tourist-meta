@@ -14,8 +14,8 @@ Board UI is custom CSS Grid (not Quasar widgets). Keep selectors local and class
 | `.presence-slot--own` | Own HUD cluster: avatar | budgets; **`gap: 20px`** (≥ end-turn hit so `skip_next` does not cover budgets — SC-PRESENCE-25) |
 | `.game-hud` / `__scroll` / `__bar--seated` | Sticky bottom **seated** panel only (`container-name: game-hud`); **translucent underlay** light `rgba(255,255,255,0.78)` / dark `rgba(18,18,18,0.78)` — not opaque `#fff` / `#121212` (SC-PRESENCE-34 / D11; same alpha as SC-PACK-285); top `.presence-row--top` unchanged; scroll wrapper owns `overflow-x` so say chrome is not clipped (SC-SAY-15); spectator has **no** bottom HUD |
 | `.tourist-board` | 10×10 CSS Grid; `--cell` / `--gap: 2px`; `aspect-ratio: 1`; transparent holes; playable tiles `border-radius: 0` (skin silhouette, not `--radius: 2`) |
-| `.grille-overlay` / `--drop` / `--rise` | Revealed holding grille from `src/assets/grilles/grille.png`; duration via `--grille-anim-ms` (`GRILLE_ANIM_MS = 1000`) for drop/rise incl. leave-clear (SC-BOARD-18/19/21) |
-| `.catapult-overlay` / `--reveal` / `--intact` / `--broken-hold` / `--vanish` | Catapult presentation from `src/assets/catapults/catapult.png` (+ `catapult-broken.png`); successful fade via `--catapult-anim-ms` (`CATAPULT_ANIM_MS = 1000`); broken timeline uses intact → hold → broken-hold → vanish classes; land→overlay→fling sequencing is page logic (SC-BOARD-22…28) |
+| `.grille-overlay` / `--drop` / `--rise` | Revealed holding grille from `src/assets/grilles/grille.png`; duration via `--grille-anim-ms` (`GRILLE_ANIM_MS = 1000`) for drop/rise incl. leave-clear; **`filter: drop-shadow(...)`** edge contrast (SC-BOARD-18/19/21/58 — no opaque underlay) |
+| `.catapult-overlay` / `--reveal` / `--intact` / `--broken-hold` / `--vanish` | Catapult presentation from `src/assets/catapults/catapult.png` (+ `catapult-broken.png`); successful fade via `--catapult-anim-ms` (`CATAPULT_ANIM_MS = 1500`); broken vanish via `--catapult-broken-vanish-ms` (300); **`filter: drop-shadow(...)`** (SC-BOARD-22…28/58); land→overlay→fling sequencing is page logic |
 | `.piece--trapped` | Trapped tourist still visible under grille (SC-PIECE-27); no own-select chrome |
 | `.tile` | Playable cell (`border-radius: 0`); `pointer-events` only when interactive; skin via `background-image` (`background-size: 100% 100%`) |
 | `.tile-start` | Start skin via shared `src/lib/tileSkins.ts` → `src/assets/tiles/start.png` |
@@ -32,12 +32,12 @@ Board UI is custom CSS Grid (not Quasar widgets). Keep selectors local and class
 | `.presence-slot` | Marker wrapper in top row or seated HUD |
 | `.my-tourist-strip` / `.my-tourist-slots` / `.my-tourist-slot` / `-img` / `-finish-icon` | Four strip slots in HUD: wide flex row N,E,W,S; `@container game-hud (max-width: 420px)` → 2×2 smaller slots when own+row would overflow (covers ≤320/300 — SC-PIECE-09/32). **No** chip / `q-menu` / `-return-btn` |
 | `.my-tourist-slot--dimmed` / `--returnable` / `--returning` | Dim finished **only** when `!canReturn`; returnable / returning chrome (SC-FINISH-09/13) |
-| `.my-tourist-chrome-grille` / `--drop` / `--rise` | Grille overlay on strip slots when `trapped`; same `--grille-anim-ms` / `GRILLE_ANIM_MS = 1000` as board (SC-PIECE-31) |
+| `.my-tourist-chrome-grille` / `--drop` / `--rise` | Grille overlay on strip slots when `trapped`; same `--grille-anim-ms` / `GRILLE_ANIM_MS = 1000` + **`filter: drop-shadow(...)`** as board (SC-PIECE-31 / SC-BOARD-58) |
 | `.presence-place-badge` / `.ready-affordance` | Top-left corners (SC-PRESENCE-14) |
 | `.presence-budgets` / `.budget-counter` / `.budget-fall` | Own steps/peeks **beside** own avatar (SC-PRESENCE-15…16); `.budget-fall` ≈ **2 s** (keep CSS in sync with `BUDGET_FALL_MS` / SC-PRESENCE-20); not on opponents; end-turn is **not** here |
 | `.peek-affordance` / `.rescue-affordance` / `.push-affordance` | Top-center above piece (same family as `.return-affordance`; SC-BOARD-13 / SC-MOVE-74/77) |
-| `.say-affordance` | Own marker top-right, raised (`top: -32px`) so hit-area does not overlap focus (SC-SAY-07 / SC-SAY-15 / SC-PRESENCE-33); hit-area ≥ ~32 CSS px (glyph may be smaller); z-index above rings/avatar |
-| `.focus-affordance` | Own marker between say and end-turn (`top: 32%`, `translateY(-50%)`, `right: -8px`, 36px hit — SC-PRESENCE-30/33); see `work-with-game-board/focus.md` |
+| `.say-affordance` | Own marker **top-center (12)** (`top: -40px; left: 50%; translateX(-50%)`) — clears ready TL; SC-SAY-07 / SC-SAY-15 / SC-PRESENCE-14/33; hit-area ≥ ~32 CSS px; z-index above rings/avatar |
+| `.focus-affordance` | Own marker **left-center (9)** (`top: 50%; left: -8px; translateY(-50%)`, 36px hit — SC-PRESENCE-30/33); see `work-with-game-board/focus.md` |
 | `.say-bubble` / `.say-picker` | Presence comic bubbles + picker; chrome follows Dark via `body.body--dark` overrides (not tile fills) |
 | `.say-bubbles--top` | Top-row markers: bubbles grow **down** toward the board |
 | `.say-bubbles--bottom` | Own bottom marker: bubbles grow **up** toward the board |

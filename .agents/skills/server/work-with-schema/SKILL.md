@@ -187,7 +187,7 @@ Finished seats remain in `seats` (count toward `maxSeats`) until consented leave
 
 | Field | Meaning |
 |-------|---------|
-| `revealingCatapultKeys` | Short-lived `"r,c"` while fade anim runs (~1000 ms); hidden unspent never sync |
+| `revealingCatapultKeys` | Short-lived `"r,c"` while fade anim runs (~`CATAPULT_ANIM_MS = 1500`); hidden unspent never sync |
 | `brokenCatapultKeys` | Subset of revealing keys that show broken art on fade-out (no fling dest) |
 
 **Not synced (room-private + messages):** step/peek budgets (`budgets` Map + `client.send('budgets')`); task deck / cell bindings / content snapshot (`roomContentSnapshot`); create-time `grilleDensity` / `catapultDensity` + hidden grille/catapult keys; private `allJailWarning`. Shared peek **session fields** sync on schema (above). Do **not** put steps/peeks or hidden trap locations on schema.
