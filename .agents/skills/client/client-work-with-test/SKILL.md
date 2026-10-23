@@ -91,7 +91,8 @@ lint/typecheck alone. Map each executable scenario to an `SC-…` ID in Traceabi
    [composables.md](composables.md).
 3. Place the test file next to the SUT: `Feature/__tests__/Name.test.ts` or
    `src/lib/__tests__/passwordPolicy.test.ts`. Prefer `__tests__` colocated
-   with the module. App shell (`App.vue`) → `src/__tests__/AppHeaderChrome.test.ts`.
+   with the module. App shell (`App.vue`) → `src/__tests__/AppHeaderChrome.test.ts`;
+   Account logout chrome → `src/pages/__tests__/AccountLogout.test.ts` (SC-BRAND-32).
 4. Write tests following the conventions below and specialized topics.
 5. Cover planned success, error, loading, event, and conditional scenarios.
 6. **Required props check (components):** after writing the file, re-read

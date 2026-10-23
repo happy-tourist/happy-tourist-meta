@@ -25,7 +25,7 @@ This package validates with Quasar `q-form` + `q-input` `:rules` and `<script se
 | Login | `src/pages/LoginPage.vue` | Email/password register or login → `auth`; guest + Google via separate buttons |
 | Forgot | `src/pages/ForgotPasswordPage.vue` | Email → `auth.forgotPassword`; `email_not_found` → RU not-found |
 | Reset | `src/pages/ResetPasswordPage.vue` | New password (shared policy + meter) → `auth.resetPassword(token, password)`; public route |
-| Cabinet | `src/pages/AccountPage.vue` | displayName + change-password (if `canChangePassword`) + email confirm/change; logout |
+| Cabinet | `src/pages/AccountPage.vue` | displayName + change-password (if `canChangePassword`) + email confirm/change; session logout **icon-only** (`icon="logout"` + aria `auth.logout`, `data-test-id="account-logout"`, no `:label` — SC-BRAND-32) |
 | Support create | `src/pages/SupportPage.vue` | Topic `q-select` + body textarea → `support.createTicket`; `change_pack` adds **in-catalog** pack select (title/description; filter `inCatalog !== false && hasLive`) and requires `packId`; on success clear → `await nextTick()` → `resetValidation`; `lazy-rules` on inputs; rate-limit codes → `support.errors.*` |
 | Support reply | `src/pages/SupportTicketPage.vue` | Body textarea → `support.postMessage`; on success clear → `await nextTick()` → `resetValidation`; `lazy-rules` on body |
 | Content moderation reply | `ContentPackEditorPage` / `ContentPackAddTaskSetPage` / `ContentPackModerationPage` | Thread body → `content.postModerationMessage`; show only while open own request `pending`\|`needs_revision` (SC-PACK-128); same clear → `nextTick` → `resetValidation` + `lazy-rules` |
@@ -150,6 +150,7 @@ async function onSuccessClear() {
 
 - Reset: same policy + meter → `auth.resetPassword`; success → login.
 - Account displayName: trim ≥ 1 → `auth.updateDisplayName`.
+- Account session logout (header of cabinet): icon-only `logout` + `:aria-label="$t('auth.logout')"` + `data-test-id="account-logout"` (no `:label` — SC-BRAND-32) → `auth.logout` → `router.replace({ name: 'login' })`.
 - Account change-password: only when `auth.canChangePassword`; policy + meter on new password → `auth.changePassword` → logout → login.
 - Map store codes (`invalid_current_password`, `password_policy_failed`, `password_change_unavailable`, `display_name_invalid`) to RU `$t('auth.*')`.
 

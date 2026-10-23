@@ -3,13 +3,11 @@ name: work-with-pages
 description: >-
   Use when creating or changing Vue page views under src/pages/*Page.vue, routes in
   src/router/routes.ts, router guards, or App.vue shell wiring in the happy-tourist
-  Quasar Vue 3 client. Core in SKILL.md; topic details in shell.md (header/brand/
-  crumbs/leave + app-page-bg SC-BRAND-21 + catalog chrome/logo SC-BRAND-25), content-pages.md (packs/maps UI; portrait PackAnswerCardTile
-  SC-PACK-222/225/282/283 + PackTaskTile SC-PACK-278/283; PackTaskComposeDialog
-  SC-PACK-256…263/276…281; draft lifecycle/`canHardDelete`/hidden shell
-  SC-PACK-234/264…275), game-page.md (GamePage wiring; peek mini-card pool
-  SC-BOARD-49/50…54). Pack/map store contracts → work-with-stores topics; board
-  chrome → work-with-game-board.
+  Quasar Vue 3 client. Core in SKILL.md; topics: shell.md (brand/crumbs/leave +
+  app-page-bg SC-BRAND-21 + wordmarks 60px SC-BRAND-29/30 + icon-only SC-BRAND-31
+  + catalog chrome SC-BRAND-25), content-pages.md (packs/maps; portrait tiles +
+  compose + draft lifecycle), game-page.md (GamePage + peek pool). Pack/map
+  stores → work-with-stores; board → work-with-game-board.
 ---
 
 # Work With Pages
@@ -27,7 +25,7 @@ Read the matching file in this folder when the change involves that area
 
 | Topic | File |
 |-------|------|
-| App shell — brand logo (~44px SC-BRAND-25), section nav, breadcrumbs, Game leave/status, theme banner, `app-page-bg` (SC-BRAND-21) | [shell.md](shell.md) |
+| App shell — theme wordmarks 60px / toolbar 64 (SC-BRAND-29/30), icon-only session/leave (SC-BRAND-31), section nav, breadcrumbs, Game leave/status, theme banner, `app-page-bg` (SC-BRAND-21) | [shell.md](shell.md) |
 | Content packs + maps pages / routes / list-card UI + answer/task compose dialogs | [content-pages.md](content-pages.md) |
 | GamePage composition + route (board details → `work-with-game-board`) | [game-page.md](game-page.md) |
 
