@@ -27,8 +27,8 @@
 | SC-BOARD-20 | covered (server mocha — spent tile still peekable) |
 | SC-BOARD-21 | covered (client UX — rise on leave clear all clients) |
 | SC-BOARD-22 | covered (client UX — hidden catapult until land) |
-| SC-BOARD-23 | covered (client UX — land then ~1000 ms overlay then fling travel) |
-| SC-BOARD-24 | covered (client UX — land then broken 300+300 then vanish; piece stays) |
+| SC-BOARD-23 | covered (client UX — land then ~1500 ms overlay then fling travel) |
+| SC-BOARD-24 | covered (client UX — land then broken 450+450 then vanish ~300 ms; piece stays) |
 | SC-BOARD-25 | covered (client UX — piece on catapult cell during overlay after land) |
 | SC-BOARD-26 | covered (client UX — chain: land→overlay→travel per hop) |
 | SC-BOARD-27 | covered (client GamePage continuous isBoardBusy + grille hold unlock) |
@@ -43,6 +43,7 @@
 | SC-BOARD-55 | covered (client vitest boardGeometry — one tile per finish, no span) |
 | SC-BOARD-56 | covered (client vitest GameBoardWire — unbound vs flipped task skins) |
 | SC-BOARD-57 | covered (client vitest GameBoardWire — start/finish skins on board) |
+| SC-BOARD-58 | covered (client — overlay drop-shadow on skinned tiles; board + strip chrome) |
 | SC-BOARD-43 | covered (server mocha — correct ordered slots) |
 | SC-BOARD-44 | covered (server mocha — wrong keeps bind) |
 | SC-BOARD-45 | covered (server mocha — flipped peek rejected at 0) |
@@ -446,13 +447,13 @@ When a piece triggers an unspent catapult (via move, push, return-from-finish, o
 
 ### Requirement: Successful catapult presentation then piece travel
 
-When a piece triggers an unspent catapult that has at least one legal fling destination, every client that displays the board MUST, **after** SC-BOARD-28 arrival: (1) show the intact catapult appear and fully disappear on that cell (about **1000 ms** total presentation sense); (2) while that overlay is visible, keep the piece visually on the catapult cell; (3) **only after** the overlay is fully gone, animate the piece to the fling destination with the same travel sense as an ordinary move (`MOVE_ANIM_MS` order), following authoritative relocate when it arrives for that hop. After a successful consume, the catapult MUST NOT remain visible. Cleared/spent catapults MUST NOT remain visible afterward.
+When a piece triggers an unspent catapult that has at least one legal fling destination, every client that displays the board MUST, **after** SC-BOARD-28 arrival: (1) show the intact catapult appear and fully disappear on that cell (about **1500 ms** total presentation sense); (2) while that overlay is visible, keep the piece visually on the catapult cell; (3) **only after** the overlay is fully gone, animate the piece to the fling destination with the same travel sense as an ordinary move (`MOVE_ANIM_MS` order), following authoritative relocate when it arrives for that hop. After a successful consume, the catapult MUST NOT remain visible. Cleared/spent catapults MUST NOT remain visible afterward. The server paced presentation budget for a successful catapult hop MUST match that about **1500 ms** client sense (`game/move`) — production default `CATAPULT_ANIM_MS = 1500` (and the same value restored by `resetTrapPresentationBudgets`).
 
 #### Scenario [SC-BOARD-23]: Successful catapult vanishes before travel
 
 - **GIVEN** phase is `playing` and a piece triggers an unspent catapult that has at least one legal fling destination
 - **WHEN** that catapult is revealed and consumed
-- **THEN** every client shows the intact catapult appear-then-vanish on that cell lasting about 1000 ms only after arrival on that cell completed
+- **THEN** every client shows the intact catapult appear-then-vanish on that cell lasting about 1500 ms only after arrival on that cell completed
 - **AND** the catapult artwork is gone afterward
 - **AND** the piece travel to the fling destination starts only after that vanish completes
 
@@ -479,15 +480,27 @@ When a piece triggers an unspent catapult that has at least one legal fling dest
 
 ### Requirement: Broken catapult hold timeline
 
-When a piece triggers an unspent catapult with **no** legal fling destination, every client that displays the board MUST, **after** SC-BOARD-28 arrival, present: intact appear → hold about **300 ms** intact → switch to broken artwork → hold about **300 ms** broken → vanish. The piece MUST remain on that cell (no fling travel). Cleared/spent catapults MUST NOT remain visible afterward.
+When a piece triggers an unspent catapult with **no** legal fling destination, every client that displays the board MUST, **after** SC-BOARD-28 arrival, present: intact appear → hold about **450 ms** intact → switch to broken artwork → hold about **450 ms** broken → vanish (vanish fade about **300 ms**). The piece MUST remain on that cell (no fling travel). Cleared/spent catapults MUST NOT remain visible afterward. The server paced presentation budget for a broken catapult hop MUST match the sum of those holds plus vanish (`game/move`) — production default `CATAPULT_BROKEN_PRESENTATION_MS = 450 + 450 + 300` (**1200** ms; and the same value restored by `resetTrapPresentationBudgets`).
 
 #### Scenario [SC-BOARD-24]: Broken catapult 300+300 then vanish
 
 - **GIVEN** phase is `playing` and a piece triggers an unspent catapult with no legal fling destination
 - **WHEN** the broken presentation runs
-- **THEN** every client shows intact appear, about 300 ms intact, broken art about 300 ms, then vanish, only after arrival on that cell completed
+- **THEN** every client shows intact appear, about 450 ms intact, broken art about 450 ms, then vanish (about 300 ms fade), only after arrival on that cell completed
 - **AND** the catapult artwork is gone afterward
 - **AND** the piece remains on that cell
+
+### Requirement: Catapult and grille overlays stay readable on tile skins
+
+Revealed catapult overlays and revealed grille overlays on the board MUST remain visually separable from the underlying task (and other) tile skins so players can tell the trap art from the cell face. The same separation MUST apply to the personal strip chrome grille that mirrors a trapped piece (`game/pieces`). Separation MUST use a non-filling edge treatment — CSS `filter: drop-shadow(...)` on `.catapult-overlay`, `.grille-overlay`, and `.my-tourist-chrome-grille` (neutral multi-layer light/dark edge shadow) — so grille bar openings stay alpha-clear. Clients MUST NOT paint an opaque underlay behind the grille that fills those openings and hides the tourist.
+
+#### Scenario [SC-BOARD-58]: Overlays read on skinned tiles without hiding tourist under grille
+
+- **GIVEN** phase is `playing`, task cells use product tile skins, and a piece triggers a catapult or holding grille on a task cell (or a strip slot shows chrome grille for a trapped own piece)
+- **WHEN** the overlay or chrome grille is visible
+- **THEN** the catapult or grille artwork remains distinguishable from the tile skin behind it via CSS `filter: drop-shadow` (or equivalent non-filling edge treatment) on the overlay / chrome-grille element
+- **AND** for a grille over a tourist, the tourist remains visible through the grille openings
+- **AND** no opaque underlay fills those grille openings
 
 ### Requirement: Grille presentation follows the same sequential trap timeline
 

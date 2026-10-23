@@ -1,6 +1,6 @@
 ## Context
 
-See `proposal.md` — Why. After `board-tile-skins`, task PNG (~brown) and catapult/grille PNGs share the same tone; overlays still stack above tiles (`z-index` 3 > tile 0) but are hard to read. Catapult presentation budgets are shared client↔server (`CATAPULT_ANIM_MS`, broken holds, `CATAPULT_BROKEN_PRESENTATION_MS` / D14 paced pipeline). Presence affordances today: say `top:-32px; right:-8px`, focus `top:32%; right:-8px`, end-turn `top:50%; right:-8px`.
+See `proposal.md` — Why. After `board-tile-skins`, task PNG (~brown) and catapult/grille PNGs share the same tone; overlays still stack above tiles (`z-index` 3 > tile 0) but were hard to read. Catapult presentation budgets are shared client↔server (`CATAPULT_ANIM_MS`, broken holds, `CATAPULT_BROKEN_PRESENTATION_MS` / D14 paced pipeline). **Baseline before this change:** say `top:-32px; right:-8px`, focus `top:32%; right:-8px`, end-turn `top:50%; right:-8px`. **Shipped:** drop-shadow overlays; catapult 1500 / broken 450+450+300; presence clock say 12 / focus 9 / end-turn 3 (D1–D3).
 
 ## Goals / Non-Goals
 
@@ -41,7 +41,7 @@ Analogue already in client: `.my-tourist-finish-icon` uses a thin white `drop-sh
 | Broken vanish | 200 | **300** |
 | Server `CATAPULT_BROKEN_PRESENTATION_MS` | 300+300+200 | **450+450+300** |
 
-Client: `GamePage.vue` TS constants **and** CSS — today `--catapult-anim-ms` fallback is `1000ms`, and `.catapult-overlay--vanish` **hardcodes** `200ms` (not a var). Both MUST become **1500** / **300** (prefer `--catapult-broken-vanish-ms: 300ms` wired to the vanish animation). Server (room `tourist`, `MyRoom.ts` only): set production lets `CATAPULT_ANIM_MS = 1500` and `CATAPULT_BROKEN_PRESENTATION_MS = 450 + 450 + 300` (**1200**); `resetTrapPresentationBudgets` MUST restore those same two catapult defaults (keep `MOVE_ANIM_MS = 250`, `GRILLE_ANIM_MS = 1000`). `setTrapPresentationBudgetsForTests` API shape unchanged. No messages / schema / HTTP / DB.
+Client: `GamePage.vue` TS constants **and** CSS — was `--catapult-anim-ms` fallback `1000ms` and `.catapult-overlay--vanish` hardcoded `200ms`; **shipped** **1500** / **300** via `--catapult-anim-ms` + `--catapult-broken-vanish-ms`. Server (room `tourist`, `MyRoom.ts` only): production `CATAPULT_ANIM_MS = 1500` and `CATAPULT_BROKEN_PRESENTATION_MS = 450 + 450 + 300` (**1200**); `resetTrapPresentationBudgets` restores those same two catapult defaults (`MOVE_ANIM_MS = 250`, `GRILLE_ANIM_MS = 1000` unchanged). `setTrapPresentationBudgetsForTests` API shape unchanged. No messages / schema / HTTP / DB.
 
 ### D3 — Presence CSS clock
 

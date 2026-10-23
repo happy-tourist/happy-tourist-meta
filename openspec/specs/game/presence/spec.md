@@ -21,7 +21,7 @@
 | SC-PRESENCE-11 | covered (client reserved outer chrome 96px around 72px avatar) |
 | SC-PRESENCE-12 | covered (client sibling avatar img + rings) |
 | SC-PRESENCE-13 | covered (client avatar size matches strip tourist) |
-| SC-PRESENCE-14 | covered (client finish/ready/say corner affordances) |
+| SC-PRESENCE-14 | covered (client finish/ready top-left; say top-center / 12 o’clock) |
 | SC-PRESENCE-15 | covered (client UX — budgets vertical stack right of avatar) |
 | SC-PRESENCE-16 | covered (client UX — solo ∞ peeks only) |
 | SC-PRESENCE-17 | covered (client UX — end-turn icon right-center of own avatar) |
@@ -36,10 +36,10 @@
 | SC-PRESENCE-24 | covered (client no room id in chrome) |
 | SC-PRESENCE-25 | covered (client UX — not in budgets stack; not above-panel dock label) |
 | SC-PRESENCE-26 | covered (client seated top presence min-height reserve) |
-| SC-PRESENCE-30 | covered (client vitest — focus control placement) |
+| SC-PRESENCE-30 | covered (client vitest — focus at 9 o’clock / left-center) |
 | SC-PRESENCE-31 | covered (client vitest — focuses nearest actionable) |
 | SC-PRESENCE-32 | covered (client vitest — hidden when none actionable) |
-| SC-PRESENCE-33 | covered (client — say above focus without overlap) |
+| SC-PRESENCE-33 | covered (client — say 12 / focus 9 / end-turn 3 without overlap) |
 
 Related: turn deadlines / budgets / end-turn / solo — `game/move`; peek modal — `game/board`; reconnect grace — `game/pieces`; bubbles — `game/say`; exit chrome — `game/leave`; board width — `game/board`; strip / selection — `game/pieces`.
 
@@ -168,7 +168,7 @@ The tourist kind image inside every occupied presence marker SHALL use the same 
 
 ### Requirement: Presence affordance and badge corners
 
-When a seat has a synchronized finish place, every client SHALL show the finish place indicator at the **top-left** of that seat’s presence marker. While the local user may send a ready intent from the Game screen, the ready affordance MUST appear at the **top-left** of that user’s own presence marker only. While the local user may send a say intent, the say send affordance MUST appear at the **top-right** of that user’s own presence marker only. Other players’ markers MUST NOT show a say send affordance for the local user. Spectators MUST NOT see a say send affordance.
+When a seat has a synchronized finish place, every client SHALL show the finish place indicator at the **top-left** of that seat’s presence marker. While the local user may send a ready intent from the Game screen, the ready affordance MUST appear at the **top-left** of that user’s own presence marker only. While the local user may send a say intent, the say send affordance MUST appear at the **top-center** of that user’s own presence marker only (product clock sense: **12 o’clock** on the avatar). When ready (or the own finish-place badge) and say are both visible on the own marker, their hit boxes MUST NOT overlap (raise say enough that centers stay clear). Other players’ markers MUST NOT show a say send affordance for the local user. Spectators MUST NOT see a say send affordance.
 
 #### Scenario [SC-PRESENCE-14]: Finish, ready, and say corners
 
@@ -176,7 +176,8 @@ When a seat has a synchronized finish place, every client SHALL show the finish 
 - **WHEN** the presence chrome is shown
 - **THEN** the opponent’s finish place indicator is at the top-left of that opponent marker
 - **AND** if the ready affordance is available for the local user, it is at the top-left of the local user’s marker
-- **AND** the say send affordance is at the top-right of the local user’s marker only
+- **AND** the say send affordance is at the top-center (12 o’clock) of the local user’s marker only
+- **AND** when ready (or own finish-place badge) and say are both visible, their hit boxes do not overlap
 - **AND** opponent markers do not show a say send affordance for the local user
 
 ### Requirement: Finish place badge on presence marker
@@ -331,13 +332,14 @@ For a **seated** viewer, the layout region above the board that holds opponent p
 
 ### Requirement: Focus actionable tourist control
 
-While the local user is a seated current-turn player in phase `playing` and at least one of their unfinished free pieces can currently take an action (legal move with steps remaining, fresh peek, flipped peek, rescue, push, or return-from-finish when applicable), the Game presence chrome MUST show a **circular** icon-only control placed on the own presence avatar between the say affordance and the end-turn affordance (product placement: along the avatar circumference between those two controls). Activating it MUST select / focus the **nearest** (or otherwise first) own unfinished free piece that has at least one such available action, without requiring a confirm dialog. When no own piece has an available action, the control MUST be hidden or disabled. Spectators and non-current seats MUST NOT see an enabled control for themselves.
+While the local user is a seated current-turn player in phase `playing` and at least one of their unfinished free pieces can currently take an action (legal move with steps remaining, fresh peek, flipped peek, rescue, push, or return-from-finish when applicable), the Game presence chrome MUST show a **circular** icon-only control placed on the own presence avatar at the **left-center** edge (product clock sense: **9 o’clock**). Activating it MUST select / focus the **nearest** (or otherwise first) own unfinished free piece that has at least one such available action, without requiring a confirm dialog. When no own piece has an available action, the control MUST be hidden or disabled. Spectators and non-current seats MUST NOT see an enabled control for themselves. End-turn remains on the **right-center** edge (~**3 o’clock**) per the end-turn requirement.
 
 #### Scenario [SC-PRESENCE-30]: Focus control sits between say and end-turn
 
 - **GIVEN** it is the local seated user’s multiplayer turn with at least one actionable own tourist
 - **WHEN** the own presence chrome is shown
-- **THEN** a circular focus control is present between the say and end-turn affordances on the own avatar
+- **THEN** a circular focus control is present at the left-center (9 o’clock) of the own avatar
+- **AND** say (when visible) is at top-center (12) and end-turn (when visible) at right-center (3)
 
 #### Scenario [SC-PRESENCE-31]: Focus selects nearest actionable tourist
 
@@ -354,11 +356,11 @@ While the local user is a seated current-turn player in phase `playing` and at l
 
 ### Requirement: Say affordance sits above the focus control
 
-On the local seated user’s own presence avatar, when both the say send affordance and the focus control are visible, the say control MUST be placed **higher** on the avatar (closer to the top edge / farther from the vertical center than the focus control) so the two hit areas do not overlap. End-turn remains on the right edge below focus. This does not change say whitelist or `game/say` message rules.
+On the local seated user’s own presence avatar, when say, focus, and/or end-turn controls are visible together, they MUST sit at distinct clock positions — say at **12** (top-center), focus at **9** (left-center), end-turn at **3** (right-center) — so their hit areas do not overlap. Say remains higher on the avatar than focus. This does not change say whitelist or `game/say` message rules, nor end-turn submission rules.
 
 #### Scenario [SC-PRESENCE-33]: Say is above focus without overlap
 
-- **GIVEN** it is the local seated user’s multiplayer turn with say available and at least one actionable own tourist (focus visible)
+- **GIVEN** it is the local seated user’s multiplayer turn with say available, at least one actionable own tourist (focus visible), and end-turn available
 - **WHEN** the own presence chrome is shown
-- **THEN** the say affordance is vertically above the focus control
-- **AND** the two circular hit areas do not overlap
+- **THEN** the say affordance is at top-center (12), the focus control at left-center (9), and end-turn at right-center (3)
+- **AND** the three circular hit areas do not overlap

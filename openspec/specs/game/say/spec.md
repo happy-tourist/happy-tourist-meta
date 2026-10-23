@@ -16,7 +16,7 @@
 | SC-SAY-04 | covered (server mocha) |
 | SC-SAY-05 | covered (server mocha) |
 | SC-SAY-06 | covered (server mocha) |
-| SC-SAY-07 | covered (client say affordance top-right on own marker) |
+| SC-SAY-07 | covered (client say affordance top-center / 12 o’clock on own marker) |
 | SC-SAY-08 | covered (client UX GamePage) |
 | SC-SAY-09 | covered (client UX GamePage) |
 | SC-SAY-10 | covered (server mocha) |
@@ -97,12 +97,12 @@ On an accepted say, the server SHALL notify every client currently in the touris
 
 ### Requirement: Own-marker affordance and preset picker
 
-While the user is seated and connected on the Game screen, the system SHALL show a speech-bubble affordance only at the **top-right** of that user’s own presence marker. Activating the affordance MUST reveal exactly two preset choices with the display texts «Всем привет» and «Удачи». Choosing a preset MUST close the picker immediately and submit that preset’s identifier. Spectators MUST NOT see a send affordance. Other players’ markers MUST NOT show a send affordance for the local user. The affordance and its open picker MUST remain pointer- and touch-activatable: presence row overflow MUST NOT clip them out of hit-testing or hide the open picker, and the affordance hit target MUST be large enough for touch (at least about 32 CSS pixels on each side).
+While the user is seated and connected on the Game screen, the system SHALL show a speech-bubble affordance only at the **top-center** of that user’s own presence marker (product clock sense: **12 o’clock**). Activating the affordance MUST reveal exactly two preset choices with the display texts «Всем привет» and «Удачи». Choosing a preset MUST close the picker immediately and submit that preset’s identifier. Spectators MUST NOT see a send affordance. Other players’ markers MUST NOT show a send affordance for the local user. The affordance and its open picker MUST remain pointer- and touch-activatable: presence row overflow MUST NOT clip them out of hit-testing or hide the open picker, and the affordance hit target MUST be large enough for touch (at least about 32 CSS pixels on each side).
 
 #### Scenario [SC-SAY-07]: Seated player opens picker on own marker
 
 - **GIVEN** the user is seated and connected on the Game screen
-- **WHEN** the user activates the speech-bubble affordance at the top-right of their own presence marker
+- **WHEN** the user activates the speech-bubble affordance at the top-center of their own presence marker
 - **THEN** two preset choices «Всем привет» and «Удачи» are shown
 - **AND** choosing one closes the picker immediately
 
