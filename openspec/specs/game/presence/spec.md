@@ -24,7 +24,7 @@
 | SC-PRESENCE-14 | covered (client finish/ready top-left; say top-center / 12 o’clock) |
 | SC-PRESENCE-15 | covered (client UX — budgets vertical stack right of avatar) |
 | SC-PRESENCE-16 | covered (client UX — solo ∞ peeks only) |
-| SC-PRESENCE-17 | covered (client UX — end-turn icon right-center of own avatar) |
+| SC-PRESENCE-17 | covered (client UX — end-turn 36×36; center on avatar circumference at 3 o’clock) |
 | SC-PRESENCE-18 | covered (client UX) |
 | SC-PRESENCE-19 | covered (client UX — peeks-unlimited modal) |
 | SC-PRESENCE-20 | covered (client UX — +N anim ~2s) |
@@ -32,14 +32,16 @@
 | SC-PRESENCE-35 | covered (client vitest soloEndModalKind — steps-exhausted copy when only trapped/start remainder) |
 | SC-PRESENCE-22 | covered (client sticky bottom HUD — own+strip when seated; surface fill revised by SC-PRESENCE-34) |
 | SC-PRESENCE-34 | covered (`AppHeaderChrome.test.ts` — sticky bottom HUD translucent underlay ~0.78 alpha) |
-| SC-PRESENCE-23 | covered (client match status in shared header) |
+| SC-PRESENCE-23 | covered (client match-status slot can show peek outcome flash for ~10s) |
 | SC-PRESENCE-24 | covered (client no room id in chrome) |
-| SC-PRESENCE-25 | covered (client UX — not in budgets stack; not above-panel dock label) |
+| SC-PRESENCE-25 | covered (client UX — end-turn not in budgets; focus under end-turn on marker) |
 | SC-PRESENCE-26 | covered (client seated top presence min-height reserve) |
-| SC-PRESENCE-30 | covered (client vitest — focus at 9 o’clock / left-center) |
+| SC-PRESENCE-30 | covered (client vitest — focus under end-turn at avatar square corner; 36×36 fills hit) |
 | SC-PRESENCE-31 | covered (client vitest — focuses nearest actionable) |
 | SC-PRESENCE-32 | covered (client vitest — hidden when none actionable) |
-| SC-PRESENCE-33 | covered (client — say 12 / focus 9 / end-turn 3 without overlap) |
+| SC-PRESENCE-33 | covered (client — say @12 + end-turn @3; focus under end-turn at square corner; no overlap) |
+| SC-PRESENCE-36 | covered (client — peek outcome flash texts/colors; all clients; 10s then restore) |
+| SC-PRESENCE-37 | covered (client — focus under end-turn stays fully visible / activatable in HUD) |
 
 Related: turn deadlines / budgets / end-turn / solo — `game/move`; peek modal — `game/board`; reconnect grace — `game/pieces`; bubbles — `game/say`; exit chrome — `game/leave`; board width — `game/board`; strip / selection — `game/pieces`.
 
@@ -225,15 +227,16 @@ While the user is a seated player on the Game screen in phase `playing`, the sys
 
 ### Requirement: End-turn control next to own avatar
 
-While it is the seated user’s multiplayer turn in phase `playing` (two or more eligible seats) and the user is not time-expired, the Game presence chrome MUST show an **icon-only** end-turn control (Material `skip_next` or equivalent) on the **right** edge of that user’s own presence avatar, **vertically centered** on that edge (mirror of a say/dialog affordance centered on the **top** edge). Activating it MUST submit end-turn per `game/move` **immediately** — no confirmation dialog. The control MUST NOT show a visible text label (tooltips later are out of scope). The control MUST NOT appear in the budgets stack beside the avatar. The control MUST NOT appear as a labeled dock above the sticky bottom HUD. The control MUST NOT appear for spectators, for seats that are not current turn, during solo play, or for finished / time-expired seats.
+While it is the seated user’s multiplayer turn in phase `playing` (two or more eligible seats) and the user is not time-expired, the Game presence chrome MUST show an **icon-only** end-turn control whose **hit-center sits on the circumference** of that user’s own presence marker at the **right-center** edge (product clock sense: **3 o’clock**). The control MUST use the **illustrated board-action end-turn icon** and MUST NOT paint a solid colored circular chrome behind the icon. Glyph and hit MUST both be **36×36 CSS pixels** (glyph fills the hit) while remaining non-overlapping with say when say is visible. Activating it MUST submit end-turn per `game/move` **immediately** — no confirmation dialog. The control MUST NOT show a visible text label (tooltips later are out of scope). The control MUST NOT appear in the budgets stack beside the avatar. The control MUST NOT appear as a labeled dock above the sticky bottom HUD. The control MUST NOT appear for spectators, for seats that are not current turn, during solo play, or for finished / time-expired seats. While a peek modal is open, the control MUST NOT be activatable (board-busy / peek lock as already required).
 
 #### Scenario [SC-PRESENCE-17]: Current multiplayer seat sees «Завершить ход»
 
-- **GIVEN** it is the user’s turn in a multiplayer `playing` room
+- **GIVEN** it is the user’s turn in a multiplayer `playing` room and no peek modal is open
 - **WHEN** the user views Game chrome
-- **THEN** an icon-only end-turn control is shown on the right edge of the own avatar, vertically centered
+- **THEN** an icon-only end-turn control with the illustrated end-turn icon is shown with its hit-center on the own avatar circumference at 3 o’clock
+- **AND** the glyph / hit use the 36×36 glyph-fills-hit family
+- **AND** the control has no solid colored circular chrome behind the icon
 - **AND** activating it submits end-turn without a confirmation dialog
-- **AND** no visible «Завершить ход» label is required on the control
 
 #### Scenario [SC-PRESENCE-18]: Solo hides end-turn
 
@@ -247,6 +250,7 @@ While it is the seated user’s multiplayer turn in phase `playing` (two or more
 - **WHEN** the bottom HUD budgets stack beside the own avatar is shown
 - **THEN** steps and peeks appear in that stack without the end-turn control inline
 - **AND** the end-turn control remains on the right edge of the avatar (not a separate above-panel text dock)
+- **AND** when focus is available it sits below end-turn on the marker (not in that budgets stack)
 
 ### Requirement: Solo peeks-unlimited modal
 
@@ -299,15 +303,27 @@ While the user is on the Game screen as a **seated** viewer, the bottom HUD pane
 
 ### Requirement: Match status in shared application header
 
-While the user is on the Game screen, the shared application header MUST show a concise match-status label centered in the header (product Russian senses such as «Ваш ход», «Ход соперника», «Ход игрока», «Ожидание соперника», connection/finished phrases as already used on Game). On Login and Lobby screens that match-status label MUST NOT appear. The status MUST derive from room phase / turn / connection state already mirrored for Game — not from a separate server channel.
+While the user is on the Game screen, the shared application header MUST show a concise match-status label centered in the header (product Russian senses such as «Ваш ход», «Ход соперника», «Ход игрока», «Ожидание соперника», connection/finished phrases as already used on Game). On Login and Lobby screens that match-status label MUST NOT appear. The status MUST derive from room phase / turn / connection state already mirrored for Game — not from a separate server channel — **except** while a peek-outcome flash is active (see peek outcome flash requirement), during which the same centered header slot MUST show the flash text instead of the ordinary match-status phrase. After the flash duration ends, the ordinary match-status MUST return.
 
 #### Scenario [SC-PRESENCE-23]: Status centered in shared header on Game
 
-- **GIVEN** the user is on the Game screen of a tourist room in phase `playing` and it is the local seated user’s turn
+- **GIVEN** the user is on the Game screen during their multiplayer turn and no peek-outcome flash is active
 - **WHEN** the shared application header is shown
 - **THEN** a centered status label conveys that it is the user’s turn
-- **AND** the theme control remains available in that header
 - **AND** on Lobby the same match-status label is not shown
+
+### Requirement: Peek outcome flash in match-status slot
+
+When any client in the room receives a peek-close that reports a **correct** resolve, **every** client on the Game screen MUST replace the centered match-status label with the product Russian text «Правильно!» in a green emphasis for about **ten seconds**, then restore the ordinary match-status. When the peek-close reports an **incorrect wrong submit**, every such client MUST show «Ошибка!» in a red emphasis for about ten seconds, then restore. When the peek-close reports an **incorrect turn-timeout** while a peek was open, every such client MUST show «Не успел!» in a yellow emphasis for about ten seconds, then restore. The flash MUST use the same centered header slot as ordinary match-status (it replaces that text for the duration — not a second permanent line). Spectators and seated players alike MUST see the same flash. Leave mid-peek and other non-timeout force-closes MUST NOT show «Не успел!».
+
+#### Scenario [SC-PRESENCE-36]: All clients see peek outcome flash then restore status
+
+- **GIVEN** two clients are on the Game screen in the same room with an open peek
+- **WHEN** the peek closes as correct
+- **THEN** both clients show «Правильно!» in green in the centered match-status slot for about ten seconds
+- **AND** afterward each client again shows the ordinary match-status for the current room/turn state
+- **AND** when a peek instead closes as a wrong submit, both clients show «Ошибка!» in red for about ten seconds
+- **AND** when a peek instead closes because the turn timed out with the modal open, both clients show «Не успел!» in yellow for about ten seconds
 
 ### Requirement: No room identifier in Game chrome
 
@@ -332,14 +348,17 @@ For a **seated** viewer, the layout region above the board that holds opponent p
 
 ### Requirement: Focus actionable tourist control
 
-While the local user is a seated current-turn player in phase `playing` and at least one of their unfinished free pieces can currently take an action (legal move with steps remaining, fresh peek, flipped peek, rescue, push, or return-from-finish when applicable), the Game presence chrome MUST show a **circular** icon-only control placed on the own presence avatar at the **left-center** edge (product clock sense: **9 o’clock**). Activating it MUST select / focus the **nearest** (or otherwise first) own unfinished free piece that has at least one such available action, without requiring a confirm dialog. When no own piece has an available action, the control MUST be hidden or disabled. Spectators and non-current seats MUST NOT see an enabled control for themselves. End-turn remains on the **right-center** edge (~**3 o’clock**) per the end-turn requirement.
+While the local user is a seated current-turn player in phase `playing` and at least one of their unfinished free pieces can currently take an action (legal move with steps remaining, fresh peek, flipped peek, rescue, push, or return-from-finish when applicable), the Game presence chrome MUST show an **icon-only** focus control on the own presence marker **below the end-turn control**, with its hit-center at the **bottom-right corner of the square** that bounds the own tourist avatar image (avatar inscribed in that square). The control MUST use the **illustrated board-action focus icon** and MUST NOT paint a solid colored circular chrome behind the icon. Glyph and hit MUST both be **36×36 CSS pixels** (glyph fills the hit). The focus control MUST NOT sit in the budgets stack under peeks and MUST NOT sit at 9 o’clock. Activating it MUST select / focus the **nearest** (or otherwise first) own unfinished free piece that has at least one such available action, without requiring a confirm dialog. When no own piece has an available action, the control MUST be hidden or disabled. Spectators and non-current seats MUST NOT see an enabled control for themselves. Say remains on the **top-center** circumference (~**12 o’clock**); end-turn remains on the **right-center** circumference (~**3 o’clock**) per their requirements.
 
 #### Scenario [SC-PRESENCE-30]: Focus control sits between say and end-turn
 
 - **GIVEN** it is the local seated user’s multiplayer turn with at least one actionable own tourist
 - **WHEN** the own presence chrome is shown
-- **THEN** a circular focus control is present at the left-center (9 o’clock) of the own avatar
-- **AND** say (when visible) is at top-center (12) and end-turn (when visible) at right-center (3)
+- **THEN** a focus control with the illustrated focus icon is present on the own marker below end-turn at the bottom-right corner of the avatar’s bounding square
+- **AND** the glyph / hit use the 36×36 glyph-fills-hit family
+- **AND** no focus control is in the peeks budgets stack or at 9 o’clock
+- **AND** say (when visible) is at top-center (12) and end-turn (when visible) at right-center (3) on the marker circumference
+- **AND** the three controls remain non-overlapping
 
 #### Scenario [SC-PRESENCE-31]: Focus selects nearest actionable tourist
 
@@ -354,13 +373,25 @@ While the local user is a seated current-turn player in phase `playing` and at l
 - **WHEN** the own presence chrome is shown
 - **THEN** the focus control is not available as an enabled action
 
+### Requirement: Focus under end-turn stays fully visible
+
+While the focus control is visible on the own presence marker in the sticky bottom HUD (below end-turn at the avatar square corner), every client MUST keep the entire focus hit target inside the visible, pointer-reachable chrome of that HUD (not clipped by the panel or its horizontal scrollport).
+
+#### Scenario [SC-PRESENCE-37]: Focus hit under end-turn stays fully visible
+
+- **GIVEN** it is the local seated user’s turn with the focus control visible below end-turn on the own marker
+- **WHEN** the user views the own presence chrome
+- **THEN** the entire focus hit is visible without being clipped by the HUD panel or its horizontal scrollport
+- **AND** the user can activate the focus control
+
 ### Requirement: Say affordance sits above the focus control
 
-On the local seated user’s own presence avatar, when say, focus, and/or end-turn controls are visible together, they MUST sit at distinct clock positions — say at **12** (top-center), focus at **9** (left-center), end-turn at **3** (right-center) — so their hit areas do not overlap. Say remains higher on the avatar than focus. This does not change say whitelist or `game/say` message rules, nor end-turn submission rules.
+On the local seated user’s own presence avatar, when say and/or end-turn are visible, their **hit-centers MUST sit on the marker circumference** at distinct clock positions — say at **12** (top-center), end-turn at **3** (right-center) — so their hit areas do not overlap. Focus, when visible, MUST sit **below end-turn** at the bottom-right corner of the avatar’s bounding square and MUST NOT overlap say or end-turn hits. Say remains above focus on the marker. This does not change say whitelist or `game/say` message rules, nor end-turn submission rules. Hits and glyphs are **36×36** (glyph fills the hit).
 
 #### Scenario [SC-PRESENCE-33]: Say is above focus without overlap
 
 - **GIVEN** it is the local seated user’s multiplayer turn with say available, at least one actionable own tourist (focus visible), and end-turn available
 - **WHEN** the own presence chrome is shown
-- **THEN** the say affordance is at top-center (12), the focus control at left-center (9), and end-turn at right-center (3)
-- **AND** the three circular hit areas do not overlap
+- **THEN** the say affordance hit-center is at top-center (12) and end-turn at right-center (3) on the avatar circumference
+- **AND** the focus control is below end-turn at the bottom-right corner of the avatar’s bounding square
+- **AND** the three hit areas do not overlap

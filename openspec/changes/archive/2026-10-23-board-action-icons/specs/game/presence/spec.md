@@ -8,7 +8,7 @@
 | SC-PRESENCE-30 | modified (focus under end-turn at avatar square corner; 36×36 fills hit) |
 | SC-PRESENCE-33 | modified (say @12 + end-turn @3; focus under end-turn at square corner; no overlap) |
 | SC-PRESENCE-36 | added (peek outcome flash texts/colors; all clients; 10s then restore) |
-| SC-PRESENCE-37 | added (focus under peeks stays fully visible / activatable in HUD) |
+| SC-PRESENCE-37 | added (focus under end-turn stays fully visible / activatable in HUD) |
 
 ## MODIFIED Requirements
 
@@ -104,11 +104,11 @@ When any client in the room receives a peek-close that reports a **correct** res
 - **AND** when a peek instead closes as a wrong submit, both clients show «Ошибка!» in red for about ten seconds
 - **AND** when a peek instead closes because the turn timed out with the modal open, both clients show «Не успел!» in yellow for about ten seconds
 
-### Requirement: Focus under peeks stays fully visible
+### Requirement: Focus under end-turn stays fully visible
 
 While the focus control is visible on the own presence marker in the sticky bottom HUD (below end-turn at the avatar square corner), every client MUST keep the entire focus hit target inside the visible, pointer-reachable chrome of that HUD (not clipped by the panel or its horizontal scrollport).
 
-#### Scenario [SC-PRESENCE-37]: Focus hit under peeks stays fully visible
+#### Scenario [SC-PRESENCE-37]: Focus hit under end-turn stays fully visible
 
 - **GIVEN** it is the local seated user’s turn with the focus control visible below end-turn on the own marker
 - **WHEN** the user views the own presence chrome

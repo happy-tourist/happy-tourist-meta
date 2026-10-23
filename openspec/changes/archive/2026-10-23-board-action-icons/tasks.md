@@ -19,7 +19,7 @@
 ## 4. Client — affordance scale + circumference
 
 - [x] 4.1 Перед работой: `design.md` D5–D6; delta `game/board|move|finish|presence|say`; skills `work-with-game-board` (+ `focus.md`), `work-with-styles/board.md`; сверить CSS say/focus/end-turn / `.board-action-icon` / return / flag в `GamePage`
-- [x] 4.2 Увеличить glyph ~×2 и hit (~48–56 board/strip return, ~56–64 presence) для peek/rescue/push/return/say/focus/end-turn; **flag размер не менять**; presence hit-centers на окружность маркера (say 12 / focus 9 / end-turn 3 на этом шаге); transparent chrome сохранить — verify: Vitest clock/CSS offsets + размерные asserts
+- [x] 4.2 Увеличить glyph/hit (промежуточный ×2; итог после блока 10 — **36×36** glyph-fills-hit) для peek/rescue/push/return/say/focus/end-turn; **flag размер не менять**; presence hit-centers на окружность маркера (say 12 / focus 9 / end-turn 3 на этом шаге; focus@9 снят в 7.3/10.3); transparent chrome сохранить — verify: Vitest clock/CSS offsets + размерные asserts
 - [x] 4.3 Прогнать релевантные client suites + `npm run lint` + `npm run typecheck` — verify: exit 0
 
 ## 5. Client — peek status flash
@@ -32,13 +32,13 @@
 ## 6. Meta — skills notes (scale / flash)
 
 - [x] 6.1 Перед работой: сверка code ↔ `design.md` D5–D9 после блоков 3–5; skills `work-with-game-board` / `board.md` / game-page/shell / `work-with-messages`
-- [x] 6.2 Обновить notes: ×2 sizes, circumference 12/9/3, `peekClose.reason`, header flash 10 с — verify: skills ↔ design ↔ runtime
+- [x] 6.2 Обновить notes: size family, circumference 12/9/3 (focus later relocated), `peekClose.reason`, header flash 10 с — verify: skills ↔ design ↔ runtime
 
 ## 7. Client — clearance + focus under peeks + say-picker
 
 - [x] 7.1 Перед работой: `design.md` D10–D12; delta `game/board` SC-BOARD-13/71, `game/move` push/rescue, `game/finish` return, `game/presence` SC-PRESENCE-30/33/37, `game/say` SC-SAY-15; skills `work-with-game-board` (+ `focus.md`), `work-with-styles/board.md`; сверить affordance CSS, budgets, `.say-picker` в `GamePage`
 - [x] 7.2 Поднять board/strip affordances: якорь верх клетки/слота, `translate(-50%, -100%)` (+ ~8 px gap) — hit целиком над спрайтом (peek/rescue/push/return); flag не трогать — verify: Vitest CSS/transform asserts (SC-BOARD-13/71, SC-MOVE-*, SC-FINISH-13)
-- [x] 7.3 Перенести focus **под peeks** в own budgets; убрать focus с окружности @9; say @12 и end-turn @3 без изменений — verify: Vitest DOM/CSS (SC-PRESENCE-30/33/37)
+- [x] 7.3 Убрать focus с окружности @9; say @12 и end-turn @3 без изменений (итоговое положение focus — под end-turn, блок 10.3) — verify: Vitest DOM/CSS (SC-PRESENCE-30/33/37)
 - [x] 7.4 Сместить `.say-picker` **вправо**, чтобы левый край пресетов не обрезался — verify: Vitest/CSS + SC-SAY-15
 - [x] 7.5 Прогнать релевантные client suites + `npm run lint` + `npm run typecheck` — verify: exit 0
 
@@ -54,9 +54,9 @@
 - [x] 9.1 Перед работой: сверка code ↔ `design.md` D10–D14 после блоков 7–8; skills `work-with-game-board` / `board.md` / `focus.md`
 - [x] 9.2 Обновить notes: clearance над спрайтом; focus under peeks; say-picker вправо; finish travel ~550/300 + deferred race — verify: skills ↔ design ↔ runtime
 
-## 10. Client — crop icons + restore sizes + focus under end-turn
+## 10. Client — crop icons + final size + focus under end-turn
 
 - [x] 10.1 Подрезать `src/assets/board/*.png` по opaque bbox (круглые → квадрат)
-- [x] 10.2 Вернуть размеры: glyph ~18; board/strip hit ~32; presence hit ~36 (снять ×2)
-- [x] 10.3 Focus под end-turn на угол квадрата аватара (`calc(50% + 36px)`); не в budgets
+- [x] 10.2 Финальные размеры: glyph/hit **36×36** (glyph fills hit) для peek/rescue/push/return/say/focus/end-turn; flag без изменений
+- [x] 10.3 Focus под end-turn на угол квадрата аватара (`calc(50% + 36px)`); не в budgets и не @9
 - [x] 10.4 Vitest + delta specs + skills notes — verify: suites exit 0

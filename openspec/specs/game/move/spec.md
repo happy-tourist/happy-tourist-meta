@@ -51,7 +51,7 @@
 | SC-MOVE-39 | covered (server mocha — multi peek while peeks remain; flipped spends) |
 | SC-MOVE-40 | covered (server mocha — solo peeks∞; already-current carries steps) |
 | SC-MOVE-41 | covered (server mocha — solo no end-turn) |
-| SC-MOVE-42 | covered (server mocha) |
+| SC-MOVE-42 | covered (server mocha — timeout + open peek → incorrect KEEP + peekClose timeout reason → «Не успел!» flash) |
 | SC-MOVE-43 | covered (server mocha — move no longer advances turn) |
 | SC-MOVE-44 | covered (server mocha) |
 | SC-MOVE-45 | covered (server mocha — timer time-expired; distinct from step-loss) |
@@ -83,10 +83,10 @@
 | SC-MOVE-71 | covered (server mocha + unit — reject hole / occupied / no steps) |
 | SC-MOVE-72 | covered (server mocha — push does not advance turn) |
 | SC-MOVE-73 | covered (server mocha — auto-end waits for legal push) |
-| SC-MOVE-74 | covered (client UX — push icons centered above targets) |
+| SC-MOVE-74 | covered (client UX — 36×36 push; hit clear of tourist figure) |
 | SC-MOVE-75 | covered (client UX — approach/back + target travel; keep selection) |
 | SC-MOVE-76 | covered (client UX — push onto center: travel then disappear) |
-| SC-MOVE-77 | covered (client UX — rescue affordance centered above trapped) |
+| SC-MOVE-77 | covered (client UX — 36×36 rescue; hit clear of tourist figure) |
 | SC-MOVE-78 | covered (server mocha — medium catapult seed count on task cells) |
 | SC-MOVE-79 | covered (server mocha — catapult+grille may share a cell) |
 | SC-MOVE-80 | covered (server mocha — move onto catapult flings to ring-2 when free) |
@@ -414,16 +414,16 @@ When phase is `playing`, at least two seated players remain eligible to move, an
 
 ### Requirement: Turn timeout forces open peek as incorrect
 
-When a multiplayer 60-second turn deadline elapses, the server SHALL advance the turn as previously specified for timeout among eligible seats. If that seat had an unresolved peek modal open, the server MUST resolve that peek as **incorrect** (no step reward) and MUST NOT remove the peeked task tile (same as «Неправильно» in `game/board`) before or as part of advancing the turn.
+When a multiplayer 60-second turn deadline elapses, or when a solo turn deadline elapses while a peek is open, the server SHALL resolve that open peek as **incorrect** (no step reward) and MUST NOT remove the peeked task tile (same KEEP as a wrong submit in `game/board`) before or as part of advancing / expiring the turn. That peek-close MUST identify the **turn-timeout** reason so every client can show the match-status flash «Не успел!» per `game/presence`. Wrong-submit closes MUST NOT use the timeout reason.
 
 #### Scenario [SC-MOVE-42]: Timeout with open peek is incorrect and keeps the tile
 
-- **GIVEN** it is a multiplayer turn, the current seat has an unresolved peek on a task cell, and the 60-second deadline elapses
+- **GIVEN** it is a seated player’s turn with an unresolved peek modal open
 - **WHEN** the server applies the turn timeout
 - **THEN** that peek is resolved as incorrect with no steps added
-- **AND** that task tile remains present for every client
-- **AND** the peeks budget decreases by 1 in finite mode
-- **AND** the turn advances to the next eligible seat
+- **AND** the peeked task tile is not removed
+- **AND** every client receives a peek-close identifying the timeout reason
+- **AND** every client shows the match-status flash «Не успел!» for about ten seconds
 
 ### Requirement: Solo infinite peeks and finite steps
 
@@ -788,15 +788,18 @@ While it is a seated client’s own turn with steps ≥ 1, that client MAY push 
 
 ### Requirement: Push affordances on targets of the selected pusher
 
-While it is the user’s own turn with steps ≥ 1 and a free unfinished own piece is locally selected, the client MUST show a green push affordance **centered above** each unfinished free piece (own or other) that that selected piece can legally push under the push requirement (same top-center family as strip return). The peek eye affordance MUST remain on the selected own piece when peek is available (centered above that piece per `game/board`). Push affordances MUST NOT appear for trapped targets, when no piece is selected, when it is not the user’s turn, or when steps are 0. Activating a push affordance MUST submit that push. Destination cells for push MUST NOT use red move-target rings; only the affordance initiates push. After a successful push the submitting client MUST keep selection on the pusher. The client MUST present an approach-and-back animation of the pusher toward the target and ordinary piece travel of the target to the destination (visible to the submitting client for approach; travel visible to clients that display the board). When the destination is a center cell and the target finishes, every client that displays the board MUST present the same travel-to-landing then disappear animation as for an ordinary move onto center (`game/finish` / SC-FINISH-01) — the target MUST NOT vanish without traveling to the center cell.
+While it is the user’s own turn with steps ≥ 1 and a free unfinished own piece is locally selected, the client MUST show a push affordance **centered above** each unfinished free piece (own or other) that that selected piece can legally push under the push requirement (same top-center family as strip return). Each push affordance MUST use the **illustrated board-action push icon** and MUST NOT paint a solid colored (including green) circular chrome behind the icon. The illustrated glyph MUST render at **36×36 CSS pixels** for both the illustrated glyph and the hit target (glyph fills the hit). Each push hit MUST sit entirely **above** its target tourist figure (same clearance as peek / strip return — about an 8 CSS-pixel gap above the cell top). The peek affordance MUST remain on the selected own piece when peek is available (illustrated peek icon centered above that piece per `game/board`). Push affordances MUST NOT appear for trapped targets, when no piece is selected, when it is not the user’s turn, or when steps are 0. Activating a push affordance MUST submit that push. Destination cells for push MUST NOT use red move-target rings; only the affordance initiates push. After a successful push the submitting client MUST keep selection on the pusher. The client MUST present an approach-and-back animation of the pusher toward the target and ordinary piece travel of the target to the destination (visible to the submitting client for approach; travel visible to clients that display the board). When the destination is a center cell and the target finishes, every client that displays the board MUST present the same travel-to-landing then disappear animation as for an ordinary move onto center (`game/finish` / SC-FINISH-01) — the target MUST NOT vanish without traveling to the center cell.
 
 #### Scenario [SC-MOVE-74]: Push icons appear over pushable neighbors of the selection
 
 - **GIVEN** it is the user’s turn with steps ≥ 1, one own free piece is selected, and two different free neighbors are each legally pushable through their far-side cells
 - **WHEN** the board renders affordances
-- **THEN** a push affordance is shown centered above each of those two targets
+- **THEN** a push affordance with the illustrated push icon is shown centered above each of those two targets
+- **AND** those affordances use the 36×36 glyph-fills-hit family
+- **AND** those affordance hits do not cover the target tourist figures
+- **AND** those affordances have no solid colored circular chrome behind the icon
 - **AND** no push affordance is shown over the selected pusher for those actions
-- **AND** if a peek is also available for the selected piece, the eye remains centered above the selected piece
+- **AND** if a peek is also available for the selected piece, the peek affordance remains centered above the selected piece
 
 #### Scenario [SC-MOVE-75]: Push click animates and keeps selection
 
@@ -816,13 +819,16 @@ While it is the user’s own turn with steps ≥ 1 and a free unfinished own pie
 
 ### Requirement: Rescue affordance centered above trapped tourist
 
-While it is the user’s own turn with steps ≥ 1 and a legal own rescue exists for a trapped unfinished piece, the client MUST show the green rescue affordance **centered above** that trapped tourist on the board (same top-center family as push / peek / strip return).
+While it is the user’s own turn with steps ≥ 1 and a legal own rescue exists for a trapped unfinished piece, the client MUST show the rescue affordance **centered above** that trapped tourist on the board (same top-center family as push / peek / strip return). The affordance MUST use the **illustrated board-action rescue icon** and MUST NOT paint a solid colored (including green) circular chrome behind the icon. The illustrated glyph MUST render at **36×36 CSS pixels** for both the illustrated glyph and the hit target (glyph fills the hit). The rescue hit MUST sit entirely **above** that trapped tourist figure (same clearance as peek / push).
 
 #### Scenario [SC-MOVE-77]: Rescue icon centered above trapped
 
 - **GIVEN** it is the user’s turn with steps ≥ 1 and a legal own rescue exists
 - **WHEN** the board renders affordances
-- **THEN** a rescue affordance is shown centered above that trapped tourist
+- **THEN** a rescue affordance with the illustrated rescue icon is shown centered above that trapped tourist
+- **AND** the affordance uses the 36×36 glyph-fills-hit family
+- **AND** the affordance hit does not cover that tourist figure
+- **AND** the affordance has no solid colored circular chrome behind the icon
 
 ### Requirement: Solo uses the same grille rules
 
