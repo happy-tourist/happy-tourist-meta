@@ -12,7 +12,7 @@ Store I/O: `work-with-stores/game.md`. Leave/status chrome: [shell.md](shell.md)
   while catapult queue busy — SC-BOARD-29/30); catapult sequential overlays
   (`CATAPULT_ANIM_MS = 1500`, broken 450+450+300, land→overlay→fling, D13,
   `isBoardBusy` — SC-BOARD-23/24/27/32; drop-shadow SC-BOARD-58).
-- Peek/rescue/push/return hits **above** sprite (`translate(-50%,-100%)` + ~8px);
+- Peek/rescue/push/return above sprite then +20px down (`translate(-50%, calc(-100% + 20px))`);
   **top** presence row (seated reserves height — SC-PRESENCE-26); sticky bottom
   `.game-hud` only when seated (strip row / HUD ≤~420 → 2×2; **no** chip/`q-menu`).
 - Return → illustrated `return.png` when `canReturn` (no confirm modal; no green circle);
