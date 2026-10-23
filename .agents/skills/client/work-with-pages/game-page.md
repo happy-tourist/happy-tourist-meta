@@ -12,17 +12,18 @@ Store I/O: `work-with-stores/game.md`. Leave/status chrome: [shell.md](shell.md)
   while catapult queue busy — SC-BOARD-29/30); catapult sequential overlays
   (`CATAPULT_ANIM_MS = 1500`, broken 450+450+300, land→overlay→fling, D13,
   `isBoardBusy` — SC-BOARD-23/24/27/32; drop-shadow SC-BOARD-58).
-- Rescue / push affordances **top-center**; **top** presence row (seated reserves
-  height — SC-PRESENCE-26); sticky bottom `.game-hud` only when seated (strip row /
-  HUD ≤~420 → 2×2; **no** chip/`q-menu`).
+- Peek/rescue/push/return hits **above** sprite (`translate(-50%,-100%)` + ~8px);
+  **top** presence row (seated reserves height — SC-PRESENCE-26); sticky bottom
+  `.game-hud` only when seated (strip row / HUD ≤~420 → 2×2; **no** chip/`q-menu`).
 - Return → illustrated `return.png` when `canReturn` (no confirm modal; no green circle);
-  finish cells per-cell click/outline (SC-MOVE-65); peek illustrated icon top-center +
-  shared Q&A (dots+word badge, portrait slots, `.peek-answer-mini` pool; testid
-  `peek-answer-chip` on pool cards; same answer MAY fill multiple slots; no used-state
-  chrome — SC-BOARD-49/50…54; peeks=0 finite: hide peek affordance on flipped too;
-  details `work-with-game-board/peek.md`); presence clock **12/9/3** hit-centers on
-  marker circumference (glyph ~36 / presence hit ~56–64; board/strip hit ~48–56;
-  flag unchanged); budgets beside avatar; say top↓ / own↑.
+  finish travel ~**550** / fade ~**300** (`FINISH_TRAVEL_MS` / `FINISH_FADE_MS`);
+  finish cells per-cell click/outline (SC-MOVE-65); peek illustrated icon + shared Q&A
+  (dots+word badge, portrait slots, `.peek-answer-mini` pool; testid `peek-answer-chip`
+  on pool cards; same answer MAY fill multiple slots; no used-state chrome —
+  SC-BOARD-49/50…54; peeks=0 finite: hide peek affordance on flipped too; details
+  `work-with-game-board/peek.md`); presence clock say **12** / end-turn **3** (glyph ~36 /
+  presence hit ~56–64; board/strip hit ~48–56; flag unchanged); focus **under peeks** in
+  budgets; say-picker shifted right; budgets beside avatar; say top↓ / own↑.
 - Sync via `useGameStore()`; `rejoinGame(roomId)` on mount / soft-fail.
 - Solo end copy (timer vs steps): watch own `timeExpired` → `inferSoloEndModalKind` from
   `src/lib/soloEndModalKind.ts` (legal peek = free unfinished on present `*`; **!trapped** —

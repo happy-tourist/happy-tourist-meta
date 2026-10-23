@@ -86,11 +86,14 @@ when testing type-badge / my-moderation map rows).
 Game board geometry/skins: `src/lib/__tests__/boardGeometry.test.ts` (one center
 tile per finish cell SC-BOARD-55) + `GameBoardWire.test.ts` (skin CSS vars /
 radius 0 / dark flip digit SC-BOARD-56/57 + per-cell finish click SC-MOVE-65 +
-catapult timings 1500/450/300 + overlay `drop-shadow` SC-BOARD-23/24/58) +
-`GamePresenceFocus.test.ts` (presence clock say **12** / focus **9** / end-turn **3** —
-hit-centers on marker circumference `translate(-50%,-50%)`; glyph ~36 / hit ~60;
+catapult timings 1500/450/300 + overlay `drop-shadow` SC-BOARD-23/24/58 +
+`FINISH_TRAVEL_MS=550` / `FINISH_FADE_MS=300` + clearance
+`translate(-50%,-100%)` ~8px above sprites SC-FINISH-01/17/19/20 / SC-BOARD-71) +
+`GamePresenceFocus.test.ts` (say **12** / end-turn **3** on marker circumference
+`translate(-50%,-50%)`; focus **under peeks** in budgets — not @9; say-picker
+`transform: none` / left edge visible SC-SAY-15; glyph ~36 / hit ~60;
 illustrated `img.board-action-icon` — not Material `q-icon`; CSS + hit boxes —
-SC-PRESENCE-14/30/33 / SC-SAY-07; not DOM-order alone) + `GameBoardWire` board-action
+SC-PRESENCE-14/30/33/37 / SC-SAY-07; not DOM-order alone) + `GameBoardWire` board-action
 asset imports under `src/assets/board/` + transparent affordance chrome + ×2 glyph/hit
 (~36 / ~52 board+return; flag ~18 unchanged) +
 `src/stores/__tests__/game.peekStatusFlash.test.ts` (`peekClose` → `peekStatusFlash`
