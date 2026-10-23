@@ -34,7 +34,7 @@ Read the matching file in this folder when the change involves that area
 
 | Topic | File |
 |-------|------|
-| Quasar Dark + GET/POST `/api/theme` + header toggle + shell `.app-page-bg` (SC-BRAND-21) + catalog chrome tokens / theme wordmarks 60px + toolbar 64 (SC-BRAND-25/26/29/30) | [theme.md](theme.md) |
+| Quasar Dark + GET/POST `/api/theme` + header toggle + shell `.app-page-bg` (SC-BRAND-21) + catalog chrome tokens / theme wordmarks 28px + toolbar 40 (SC-BRAND-25/26/29/30) | [theme.md](theme.md) |
 | Tourist board / presence / HUD / say CSS on GamePage | [board.md](board.md) |
 | Cascade yellow + `.pack-card-grid` underlay (SC-PACK-285) / `.peek-chrome` + portrait `PackAnswerCardTile` SC-PACK-282/283 + portrait `PackTaskTile` + catalog/list + `PackTaskSetCardTile` + map tiles + lobby `LobbyRoomCardTile` + peek/compose mini-card pool SC-PACK-260/277…281 (SC-MAP-68 mask `url`) | [pack-cards.md](pack-cards.md) |
 
@@ -43,7 +43,7 @@ Read the matching file in this folder when the change involves that area
 | Layer | Role | Location |
 |-------|------|----------|
 | Quasar Dark (runtime) | Chrome light / dark / device `auto` | See [theme.md](theme.md) |
-| Brand logo / breadcrumbs CSS | Theme wordmarks `logo-light`/`logo-dark` height 60px, toolbar min-height 64 (SC-BRAND-29/30); `.app-breadcrumbs` inside `q-page-container`; header/crumb/catalog-list tokens in `app.scss` | `App.vue` scoped + [theme.md](theme.md) / [shell.md](../work-with-pages/shell.md) |
+| Brand logo / breadcrumbs CSS | Theme wordmarks `logo-light`/`logo-dark` height 28px, toolbar min-height 40 (SC-BRAND-29/30); `.app-breadcrumbs` inside `q-page-container`; header/crumb/catalog-list tokens in `app.scss` | `App.vue` scoped + [theme.md](theme.md) / [shell.md](../work-with-pages/shell.md) |
 | Quasar theme Sass variables | `$primary`, `$negative`, … | `src/css/quasar.variables.scss` |
 | Global app CSS | `.text-muted`, `.app-page-bg`, catalog chrome `.catalog-list-*`, `.pack-card-grid` (+ underlay / catalog cream) | `src/css/app.scss` |
 | Page / component CSS | Board, login card, tiles | `<style scoped>` / topic files |

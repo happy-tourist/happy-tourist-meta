@@ -4,7 +4,7 @@ description: >-
   Use when creating or changing Vue page views under src/pages/*Page.vue, routes in
   src/router/routes.ts, router guards, or App.vue shell wiring in the happy-tourist
   Quasar Vue 3 client. Core in SKILL.md; topics: shell.md (brand/crumbs/leave +
-  app-page-bg SC-BRAND-21 + wordmarks 60px SC-BRAND-29/30 + icon-only SC-BRAND-31
+  app-page-bg SC-BRAND-21 + wordmarks 28px SC-BRAND-29/30 + icon-only SC-BRAND-31
   + catalog chrome SC-BRAND-25), content-pages.md (packs/maps; portrait tiles +
   compose + draft lifecycle), game-page.md (GamePage + peek pool). Pack/map
   stores → work-with-stores; board → work-with-game-board.
@@ -25,7 +25,7 @@ Read the matching file in this folder when the change involves that area
 
 | Topic | File |
 |-------|------|
-| App shell — theme wordmarks 60px / toolbar 64 (SC-BRAND-29/30), icon-only session/leave (SC-BRAND-31), section nav, breadcrumbs, Game leave/status, theme banner, `app-page-bg` (SC-BRAND-21) | [shell.md](shell.md) |
+| App shell — theme wordmarks 28px / toolbar 40 (SC-BRAND-29/30), icon-only session/leave (SC-BRAND-31), section nav, breadcrumbs, Game leave/status, theme banner, `app-page-bg` (SC-BRAND-21) | [shell.md](shell.md) |
 | Content packs + maps pages / routes / list-card UI + answer/task compose dialogs | [content-pages.md](content-pages.md) |
 | GamePage composition + route (board details → `work-with-game-board`) | [game-page.md](game-page.md) |
 

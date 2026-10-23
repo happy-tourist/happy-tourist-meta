@@ -80,7 +80,7 @@ server: C:/Users/You/work/happy-tourist-server
 | `client.pages` | `../happy-tourist.github.io/src/pages/` | route pages (Login/Lobby/Support/Content*/Maps*/Admin/Game) |
 | `client.stores` | `../happy-tourist.github.io/src/stores/` | Pinia (`auth`, `theme`, `game`, `support`, `content`, `maps`) |
 | `client.lib` | `../happy-tourist.github.io/src/lib/` | Pure client helpers (`passwordPolicy`, `passwordStrength`; colocated `__tests__`) |
-| `client.assets` | `../happy-tourist.github.io/src/assets/` | Static assets (`brand/logo-light.png` + `brand/logo-dark.png` theme-aware header wordmarks height 60px / toolbar min-height 64; **no** `logo.png` mascot; `tourists/tourist{1–4}.png` pieces; `grilles/grille.png` holding overlay; `catapults/catapult.png` + `catapult-broken.png` reveal) |
+| `client.assets` | `../happy-tourist.github.io/src/assets/` | Static assets (`brand/logo-light.png` + `brand/logo-dark.png` theme-aware header wordmarks height 28px / toolbar min-height 40; **no** `logo.png` mascot; `tourists/tourist{1–4}.png` pieces; `grilles/grille.png` holding overlay; `catapults/catapult.png` + `catapult-broken.png` reveal) |
 | `client.boot` | `../happy-tourist.github.io/src/boot/` | Quasar boot (`theme`, `colyseus`, `i18n`) |
 | `client.tests` | `../happy-tourist.github.io/test/` | Vitest setup (`setup.ts`); config at `{client}/vitest.config.ts`; unit specs often under `src/**/__tests__/` |
 | `server` | `../happy-tourist-server/` | Colyseus backend |

@@ -272,7 +272,7 @@ Apply always; sibling skills win when they exist and conflict on a detail.
   hints when `isMyTurn` and eligible; travel + return-from-nearest-center
   animation; finish click per-cell (SC-BOARD-55 / SC-MOVE-65, no nearest remap /
   no finish `span`); submit only via `game.sendMove`.
-  Brand logo (always-button theme wordmarks 60px / toolbar 64 SC-BRAND-29/30; no separate DOM text label SC-BRAND-25; no decorative/bare-`img` swap; no `brand/logo.png`) + match status in App header; Game leave via logo + icon-only `header-game-leave` (aria `game.leave`); auth/other → lobby, lobby noop (not Material `logout` leave, not page-local «В лобби»).
+  Brand logo (always-button theme wordmarks 28px / toolbar 40 SC-BRAND-29/30; no separate DOM text label SC-BRAND-25; no decorative/bare-`img` swap; no `brand/logo.png`) + match status in App header; Game leave via logo + icon-only `header-game-leave` (aria `game.leave`); auth/other → lobby, lobby noop (not Material `logout` leave, not page-local «В лобби»).
   Return: confirm modal → same red `.tile--target` as move; `GRILLE_ANIM_MS = 1000`
   on board + strip chrome.
 - Mirror `currentTurnSessionId` / `turnUntil` / `turnBudgetSeconds` / seat `timeExpired`;

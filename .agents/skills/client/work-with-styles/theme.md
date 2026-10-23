@@ -18,7 +18,7 @@ to auto in v1).
 | Auth wiring | `App.vue`: `watch([() => auth.ready, () => auth.user?.id, () => auth.user?.anonymous], …)` — stable multi-source (not `() => […]` which allocates a new array each run); not on `user.theme` → `theme.syncFromAuthUser` | do not call HTTP from page templates |
 | Board | Unchanged — tourist tile fills are **fixed colors**, not app Dark mode | `GamePage.vue` scoped CSS (`.tourist-board` / `.tile-*`) |
 | Shell page bg (SC-BRAND-21) | Fixed cover on `App.vue` `q-layout.app-page-bg`; asset = theme (`body.body--dark`) × viewport (`max-width: 599px` = mobile); four JPGs under `src/assets/packs/`; transparent Quasar page canvas under the art | `src/css/app.scss` `.app-page-bg` |
-| Catalog chrome tokens (SC-BRAND-25) | Soft blue/navy header + muted crumb ink + catalog list title/create band — **Quasar Dark only** (no second theme engine). Header mark = theme wordmarks `logo-light.png` / `logo-dark.png` via `$q.dark.isActive` (SC-BRAND-29); height **60px**, toolbar min-height **64px**, control pad 2px (SC-BRAND-10/30); **no** separate DOM text label beside the mark (SC-BRAND-25; typographic PNG OK) | `src/css/app.scss` (`.app-page-bg > .q-header`, `.app-breadcrumbs`, `.catalog-list-*`); logo height / toolbar min-height in `App.vue` scoped |
+| Catalog chrome tokens (SC-BRAND-25) | Soft blue/navy header + muted crumb ink + catalog list title/create band — **Quasar Dark only** (no second theme engine). Header mark = theme wordmarks `logo-light.png` / `logo-dark.png` via `$q.dark.isActive` (SC-BRAND-29); height **28px**, toolbar min-height **40px**, control pad 2px (SC-BRAND-10/30); **no** separate DOM text label beside the mark (SC-BRAND-25; typographic PNG OK) | `src/css/app.scss` (`.app-page-bg > .q-header`, `.app-breadcrumbs`, `.catalog-list-*`); logo height / toolbar min-height in `App.vue` scoped |
 | Crumbs flex (SC-BRAND-23 / D7) | When breadcrumbs show, `q-page-container--with-crumbs`: flex column + `min-height: 100vh`; child `.q-page` `min-height: 0 !important` so Quasar viewport−header min-height does not stack under crumbs (phantom scroll on short packs/maps). Lobby (no crumbs) keeps Quasar defaults. Prefer flex/min-height — **not** `overflow: hidden` on `body` | `App.vue` class bind + `src/css/app.scss` |
 | Board holes (SC-THEME-07) | Removed cells stay transparent — atmospheric shell art is the page background after SC-BRAND-21 | `GamePage.vue` `.tile--removed` |
 
@@ -34,7 +34,7 @@ Shared classes in `app.scss` (packs + maps list pages):
 | create CTA | Lobby Quasar primary (`color="primary" icon="add"`) — **no** `unelevated` / custom `.catalog-list-create` sizing (SC-BRAND-27 / D9) |
 | `.catalog-list-filters` | Registered filter row spacing (hidden entirely for guest — SC-PACK-286 / SC-MAP-69) |
 
-Header under `.app-page-bg`: light `#d6eafb` / ink `#1c2e44`; dark `#172236` / `#a8c0d0`; toolbar / header content `min-height` **64px** (logo 60 + 2+2 inset — SC-BRAND-30). Crumb strip: muted blue ink (`#5a8fb8` / dark `#8aa4bc`), pad ~8/4, ~13px — size/color in `app.scss`, not only `App.vue` scoped.
+Header under `.app-page-bg`: light `#d6eafb` / ink `#1c2e44`; dark `#172236` / `#a8c0d0`; toolbar / header content `min-height` **40px** (logo 28 + inset — SC-BRAND-30). Crumb strip: muted blue ink (`#5a8fb8` / dark `#8aa4bc`), pad ~8/4, ~13px — size/color in `app.scss`, not only `App.vue` scoped.
 
 `AuthUser` may include optional `theme?: string | null` from userdata (login /
 display); restore after reload must use **GET** `/api/theme`, not JWT claims

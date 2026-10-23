@@ -7,11 +7,11 @@ Related unchanged: navigation/noop/leave modes of the brand control (`game/leave
 | Scenario ID | Coverage |
 |-------------|----------|
 | SC-BRAND-29 | covered (`AppHeaderChrome` — theme toggles `logo-light`/`logo-dark`; no `logo.png`) |
-| SC-BRAND-30 | covered (`AppHeaderChrome` — `.brand-logo` height 60px; toolbar min-height 64) |
+| SC-BRAND-30 | covered (`AppHeaderChrome` — `.brand-logo` height 28px; toolbar min-height 40) |
 | SC-BRAND-31 | covered (`AppHeaderChrome` — toolbar login/logout icon-only + aria) |
 | SC-BRAND-32 | covered (`AccountLogout` — Account session logout icon-only + aria) |
 | SC-BRAND-08 | unchanged — Quasar scaffold assets (not the product mascot/`logo.png`) |
-| SC-BRAND-10 | MODIFIED — ≥60px AND nearly fills header content band |
+| SC-BRAND-10 | MODIFIED — 28px with inset in header content band |
 | SC-BRAND-13 | strengthen — logout remains rightmost; visible label removed (SC-BRAND-31) |
 | SC-BRAND-22 | strengthen — guest login MUST be icon-only in wide toolbar |
 | SC-BRAND-25 | MODIFIED — no separate DOM wordmark label; typographic PNG mark allowed |
@@ -32,14 +32,14 @@ The shared application header MUST show the Happy Tourist brand logo on the **le
 
 ### Requirement: Logo height
 
-The brand logo image in the shared header MUST nearly fill the vertical content band of the shared header (small top/bottom inset only), preserving aspect ratio (`object-fit` contain / equivalent). The rendered height MUST be at least 60 CSS pixels. The shared header MAY grow taller than the default Quasar toolbar height to accommodate the logo.
+The brand logo image in the shared header MUST be 28 CSS pixels tall, preserving aspect ratio (`object-fit` contain / equivalent), with clear top/bottom inset inside a shared header content band of about 40 CSS pixels min-height. The shared header MUST NOT keep the previous 60px mark / 64px toolbar sizing.
 
-#### Scenario [SC-BRAND-10]: Logo at least 60px tall
+#### Scenario [SC-BRAND-10]: Logo 28px tall
 
 - **GIVEN** the shared application header with the brand logo is shown
 - **WHEN** the logo image size is observed
-- **THEN** the logo is rendered at least 60 CSS pixels tall
-- **AND** its height nearly fills the header content band (only a small vertical inset remains)
+- **THEN** the logo is rendered 28 CSS pixels tall
+- **AND** the header content band is about 40 CSS pixels min-height (inset remains around the mark)
 - **AND** its aspect ratio is preserved
 
 ### Requirement: Catalog list pages use hero title chrome

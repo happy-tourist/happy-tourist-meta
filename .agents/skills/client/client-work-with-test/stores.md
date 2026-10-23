@@ -109,7 +109,7 @@ source-match (fixed cover, four `pack-bg-*.jpg` urls, `@media` 599px /
 `body.body--dark`, transparent canvas) + assets exist under `src/assets/packs/`;
 **SC-BRAND-25/29/30** brand logo is theme wordmark PNG only (no separate
 DOM «СЧАСТЛИВЫЙ ТУРИСТ» text); `logo-light`/`logo-dark` via `$q.dark.isActive`;
-height **60px** + toolbar min-height **64** in `App.vue`;
+height **28px** + toolbar min-height **40** in `App.vue`;
 **SC-BRAND-31 / SC-LEAVE-13** toolbar `header-login` / `header-logout` /
 `header-game-leave` icon-only + aria (`auth.login` / `auth.logout` /
 `game.leave`) — no visible `:label`;

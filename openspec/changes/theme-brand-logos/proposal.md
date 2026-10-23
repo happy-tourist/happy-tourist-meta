@@ -39,7 +39,7 @@
 ## Impact
 
 - Client UI chrome и brand assets; unit-тесты header chrome / leave.
-- Meta: синхронизация client skills / AGENTS / `docs/projects-map.md` `client.assets` (logo paths, 60px, icon-only) — см. `tasks.md` §5.
+- Meta: синхронизация client skills / AGENTS / `docs/projects-map.md` `client.assets` (logo paths, 28px, icon-only) — см. `tasks.md` §5.
 - Контракт client↔server не меняется.
 - Breaking для визуала: header mark и подписи у auth/leave кнопок.
 
