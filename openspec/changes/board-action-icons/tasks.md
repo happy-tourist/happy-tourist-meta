@@ -53,3 +53,10 @@
 
 - [x] 9.1 Перед работой: сверка code ↔ `design.md` D10–D14 после блоков 7–8; skills `work-with-game-board` / `board.md` / `focus.md`
 - [x] 9.2 Обновить notes: clearance над спрайтом; focus under peeks; say-picker вправо; finish travel ~550/300 + deferred race — verify: skills ↔ design ↔ runtime
+
+## 10. Client — crop icons + restore sizes + focus under end-turn
+
+- [x] 10.1 Подрезать `src/assets/board/*.png` по opaque bbox (круглые → квадрат)
+- [x] 10.2 Вернуть размеры: glyph ~18; board/strip hit ~32; presence hit ~36 (снять ×2)
+- [x] 10.3 Focus под end-turn на угол квадрата аватара (`calc(50% + 36px)`); не в budgets
+- [x] 10.4 Vitest + delta specs + skills notes — verify: suites exit 0

@@ -2,7 +2,7 @@
 
 | Scenario ID | Coverage |
 |-------------|----------|
-| SC-BOARD-13 | modified (~2× peek; hit entirely above tourist sprite — no figure overlap) |
+| SC-BOARD-13 | modified (pre-scale peek; hit entirely above tourist sprite — no figure overlap) |
 | SC-BOARD-14 | modified (same clearance family after keep-focus) |
 | SC-BOARD-43 | modified (correct close → room-wide header flash «Правильно!» via presence; KEEP/remove rules unchanged) |
 | SC-BOARD-44 | modified (wrong submit → room-wide header flash «Ошибка!»; KEEP bind unchanged) |
@@ -13,14 +13,14 @@
 
 ### Requirement: Eye affordance to open a peek
 
-While it is the user’s multiplayer or solo turn and a peek is currently allowed for one of their unfinished pieces on a still-present task cell, activating that piece MUST offer a peek affordance to open the peek modal. The peek affordance MUST use the **illustrated board-action peek icon** (not a Material eye glyph) and MUST be shown **centered above** that tourist on the board (same top-center family as strip return and board rescue/push affordances). The affordance hit MUST sit entirely **above** the tourist figure (bottom of the hit clear of the sprite — about an 8 CSS-pixel gap above the cell top is the product default) so the button MUST NOT cover the tourist’s head or body. The affordance MUST NOT paint a solid colored circular chrome behind the icon (no solid fill and no medallion-like shadow). The illustrated glyph MUST render at about **twice** the prior board-action glyph size (product sense ~36 CSS pixels), and the hit target MUST be enlarged in the same family (~48–56 CSS pixels) while remaining touchable. When local selection is already kept on such a piece after a move (`game/move` keep-focus), the peek affordance MUST appear without requiring another activation click. Clients that are not allowed to peek MUST NOT show that affordance as a way to open a peek. A removed-task hole under the piece MUST NOT offer the peek affordance.
+While it is the user’s multiplayer or solo turn and a peek is currently allowed for one of their unfinished pieces on a still-present task cell, activating that piece MUST offer a peek affordance to open the peek modal. The peek affordance MUST use the **illustrated board-action peek icon** (not a Material eye glyph) and MUST be shown **centered above** that tourist on the board (same top-center family as strip return and board rescue/push affordances). The affordance hit MUST sit entirely **above** the tourist figure (bottom of the hit clear of the sprite — about an 8 CSS-pixel gap above the cell top is the product default) so the button MUST NOT cover the tourist’s head or body. The affordance MUST NOT paint a solid colored circular chrome behind the icon (no solid fill and no medallion-like shadow). The illustrated glyph MUST render at about **18 CSS pixels** (pre-scale family), and the hit target MUST be about **32 CSS pixels** while remaining touchable. When local selection is already kept on such a piece after a move (`game/move` keep-focus), the peek affordance MUST appear without requiring another activation click. Clients that are not allowed to peek MUST NOT show that affordance as a way to open a peek. A removed-task hole under the piece MUST NOT offer the peek affordance.
 
 #### Scenario [SC-BOARD-13]: Current player sees eye on a peekable tourist
 
 - **GIVEN** it is the user’s turn with an allowed peek and an own unfinished piece on a still-present task cell
 - **WHEN** the user activates that piece
 - **THEN** a peek affordance with the illustrated peek icon is available centered above that tourist to open the peek
-- **AND** the icon glyph is about twice the prior board-action glyph size and the hit target is enlarged accordingly
+- **AND** the icon glyph is about 18 CSS pixels with a ~32 CSS-pixel hit
 - **AND** the affordance hit does not cover the tourist figure
 - **AND** the affordance has no solid colored circular chrome behind the icon
 - **AND** other clients do not gain that peek affordance for the user’s piece
@@ -29,7 +29,7 @@ While it is the user’s multiplayer or solo turn and a peek is currently allowe
 
 - **GIVEN** it is the user’s turn with peeks remaining (or solo infinite peeks) and after a successful move the same unfinished piece remains selected on a still-present task cell
 - **WHEN** the move animation finishes and interaction returns
-- **THEN** the peek affordance (illustrated peek icon, enlarged ~2× family, clear of the sprite) is available on that piece without requiring another selection click
+- **THEN** the peek affordance (illustrated peek icon, pre-scale (~18 / ~32) family, clear of the sprite) is available on that piece without requiring another selection click
 - **AND** if the cell under the piece is a removed-task hole or not a task cell, the peek affordance is not shown for that piece
 
 ### Requirement: Shared peek modal with question and answer slots
