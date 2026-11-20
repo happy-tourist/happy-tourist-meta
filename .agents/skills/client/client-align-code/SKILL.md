@@ -379,6 +379,17 @@ Typical regression patterns to flag:
 
 Report as `regression` or `defect` when old call sites deterministically stop receiving the intended class, listener, or prop. Mention approximate caller count when grep proves it.
 
+### Provide / inject wiring
+
+When a changed hunk touches `provide` / `inject` (or removes a provider while inject sites remain), treat the injection key as a public cross-tree contract:
+
+1. **Key stability** — same Symbol/string key on both sides; renamed key without migrating injectors is a regression.
+2. **Provider still mounted** — inject consumers under a tree that still provides (App shell, page, layout); do not leave “unused provide” that was the only source for a child.
+3. **Default / optional inject** — optional inject with fallback vs required inject that now returns `undefined`.
+4. **Grep injectors** — untouched `inject(…)` after provider removal/rename is strong evidence.
+
+Typical patterns: false “unused provide” cleanup that breaks nested HUD/modals; provide moved to a sibling branch injectors do not see.
+
 ### Pinia, Colyseus protocol, and route meta wiring
 
 This SPA wires cross-tree contracts through Pinia stores, the Colyseus client/room protocol, and router meta. Treat them as public API of the same risk class as props.
@@ -470,6 +481,9 @@ Write in Russian.
 
 ## Изменившиеся props / emits / слоты и публичный контракт
 - [regression|defect] <old prop/event/slot → new path; DOM; call sites>
+
+## Provide / inject
+- [regression|defect] <key / provider tree / inject sites; before/after>
 
 ## Pinia / Colyseus / маршруты
 - [regression|defect] <action|getter|message|state field|route meta; before/after; consumers; why broken>

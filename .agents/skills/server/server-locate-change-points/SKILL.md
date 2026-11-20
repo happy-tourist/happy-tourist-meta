@@ -57,7 +57,7 @@ The sibling client assumes a tourist contract; prefer aligning server to client 
 | Room create snapshot | `src/lib/roomContentSnapshot.ts` — map+pack load in `MyRoom.onCreate` |
 | Tourist create fixture | `src/lib/touristCreateFixtureState.ts` — mocha fixture cache (cleared via `clearContentTablesForTests`) |
 | Listing metadata | `MyRoom.refreshMetadata` — `taskSetLabels[+taskCount]` create-time counts (SC-LOBBY-32); multi-set mocha helper `seedExtraTaskSetOnFixturePackForTests` in `roomContentSnapshot.ts` |
-| Turn timer | 60s multi → auto-pass; solo 300s → `timeExpired`; `setTurnBudgetsForTests` in mocha; clear on dispose |
+| Turn timer | 60s multi → auto-pass; solo **60s** → `timeExpired` (timer only; no steps-exhaustion); `setTurnBudgetsForTests` in mocha; clear on dispose |
 | Lobby `GET /rooms/tourist` | Available (HTTP fallback; UI uses live LobbyRoom) |
 
 ### HTTP surface (today)
@@ -196,14 +196,19 @@ Use these rules to pick the layer before naming files.
 
 ## Output Format
 
-Respond in this structure (Russian headings):
+Respond in Russian when the user writes in Russian. Prefer compact plan (one line per file):
 
 ```markdown
-## Где править
-- `path/to/file.ts` — why this file is relevant and what kind of change is expected.
+## План изменений
 
-## Где добавить
-- `path/to/NewFile.ts` — why a new file belongs here.
+### Добавить
+- `src/.../New.ts` — что за файл и зачем. (confirmed|likely)
+
+### Изменить
+- `src/.../Existing.ts` — что меняется. (confirmed|likely)
+
+### Удалить
+- `src/.../Old.ts` — почему. (confirmed|likely)
 
 ## Связанные места
 - `path/to/related-file.ts` — why it should be checked during implementation.
@@ -216,4 +221,4 @@ Omit empty sections. Keep each bullet specific and actionable. Prefer paths unde
 
 ## Confidence
 
-Prefer saying "likely" when the location is inferred from naming or nearby patterns. Say "confirmed" only when the inspected code directly proves the relationship.
+Say **likely** when the location is inferred from naming or nearby patterns. Say **confirmed** only when the inspected code directly proves the need. Put the tag at the end of the bullet.

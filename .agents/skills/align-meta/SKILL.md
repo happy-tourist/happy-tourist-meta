@@ -5,10 +5,10 @@ description: >-
   OpenSpec, skills, AGENTS, projects-map, kilo) for quality of created/changed
   meta artifacts: contradictions inside the change, gaps vs pasted AC/OpenSpec
   intent, broken cross-refs, capability/naming, index drift, extras. Reports
-  three tiers (hard / warnings / recommendations). Finding card: file + lines +
-  issue + fix. Does not judge sibling implementability (see
-  align-implementability-back / align-implementability-front). Does not edit
-  files.
+  three tiers (hard / warnings / recommendations). Finding card: Что не так /
+  Предлагаю / Ревью (файл + одна строка-якорь + paste-ready сообщение).
+  Does not judge sibling implementability (see align-implementability-back /
+  align-implementability-front). Does not edit files.
 ---
 
 # Align Meta
@@ -19,7 +19,7 @@ Output **one scope** with **three tiers** (hard → warnings → recommendations
 
 1. **Created / changed meta files** — contradictions, gaps, extras, broken links, naming/index defects inside the branch artifacts.
 
-Every finding is a **card**: file link + line numbers + what is wrong + fix proposal (or «неясно как делать»).
+Every finding is a **review card** (**Что не так** / **Предлагаю** / **Ревью** with paste-ready `сообщение`). Keep the align-meta **tier** (hard / warning / recommendation) as a label on the card.
 
 For realizability vs sibling code/contracts, use **`align-implementability-back`** and/or **`align-implementability-front`** (can run after or separately).
 
@@ -40,7 +40,7 @@ Do **not** score sibling implementability (`FEASIBLE` / `Код проекта`)
 
 ## Hard Boundary
 
-Do not edit, create, delete, format, or commit files. Do not apply fixes from align mode. Deliver the complete result in chat.
+Do not edit, create, delete, format, or commit files — except when called from [`review-change`](../review-change/SKILL.md) (override: after report, apply meta fixes) or the user **explicitly** asks to change named meta files / this skill. Do not apply fixes from standalone align mode. Deliver the complete result in chat.
 
 ## Input And Store
 
@@ -180,7 +180,7 @@ When the diff touches skills or indexes:
 
 1. New skill has `name` + `description` (when to use); listed in `.agents/AGENTS.md` if it is a discoverable project skill; root `AGENTS.md` discovery line updated when appropriate;
 2. Renames/deletes update all meta references and kilo nested paths if applicable;
-3. Skill must not instruct editing from align/verify read-only modes unless that is its purpose (orchestrators like `implement-change` / `align-change` may override for subagents);
+3. Skill must not instruct editing from align/verify read-only modes unless that is its purpose (orchestrators like `implement-change` / `review-change` may override for subagents);
 4. Client skills remain under `.agents/skills/client/`; server-wide under `.agents/skills/server/`.
 
 ## Severity
@@ -204,25 +204,58 @@ Examples:
 
 ## Finding card (обязательный формат)
 
-Каждое замечание — отдельная карточка. **Не** писать замечание без файла и строк (кроме случая «файл отсутствует» — тогда указать ожидаемый путь и `L—`).
+Формат как в `brief-client-scope` (карточки ревью). Каждое замечание — отдельная карточка. **Не** писать замечание без файла и строки-якоря (кроме «файл отсутствует» — ожидаемый путь и `строки: —`).
+
+В чате перед карточкой можно кратко показать цитаты источников (с **bold** на спорном фрагменте). В **сообщение** ревью цитаты обязательны.
 
 ```markdown
 ### <N>. <короткий заголовок>
 - Метка: `[missing|docs-only|meta-only|extra|defect|regression|warning|recommendation]`
-- Файл: [`path/from/repo/root.ext`](path/from/repo/root.ext) — **L12–L18** (или **L12, L45**)
-- Связанные (если нужно): [`other.md`](other.md) — **L3–L5**
-- Что не так: <факт: что написано сейчас / чего нет / чему противоречит>
-- Предложение: <конкретная правка текста/контракта/индекса>  
-  **или** Неясно как делать: <что нужно решить; варианты A/B без выбора канона>
+- **Что не так:** <факт: что написано сейчас / чего нет / чему противоречит>
+- **Предлагаю:** <конкретная правка текста/контракта/индекса>  
+  **или** Неясно как делать: <варианты A/B без выбора канона постановки>
+- **Ревью**
+  - файл: `path/from/repo/root.ext`   # относительный путь текстом, без markdown-ссылки
+  - строки: Lnn                       # РОВНО ОДИН якорь (одна строка или один непрерывный фрагмент Lstart–Lend)
+  - сообщение: <paste-ready текст без markdown-ссылок>
 ```
 
-Правила ссылок и строк:
+**Правила якоря (`файл` + `строки`):**
 
-1. Путь — от корня `happy-tourist-meta`, кликабельный markdown-link.
-2. Номера строк — по актуальному содержимому файла на диске; диапазон `Lstart–Lend` или список `L12, L45`.
-3. Если затронуты несколько мест одного противоречия — перечислить все файлы/строки в одной карточке.
-4. Предложение должно быть actionable (что заменить/добавить/удалить), не «разобраться».
-5. Если канон не выбран — писать **Неясно как делать** и дать 2 коротких варианта, не маскировать под hard «исправить так».
+- Комментарий ревью вешают на **одно** место — один файл и одна строка (или один непрерывный фрагмент `Lstart–Lend`). Не писать «L88 и L153» как якорь.
+- Якорь = место, которое **правят**, или главный конфликт. Остальные места — внутри `сообщение`.
+- Путь — от корня `happy-tourist-meta`, plain-text в backticks (не markdown-link в блоке **Ревью**).
+- Номера строк — по актуальному содержимому файла на диске.
+
+**Правила `сообщение` (обязательно):**
+
+- Самодостаточно и **коротко**: цитата «здесь» + (если нужно) цитата из другого файла + **одна фраза** сути + предложение.
+- Другие файлы — plain-text путь + `Lnn` **и короткая цитата**: `` `path` Lnn: «…» ``. Не ограничиваться номером строки без цитаты.
+- Суть — одной фразой, без простыни. Не сваливать три длинные цитаты подряд.
+- **Запрещено:** «выше», «ниже», markdown-ссылки `[текст](url)`.
+- Не дублировать якорь в сообщении как «здесь L153», если и так ясно; цитата с якоря — «Здесь: «…»».
+
+**Пример (хорошо):**
+
+```text
+Здесь: «specs/ht-123/spec.md». Capability ID = номер задачи — запрещено. Нужен продуктовый путь (auth/login, game/move, …).
+```
+
+**`Предлагаю`:**
+
+- Рекомендация ревью / default для правки meta; **не** выдавать за уже принятый канон постановки, если канон не выбран.
+- Если канон не выбран — **Неясно как делать** + 2 коротких варианта A/B, не маскировать под hard «исправить так».
+- Actionable (что заменить/добавить/удалить), не «разобраться».
+
+## Блок замечаний
+
+Все findings — в одном блоке ниже, три яруса по порядку:
+
+1. **Ошибки (hard)** — только hard cues; если пусто: `- нет`
+2. **Предупреждения** — если пусто: `- нет`
+3. **Рекомендации** — если пусто: `- нет`
+
+Не смешивать пункты и строку `- нет` в одном ярусе. Опускать пустой ярус **нельзя** — всегда три подзаголовка.
 
 ## Report
 
@@ -244,6 +277,7 @@ Write in Russian.
 ## Замечания по созданным / изменённым файлам
 
 ### Ошибки (hard)
+<!-- карточки 1..N в формате Finding card (с Ревью); если нет — единственная строка: -->
 - нет
 
 ### Предупреждения
@@ -262,7 +296,7 @@ Write in Russian.
 - <hard → warnings → recommendations; затем опционально align-implementability-back / align-implementability-front>
 ```
 
-Never apply fixes from align mode. Карточки описывают правки текстом; файлы не менять.
+Never apply fixes from standalone align mode. Карточки описывают правки текстом (и paste-ready `сообщение` для ревью); файлы не менять — кроме override от `review-change` или явной просьбы править этот skill / named docs.
 
 ## Not This Skill
 

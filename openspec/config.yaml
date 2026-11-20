@@ -40,7 +40,7 @@ context: |
   Домены: auth (register/login/anonymous), lobby (rooms list/create/join), game (board, move, turn/status).
 
   Skills roots: .agents/skills/client/ (UI), .agents/skills/server/ (Colyseus),
-  .agents/skills/ (openspec-*, align-code, align-meta, brief-change, align-change, prepare-mock,
+  .agents/skills/ (openspec-*, align-code, align-meta, review-change, prepare-mock,
   verify-mock, check-changes, sync-changes, prepare-changes, implement-change, end-implement-change,
   commit).
   AGENTS.md — индекс docs/, OpenSpec и .agents/skills/.
@@ -182,6 +182,8 @@ rules:
     - 'IMPORTANT / ОБЯЗАТЕЛЬНО: изучение перед работой (skills, proposal/design/spec фрагменты, reference-файлы, аналоги) — checkbox-пунктом ВНУТРИ того же ##-блока, где есть шаги с результатом. Формулировка: «Перед работой: …» как X.1, затем X.2+ реализация. ЗАПРЕЩЕНО сваливать всё чтение только в первый «Контекст»/первый блок.'
     - 'IMPORTANT: в каждом ##-блоке — ТОЛЬКО релевантное к шагам ЭТОГО блока чтение; общие артефакты change можно кратко в первом рабочем блоке, БЕЗ дублирования длинных списков skills/reference по всем секциям.'
     - 'HARD / ЗАПРЕЩЕНО: ##-блок только из изучения/чтения/«убедиться»/verify без deliverable. Критерий: каждый ##-блок рассчитан на отдельный apply-чат и MUST содержать ≥1 checkbox, который меняет код, конфиг, тесты или явный lint/test/build шаг. Если после «прочитать / сверить / убедиться» нечего коммитить — блока быть не должно: влить изучение в следующий рабочий ##-блок. Антипример: «## Контракт client» с одним пунктом «сверить messages» и без правок/тестов в том же блоке.'
+    - 'Client — ЗАПРЕЩЕНО в tasks.md: отдельные checkbox/##-блоки только на «сверить room/message/schema», «убедиться что store поле есть», «проверить что тип/DTO уже есть» без правки кода/тестов в том же ##-блоке. Контракт считается доступным из design/proposal; verify-only — вне tasks.'
+    - 'Server — ЗАПРЕЩЕНО в tasks.md: отдельные checkbox/##-блоки только на «сверить client binding», «убедиться что message зарегистрирован» без правки rooms/schema/tests в том же ##-блоке.'
     - 'При генерации/правке tasks.md: самопроверка — для каждого ## посчитать checkbox-ы без изменения артефактов репозитория; если их 100% блока — смержить с соседним рабочим блоком до записи файла.'
     - 'Отдельные пункты на тесты где применимо (server: mocha + npm test; client: vitest + npm test по SC из Traceability, плюс lint/typecheck)'
     - 'Client с UI/store/auth сценариями в Scope — обязательно пункты vitest (skill client-work-with-test); lint/typecheck alone недостаточно'
@@ -222,3 +224,12 @@ rules:
     - 'WARNING (server): нет mocha-тестов на новые/изменённые room/auth/move из tasks'
     # --- Общее ---
     - 'SUGGESTION: мелкие отклонения от стиля пакета (eslint) без влияния на поведение'
+
+# -----------------------------------------------------------------------------
+# operations — guidance для slash/CLI операций (archive и т.п.)
+# -----------------------------------------------------------------------------
+operations:
+  archive:
+    guidance:
+      - Если change mock-driven или в design есть Visual Spec — перед/при archive убедиться, что Visual Spec и ссылки на mock-assets согласованы со specs (нет orphan «по макету» без токенов); при расхождении — openspec-update-change, не молча архивировать.
+      - Закрытие change: update → sync → archive предпочтительно через skill end-implement-change (не дублировать финализацию в tasks.md).

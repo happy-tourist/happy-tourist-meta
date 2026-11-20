@@ -152,7 +152,7 @@ Do not invent room schemas, HTTP routes, or move payloads — note the server pa
 | App shell Vitest | `src/__tests__/AppHeaderChrome.test.ts` (sections/burger fold SC-BRAND-19 / crumbs / Lobby crumb SC-BRAND-20 / theme wordmarks SC-BRAND-29/30 / icon-only login|logout|leave SC-BRAND-31 / SC-LEAVE-13; Game `game-status` peek flash SC-PRESENCE-36) + `src/pages/__tests__/AccountLogout.test.ts` (SC-BRAND-32) |
 | i18n copy | `src/i18n/`, boot `i18n` |
 
-Today: GamePage board + dual presence rings (outer turn from `turnUntil`/`turnBudgetSeconds`, inner reconnect) + unfinished pieces from synced `seats` (`touristId` + `pieces` (+ `finished`; empty until playing) + `connected` / `reconnectUntil` / `ready` / `finishPlace` / `timeExpired`) / `phase` / `maxSeats` / `countdownRemaining` / `currentTurnSessionId`; top opponents / spectator presence + seated strip (row / HUD ≤~420 → 2×2; no chip/`q-menu`) once own pieces exist; place + dual solo-end modals (`lib/soloEndModalKind` SC-PRESENCE-21/35); countdown overlay; ready affordance; on `isPlaying && isMyTurn && !isMySeatFinished && !isMySeatTimeExpired` select/hints → `sendMove`. Tourist reconnect via `localStorage` token. Room name `tourist`.
+Today: GamePage board + dual presence rings (outer turn from `turnUntil`/`turnBudgetSeconds` — red when exactly 1 eligible seat, not via duration; inner reconnect) + unfinished pieces from synced `seats` (`touristId` + `pieces` (+ `finished`; empty until playing) + `connected` / `reconnectUntil` / `ready` / `finishPlace` / `timeExpired`) / `phase` / `maxSeats` / `countdownRemaining` / `currentTurnSessionId`; top opponents / spectator presence + seated strip (row / HUD ≤~420 → 2×2; no chip/`q-menu`) once own pieces exist; place + timer-only solo end modal (`lib/soloEndModalKind` always `'timer'` SC-PRESENCE-21/35); `removedTaskKeys` holes landable (red hints include them); countdown overlay; ready affordance; on `isPlaying && isMyTurn && !isMySeatFinished && !isMySeatTimeExpired` select/hints → `sendMove` (∞ steps when `budgetsInfinite`). Tourist reconnect via `localStorage` token. Room name `tourist`.
 
 ## Workflow
 
@@ -181,24 +181,33 @@ Today: GamePage board + dual presence rings (outer turn from `turnUntil`/`turnBu
 
 ## Output Format
 
-Respond in this structure:
+Respond in Russian when the user writes in Russian. Prefer this compact plan (one line per file). Keep Layer Map / Domain Hotspots reasoning internal unless useful in a bullet.
 
 ```markdown
-## Where to edit
-- `path/to/file.ts` — why this file is relevant and what kind of change is expected.
+## План изменений
 
-## Where to add
-- `path/to/NewFile.vue` — why a new file belongs here.
+Добавить: N, Изменить: M, Удалить: K  (optional one-liner)
+
+### Добавить
+- `src/.../NewThing.vue` — что за файл и зачем. (confirmed|likely)
+
+### Изменить
+- `src/.../Existing.ts` — что меняется. (confirmed|likely)
+
+### Удалить
+- `src/.../Old.ts` — почему удаляем. (confirmed|likely)
 
 ## Related places
-- `path/to/related-file.ts` — why it should be checked during implementation.
+- `path` — why check during implementation.
 
-## Questions
-- Clarifying question, only if needed.
+## Неоднозначности
+- only if unresolved; otherwise omit.
 ```
 
-Omit empty sections. Keep each bullet specific and actionable. Prefer paths under `src/`, plus `.env.*` / `.github/workflows/` when relevant. For server contract work, cite `../happy-tourist-server` under Related (do not edit it from this skill).
+Also acceptable (legacy aliases): `## Where to add` / `## Where to edit` / `## Where to delete` with the same one-line bullets.
+
+Omit empty groups. Order within a group by execution dependency (types/lib → store → components → page → tests). No code dumps, no step-by-step implementation. Prefer paths under `src/`, plus `.env.*` / `.github/workflows/` when relevant. For server contract work, cite `../happy-tourist-server` under Related (do not edit it from this skill).
 
 ## Confidence
 
-Prefer saying "likely" when the location is inferred from naming or nearby patterns. Say "confirmed" only when the inspected code directly proves the relationship.
+Say **likely** when the location is inferred from naming or nearby patterns. Say **confirmed** only when the inspected code directly proves the need. Put the tag at the end of the bullet.

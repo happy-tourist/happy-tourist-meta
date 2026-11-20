@@ -45,7 +45,7 @@ Coordinate with: `work-with-rooms` (lifecycle / registration), `work-with-schema
 | Client → server | `endTurn` | empty — via `sendEndTurn` when `canSendEndTurn` (multi finite only); **reject** while trap pipeline active |
 | Client → server | `ready` | empty — via `sendReady` (waiting, ≥2 seated, under maxSeats, not yet ready) |
 | Client → server | `say` | `{ presetId: 'hello' \| 'luck' }` — via `sendSay`; whitelist only (no free text; **not** `ready`); finished seats may still say |
-| Server → owner | `budgets` | `{ steps, peeks, infinite, peekedThisTurn }` — private; `infinite` = **peeks∞ only** (steps always finite); `peekedThisTurn` legacy (no gate) |
+| Server → owner | `budgets` | `{ steps, peeks, infinite, peekedThisTurn }` — private; `infinite` = **∞ peeks and ∞ steps** in solo; `peekedThisTurn` legacy (no gate) |
 | Server → owner | `peekOpen` | legacy private name may still fire; prefer **synced** peek session (`peekActive*` / broadcasts) for shared Q&A modal |
 | Server → all clients | `peekClose` | `{ sessionId, correct, row, col, reason?: 'wrong' \| 'timeout' }` — via `resolveOpenPeek`; `correct:true` → omit/ignore reason; wrong submit / leave / endTurn force → `'wrong'`; turn/solo timeout while open → `'timeout'` (SC-BOARD-70 / SC-MOVE-42); FE flash from reason (SC-PRESENCE-36) |
 | Server → owner | `allJailWarning` | `{}` — private; seat just freed from all-jail (informational modal) |
@@ -54,7 +54,7 @@ Coordinate with: `work-with-rooms` (lifecycle / registration), `work-with-schema
 | Server → client | room error channel | Client sets `game.error` from `room.onError` |
 | Lobby | HTTP fallback | `client.http.get('/rooms/tourist')` — **not** a room message |
 
-**`move`:** accept only when `phase === 'playing'` + seated + `finishPlace === 0` + `!timeExpired` + current turn + `steps > 0` + **trap pipeline idle**; legal one-step per `touristMove.ts` (occupancy ignores finished; trapped still occupy; **landing on removed holes rejected**; stand/leave OK; **reject if piece trapped**). Reject (no mutate) otherwise. On accept: update piece `row`/`col`; always spend 1 step + `sendBudgets`; if target is center → `piece.finished = true` and maybe assign `finishPlace`; else paced trap pipeline (one hop + presentation budget; catapult fling/broken or grille); **do not** `advanceTurn` solely for move — then `maybeAutoEndTurn` / solo step-loss / finish-advance (**deferred** via `pendingTurnAdvance` while pipeline active; on idle: `ensureCurrentEligibleOrAdvance` then pending absorb vs single `advanceTurn`, else **re-eval** auto-end/solo — SC-MOVE-91…93/96).
+**`move`:** accept only when `phase === 'playing'` + seated + `finishPlace === 0` + `!timeExpired` + current turn + `canSpendStep` + **trap pipeline idle**; legal one-step per `touristMove.ts` (occupancy ignores finished; trapped still occupy; **removed holes landable**; layout never-playable reject; stand/leave OK; **reject if piece trapped**). Reject (no mutate) otherwise. On accept: update piece `row`/`col`; `spendStep` (skip when infinite) + `sendBudgets`; if target is center → `piece.finished = true` and maybe assign `finishPlace`; else paced trap pipeline (one hop + presentation budget; catapult fling/broken or grille); **do not** `advanceTurn` solely for move — then `maybeAutoEndTurn` / finish-advance (**deferred** via `pendingTurnAdvance` while pipeline active; on idle: `ensureCurrentEligibleOrAdvance` then pending absorb vs single `advanceTurn`, else **re-eval** auto-end — SC-MOVE-91…93/96).
 
 **`rescue`:** current turn + steps≥1 + own trapped unfinished + Chebyshev-1 free own piece + **pipeline idle** → −1 step; clear `trapped` + holding grille; rescuer coords unchanged; then paced pipeline if a catapult remains. Silent reject otherwise.
 
@@ -66,7 +66,7 @@ Coordinate with: `work-with-rooms` (lifecycle / registration), `work-with-schema
 
 **`peekPlace` / `peekSubmit`:** peeker only; place updates slot placements; submit compares ordered answer card ids to task slots — correct → +difficulty steps + remove tile + `peekClose` without reason; wrong → KEEP bind + `reason:'wrong'`; leave/endTurn force-close → `'wrong'`; timeout callers → `'timeout'`. Open spend is on `peek` (not place/submit); flipped is not free.
 
-**`endTurn`:** multi (≥2 eligible) + current + not finished/expired + **pipeline idle**; force-close open peek as incorrect KEEP if any; `advanceTurn` (next grant: multi +1/+1; solo become-current +1 step only). Solo peeks∞ → reject. While pipeline active → silent reject (board-lock parity).
+**`endTurn`:** multi (≥2 eligible) + current + not finished/expired + **pipeline idle**; force-close open peek as incorrect KEEP if any; `advanceTurn` (next grant: multi +1/+1; solo become-current → ∞ both, no finite +1). Solo ∞ → reject. While pipeline active → silent reject (board-lock parity).
 
 **`ready`:** accept only in `waiting`, seated + connected, seated count ≥ 2 and `< maxSeats`, seat not already ready. On accept: `seat.ready = true`, broadcast say preset `ready` (bypass live-say cap), maybe start countdown. Silent reject otherwise.
 
@@ -125,7 +125,7 @@ this.onMessage('peekSubmit', (client, message) => {
 });
 this.onMessage('endTurn', (client) => {
   // 1. multi + current + eligible; force-close open peek as incorrect KEEP if any
-  // 2. advanceTurn → applyTurnGrant (multi +1/+1; solo become-current +1 step)
+  // 2. advanceTurn → applyTurnGrant (multi +1/+1; solo → ∞ both, no finite +1)
 });
 
 this.onMessage('ready', (client) => {

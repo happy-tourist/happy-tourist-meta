@@ -86,6 +86,7 @@ Do **not** use these for client-verify-code (unless the user explicitly asks):
 | `client-verify-code` | this orchestrator |
 | `client-align-code` | alignment / docs authorship |
 | `client-work-with-test` | test-writing / Vitest conventions (not used to audit prod code) |
+| `client-work-with-review` | bug/regression hunting (separate review skill) |
 | `openspec` / opsx skills | change workflow / specs |
 | `commit` | commit messages |
 
@@ -151,23 +152,24 @@ project config and skill text.
    rely on memory; do not skip because the path “looks unrelated”).
 3. For each source file, apply every code skill whose rules can touch that file.
    When unsure, apply the skill. If missing, use Built-in Client conventions.
-4. For every checked `.vue` file, apply **Built-in: Vue Style Guide**.
-5. Apply **Built-in: Client conventions** to all checked production files.
-6. Apply **Built-in: DRY / KISS / YAGNI** to all checked production files.
+4. For every checked `.vue` file, apply **Built-in: Vue Style Guide** (incl. `<script setup>` declaration order).
+5. For every checked `.vue` file, apply **Built-in: Template → computed**.
+6. Apply **Built-in: Client conventions** to all checked production files.
+7. Apply **Built-in: DRY / KISS / YAGNI** to all checked production files.
    Resolve principle conflicts with the order in that section **before**
    classifying or fixing — never emit opposing principle fixes for the same hunk.
-7. Classify every finding into Violations / Warnings / Recommendations
+8. Classify every finding into Violations / Warnings / Recommendations
    (see Severity). Each item: file path, what is wrong, which skill/rule, and
    the expected pattern. Soft Prefer guidance → Warnings or Recommendations,
    not silence.
-8. Fix **Violations** when the user asked to verify-and-fix, or when
+9. Fix **Violations** when the user asked to verify-and-fix, or when
    verification runs as part of an implementation task you own. Fix **Warnings**
    on verify-and-fix when the preferred pattern clearly fits. Fix
    **Recommendations** only if the user asked to tidy / apply soft order.
    On principle fixes, obey **Built-in: DRY / KISS / YAGNI** conflict order so
    DRY does not fight KISS/YAGNI (and vice versa). Otherwise list findings and
    wait.
-9. When implementing / verify-and-fix: **run** `npm run lint` and
+10. When implementing / verify-and-fix: **run** `npm run lint` and
    `npm run typecheck` (and `npm run build` / `quasar build` if requested) from
    the client package root; fix failures before claiming done.
 
@@ -203,6 +205,21 @@ Do **not** apply Options API component-options category order (`data` /
 `computed` / `methods` / lifecycle hooks as option keys) — this package uses
 Composition API inside `<script setup>`.
 
+### `<script setup>` declaration order
+
+Aim for this category sequence when it does not fight initialization order:
+
+1. **Imports**
+2. **Local types / non-reactive constants**
+3. **Interface macros** — `defineOptions`, then `defineModel` / `defineProps` / `defineEmits` / `defineSlots`
+4. **Composition** — `inject`, then composables / store setup / `storeToRefs`
+5. **Local State** — `ref` / `reactive` / … then `computed`
+6. **Events** — `watch` / `watchEffect`, then lifecycle hooks
+7. **Methods** — plain functions used as handlers
+8. **Expose / provide** — `provide`, `defineExpose` (near the end)
+
+**Dependency / TDZ override (wins over category order):** if `A` is referenced while initializing `B`, keep `A` above `B`. Never “fix” order into a used-before-init bug. Safe tidy-ups only → **Recommendation**.
+
 ### Element attribute order
 
 On elements/components in templates, prefer:
@@ -226,6 +243,23 @@ rewrite every attribute line for minor reordering unless asked to fix.
 When multi-line reactive blocks / adjacent multi-line declarations become hard
 to skim, prefer a blank line between them. Do not flag readable dense
 single-line blocks.
+
+## Built-in: Template → computed
+
+Report as `(skill: client-verify-code / Template-computed)`. Apply to every checked `.vue` file. Prefer keeping `<template>` declarative: named state / flags, not multi-part logic.
+
+**Prefer** extracting non-trivial template expressions into `computed` (or a plain helper when the value depends on a `v-for` item).
+
+| Prefer in `<script>` | Flag in `<template>` when |
+|----------------------|---------------------------|
+| Named `computed` (`isSubmitDisabled`, `hasItems`, `showBanner`) | Bound prop / `v-if` / class chains **2+** flags, negations, `.trim()`, `.length`, `?? []`, or loading refs |
+| Helper `isRowDisabled(item)` | Same complexity, but one operand is the current `v-for` item |
+
+**Do:** extract when the binding combines **2+** independent conditions or includes string/collection ops; use a **function** (not a fake `computed`) for `v-for` item expressions; name by *what is disabled/shown*.
+
+**Don't:** extract a single prop/ref binding (`:loading="loading"`, `v-if="error"`); invent shared helpers for one-off UI.
+
+**Severity:** **Recommendation** for clear multi-part bindings; **Warning** when the same complex expression is duplicated across the template. Not a Violation by itself.
 
 ## Built-in: Client conventions
 
@@ -399,7 +433,8 @@ Reminders to **open the skill** (or Built-in) — skill text wins.
 - **Board**: tourist CSS Grid on GamePage + pieces from seats; no `canMove` / draughts cells.
 - **Errors**: store `error` + `q-banner` (theme → `App.vue`); no empty `catch`.
 - **Env/deploy**: `VITE_*`, hash router, GH Pages SPA build.
-- **Vue SFC order** (soft): `<template>` → `<script setup>` → `<style>`.
+- **Vue SFC order** (soft): `<template>` → `<script setup>` → `<style>`; declaration order macros→state→computed→watch→methods (TDZ wins).
+- **Template → computed**: multi-part `:disabled` / `v-if` → named computed or per-item helper.
 - **DRY/KISS/YAGNI**: conflict order — skills → YAGNI → KISS → DRY; one fix per hunk.
 
 ## Severity

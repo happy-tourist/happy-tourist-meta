@@ -18,7 +18,7 @@ Read-only brief of **what the server must expose and enforce**, grounded in an O
 
 ## Hard Boundary
 
-- Do **not** edit, create, delete, format, or commit files — except when called from [`brief-change`](../../brief-change/SKILL.md) (override: after report, apply meta fixes) or the user **explicitly** asks to change named meta files / this skill.
+- Do **not** edit, create, delete, format, or commit files — except when called from [`review-change`](../../review-change/SKILL.md) (override: after report, apply meta fixes) or the user **explicitly** asks to change named meta files / this skill.
 - Deliver the **entire** result **in chat only** (unless override above).
 - Do **not** run `server-locate-change-points` or produce a «куда класть файлы» plan.
 - Do **not** run `align-implementability-back` / `server-align-code` (implementability / code vs AC).
@@ -36,21 +36,32 @@ Read-only brief of **what the server must expose and enforce**, grounded in an O
 
 | Skill | Role relative to this |
 |-------|------------------------|
-| [`brief-client-scope`](../../client/brief-client-scope/SKILL.md) | Client UI digest — pair via `brief-change` |
+| [`brief-client-scope`](../../client/brief-client-scope/SKILL.md) | Client UI digest — pair via `review-change` |
+| [`review-change`](../../review-change/SKILL.md) | Orchestrator: brief both sides then align — not this alone |
 | `align-implementability-back` | Can we build it? — not this |
 | `server-locate-change-points` | Where to edit files — not this |
 | `prepare-changes` / `openspec-propose` | Create/slice change — not this |
 
 ## Input
 
-Resolve from the user message (ask only if nothing resolves):
+Resolve in this order (ask only if still nothing resolves):
+
+1. **Explicit** OpenSpec change name and/or pasted excerpts.
+2. **Current git branch (default)** — slug hint from branch in `happy-tourist-meta`, or the single active change if unambiguous; else ask.
+3. Pasted excerpts when paths unavailable.
 
 | Input | Meaning |
 |-------|---------|
 | OpenSpec change name | Primary: `openspec/changes/<name>/` |
 | Pasted excerpts | Secondary if tools/paths unavailable |
 
-Optional filters: «только change» (no sibling runtime for issues — reuse may still peek server); «без sibling»; «остальное готово» (assume client already planned — do not list missing UI as gaps).
+Optional filters (honor when stated):
+
+| Filter | Effect |
+|--------|--------|
+| «только change» | Sibling changes out of scope for **Расхождения/Пробелы/Неоднозначности** (OK for **Переиспользование**) |
+| «без sibling» | Do not read sibling OpenSpec changes for issues (reuse may still peek server) |
+| «остальное готово» | Assume client already planned — do not list missing UI as gaps |
 
 ## Source Priority
 
@@ -67,7 +78,7 @@ Do not invent messages, schema fields, routes, or algorithms not in the loaded d
 3. Extract server-facing scope: room/lifecycle, schema/sync, messages, HTTP, auth, DB, game rules.
 4. **Reuse scan:** docs + siblings + light server look → already exists / adapt / new.
 5. Collect **расхождения / пробелы / неоднозначности** → review cards.
-6. Write the chat report. Stop (unless brief-change override).
+6. Write the chat report. Stop (unless review-change override).
 
 ## Output Format
 
@@ -106,9 +117,15 @@ Stacked lists. **Do not use markdown tables** in the report body (cards OK with 
 … (если пусто — «не найдено»)
 ```
 
-### Карточки
+### Карточки: Расхождения / Пробелы / Неоднозначности
 
-Каждый пункт:
+Формат как в `align-meta` / `brief-client-scope`. Якорь — **одно** место правки (`файл` + `Lnn` или `Lstart–Lend`). В `сообщение`: цитата «здесь» + (если нужно) другая цитата + одна фраза сути. **Запрещено:** «выше»/«ниже», markdown-ссылки.
+
+| Раздел | Когда |
+|--------|--------|
+| **Расхождения** | Два+ места в change tree говорят разное |
+| **Пробелы** | Server нужно поведение, а в change его нет / не дописано «как» |
+| **Неоднозначности** | Текст есть, но два разумных чтения без канона |
 
 ```markdown
 ### <короткий заголовок>
@@ -120,7 +137,7 @@ Stacked lists. **Do not use markdown tables** in the report body (cards OK with 
   - сообщение: <paste-ready без markdown-ссылок>
 ```
 
-Якорь — одно место правки. Не выдумывать API/поля в **Контракт** / **Поведение**.
+Не выдумывать API/поля в **Контракт** / **Поведение**.
 
 ## Не делать
 

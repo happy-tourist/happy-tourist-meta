@@ -9,8 +9,9 @@ description: >-
   AnswerCompose/TaskCompose + `PackTaskComposeDialog` SC-PACK-256…263/276…281 +
   portrait `PackAnswerCardTile` SC-PACK-222/225/282/283 + portrait
   `PackTaskTile`/`taskFilledSlots` SC-PACK-278/283 + AddTaskSetDraft SC-PACK-264…268 + DraftLifecycle/DirtySubmit SC-PACK-234/269…275 + GameBoardWire peek/skins/per-cell finish SC-BOARD-45/49/50…54/55/56/57 + SC-MOVE-65 (peeks=0 hides peek affordance on flipped; illustrated `assets/board/*.png` / `.board-action-icon`; left-edge dots),
-  solo end infer SC-PRESENCE-21/35 (`soloEndModalKind` / exclude trapped — pure lib,
-  not full GamePage mount; see composables.md),
+  solo end timer-only SC-PRESENCE-21/35 (`inferSoloEndModalKind` always `'timer'`;
+  pure lib, not full GamePage mount; see composables.md) + eligible-seat red ring /
+  ∞ budgets (`game.soloPresence` / `GameSoloPresence`),
   lobby `LobbyRoomCardTile` / `LobbyCreateWire` SC-LOBBY-24…26/33…36, maps
   palette/preview skins SC-MAP-71/72, App header chrome); Colyseus
   client.auth / client.http / room I/O spies; store error + q-banner;
@@ -74,9 +75,13 @@ Jest, mocha, babel-jest, or Cypress. Server stays on mocha; client stays on
 Vitest. Optional `wait` / `flushPromises` + `nextTick` after mount — see
 Component Mounting.
 
-Agent **runs** `npm test` from the client package root after writing or changing
-tests; fix failures before claiming done. Also run `npm run typecheck` /
-`lint:check` when the change touches production code.
+Agent **runs** `npm test` (or `npm run test`) from the **client package root**
+after writing or changing tests; fix failures before claiming done. Also run
+`npm run typecheck` / `lint:check` when the change touches production code.
+
+**Strict runner:** use the project script only — do **not** invoke bare
+`npx vitest` / `vitest run` outside `package.json` scripts (wrong config/cwd/
+setupFiles). Prefer `npm test` so `vitest.config.ts` + `test/setup.ts` always apply.
 
 OpenSpec: new client changes with UI/store/auth scenarios **must** include
 vitest task items + `npm test` (see `openspec/config.yaml` rules.tasks) — not

@@ -22,7 +22,7 @@ Board UI is custom CSS Grid (not Quasar widgets). Keep selectors local and class
 | `.tile-task.tile--flipped` | Flipped task skin via `tileSkins` → `tile-back.png` + difficulty digit ink `#212121` (no light text-shadow) |
 | `.tile-center` | Finish skin via `tileSkins` → `finish.png`; **one tile per** grid `7` cell (`kind: 'center'` — do **not** merge contiguous finish into a multi-cell `span`) |
 | `.tile--selected` / `.tile--target` | Local white / red move **and** return-mode ring chrome (same red class — SC-FINISH-13 / SC-MOVE-12) |
-| `.tile-task.tile--removed` | Removed-task hole = page background; may keep `.tile--selected` while piece stands; **never** combine with `.tile--target` (holes not landable — SC-BOARD-15) |
+| `.tile-task.tile--removed` | Removed-task hole = page background; may keep `.tile--selected` while piece stands; **may** combine with `.tile--target` (removed holes landable — SC-BOARD-15) |
 | `.piece` | Absolute `left`/`top` from `--pcol`/`--prow` + `--cell`; ~250ms transition (incl. return from nearest center) |
 | `.presence-marker` | Occupied seat chrome; reserved **96×96** `position: relative` slot for dual rings + 72px avatar (stable layout — SC-PRESENCE-11/13) |
 | `.presence-progress--outer` | Turn ring (96px); `position: absolute; inset: 0; z-index: 0`; `pointer-events: none` |

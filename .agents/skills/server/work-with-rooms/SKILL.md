@@ -43,7 +43,7 @@ Coordinate with sibling skills when they exist: `work-with-schema`, `work-with-m
 
 Registered room keys today: **`lobby`** (built-in listing) and **`tourist`** (playable `MyRoom` with realtime listing). Client `TOURIST_ROOM` / `LOBBY_ROOM` match these names — do not reintroduce `my_room`.
 
-Constants: `RECONNECT_GRACE_SECONDS = 30`, `COUNTDOWN_SECONDS = 5`, `TURN_BUDGET_SECONDS = 60`, `SOLO_BUDGET_SECONDS = 300` exported from `MyRoom.ts` (tests: `setTurnBudgetsForTests` / `resetTurnBudgets`). Trap presentation budgets shared with client (`MOVE_ANIM_MS`, `CATAPULT_ANIM_MS`, `CATAPULT_BROKEN_PRESENTATION_MS`, `GRILLE_ANIM_MS`) — mocha: `setTrapPresentationBudgetsForTests` / `resetTrapPresentationBudgets`. Paced trap pipeline / `pendingTurnAdvance` / idle ensure+absorb + re-eval (SC-MOVE-91…93/96): `work-with-game`.
+Constants: `RECONNECT_GRACE_SECONDS = 30`, `COUNTDOWN_SECONDS = 5`, `TURN_BUDGET_SECONDS = 60`, `SOLO_BUDGET_SECONDS = 60` exported from `MyRoom.ts` (tests: `setTurnBudgetsForTests` / `resetTurnBudgets`). Trap presentation budgets shared with client (`MOVE_ANIM_MS`, `CATAPULT_ANIM_MS`, `CATAPULT_BROKEN_PRESENTATION_MS`, `GRILLE_ANIM_MS`) — mocha: `setTrapPresentationBudgetsForTests` / `resetTrapPresentationBudgets`. Paced trap pipeline / `pendingTurnAdvance` / idle ensure+absorb + re-eval (SC-MOVE-91…93/96): `work-with-game`.
 
 ## Lifecycle Flow
 
@@ -100,7 +100,7 @@ client create({ mapId, packId, taskSetIds, grilleDensity?, catapultDensity? }) /
 export const RECONNECT_GRACE_SECONDS = 30;
 export const COUNTDOWN_SECONDS = 5;
 export let TURN_BUDGET_SECONDS = 60;
-export let SOLO_BUDGET_SECONDS = 300;
+export let SOLO_BUDGET_SECONDS = 60;
 
 export class MyRoom extends Room<{ state: MyRoomState }> {
   static async onAuth(token: string, _options: any, _context: any) {
@@ -171,7 +171,7 @@ Align with client Pinia expectations:
 | Seats | Unique `touristId` 1…4; pieces deferred until `playing` (`touristsPerPlayer` pieces by pieceId on free start cells — see `work-with-game`); **new seat only while `phase === 'waiting'`** and under maxSeats |
 | Connectivity | `connected` + `reconnectUntil` on Seat (D2); online at assign; `timeExpired` for solo budget lock |
 | Start | `phase` waiting → countdown → playing (+ materialize + turn deadline); full table or all-ready underfilled; legacy `started` mirrors `phase === 'playing'` |
-| Turn timer | Synced `turnUntil` / `turnBudgetSeconds` (60 multi / 300 solo); clear on dispose / no eligible (see `work-with-game`) |
+| Turn timer | Synced `turnUntil` / `turnBudgetSeconds` (60 multi / 60 solo); clear on dispose / no eligible (see `work-with-game`) |
 | Status metadata | `waiting` until `phase === 'playing'`; always publish `maxSeats` + occupied `seats` |
 | Unexpected drop | Hold seat 30 s + `allowReconnection`; sync offline + deadline (SC-PIECE-11…14, 16); does not cancel countdown |
 | Consented leave | Immediate seat remove; free capacity does **not** reopen seating while phase is `countdown`/`playing` (SC-PIECE-07/08) |

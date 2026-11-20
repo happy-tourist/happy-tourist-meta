@@ -12,8 +12,9 @@ Submit uses server `hasUnsubmittedChanges` SC-PACK-234/271; map editor still
 session baseline SC-MAP-65; colocated `src/lib/__tests__/editorDirty.test.ts`),
 `focusActionable.ts` (SC-PRESENCE-30/31/32 nearest; colocated
 `src/lib/__tests__/focusActionable.test.ts`),
-`soloEndModalKind` / `hasOwnUnfinishedOnLiveTask` (SC-PRESENCE-21/35 — steps vs
-timer infer: unfinished ∧ present task ∧ **!trapped**; inject `isPresentTaskCell`;
+`soloEndModalKind` / `hasOwnUnfinishedOnLiveTask` (SC-PRESENCE-21/35 — `inferSoloEndModalKind`
+always `'timer'` (no steps-exhausted branch); `hasOwnUnfinishedOnLiveTask` kept as legacy
+legal-peek helper: unfinished ∧ present task ∧ **!trapped**; inject `isPresentTaskCell`;
 **do not** mount `GamePage` for these cases; wire stays in page watch on
 `isMySeatTimeExpired`),
 and any future board math helpers that stay client-side.

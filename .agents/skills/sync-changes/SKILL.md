@@ -69,7 +69,7 @@ Peer:    <abs-path other>
 | 6 | `.agents/skills/end-implement-change/` | прямые делегаты (update / sync / archive / commit) |
 | 7 | `.agents/skills/commit/` | прямые ссылки, если есть |
 | 8 | `.agents/skills/prepare-changes/` | если есть |
-| 9 | `.agents/skills/align-change/` | обычно server/align-implementability-back + client/align-implementability-front + align-meta |
+| 9 | `.agents/skills/review-change/` | brief-server → brief-client → align-back → align-front → align-meta (заменяет бывшие brief-change / align-change) |
 | 10 | `.agents/skills/prepare-mock/` | если есть |
 | 11 | `.agents/skills/verify-mock/` | если есть |
 | 12 | `.agents/skills/server/align-implementability-back/` | если есть (или workspace-root / peer эквивалент по роли) |
@@ -187,7 +187,7 @@ Peer: `<path or url → local>`
 | openspec/config.yaml | … | … |
 | openspec-* | N: … | N: … |
 | align-code / check / implement / end / commit | … | … |
-| prepare-changes / align-change / mock / align-* | … | … |
+| prepare-changes / review-change / mock / align-* | … | … |
 | sync-changes | … | … |
 
 ## Discovery-pass (inventory)

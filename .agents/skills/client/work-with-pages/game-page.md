@@ -8,7 +8,8 @@ Store I/O: `work-with-stores/game.md`. Leave/status chrome: [shell.md](shell.md)
 
 - Board in scroll region (`tileSkinCssVars()` on `.tourist-board`; CSS in
   `work-with-styles/board.md`); unfinished pieces + finish travel + fade + return travel;
-  holes for `removedTaskKeys`; grille overlays (`GRILLE_ANIM_MS = 1000`; defer drops
+  holes for `removedTaskKeys` (visual only; still landable — red hints include them);
+  grille overlays (`GRILLE_ANIM_MS = 1000`; defer drops
   while catapult queue busy — SC-BOARD-29/30); catapult sequential overlays
   (`CATAPULT_ANIM_MS = 1500`, broken 450+450+300, land→overlay→fling, D13,
   `isBoardBusy` — SC-BOARD-23/24/27/32; drop-shadow SC-BOARD-58).
@@ -25,9 +26,8 @@ Store I/O: `work-with-stores/game.md`. Leave/status chrome: [shell.md](shell.md)
   presence hit ~56–64; board/strip hit ~48–56; flag unchanged); focus **under peeks** in
   budgets; say-picker shifted right; budgets beside avatar; say top↓ / own↑.
 - Sync via `useGameStore()`; `rejoinGame(roomId)` on mount / soft-fail.
-- Solo end copy (timer vs steps): watch own `timeExpired` → `inferSoloEndModalKind` from
-  `src/lib/soloEndModalKind.ts` (legal peek = free unfinished on present `*`; **!trapped** —
-  SC-PRESENCE-21/35); details in `work-with-game-board`.
+- Solo end copy (timer-only): watch own `timeExpired` → timer modal (no steps-exhausted branch;
+  `inferSoloEndModalKind` always 'timer' — SC-PRESENCE-21/35); details in `work-with-game-board`.
 - **No** page-local leave/status/roomId — App brand-logo + `header-game-leave` + status
   (incl. 10s peek outcome flash from store `peekStatusFlash` — SC-PRESENCE-36).
 
@@ -38,4 +38,4 @@ Store I/O: `work-with-stores/game.md`. Leave/status chrome: [shell.md](shell.md)
 | Route | `/game/:roomId` → `GamePage`; `meta.requiresAuth`; `roomId` reconnect only — not chrome |
 | Store actions | `rejoinGame` / `sendMove` / `sendRescue` / `sendPush` / `sendReturnFromFinish` / `sendPeek*` / `sendEndTurn` / `sendSay` |
 | Room | name `tourist`; mirror seats / turn / `removedTaskKeys` / grilles/catapults; private `budgets` / `peekOpen` / `allJailWarning` |
-| Solo end | Page-local `endModalKind` via `lib/soloEndModalKind` (not Pinia); vitest pure lib — `client-work-with-test` / `composables.md` |
+| Solo end | Timer-only modal (no `endModalKind` steps branch); `lib/soloEndModalKind` always 'timer'; red ring via 1 eligible seat (`isSoloBudget`); ∞ both budgets; vitest — `client-work-with-test` |

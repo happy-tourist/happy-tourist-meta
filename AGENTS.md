@@ -29,7 +29,7 @@
 ## Работа с OpenSpec
 
 - **task** — schema по умолчанию `spec-driven` (proposal → specs → design → tasks).
-- Типичный Cursor chat workflow: `/opsx-explore` → `prepare-changes` (если scope широкий) → `/opsx-propose` → `brief-change` (опционально) → `align-change` (опционально) → review → `/opsx-apply` / `implement-change` → `/opsx-sync` → `/opsx-archive`.
+- Типичный Cursor chat workflow: `/opsx-explore` → `prepare-changes` (если scope широкий) → `/opsx-propose` → `review-change` (опционально: brief + align) → review → `/opsx-apply` / `implement-change` → `/opsx-sync` → `/opsx-archive`.
 
 ## Работа с Git
 
@@ -39,7 +39,7 @@
 
 ## Skills (discovery)
 
-- OpenSpec / workspace (этот репозиторий): `.agents/skills/` (`openspec-*`, [`align-code`](.agents/skills/align-code/SKILL.md), [`align-meta`](.agents/skills/align-meta/SKILL.md), [`brief-change`](.agents/skills/brief-change/SKILL.md), [`prepare-mock`](.agents/skills/prepare-mock/SKILL.md), [`verify-mock`](.agents/skills/verify-mock/SKILL.md), [`check-changes`](.agents/skills/check-changes/SKILL.md), [`sync-changes`](.agents/skills/sync-changes/SKILL.md), [`prepare-changes`](.agents/skills/prepare-changes/SKILL.md), [`align-change`](.agents/skills/align-change/SKILL.md), [`commit`](.agents/skills/commit/SKILL.md), [`implement-change`](.agents/skills/implement-change/SKILL.md), [`end-implement-change`](.agents/skills/end-implement-change/SKILL.md))
+- OpenSpec / workspace (этот репозиторий): `.agents/skills/` (`openspec-*`, [`align-code`](.agents/skills/align-code/SKILL.md), [`align-meta`](.agents/skills/align-meta/SKILL.md), [`review-change`](.agents/skills/review-change/SKILL.md), [`prepare-mock`](.agents/skills/prepare-mock/SKILL.md), [`verify-mock`](.agents/skills/verify-mock/SKILL.md), [`check-changes`](.agents/skills/check-changes/SKILL.md), [`sync-changes`](.agents/skills/sync-changes/SKILL.md), [`prepare-changes`](.agents/skills/prepare-changes/SKILL.md), [`commit`](.agents/skills/commit/SKILL.md), [`implement-change`](.agents/skills/implement-change/SKILL.md), [`end-implement-change`](.agents/skills/end-implement-change/SKILL.md))
 - Client-wide (meta): [`.agents/skills/client/`](.agents/skills/client/) — runtime UI: `../happy-tourist.github.io/`
 - Server-wide (meta): [`.agents/skills/server/`](.agents/skills/server/) — runtime Colyseus: `../happy-tourist-server/`
 
@@ -56,8 +56,8 @@
 
 ## Kilo Code: lazy loading nested skills
 
-При появлении канона: [`kilo.template.jsonc`](kilo.template.jsonc) → локально `cp kilo.template.jsonc kilo.jsonc` (ignored).  
-В `kilo.jsonc` пути nested skills (`skills.paths`: `.agents/skills/client`, `.agents/skills/server`).  
+Канон: [`kilo.template.jsonc`](kilo.template.jsonc) → локально `cp kilo.template.jsonc kilo.jsonc` (ignored).
+В `kilo.jsonc` пути nested skills (`skills.paths`: `.agents/skills/client`, `.agents/skills/server`).
 Root `.agents/skills/` (`openspec-*`, `commit`, …) обнаруживаются автоматически — не дублировать в `skills.paths`.
 
 Скилл [`commit`](.agents/skills/commit/SKILL.md): незакоммиченные изменения в meta + client + server → stage → commit на `main`/`master` → **всегда push** (запуск скилла = разрешение на push).

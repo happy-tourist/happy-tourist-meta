@@ -9,8 +9,9 @@ description: >-
   (`[visual-spec-incomplete]`). Warn when FE-consumable server claims lack UI
   in meta (`[be-without-fe]`). Large claim sets: optional fan-out by UI axis.
   UI without server/API in meta → align-implementability-back. Verdict
-  FEASIBLE|PARTIAL|INFEASIBLE|UNKNOWN. Finding card: file + lines + issue +
-  fix. Not server audit, align-meta, or verify-mock. No file edits.
+  FEASIBLE|PARTIAL|INFEASIBLE|UNKNOWN. Finding card: Что не так / Предлагаю /
+  Ревью (файл + одна строка-якорь + paste-ready сообщение). Not server audit,
+  align-meta, or verify-mock. No file edits.
 ---
 
 # Align Implementability (Frontend / Client)
@@ -98,7 +99,7 @@ Optionally note meta-internal defects only as a one-line pointer to `align-meta`
 
 ## Hard Boundary
 
-Do not edit, create, delete, format, or commit files. Do not apply fixes from align mode. Deliver the complete result in chat. Verdict is evidence only (`править не надо`). **Не** снимать пиксели с макета и **не** дописывать Visual Spec в этом скилле — только отчёт о пробелах.
+Do not edit, create, delete, format, or commit files — except when called from [`review-change`](../../review-change/SKILL.md) (override: after report, apply meta fixes) or the user **explicitly** asks to change named meta files / this skill. Do not apply fixes from standalone align mode. Deliver the complete result in chat. Verdict is evidence only (`править не надо`) unless review-change override. **Не** снимать пиксели с макета и **не** дописывать Visual Spec в этом скилле — только отчёт о пробелах (правки Visual Spec — через override / `prepare-mock`).
 
 ## Input And Store
 
@@ -286,17 +287,47 @@ Examples:
 
 ## Finding card (обязательный формат)
 
+Формат как в `align-meta` / `brief-client-scope` (карточки ревью). Каждое замечание — отдельная карточка. **Не** писать замечание без файла и строки-якоря (кроме «файл отсутствует» / clone missing — ожидаемый путь и `строки: —`).
+
+В чате перед карточкой можно кратко показать цитаты источников (с **bold** на спорном фрагменте). В **сообщение** ревью цитаты обязательны.
+
 ```markdown
 ### <N>. <короткий заголовок>
 - Метка: `[gap|code-only|warning|recommendation|be-without-fe|visual-spec-incomplete]` (+ обязательно `aligns|extends|conflicts|unproven` для runtime-claim; для Visual Spec — `unproven` если токена нет)
-- Файл: [`path/from/repo/root.ext`](path/from/repo/root.ext) — **L12–L18** (или **L12, L45**)
-- Связанные (если нужно): [`../happy-tourist.github.io/...`](../happy-tourist.github.io/...) — **L3–L5**
-- Что не так: <факт: meta / sibling / Visual Spec пробел / противоречие>
-- Предложение: <конкретная правка meta-контракта, дописать Visual Spec токен, или `prepare-mock`>  
-  **или** Неясно как делать: <варианты A/B без выбора канона>
+- **Что не так:** <факт: meta / sibling / Visual Spec пробел / противоречие>
+- **Предлагаю:** <конкретная правка meta-контракта, дописать Visual Spec токен, или `prepare-mock`>  
+  **или** Неясно как делать: <варианты A/B без выбора канона постановки>
+- **Ревью**
+  - файл: `path/from/repo/root.ext`   # относительный путь текстом, без markdown-ссылки
+  - строки: Lnn                       # РОВНО ОДИН якорь (одна строка или один непрерывный фрагмент Lstart–Lend)
+  - сообщение: <paste-ready текст без markdown-ссылок>
 ```
 
-Пути — от корня `happy-tourist-meta` или sibling (`../happy-tourist.github.io/...`, при необходимости `../happy-tourist-server/...`).
+**Правила якоря (`файл` + `строки`):**
+
+- Комментарий ревью вешают на **одно** место — один файл и одна строка (или один непрерывный фрагмент `Lstart–Lend`). Не писать «L88 и L153» как якорь.
+- Якорь = место, которое **правят** в meta (или главный конфликт claim↔evidence). Sibling-доказательство и другие места — внутри `сообщение` (`../happy-tourist.github.io/...` Lnn: «…»).
+- Путь — от корня `happy-tourist-meta` (якорь обычно meta-claim); sibling — plain-text в `сообщение`. Без markdown-link в блоке **Ревью**.
+- Номера строк — по актуальному содержимому файла на диске.
+
+**Правила `сообщение` (обязательно):**
+
+- Самодостаточно и **коротко**: цитата «здесь» + (если нужно) цитата из sibling/другого файла + **одна фраза** сути + предложение.
+- Другие файлы — plain-text путь + `Lnn` **и короткая цитата**: `` `path` Lnn: «…» ``.
+- **Запрещено:** «выше», «ниже», markdown-ссылки `[текст](url)`.
+- Цитата с якоря — «Здесь: «…»».
+
+**`Предлагаю`:** рекомендация ревью / default; если канон не выбран — **Неясно как делать** + A/B. Actionable, не «разобраться». **Не** предлагать «реализовать planned UI в client HEAD» — meta уже постановка.
+
+## Блок замечаний
+
+Все findings — в одном блоке ниже, три яруса по порядку:
+
+1. **Ошибки (hard)** — только hard cues; если пусто: `- нет`
+2. **Предупреждения** — если пусто: `- нет`
+3. **Рекомендации** — если пусто: `- нет`
+
+Не смешивать пункты и строку `- нет` в одном ярусе. Опускать пустой ярус **нельзя** — всегда три подзаголовка.
 
 ## Report
 
@@ -328,6 +359,7 @@ Write in Russian.
 ## Замечания по возможности реализовать (client)
 
 ### Ошибки (hard)
+<!-- карточки 1..N в формате Finding card (с Ревью); если нет — единственная строка: -->
 - нет
 
 ### Предупреждения
@@ -343,7 +375,7 @@ Write in Russian.
 - <hard → warnings → recommendations; visual-spec gaps → prepare-mock / дописать design; fe-only-without-be → align-implementability-back; meta-quality → align-meta; после apply → verify-mock>
 ```
 
-Never apply fixes. Карточки — текстом; файлы не менять.
+Never apply fixes in standalone mode. Карточки описывают правки текстом (и paste-ready `сообщение` для ревью); файлы не менять — кроме override от `review-change`.
 
 ## Not This Skill
 

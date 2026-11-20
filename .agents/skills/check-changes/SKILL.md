@@ -1,28 +1,28 @@
 ---
 name: check-changes
 description: >-
-  Scans unstaged (and untracked) changes in happy-tourist client and server,
-  then recommends whether to add, update, delete, or split bloated skills using
-  a scored bloat checklist (topic files preferred; score ≥5 → mandatory split
-  plan; forbid description-dumps into fat cores), and whether to fix
-  projects-map / project-map, docs, AGENTS.md, or OpenSpec config. Use when
-  the user runs check-changes, asks to review unstaged client/server diffs for
-  skill/docs/agent/openspec drift, wants a «что добавить / что изменить / что
-  удалить / что разбить» list, or asks which skills have grown too large to
-  split.
+  Scans unstaged (and untracked) changes in happy-tourist client and server
+  (optional: full branch vs merge-base), then recommends add / change / delete /
+  split with a scored bloat checklist (topic files preferred; score ≥5 →
+  mandatory split; forbid description-dumps), reported in Hard / Warnings /
+  Recommendations tiers. Also projects-map, docs, AGENTS.md, OpenSpec config.
+  Use when the user runs check-changes, asks to review client/server diffs for
+  skill/docs drift, wants a «что добавить / изменить / удалить / разбить»
+  list, or asks which skills have grown too large to split.
 ---
 
 # Check Changes — навыки, maps, docs, AGENTS, OpenSpec
 
-Проверить **незастейдженные** (и untracked) изменения в **client** и **server**, сопоставить их с каноном skills / projects-map / docs / `AGENTS.md` / `openspec/config.yaml`, и выдать список предложений: **что добавить**, **что изменить**, **что удалить**, **что разбить** (раздувшиеся skills → отдельный skill или под-skills).
+Проверить изменения в **client** и **server**, сопоставить с каноном skills / projects-map / docs / `AGENTS.md` / `openspec/config.yaml`, и выдать предложения **добавить / изменить / удалить / разбить** в трёх ярусах: **Hard gaps / Warnings / Recommendations**.
 
 Скилл **только анализирует и предлагает** — не правит файлы, не стейджит, не коммитит (для коммита — [`commit`](../commit/SKILL.md)).
 
 ## Когда применять
 
-- Пользователь запускает `check-changes` / просит проверить незастейдженные изменения client/server на drift skills/docs/agents/openspec
+- Пользователь запускает `check-changes` / просит проверить изменения client/server на drift skills/docs/agents/openspec
 - После локальной разработки, до `commit`, когда нужно понять, не устарели ли навыки, документация агентов и OpenSpec config
 - Явно спрашивают, какие skills раздулись и стоит ли вынести / разбить
+- Опционально: «ветка» / «full branch» / «merge-base» — сканировать коммиты ветки, не только WT
 
 Не вызывать «на всякий случай» после каждой мелкой правки без запроса.
 
@@ -54,24 +54,29 @@ description: >-
 
 ## Scope diff
 
-Только **незастейдженное** working tree client/server:
+**Default:** только **незастейдженное** working tree client/server (+ untracked).
+
+**Full branch** (когда пользователь сказал «ветка» / «full branch» / «merge-base» / «вся ветка»): union of commits vs merge-base **+** staged **+** unstaged **+** untracked. Merge-base: `origin/master` → `origin/main` → `master` → `main` (первый существующий).
 
 ```bash
-# в каждом из client и server:
+# в каждом из client и server (default):
 git status -sb
 git status --porcelain
 git diff                 # unstaged tracked
 git ls-files --others --exclude-standard   # untracked
+
+# full branch — дополнительно:
+git merge-base HEAD <base-ref>
+git diff --stat <merge-base>...HEAD
+git diff <merge-base>...HEAD
+git diff --cached
 ```
 
 Для untracked — прочитать содержимое новых файлов (или `git diff --no-index /dev/null <file>` где доступно).
 
-**Не включать** в основной анализ:
+В **default**-режиме: если есть staged — кратко упомянуть: «есть staged; default scope их не разбирает — застейджьте/расстейджьте или скажите «ветка»/«включая staged»».
 
-- `git diff --cached` (staged) — если staged есть, кратко упомянуть: «есть staged, этот скилл их не разбирает; застейджьте/расстейджьте или скажите расширить scope»
-- коммиты ветки vs merge-base (это зона `*-verify-code` / `*-align-code`)
-
-Если и client, и server чисты по unstaged/untracked — остановиться: «незастейдженных изменений нет».
+Если в выбранном scope client и server чисты — остановиться: «изменений в scope нет».
 
 ## Workflow
 
@@ -83,7 +88,7 @@ Check-Changes Progress:
 - [ ] 4. Map themes → skills / maps / docs / AGENTS / OpenSpec config
 - [ ] 5. Scan bloat candidates (touched + oversized skills)
 - [ ] 6. Decide add vs change vs delete vs split vs none
-- [ ] 7. Report «Что добавить» / «Что изменить» / «Что удалить» / «Что разбить»
+- [ ] 7. Report Hard gaps / Warnings / Recommendations (add|change|delete|split)
 ```
 
 ### 1. Resolve paths
@@ -299,40 +304,50 @@ Description: «Core in SKILL.md; topic details in …».
 
 Не предлагать дубликаты skills «на всякий случай». Не предлагать правки runtime-кода — только agent/docs/map/OpenSpec-config артефакты. Не удалять и не дробить skills самому в этом прогоне — только рекомендовать.
 
+### Severity (три яруса)
+
+Каждое предложение — ровно в один ярус. Глагол (**добавить** / **изменить** / **удалить** / **разбить**) — внутри яруса.
+
+| Tier | Когда |
+|------|--------|
+| **Hard gaps** | Skill/docs **противоречат** diff; новый устойчивый паттерн без skill; индекс не знает обязательный новый skill; **удалить**: skill врёт агенту / полный дубликат; **разбить**: bloat score ≥ **5** (обязательный split) |
+| **Warnings** | Сильный lean на drift без полного proof; description скорее не триггерится; **разбить**: score 3–4; **удалить**: lean на мёртвость без полного proof |
+| **Recommendations** | Опциональный polish / мягкий sync docs; **разбить**: score ≤2 («разбивать рано» — можно одной строкой в Rec или «нет») |
+
+Не раздувать Recommendations в Hard. Split ≥5 всегда Hard — не подменять точечным «изменить description».
+
 ### 7. Report
 
-Формат ответа пользователю (четыре основные секции + краткий контекст):
+Писать по-русски:
 
 ```markdown
 ## Сводка изменений
-| Repo | Unstaged / untracked | Темы |
-|------|----------------------|------|
-| client | … | … |
-| server | … | … |
+Scope: unstaged+untracked | branch vs <merge-base> (<base-ref>) + staged + unstaged + untracked
 
-## Что добавить
-- **`<артефакт>`** (`путь`): зачем (1 предложение, связь с diff)
-- … или «ничего»
+| Repo | Unstaged / untracked | (Branch / staged — если full) | Темы |
+|------|----------------------|-------------------------------|------|
+| client | … | … | … |
+| server | … | … | … |
 
-## Что изменить
-- **`<артефакт>`** (`путь`): что именно поправить и почему
-- … или «ничего»
+## Hard gaps
+- **добавить|изменить|удалить|разбить** `<артефакт>` (`путь`): зачем / что поправить; для split — **score N**, A|B, topics
+- нет
 
-## Что удалить
-- **`<skill или артефакт>`** (`путь`): почему потерял актуальность (diff / нет кода); что убрать из AGENTS/docs
-- … или «ничего»
+## Warnings
+- **добавить|изменить|удалить|разбить** `<артефакт>` (`путь`): …
+- нет
 
-## Что разбить
-- **`<skill>`** (`путь`, ~N строк ядра, desc ~C chars): **score N** (сигналы: …); **A** (topics: `a.md`, `b.md`; цель ядро ≲220) или **B** (sibling `…`); что перенести; правки description / AGENTS «Когда»
-- … или «ничего» / «разбивать рано» (score ≤2)
+## Recommendations
+- **добавить|изменить|удалить|разбить** `<артефакт>` (`путь`): …
+- нет
 
 ## Вне scope / заметки
-- staged ignored; опциональные follow-ups (verify-code, commit) — коротко
+- default: staged/branch ignored unless asked; follow-ups: verify-code, commit — коротко
 ```
 
-Каждый пункт — actionable: конкретный файл/skill-name и суть правки/удаления/разбиения. Без длинных цитат diff.
+Каждый пункт — actionable. Пустые ярусы — одна строка `- нет` (не смешивать items и `нет`).
 
-Приоритет в списке: skills (add → change → delete → split) → AGENTS индексы → projects-map → docs → `openspec/config.yaml`.
+Приоритет внутри яруса: skills (add → change → delete → split) → AGENTS → projects-map → docs → `openspec/config.yaml`.
 
 ## Примеры триггеров
 
@@ -347,7 +362,7 @@ Description: «Core in SKILL.md; topic details in …».
 - Не редактировать и не удалять skills/docs/AGENTS/maps/OpenSpec config в этом скилле без отдельной просьбы применить предложения.
 - Не предлагать массовое удаление skills без связи с diff или явной мёртвости относительно текущего client/server.
 - Не предлагать split «на всякий случай» без эвристик шага 5; не дробить process-skills (`*-align-code` / `*-verify-code`) только из-за `wc -l`.
-- Не анализировать staged / branch commits как основной scope.
+- В **default**-режиме не подменять scope коммитами ветки; в **full branch** — не ограничиваться только WT.
 - Не сканировать meta working tree как источник «изменений продукта» (кроме сверки канона и bloat scan skills).
 - Не запускать npm build/test.
 - Не путать с `client-verify-code` / `server-verify-code` (compliance кода) и `commit` (stage/commit/push).

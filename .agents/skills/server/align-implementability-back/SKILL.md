@@ -8,9 +8,10 @@ description: >-
   messages/routes/schema/algorithms are absent in sibling HEAD. Warn when
   client/UI docs lack server/HTTP/room/schema claim in meta
   (`[fe-only-without-be]`). Large claim sets: fan out evidence by contract axis
-  to subagents. Verdict FEASIBLE|PARTIAL|INFEASIBLE|UNKNOWN. Finding card:
-  file + lines + issue + fix. Not client UI realizability
-  (align-implementability-front) or align-meta. Does not edit files.
+  to subagents. Verdict FEASIBLE|PARTIAL|INFEASIBLE|UNKNOWN. Finding card: Что не
+  так / Предлагаю / Ревью (файл + одна строка-якорь + paste-ready сообщение).
+  Not client UI realizability (align-implementability-front) or align-meta.
+  Does not edit files.
 ---
 
 # Align Implementability (Backend / Server)
@@ -96,7 +97,7 @@ Optionally note meta-internal defects only as a one-line pointer to `align-meta`
 
 ## Hard Boundary
 
-Do not edit, create, delete, format, or commit files. Do not apply fixes from align mode. Deliver the complete result in chat. Verdict is evidence only (`править не надо`).
+Do not edit, create, delete, format, or commit files — except when called from [`review-change`](../../review-change/SKILL.md) (override: after report, apply meta fixes) or the user **explicitly** asks to change named meta files / this skill. Do not apply fixes from standalone align mode. Deliver the complete result in chat. Verdict is evidence only (`править не надо`) unless review-change override.
 
 ## Input And Store
 
@@ -247,17 +248,46 @@ Examples:
 
 ## Finding card (обязательный формат)
 
+Формат как в `align-meta` / `brief-server-scope` (карточки ревью). Каждое замечание — отдельная карточка. **Не** писать замечание без файла и строки-якоря (кроме «файл отсутствует» / clone missing — ожидаемый путь и `строки: —`).
+
+В чате перед карточкой можно кратко показать цитаты источников (с **bold** на спорном фрагменте). В **сообщение** ревью цитаты обязательны.
+
 ```markdown
 ### <N>. <короткий заголовок>
 - Метка: `[gap|code-only|warning|recommendation|fe-only-without-be]` (+ обязательно `aligns|extends|conflicts|unproven` для runtime-claim)
-- Файл: [`path/from/repo/root.ext`](path/from/repo/root.ext) — **L12–L18** (или **L12, L45**)
-- Связанные (если нужно): [`../happy-tourist-server/...`](../happy-tourist-server/...) — **L3–L5**
-- Что не так: <факт: meta / sibling / противоречие>
-- Предложение: <конкретная правка meta-контракта или уточнение extends>  
-  **или** Неясно как делать: <варианты A/B без выбора канона>
+- **Что не так:** <факт: meta / sibling / противоречие>
+- **Предлагаю:** <конкретная правка meta-контракта или уточнение extends>  
+  **или** Неясно как делать: <варианты A/B без выбора канона постановки>
+- **Ревью**
+  - файл: `path/from/repo/root.ext`   # относительный путь текстом, без markdown-ссылки
+  - строки: Lnn                       # РОВНО ОДИН якорь (одна строка или один непрерывный фрагмент Lstart–Lend)
+  - сообщение: <paste-ready текст без markdown-ссылок>
 ```
 
-Пути — от корня `happy-tourist-meta` или sibling (`../happy-tourist-server/...`). Строки по актуальному диску.
+**Правила якоря (`файл` + `строки`):**
+
+- Комментарий ревью вешают на **одно** место — один файл и одна строка (или один непрерывный фрагмент `Lstart–Lend`). Не писать «L88 и L153» как якорь.
+- Якорь = место, которое **правят** в meta (или главный конфликт claim↔evidence). Sibling — plain-text в `сообщение` (`../happy-tourist-server/...` Lnn: «…»).
+- Путь — от корня `happy-tourist-meta`; без markdown-link в блоке **Ревью**.
+- Номера строк — по актуальному содержимому файла на диске.
+
+**Правила `сообщение` (обязательно):**
+
+- Самодостаточно и **коротко**: цитата «здесь» + (если нужно) цитата из sibling + **одна фраза** сути + предложение.
+- Другие файлы — plain-text путь + `Lnn` **и короткая цитата**: `` `path` Lnn: «…» ``.
+- **Запрещено:** «выше», «ниже», markdown-ссылки `[текст](url)`.
+
+**`Предлагаю`:** рекомендация ревью / default; если канон не выбран — **Неясно как делать** + A/B. Actionable, не «разобраться».
+
+## Блок замечаний
+
+Все findings — в одном блоке ниже, три яруса по порядку:
+
+1. **Ошибки (hard)** — только hard cues; если пусто: `- нет`
+2. **Предупреждения** — если пусто: `- нет`
+3. **Рекомендации** — если пусто: `- нет`
+
+Не смешивать пункты и строку `- нет` в одном ярусе. Опускать пустой ярус **нельзя** — всегда три подзаголовка.
 
 ## Report
 
@@ -283,6 +313,7 @@ Write in Russian.
 ## Замечания по возможности реализовать (server)
 
 ### Ошибки (hard)
+<!-- карточки 1..N в формате Finding card (с Ревью); если нет — единственная строка: -->
 - нет
 
 ### Предупреждения
@@ -298,7 +329,7 @@ Write in Russian.
 - <hard → warnings → recommendations; UI-fit / be-without-fe → align-implementability-front; meta-quality → align-meta>
 ```
 
-Never apply fixes. Карточки — текстом; файлы не менять.
+Never apply fixes in standalone mode. Карточки описывают правки текстом (и paste-ready `сообщение` для ревью); файлы не менять — кроме override от `review-change`.
 
 ## Not This Skill
 

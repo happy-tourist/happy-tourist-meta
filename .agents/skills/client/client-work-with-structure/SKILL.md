@@ -44,6 +44,25 @@ may also host copies later).
 8. Use Quasar auto-imported components (`q-page`, `q-btn`, …). Do not manually register Quasar UI components.
 9. Prefer Composition API + `<script setup lang="ts">`. Do not introduce Options API pages.
 
+## Stop: prop-passthrough / slot-relay wrappers
+
+Do **not** add thin wrapper components (or “facade” pages) that only forward props/slots/events to a child without owning layout, state, or domain logic.
+
+Red flags:
+
+- new `FooWrapper.vue` / `FooContainer.vue` whose template is mostly `<Child v-bind="$attrs">` / slot relay;
+- page that only mounts one component and re-exports its events with no page-level concern;
+- shared component invented so two pages can share passthrough shells they then customize via more slots.
+
+**Gate before creating such a wrapper:**
+
+1. Prefer the flatter shape: put markup in the parent page, or one shared leaf component with real UI logic.
+2. **Warn in chat**: name the planned wrapper, say it looks like prop/slot passthrough, propose the flatter alternative.
+3. **Wait for explicit confirmation** before creating or expanding that wrapper. Silence / “continue the task” is **not** confirmation for this gate.
+4. Only after the user confirms — create it.
+
+When reviewing, flag existing passthrough wrappers the same way and prefer removing them when the flatter shape is clear. This does **not** ban legitimate pages that compose stores + several children, or shared widgets with real presentation logic.
+
 ## Folder Map (`src`)
 
 | Layer | Path | Role |

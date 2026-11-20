@@ -155,7 +155,7 @@ Room mutates these in `onDrop` / `onReconnect` / seat assign — see `work-with-
 |-------|---------|
 | `currentTurnSessionId` | Synced whose turn; empty when no eligible seat |
 | `turnUntil` | Unix ms deadline; `0` = no active turn timer |
-| `turnBudgetSeconds` | `60` multi / `300` solo while timer active; else `0` |
+| `turnBudgetSeconds` | `60` multi / `60` solo while timer active; else `0` (solo red ring on client = 1 eligible seat, not duration) |
 | `Seat.timeExpired` | Solo budget elapsed; moves/peeks rejected; seat remains |
 
 **Not synced:** room-private `turnOrder: string[]` in `MyRoom` (join-order queue). Client only needs «чей ход» + deadline chrome.
@@ -174,7 +174,7 @@ Finished seats remain in `seats` (count toward `maxSeats`) until consented leave
 
 | Field | Meaning |
 |-------|---------|
-| `removedTaskKeys` | `ArraySchema<string>` of `"r,c"` after **correct** peek only; all clients see holes; **not landable** (stand OK). Incorrect KEEP does not sync a removal |
+| `removedTaskKeys` | `ArraySchema<string>` of `"r,c"` after **correct** peek only; all clients see visual holes; **landable** (stand OK). Incorrect KEEP does not sync a removal |
 
 ### Grille traps (game/board + game/pieces)
 

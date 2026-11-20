@@ -5,8 +5,8 @@ description: >-
   happy-tourist tourist SPA: Client singleton from src/boot/colyseus.ts,
   LobbyRoom live listing (subscribeLobby), room create/join/leave (incl.
   grilleDensity + catapultDensity), room.send move/rescue/push/returnFromFinish/peek/endTurn/say
-  messages, private budgets/peekOpen/allJailWarning (infinite=peeks∞ only;
-  holes not landable; holdingGrilleKeys + revealingCatapultKeys / brokenCatapultKeys),
+  messages, private budgets/peekOpen/allJailWarning (infinite=∞ peeks+steps;
+  removed holes landable; holdingGrilleKeys + revealingCatapultKeys / brokenCatapultKeys),
   client.auth register/sign-in/sign-out, Pinia auth/game stores, or
   VITE_COLYSEUS_URL / VITE_API_URL env wiring.
 ---
@@ -221,7 +221,7 @@ Mirror seating + turn from schema.
 | `started` | Legacy; client mirrors `phase === 'playing'` |
 | `seats` Map | Key = `sessionId` → `touristId` + `pieces` (+ `finished`/`trapped`) + connectivity + `ready` + `finishPlace` |
 | `currentTurnSessionId` | Synced whose turn; `""` if no seated / all finished → getter `isMyTurn` |
-| `removedTaskKeys` | Synced `"r,c"` holes after **correct** peek only; **not landable** (stand-on-hole OK). Incorrect KEEP → no hole |
+| `removedTaskKeys` | Synced `"r,c"` holes after **correct** peek only; **landable** visual holes (stand-on-hole OK). Incorrect KEEP → no hole |
 | `holdingGrilleKeys` | Synced revealed holding grille cells (`"r,c"`); overlay on GamePage |
 | `revealingCatapultKeys` | Short-lived synced catapult cells for sequential client presentation (`"r,c"`); hidden unspent never sync; client `$patch` seats+revealing atomically (D13) |
 | `brokenCatapultKeys` | Subset of revealing keys with no fling dest — client shows intact→broken holds then vanish (no travel) |
@@ -231,7 +231,7 @@ Private (not schema) — wire in `_attachRoom`:
 
 | Message | Pinia fields |
 |---------|--------------|
-| `budgets` `{ steps, peeks, infinite, peekedThisTurn }` | `steps` (always finite), `peeks`, `budgetsInfinite` (peeks∞ only), `peekedThisTurn` (legacy) |
+| `budgets` `{ steps, peeks, infinite, peekedThisTurn }` | `steps`/`peeks`, `budgetsInfinite` (solo: ∞ **both**), `peekedThisTurn` (legacy) |
 | synced peek session / optional `peekOpen` | `openPeek` |
 | `allJailWarning` `{}` | `allJailWarning = true` (own seat modal) |
 
