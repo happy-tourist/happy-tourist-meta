@@ -14,28 +14,29 @@
 | SC-BOARD-43 | modified — correct grants knowledge not steps |
 | SC-BOARD-45 | removed — flipped peek spends peeks |
 | SC-BOARD-48 | modified — deck reshuffle on open-on-land |
-| SC-BOARD-70 | modified — no turn-timeout close reason |
-| SC-BOARD-80 | pending — exclusive cell types at seed |
+| SC-BOARD-70 | modified — timeout close reason restored with turn timer |
+| SC-BOARD-80 | modified — exclusive seed grille 15% / catapult 15% |
 | SC-BOARD-81 | pending — fixed catapult 15% exclusive |
 | SC-BOARD-82 | pending — open-on-land binds/opens task |
 | SC-BOARD-83 | pending — wrong keeps open knowledge digit |
 | SC-BOARD-84 | pending — no peek icon affordance |
-| SC-BOARD-85 | pending — grille counter top-right red |
+| SC-BOARD-85 | modified — grille counter TR red above overlay |
 | SC-BOARD-86 | pending — trap clear leaves empty cell |
 | SC-BOARD-87 | pending — correct removes tile empty cell |
+| SC-BOARD-88 | pending — outcome toast top-center (Notify) |
 
 ## ADDED Requirements
 
 ### Requirement: Task cells are exclusively task grille or catapult
 
-When phase becomes `playing`, the server SHALL partition still-present map task cells (`*`) into three disjoint sets: **task** (Q&A reward), **grille**, and **catapult**. A cell MUST NOT hold more than one of these. Let `n` be the task-cell count. Grille count MUST be `min(round(n * 0.12), n)`. Catapult count MUST be `min(round(n * 0.15), n - grilleCount)`. Remaining task cells are Q&A tasks. Start and finish cells MUST NOT receive traps or task binds. Placement MUST NOT be predictable from coordinates alone. Create-time density options MUST NOT affect this partition (server ignores them if present).
+When phase becomes `playing`, the server SHALL partition still-present map task cells (`*`) into three disjoint sets: **task** (Q&A reward), **grille**, and **catapult**. A cell MUST NOT hold more than one of these. Let `n` be the task-cell count. Grille count MUST be `min(round(n * 0.15), n)`. Catapult count MUST be `min(round(n * 0.15), n - grilleCount)`. Remaining task cells are Q&A tasks. Start and finish cells MUST NOT receive traps or task binds. Placement MUST NOT be predictable from coordinates alone. Create-time density options MUST NOT affect this partition (server ignores them if present).
 
 #### Scenario [SC-BOARD-80]: Seed partitions without overlap
 
 - **GIVEN** a tourist room entering phase `playing` with 48 task cells
 - **WHEN** traps and tasks are seeded
-- **THEN** exactly `round(48 * 0.12)` = **6** cells are grille-only
-- **AND** exactly `round(48 * 0.15)` = **7** cells are catapult-only
+- **THEN** exactly `round(48 * 0.15)` = **7** cells are grille-only
+- **AND** exactly `min(round(48 * 0.15), 48 - 7)` = **7** cells are catapult-only
 - **AND** no cell is both grille and catapult or trap-plus-task
 - **AND** the remaining task cells are Q&A task cells
 
@@ -72,7 +73,7 @@ There MUST NOT be a board peek icon above tourists. Opening MUST NOT require or 
 
 ### Requirement: Wrong answer leaves open knowledge digit
 
-When a task modal closes without a correct submit (wrong order or dismiss without correct), the server MUST keep the tile present and bound, and every client MUST show the flipped/open task skin with the knowledge value digit (**difficulty** 1|2|3). Another free unfinished piece (any seat) that later lands on that open cell MUST reopen the same bound task modal. A **correct** submit MUST grant that piece **difficulty** knowledge points, remove the task tile leaving an empty playable cell (same presentation family as today’s removed task hole), and flash «Правильно!» per `game/presence`. Wrong submit MUST flash «Ошибка!» and MUST NOT grant knowledge.
+When a task modal closes without a correct submit (wrong order or dismiss without correct), the server MUST keep the tile present and bound, and every client MUST show the flipped/open task skin with the knowledge value digit (**difficulty** 1|2|3). Another free unfinished piece (any seat) that later lands on that open cell MUST reopen the same bound task modal. A **correct** submit MUST grant that piece **difficulty** knowledge points, remove the task tile leaving an empty playable cell (same presentation family as today’s removed task hole), and show a top-center toast «Правильно!» per `game/presence`. Wrong submit MUST show toast «Ошибка!» and MUST NOT grant knowledge.
 
 #### Scenario [SC-BOARD-83]: Wrong keeps open cell with knowledge digit
 
@@ -88,17 +89,18 @@ When a task modal closes without a correct submit (wrong order or dismiss withou
 - **WHEN** the server accepts the answer
 - **THEN** that piece’s knowledge increases by 2
 - **AND** the task tile is removed leaving an empty playable cell
-- **AND** every client sees the «Правильно!» flash
+- **AND** every client sees the «Правильно!» top-center toast
 
 ### Requirement: Grille remaining-turns badge
 
-While a piece is trapped by a grille, every client that shows that piece (board and personal strip chrome) MUST display the remaining auto-free turns as a badge at the **top-right** of the piece chrome on a **red** background. The value MUST match synchronized public `Piece.remainingTurns` from `game/move` (starts at **3**). When the grille clears, the badge MUST disappear with the grille. This badge is **public** (all clients). Own carried-knowledge yellow circle (`game/presence`) is a separate private badge at bottom-right and MUST NOT replace the grille counter.
+While a piece is trapped by a grille, every client that shows that piece (board and personal strip chrome) MUST display the remaining auto-free turns as a badge at the **top-right** of the piece chrome on a **red** background. The value MUST match synchronized public `Piece.remainingTurns` from `game/move` (starts at **3**). The badge MUST paint **above** the grille overlay / strip chrome grille (`z-index` higher than the grille artwork) so the digit remains readable. When the grille clears, the badge MUST disappear with the grille. This badge is **public** (all clients). Own carried-knowledge chrome (`game/presence`) lives on the strip only and MUST NOT replace the grille counter.
 
 #### Scenario [SC-BOARD-85]: Trapped piece shows red top-right counter
 
 - **GIVEN** a piece is trapped with remaining turns 3
 - **WHEN** any client views the board
 - **THEN** that piece shows a red-background counter at top-right with value 3
+- **AND** the counter remains visible above the grille overlay
 - **AND** other seats see the same red counter (public sync)
 
 ### Requirement: Clearing a trap leaves an empty cell
@@ -116,7 +118,7 @@ When a grille is cleared (rescue, auto-free, all-jail, or leave) or a catapult i
 
 ### Requirement: Shared peek modal with question and answer slots
 
-While a task modal is open after open-on-land (or reopen on an already-open task cell), every client in the room MUST see the shared modal chrome (difficulty header, question, answer slots, answer pool) as previously specified for peek modal layout. Only the seat whose piece opened the modal MAY place answers. A **correct** submit MUST require exact slot order, MUST add **difficulty** knowledge to that piece (not steps), MUST remove the task tile to an empty playable cell, and MUST flash «Правильно!». Wrong submit MUST KEEP the open bound cell and flash «Ошибка!». There is no turn-deadline force-close path (`game/move` has no turn timer); other force-closes (leave mid-modal) MUST KEEP the bind without the «Не успел!» flash.
+While a task modal is open after open-on-land (or reopen on an already-open task cell), every client in the room MUST see the shared modal chrome (difficulty header, question, answer slots, answer pool) as previously specified for peek modal layout. Only the seat whose piece opened the modal MAY place answers. A **correct** submit MUST require exact slot order, MUST add **difficulty** knowledge to that piece (not steps), MUST remove the task tile to an empty playable cell, and MUST show toast «Правильно!». Wrong submit MUST KEEP the open bound cell and show toast «Ошибка!». Turn-deadline force-close MUST KEEP the bind and show toast «Не успел!» (`game/move` / `game/presence`). Leave mid-modal and other non-wrong, non-timeout force-closes MUST KEEP the bind without the «Не успел!» toast.
 
 #### Scenario [SC-BOARD-43]: Correct ordered slots grant difficulty steps
 
@@ -124,7 +126,7 @@ While a task modal is open after open-on-land (or reopen on an already-open task
 - **WHEN** that player submits the peek answer
 - **THEN** the server accepts the answer as correct
 - **AND** that piece gains difficulty knowledge points (not steps) and the task tile is removed
-- **AND** every client in the room sees the match-status flash «Правильно!» for about ten seconds
+- **AND** every client in the room sees a top-center toast «Правильно!»
 
 #### Scenario [SC-BOARD-44]: Wrong order keeps the same bound task
 
@@ -132,7 +134,14 @@ While a task modal is open after open-on-land (or reopen on an already-open task
 - **WHEN** that player submits the peek answer
 - **THEN** the server rejects the answer as incorrect
 - **AND** the task tile and bind remain (KEEP) with the open knowledge digit visible
-- **AND** every client in the room sees the match-status flash «Ошибка!» for about ten seconds
+- **AND** every client in the room sees a top-center toast «Ошибка!»
+
+#### Scenario [SC-BOARD-88]: Outcome uses top-center toast
+
+- **GIVEN** a task modal resolves as correct, wrong, or turn-timeout
+- **WHEN** clients receive peek-close
+- **THEN** each client shows a conspicuous top-center toast for that outcome
+- **AND** the toast is not limited to the quiet header match-status line alone
 
 #### Scenario [SC-BOARD-46]: Everyone sees the peek modal and placements
 
@@ -168,22 +177,22 @@ At playing start the server SHALL build a shuffled deck from all tasks in the ro
 
 ### Requirement: Peek close announces outcome reason
 
-When the server closes an open task/peek session, it MUST broadcast a peek-close event to every client that includes whether the resolve was correct and, when incorrect, a close reason that distinguishes at least **wrong submit** from other force-closes. Clients MUST use that payload (not heuristics alone) to choose among the header flashes in `game/presence`. Because `game/move` has no turn timer, the server MUST NOT emit a **turn-timeout** force-close reason for this economy. Leave mid-modal and other non-wrong force-closes MUST NOT be labeled as turn-timeout and MUST NOT use the «Не успел!» flash.
+When the server closes an open task/peek session, it MUST broadcast a peek-close event to every client that includes whether the resolve was correct and, when incorrect, a close reason that distinguishes at least **wrong submit** from **turn-timeout** and from other force-closes. Clients MUST use that payload (not heuristics alone) to choose among the toasts in `game/presence`. When the turn deadline expires while a modal is open (`game/move`), the server MUST emit incorrect + turn-timeout reason and clients MUST show «Не успел!». Leave mid-modal and other non-wrong, non-timeout force-closes MUST NOT be labeled as turn-timeout and MUST NOT use the «Не успел!» toast.
 
 #### Scenario [SC-BOARD-70]: Peek close carries correct flag and reason
 
 - **GIVEN** an open task modal in a tourist room
-- **WHEN** the server resolves that modal (correct submit, wrong submit, or leave/force-close without wrong submit)
+- **WHEN** the server resolves that modal (correct submit, wrong submit, turn-timeout, or leave/force-close without wrong submit)
 - **THEN** every client receives a peek-close message with the correct outcome flag
 - **AND** when the resolve is incorrect due to a wrong submit, the message identifies the wrong reason
-- **AND** the server does not emit a turn-timeout close reason (no turn timer in this economy)
+- **AND** when the resolve is turn-timeout, the message identifies the timeout reason
 
 ## REMOVED Requirements
 
 ### Requirement: Grilles seed on task cells by density
 
-**Reason**: Replaced by fixed 12% exclusive grille partition (ADDED exclusive cell types / SC-BOARD-80).
-**Migration**: Seed grilles at 12% exclusive; do not use create density presets.
+**Reason**: Replaced by fixed 15% exclusive grille partition (ADDED exclusive cell types / SC-BOARD-80).
+**Migration**: Seed grilles at 15% exclusive; do not use create density presets.
 
 ### Requirement: Every peek open spends peeks (fresh and flipped)
 

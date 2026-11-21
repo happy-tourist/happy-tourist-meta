@@ -6,7 +6,7 @@ Read this when changing create options, `room.send` / `onMessage` game contracts
 
 | Direction | Name | Payload / behavior |
 |-----------|------|--------------------|
-| Client → server | `create('tourist', opts)` | `{ mapId, packId, taskSetIds, maxSeats }` — **no** `grilleDensity` / `catapultDensity` (server ignores if sent; fixed exclusive seed 12% grille / 15% catapult — SC-LOBBY-40/41 / SC-BOARD-80/81) |
+| Client → server | `create('tourist', opts)` | `{ mapId, packId, taskSetIds, maxSeats }` — **no** `grilleDensity` / `catapultDensity` (server ignores if sent; fixed exclusive seed **15%/15%** — SC-LOBBY-40/41 / SC-BOARD-80/81) |
 | Client → server | `joinById(roomId)` | Tourist join (spectator if not waiting / full) |
 
 ## Client → server
@@ -26,20 +26,21 @@ Read this when changing create options, `room.send` / `onMessage` game contracts
 
 | Name | Payload | Behavior |
 |------|---------|----------|
-| `knowledge` (owner) | `{ delivered: number, pieces: Record<pieceId, number> }` | Private; avatar counter + yellow BR badges. Arm +N fall only after `knowledgeSynced` (SC-PRESENCE-51). |
-| `allJailWarning` (owner) | `{}` | Informational modal after all-jail reset. |
-| `peekClose` (all) | `{ sessionId, correct, row, col, reason?: 'wrong' }` | No turn-timeout `'timeout'` path (deadlines retired). Header flash from reason (SC-PRESENCE-36). |
+| `knowledge` (owner) | `{ delivered, pieces: Record<pieceId, number>, outcome?: 'finish'\|'cut' }` | Private; avatar counter + strip TR yellow badges (+ lightbulb). Arm +N fall only after `knowledgeSynced` (SC-PRESENCE-51). `outcome` selects finish\|cut modal copy (SC-FINISH-31/32/34). |
+| `allJailWarning` (owner) | `{}` | **Inert** — keep `allJailWarning = false`; teleport modal retired (SC-MOVE-119). |
+| `peekClose` (all) | `{ sessionId, correct, row, col, reason?: 'wrong'\|'timeout' }` | Header flash + top-center Notify toast (SC-PRESENCE-36 / SC-BOARD-88). Multi turn timeout uses `'timeout'`. |
 | `say` (all) | `{ sessionId, presetId, at }` | Ephemeral. |
-| Schema sync | seats/pieces (+ `remainingTurns`), peek session, traps, turn, holes | `onStateChange` — see `work-with-stores/game.md`. |
+| Schema sync | seats/pieces (+ `remainingTurns`), peek session, traps, `turnUntil` / `turnBudgetSeconds`, holes | `onStateChange` — see `work-with-stores/game.md`. |
 
 ## Store mirrors (Pinia `game`)
 
-- Private: `knowledgeDelivered`, `knowledgePieces`, `knowledgeSynced` (not `steps`/`peeks`/`budgetsInfinite`).
+- Private: `knowledgeDelivered`, `knowledgePieces`, `knowledgeOutcome`, `knowledgeSynced` (not `steps`/`peeks`/`budgetsInfinite`).
 - Public piece: `remainingTurns` (grille countdown 3…1; 0 when free).
+- Turn ring: mirror `turnUntil` / `turnBudgetSeconds` (60s multi when ≥2 eligible).
 - Local: board-action spent flag after successful `sendMove` / `sendReturnFromFinish`; clear when `currentTurnSessionId` leaves own seat.
 - `sendPush` / `sendEndTurn` / `sendPeek` stay as no-ops or absent from UI — do not revive affordances.
 
 ## Do / Don't
 
-- Do: Colyseus I/O only via `stores/game`; keep create payload density-free; listen `knowledge` not `budgets`.
-- Don't: revive density create keys, push/end-turn/peek-open affordances, steps/peeks HUD, or treat `finishPlace` as ranked place UX (`finishPlace` 0→1 opens delivered-knowledge modal only).
+- Do: Colyseus I/O only via `stores/game`; keep create payload density-free; listen `knowledge` not `budgets`; Notify on `peekClose`.
+- Don't: revive density create keys, push/end-turn/peek-open affordances, steps/peeks HUD, board yellow knowledge badge, all-jail teleport modal, or treat `finishPlace` as ranked place UX (`finishPlace` 0→1 opens delivered-knowledge modal by `outcome`).

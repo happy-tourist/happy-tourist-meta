@@ -71,7 +71,7 @@ When reviewing, flag existing passthrough wrappers the same way and prefer remov
 | Components | `src/components/` | Reusable widgets (e.g. `PasswordStrengthMeter.vue`, `MapGridPreview.vue`, `MapListCardTile.vue`, `LobbyRoomCardTile.vue` lobby listing ~180 + `--pack-card-*` SC-LOBBY-25/33/36, `PackTasksCsvControls.vue`, `PackTaskComposeDialog.vue` dots+badge + portrait slots + mini-card pool SC-PACK-258…263/276…281, portrait `PackAnswerCardTile.vue` SC-PACK-222/225/282/283, portrait `PackTaskTile.vue` SC-PACK-278/283, `PackListCardTile.vue` catalog ~180×260 + published-only set preview SC-PACK-228/249…255, `PackTaskSetCardTile.vue` live/editor task-set summary; plus Quasar scaffold leftovers) |
 | Lib | `src/lib/` | Pure helpers without Pinia/Colyseus I/O (`passwordPolicy.ts`, `passwordStrength.ts`, `packContentCsv.ts` — `;` CSV answers/tasks + `downloadCsvText`; `taskFilledSlots.ts` — list-tile filled slots SC-PACK-278; `editorDirty.ts` — Submit dirty fingerprint / pack session baseline SC-PACK-234 / SC-MAP-65; `boardGeometry.ts` — one `center` tile per finish/`7` (SC-BOARD-55); `tileSkins.ts` — shared PNG CSS vars for GamePage / `MapGridPreview` / map palette) |
 | Stores | `src/stores/` | Pinia: `auth`, `theme`, `game`, `support`, `content`, `maps` (+ unused scaffold `example-store`) |
-| Boot | `src/boot/` | Quasar boot: `theme`, `i18n`, `colyseus` (registered in `quasar.config.ts`; `framework.plugins: ['Dark']`) |
+| Boot | `src/boot/` | Quasar boot: `theme`, `i18n`, `colyseus` (registered in `quasar.config.ts`; `framework.plugins: ['Dark', 'Notify']` — Notify for peek outcome toasts SC-BOARD-88) |
 | Router | `src/router/` | `routes.ts` + `authGuard.ts` (`authBeforeEach`; wired from `index.ts`; `filenameBasedRouting: false`) |
 | i18n | `src/i18n/` | Locale message trees (`en-US`) |
 | CSS | `src/css/` | `app.scss` (`.app-page-bg` shell theme×viewport fixed cover SC-BRAND-21; catalog chrome `.catalog-list-*` + header/crumb tokens SC-BRAND-25 — create CTA = Lobby Quasar primary, **no** `.catalog-list-create` sizing SC-BRAND-27; `.q-page-container--with-crumbs` flex SC-BRAND-23; `.pack-card-grid` wrap + shared `--pack-card-*` SC-PACK-255 + layout-only translucent underlay SC-PACK-285 / SC-BRAND-28 — **not** on `.peek-chrome`, **no** solid cream/navy catalog override), `quasar.variables.scss` |
@@ -212,7 +212,7 @@ src/boot/i18n.ts
 src/boot/colyseus.ts
 ```
 
-Registered in `quasar.config.ts` boot array: `theme`, `i18n`, `colyseus` (+ `framework.plugins: ['Dark']`).
+Registered in `quasar.config.ts` boot array: `theme`, `i18n`, `colyseus` (+ `framework.plugins: ['Dark', 'Notify']`).
 
 ## Real Composition Examples
 

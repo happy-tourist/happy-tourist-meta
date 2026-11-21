@@ -3,9 +3,10 @@
 Use with the [core test skill](SKILL.md) when asserting failure UX: Pinia
 `error` strings, `loading` / `listing` flags, and `q-banner` display.
 
-Product conventions: meta skill `client-work-with-errors`. There is **no**
-`useNotice` toast pipeline and **no** global dialog error bus — do not invent
-Notify assertions.
+Product conventions: meta skill `client-work-with-errors`. Store/page errors use
+`error` + `q-banner` — **no** `useNotice` / global dialog error bus. Peek-outcome
+toasts (`Notify.create` from `stores/game` on `peekClose`) are **not** error UX —
+assert those in peek/status-flash tests (`plugins.md` / `stores.md`), not here.
 
 ## What to assert
 
@@ -43,15 +44,15 @@ visibility — do not find by `.bg-negative` alone.
 
 ## What not to assert
 
-- Quasar `Notify.create` unless production code actually calls it (it should
-  not for auth/game/support errors).
+- Quasar `Notify.create` for auth/support/game **error** paths (errors stay on
+  `error` + `q-banner`). Peek toasts belong in peekStatusFlash / game-board tests.
 - Duplicate page-level `catch` message copies when the store already owns
   `error`.
 
 ## Checklist
 
-- Success path: success notification/toasts are **not** required; assert
-  `error` cleared / navigation as the product does.
+- Success path: error toasts are **not** required; assert `error` cleared /
+  navigation as the product does.
 - Error path: `error` set; loading/listing false; success side effects not
   called.
 - Banner assertions use `data-test-id`, not layout color classes alone.
@@ -59,7 +60,7 @@ visibility — do not find by `.bg-negative` alone.
 ## Anti-Patterns
 
 ```typescript
-// Inventing useNotice / Notify for this client
+// Inventing Notify for store/page errors (use error + q-banner)
 expect(Notify.create).toHaveBeenCalled();
 
 // Finding the error only by Quasar color utility

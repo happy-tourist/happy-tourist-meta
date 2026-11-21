@@ -50,6 +50,11 @@ Hash-mode details matter for e2e, not for most unit assertions.
   (`app.use(Quasar, { … })` / official Vitest AE) or stub only unrelated heavy
   widgets → [forms.md](forms.md).
 - Do not assert Quasar-internal class soup (`.q-btn__content`) as behavior.
+- **Notify** (peek outcomes SC-BOARD-88): `quasar.config.ts` must keep
+  `framework.plugins: ['Dark', 'Notify']`. When the SUT imports `Notify` from
+  `quasar` (e.g. `stores/game` `_setPeekStatusFlash`), mock
+  `Notify.create` via `vi.mock('quasar', …)` and assert
+  `position: 'top'` + RU copy from `game.peekStatusFlash.*`.
 
 ## Dark / theme
 

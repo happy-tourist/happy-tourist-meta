@@ -41,7 +41,7 @@ Coordinate with sibling skills when they exist: `work-with-schema`, `work-with-m
 
 Registered room keys today: **`lobby`** (built-in listing) and **`tourist`** (playable `MyRoom` with realtime listing). Client `TOURIST_ROOM` / `LOBBY_ROOM` match these names — do not reintroduce `my_room`.
 
-Constants: `RECONNECT_GRACE_SECONDS = 30`, `COUNTDOWN_SECONDS = 5`. `TURN_BUDGET_SECONDS` / `SOLO_BUDGET_SECONDS` / `setTurnBudgetsForTests` are **deprecated no-ops** (deadlines retired). Trap presentation budgets shared with client (`MOVE_ANIM_MS`, `CATAPULT_ANIM_MS`, `CATAPULT_BROKEN_PRESENTATION_MS`, `GRILLE_ANIM_MS`) — mocha: `setTrapPresentationBudgetsForTests` / `resetTrapPresentationBudgets`. Paced trap pipeline / knowledge / open-on-land: `work-with-game`.
+Constants: `RECONNECT_GRACE_SECONDS = 30`, `COUNTDOWN_SECONDS = 5`. Multi turn deadline: `TURN_BUDGET_SECONDS = 60` when ≥2 eligible (`turnUntil` / `turnBudgetSeconds`; mocha `setTurnBudgetsForTests` / `resetTurnBudgets`). Solo leftover wall-clock (`SOLO_BUDGET_SECONDS`) stays retired — never arms permanent `timeExpired`. Trap presentation budgets shared with client (`MOVE_ANIM_MS`, `CATAPULT_ANIM_MS`, `CATAPULT_BROKEN_PRESENTATION_MS`, `GRILLE_ANIM_MS`) — mocha: `setTrapPresentationBudgetsForTests` / `resetTrapPresentationBudgets`. Paced trap pipeline / knowledge / open-on-land: `work-with-game`.
 
 ## Lifecycle Flow
 
@@ -168,7 +168,7 @@ Align with client Pinia expectations:
 | Seats | Unique `touristId` 1…4; pieces deferred until `playing` (`touristsPerPlayer` pieces by pieceId on free start cells — see `work-with-game`); **new seat only while `phase === 'waiting'`** and under maxSeats |
 | Connectivity | `connected` + `reconnectUntil` on Seat; online at assign; `timeExpired` unused (always false) |
 | Start | `phase` waiting → countdown → playing (+ materialize; turn deadline unless maxSeats=1); full table (incl. maxSeats=1) or all-ready underfilled; legacy `started` mirrors `phase === 'playing'` |
-| Turn timer | **Retired** — `turnUntil`/`turnBudgetSeconds` inactive; see `work-with-game` knowledge economy |
+| Turn timer | Multi ≥2 eligible: `TURN_BUDGET_SECONDS=60` + `turnUntil` / `turnBudgetSeconds`; leftover sole eligible / single-player: inactive; never leftover `timeExpired` — see `work-with-game` |
 | Status metadata | `waiting` until `phase === 'playing'`; always publish `maxSeats` + occupied `seats` |
 | Unexpected drop | Hold seat 30 s + `allowReconnection`; sync offline + deadline (SC-PIECE-11…14, 16); does not cancel countdown |
 | Consented leave | Immediate seat remove; free capacity does **not** reopen seating while phase is `countdown`/`playing` (SC-PIECE-07/08) |

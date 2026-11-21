@@ -8,9 +8,9 @@ Read with the [core stores skill](SKILL.md). Board UI: `work-with-game-board`; l
 state: seats (pieces by **pieceId**, incl. `trapped` / `remainingTurns`) / `phase` /
 `maxSeats` / `grid` / `touristsPerPlayer` / `packTitle` / `flippedCells` /
 `answerCards` / peek session / turn / `removedTaskKeys` / grilles/catapults;
-private `knowledgeDelivered` / `knowledgePieces` / `knowledgeSynced` /
-`allJailWarning`; `peekStatusFlash` from room `peekClose` (`correct` +
-`reason?: 'wrong'` → 10s header flash);
+private `knowledgeDelivered` / `knowledgePieces` / `knowledgeOutcome` /
+`knowledgeSynced`; `allJailWarning` inert; `peekStatusFlash` + Notify from
+room `peekClose` (`correct` + `reason?: 'wrong'|'timeout'` → flash + toast);
 `createGame({ mapId, packId, taskSetIds, maxSeats })` (no density keys);
 `sendMove` / `sendRescue` / `sendReturnFromFinish` / `sendPeekPlace` /
 `sendPeekSubmit` / `sendReady` / `sendSay`. `sendPush` / `sendEndTurn` /
@@ -37,12 +37,13 @@ export const useGameStore = defineStore('game', {
     countdownRemaining: 0,
     started: false, // legacy mirror of phase === 'playing'
     currentTurnSessionId: '',
-    turnUntil: 0, // inactive (deadlines retired)
+    turnUntil: 0, // 60s multi when ≥2 eligible; 0 leftover/single-player
     turnBudgetSeconds: 0,
     seats: [], // pieces include remainingTurns
     removedTaskKeys: [],
     knowledgeDelivered: 0,
     knowledgePieces: {},
+    knowledgeOutcome: null, // 'finish' | 'cut' from private knowledge
     knowledgeSynced: false,
     openPeek: null,
     peekStatusFlash: null,
@@ -97,7 +98,8 @@ export const useGameStore = defineStore('game', {
 
 ## Attach notes
 
-- `onMessage('knowledge', …)` → update delivered/pieces; set `knowledgeSynced=true` after first payload (gate +N falls).
-- Do **not** listen for `budgets`.
-- Piece mirror: map `remainingTurns` from schema.
-- `finishPlace` 0→1 is a boolean-ish finished/cut gate — GamePage opens knowledge modal, not place UX.
+- `onMessage('knowledge', …)` → update delivered/pieces/`outcome?`; set `knowledgeSynced=true` after first payload (gate +N falls).
+- Do **not** listen for `budgets`. `allJailWarning` listener stays inert (`= false`).
+- Piece mirror: map `remainingTurns` from schema; mirror `turnUntil` / `turnBudgetSeconds` for presence ring.
+- `finishPlace` 0→1 is a boolean-ish finished/cut gate — GamePage opens knowledge modal by `knowledgeOutcome`, not place UX.
+- `peekClose` → header flash + Quasar Notify top-center (SC-PRESENCE-36 / SC-BOARD-88).

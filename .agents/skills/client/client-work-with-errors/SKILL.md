@@ -35,7 +35,10 @@ Error handling is **store-local**, not a second toast pipeline:
   already holds the message — do not duplicate toasts or dialogs.
 - Room lifecycle errors also arrive via `room.onError` into `game.error`.
 
-Do not invent Notify plugins / dialog interceptors. Prefer Pinia `error` + `q-banner`.
+Prefer Pinia `error` + `q-banner` for store/page failures. Do not invent dialog
+interceptors or Notify for **errors**. Quasar `Notify` is reserved for peek
+outcome toasts (`stores/game` on `peekClose` — SC-BOARD-88), not auth/game/
+support/content error paths.
 
 ## Auth Store Pattern
 
@@ -181,9 +184,10 @@ Typical markup:
 </q-banner>
 ```
 
-Use Quasar `bg-negative text-white`; keep dense. Do not add Notify plugins or
-`$q.dialog` for these flows. Auth/game banners stay on pages; theme save errors
-use the shared `App.vue` banner only.
+Use Quasar `bg-negative text-white`; keep dense. Do not route these failures
+through Notify or `$q.dialog`. Auth/game banners stay on pages; theme save
+errors use the shared `App.vue` banner only. (`Notify` stays enabled for peek
+toasts — unrelated to this banner contract.)
 
 ### Clearing
 
@@ -298,8 +302,8 @@ setting `error`. Document with a short comment.
 
 - Adding axios interceptors, Vuex `GLOBAL_ERROR_*`, Qrator, or `SHOW_DIALOG` —
   none of that exists in this client.
-- Showing errors only with `console.error` / Notify while leaving `auth.error` /
-  `game.error` / `theme.error` unset — banners will stay empty.
+- Showing store/page errors only with `console.error` / Notify while leaving
+  `auth.error` / `game.error` / `theme.error` unset — banners will stay empty.
 - Catching in the page and setting a second local `error` ref that duplicates the store.
 - Forgetting to clear `error` before a new attempt (stale banner).
 - Skipping `finally` for `loading` / `listing` (or page `joining` / `creating`).

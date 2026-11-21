@@ -13,10 +13,11 @@ Knowledge transfer на финише туриста; модалка знаний
 | SC-FINISH-13 | modified — return affordance without steps |
 | SC-FINISH-21 | modified — full finish releases turn; knowledge modal |
 | SC-FINISH-30 | pending — piece finish transfers knowledge |
-| SC-FINISH-31 | pending — full finish modal shows delivered knowledge |
-| SC-FINISH-32 | pending — penultimate cut burns last undelivered |
+| SC-FINISH-31 | modified — full finish modal copy + delivered |
+| SC-FINISH-32 | modified — penultimate cut burns last; cut copy |
 | SC-FINISH-33 | pending — single-player no penultimate cut |
-| SC-FINISH-34 | pending — one knowledge-modal chrome; no place badge |
+| SC-FINISH-34 | modified — one chrome; distinct finish vs cut i18n |
+| SC-FINISH-35 | pending — finish travel anim click + catapult |
 
 ## ADDED Requirements
 
@@ -34,31 +35,44 @@ When an unfinished piece becomes finished (move, return path, or catapult onto c
 
 ### Requirement: Full finish modal shows delivered knowledge
 
-When a seated player’s last unfinished piece becomes finished (all of that seat’s pieces finished), the server MUST mark the seat finished (ineligible for turns) by setting `finishPlace = 1` (finished-seat skip gate; not a ranking place). The client of that seat MUST show the **knowledge modal** (same chrome as penultimate cut): product Russian sense reports **how many knowledge points** that player delivered (`knowledge.delivered`). The modal MUST NOT congratulate a numeric finish place (1st/2nd/…). Closing the modal MUST leave the player in the room as a finished seat. The room MUST NOT disconnect solely because seats finished. Presence MUST NOT show a finish-place badge (`game/presence`).
+When a seated player’s last unfinished piece becomes finished (all of that seat’s pieces finished), the server MUST mark the seat finished (ineligible for turns) by setting `finishPlace = 1` (finished-seat skip gate; not a ranking place) and re-send private `knowledge` with `outcome: 'finish'`. The client of that seat MUST show the **knowledge modal**: product Russian sense — all of that player’s tourists reached finish and earned `{n}` delivered knowledge points. The modal MUST NOT congratulate a numeric finish place (1st/2nd/…). Closing the modal MUST leave the player in the room as a finished seat. The room MUST NOT disconnect solely because seats finished. Presence MUST NOT show a finish-place badge (`game/presence`).
 
 #### Scenario [SC-FINISH-31]: Full finish shows knowledge total modal
 
 - **GIVEN** a seated player has exactly one unfinished piece left, delivered knowledge already 4, and that last piece carries 2 knowledge and finishes onto center
 - **WHEN** that last piece becomes finished
 - **THEN** the seat’s delivered knowledge is 6
-- **AND** that player’s client shows a modal reporting 6 knowledge points
+- **AND** that player’s client shows a modal with full-finish wording and 6 knowledge points
 - **AND** the modal does not present a finish place number
 - **AND** the seat remains in the room after the modal is closed
 
-### Requirement: One knowledge-modal chrome; no place UX
+### Requirement: One knowledge-modal chrome; distinct finish vs cut copy
 
-Full finish and penultimate cut MUST share **one** client modal chrome bound to private `knowledge.delivered` (integer). Distinct cut-vs-finish layouts are NOT required. The client MUST open that modal when the **local** seat’s synchronized `finishPlace` transitions 0→1 (reuse today’s finish-place watch; no new room event), reading the latest private `knowledge.delivered` for the body. The client MUST retire place congratulation copy (`finishPlaceModal` / «Вы N-й!») and MUST NOT render numeric `finishPlace` badges on presence. Exact Russian wording MAY vary by i18n key, but MUST communicate delivered knowledge count without ranking place.
+Full finish and penultimate cut MUST share **one** client modal chrome bound to private `knowledge.delivered` and `knowledge.outcome` (`finish` | `cut`). Distinct visual layouts are NOT required, but i18n copy MUST differ: full finish communicates that all of the player’s tourists reached finish and earned `{n}`; cut communicates that all opponents finished and the tourists that made it earned `{n}`. The client MUST open that modal when the **local** seat’s synchronized `finishPlace` transitions 0→1, reading the latest private knowledge payload. The client MUST retire place congratulation copy (`finishPlaceModal` / «Вы N-й!») and MUST NOT render numeric `finishPlace` badges on presence.
 
-#### Scenario [SC-FINISH-34]: Cut and full finish use delivered-only modal
+#### Scenario [SC-FINISH-34]: Cut and full finish use delivered-only modal with distinct copy
 
 - **GIVEN** a seat reaches full finish or is cut by the penultimate rule
 - **WHEN** that seat’s client shows the outcome modal
-- **THEN** the modal body is driven by that seat’s `knowledge.delivered` only
+- **THEN** the modal body is driven by that seat’s `knowledge.delivered` and `outcome`
+- **AND** full-finish wording is used when `outcome` is `finish`
+- **AND** cut wording is used when `outcome` is `cut`
 - **AND** no finish-place number appears in the modal or on that seat’s presence badge
+
+### Requirement: Center finish keeps travel animation
+
+When an unfinished piece becomes finished by landing on a center cell (direct move click or catapult fling chain), the finishing client MUST present the existing finish travel (~550 ms) then fade (~300 ms) so the piece does not snap-vanish from its pre-finish cell. Mid-join already-finished pieces MAY omit travel. Catapult→center MUST defer vanish until after catapult presentation settles, then run the same travel path.
+
+#### Scenario [SC-FINISH-35]: Click and catapult finish animate to center
+
+- **GIVEN** an own unfinished piece finishes onto center by direct move or by catapult fling
+- **WHEN** the local client paints the finish
+- **THEN** the piece slides/travels toward center before fading
+- **AND** it does not disappear from the origin cell without travel
 
 ### Requirement: Penultimate full finish ends the last player
 
-When `maxSeats ≥ 2` and a seated player becomes fully finished while exactly **one** other seated player remains eligible (non-finished), the server MUST immediately end that last eligible seat’s run: set that last seat `finishPlace = 1` (cut), discard (burn) all knowledge still carried on that last seat’s unfinished pieces to 0 without adding it to delivered knowledge, set those pieces `finished = true` so they cannot move, and re-send private `knowledge` to that seat. Every affected client for the cut seat MUST see the **same knowledge-modal chrome** reporting that seat’s **delivered** knowledge only (burned points excluded). Turn deadlines and solo leftover MUST NOT apply. When `maxSeats === 1`, this penultimate cut MUST NOT run — the sole seat plays until its own full finish.
+When `maxSeats ≥ 2` and a seated player becomes fully finished while exactly **one** other seated player remains eligible (non-finished), the server MUST immediately end that last eligible seat’s run: set that last seat `finishPlace = 1` (cut), discard (burn) all knowledge still carried on that last seat’s unfinished pieces to 0 without adding it to delivered knowledge, set those pieces `finished = true` so they cannot move, and re-send private `knowledge` with `outcome: 'cut'`. Every affected client for the cut seat MUST see the knowledge-modal chrome with **cut** wording reporting that seat’s **delivered** knowledge only (burned points excluded). Solo leftover permanent time-expired MUST NOT apply. When `maxSeats === 1`, this penultimate cut MUST NOT run — the sole seat plays until its own full finish.
 
 #### Scenario [SC-FINISH-32]: Penultimate finisher cuts the last seat
 
@@ -67,7 +81,7 @@ When `maxSeats ≥ 2` and a seated player becomes fully finished while exactly *
 - **THEN** B is marked finished/cut and cannot move
 - **AND** B’s delivered knowledge remains 1
 - **AND** the 5 carried knowledge is not added to B’s delivered total
-- **AND** B’s client shows a modal reporting 1 knowledge point
+- **AND** B’s client shows a modal with cut wording reporting 1 knowledge point
 
 #### Scenario [SC-FINISH-33]: Single-player is not cut by penultimate rule
 

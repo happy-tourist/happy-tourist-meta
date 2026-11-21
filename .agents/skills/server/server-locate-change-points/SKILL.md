@@ -57,7 +57,7 @@ The sibling client assumes a tourist contract; prefer aligning server to client 
 | Room create snapshot | `src/lib/roomContentSnapshot.ts` — map+pack load in `MyRoom.onCreate` |
 | Tourist create fixture | `src/lib/touristCreateFixtureState.ts` — mocha fixture cache (cleared via `clearContentTablesForTests`) |
 | Listing metadata | `MyRoom.refreshMetadata` — `taskSetLabels[+taskCount]` create-time counts (SC-LOBBY-32); multi-set mocha helper `seedExtraTaskSetOnFixturePackForTests` in `roomContentSnapshot.ts` |
-| Turn / economy | Knowledge economy: one move\|return + free rescue; private `knowledge`; open-on-land peek; exclusive traps 12%/15%; `remainingTurns` tick; **no** turn/solo deadlines (`setTurnBudgetsForTests` deprecated no-op); push/endTurn reject |
+| Turn / economy | Knowledge economy: one move\|return + free rescue; private `knowledge` (`outcome?`); open-on-land peek; exclusive traps **15%/15%**; `remainingTurns` tick; multi 60s `turnUntil` when ≥2 eligible (`setTurnBudgetsForTests`); leftover/single-player no deadline / no leftover `timeExpired`; all-jail wait (no teleport/`allJailWarning`); push/endTurn reject |
 | Lobby `GET /rooms/tourist` | Available (HTTP fallback; UI uses live LobbyRoom) |
 
 ### HTTP surface (today)

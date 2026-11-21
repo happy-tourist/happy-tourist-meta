@@ -15,7 +15,7 @@ description: >-
 
 Use this skill for the **tourist board UI** on Game in the Vue 3 Quasar client (`happy-tourist.github.io`).
 
-Product: настольная игра «Счастливый турист» (knowledge economy). On the seated client whose turn it is **and** `game.isPlaying`, the board and own strip accept piece selection by **pieceId**, local move hints, `game.sendMove` / free `sendRescue` / `sendReturnFromFinish`. Shared Q&A opens **on land** (place/submit only — no peek affordance). Authority on server (`work-with-game`). Presence: say **12** / focus **3** (end-turn retired); knowledge counter beside avatar; yellow BR carried + red TR `remainingTurns`; finish travel ~550 / fade ~300. Affordance glyphs: `src/assets/board/{return,flag,focus,rescue,say}.png` — **no** Material colored circles; peek/push/end-turn PNGs retired.
+Product: настольная игра «Счастливый турист» (knowledge economy). On the seated client whose turn it is **and** `game.isPlaying`, the board and own strip accept piece selection by **pieceId**, local move hints, `game.sendMove` / free `sendRescue` / `sendReturnFromFinish`. Shared Q&A opens **on land** (place/submit only — no peek affordance). Authority on server (`work-with-game`). Presence: say **12** / focus **3** (end-turn retired); 60s turn ring; knowledge counter + lightbulb beside avatar; **strip-only** yellow TR carried + lightbulb; red TR `remainingTurns` above grille overlay; Notify peek toasts; finish travel ~550 / fade ~300. Affordance glyphs: `src/assets/board/{return,flag,focus,rescue,say}.png` — **no** Material colored circles; peek/push/end-turn PNGs retired.
 
 ## Specialized Topics
 
@@ -33,8 +33,8 @@ Read the matching file in this folder when the change involves that area
 | Surface | Path | Role |
 | --- | --- | --- |
 | App shell | `src/App.vue` | Always-button theme wordmarks (`logo-light`/`logo-dark`) height **28px** / toolbar **40** (SC-BRAND-29/30) left; on Game: logo click = leave + centered match status + theme + icon-only `header-game-leave` (aria `game.leave`, no visible label — SC-LEAVE-13); leave confirm + `leaveGame` → lobby. Non-Game: same button — auth/other → lobby, lobby noop (no Material `logout` leave) |
-| Game page | `src/pages/GamePage.vue` | CSS Grid; unfinished pieces (+ finish travel ~550 / fade ~300); holes; grille/catapult overlays; board-busy; rescue/return above sprite (+20px down); **top** presence; sticky `.game-hud` (own + strip); **knowledge** beside avatar; say **12** / focus **3**; yellow BR knowledge + red TR `remainingTurns`; open-on-land peek modal; knowledge finish modal; all-jail; return on finished strip; `rejoinGame` — no leave/status/roomId chrome |
-| Game store | `src/stores/game.ts` | Room I/O; mirror seats/pieces (+ `remainingTurns`) / phase / peek session / traps; private `knowledgeDelivered`/`knowledgePieces`/`knowledgeSynced`/`allJailWarning`; `sendMove`/`sendRescue`/`sendReturnFromFinish`/`sendPeekPlace`/`sendPeekSubmit`/`sendReady`/`sendSay` (`sendPush`/`sendEndTurn`/`sendPeek` retired no-ops) |
+| Game page | `src/pages/GamePage.vue` | CSS Grid; unfinished pieces (+ finish travel ~550 / fade ~300); holes; grille/catapult overlays; board-busy; rescue/return above sprite (+20px down); **top** presence; sticky `.game-hud` (own + strip); **knowledge** + lightbulb beside avatar; say **12** / focus **3** / 60s turn ring; strip-only yellow TR knowledge; red TR `remainingTurns` above grille; open-on-land peek + Notify toasts; finish\|cut knowledge modal; return on finished strip; `rejoinGame` — no leave/status/roomId chrome |
+| Game store | `src/stores/game.ts` | Room I/O; mirror seats/pieces (+ `remainingTurns`) / phase / `turnUntil` / peek session / traps; private `knowledgeDelivered`/`knowledgePieces`/`knowledgeOutcome`/`knowledgeSynced`; `allJailWarning` inert; Notify on `peekClose`; `sendMove`/`sendRescue`/`sendReturnFromFinish`/`sendPeekPlace`/`sendPeekSubmit`/`sendReady`/`sendSay` (`sendPush`/`sendEndTurn`/`sendPeek` retired no-ops) |
 
 | Concern | Location |
 | --- | --- |
@@ -53,9 +53,9 @@ Read the matching file in this folder when the change involves that area
 | Return UX | Illustrated `return.png` above finished strip tourist (+20px down) when `canReturn` → return-mode + `.tile--target` → `sendReturnFromFinish` (SC-FINISH-09/13/15/16) |
 | Peek UX | See [peek.md](peek.md) — open-on-land shared Q&A (`sendPeekPlace` / `sendPeekSubmit` only) |
 | Focus UX | See [focus.md](focus.md) — `focus.png` @3 → nearest actionable pieceId |
-| Knowledge UX | See [knowledge.md](knowledge.md) — delivered counter + BR/TR badges + finish modal |
-| Finish UX | Center land → slide + fade; own `finishPlace` 0→1 → **knowledge** modal (not place); stay in room. Activate clicked finish cell only (SC-MOVE-65 / SC-FINISH-31/34) |
-| All-jail | Own seat only: informational modal from `game.allJailWarning` |
+| Knowledge UX | See [knowledge.md](knowledge.md) — delivered counter + lightbulb; strip TR only; finish\|cut modal |
+| Finish UX | Center land → slide + fade; own `finishPlace` 0→1 → **knowledge** modal by `outcome` finish\|cut (not place); stay in room. Activate clicked finish cell only (SC-MOVE-65 / SC-FINISH-31/34) |
+| All-jail | **Retired** teleport modal — server waits on `remainingTurns`; client ignores `allJailWarning` |
 | Center | One `BoardTile` per grid `7` with `kind: 'center'` + finish skin; **no** contiguous merge / `span 2` (SC-BOARD-55) |
 | Room enter | Out of scope — see `work-with-lobby` / `work-with-rooms` (`rejoinGame`) |
 
@@ -108,9 +108,9 @@ Sync-driven markers. Page reads mirrored `game.seats` + private `knowledgeDelive
 | Avatar | Seat `touristId` → tourist PNG; **72px** (SC-PRESENCE-13) |
 | Seated viewer | Top opponents row (reserve ~96px); sticky `.game-hud` α 0.78: own + strip; **no** chip/`q-menu` |
 | Spectator | All occupied → top; **no** bottom HUD |
-| Offline / rings | Inner reconnect ring from `reconnectUntil`; outer turn ring may stay for current-turn chrome — **no** wall-clock deadline animation (deadlines retired) |
+| Offline / rings | Inner reconnect ring from `reconnectUntil`; outer turn ring from `turnUntil` / `turnBudgetSeconds` (60s multi when ≥2 eligible; 0 leftover/single-player — SC-PRESENCE-54/10) |
 | Dual rings | Sibling progress + sibling avatar (SC-PRESENCE-10/12) — do not nest |
-| Match status | App header; `peekClose` → `peekStatusFlash` 10s (SC-PRESENCE-36) |
+| Match status | App header; `peekClose` → `peekStatusFlash` 10s + store Notify toast (SC-PRESENCE-36 / SC-BOARD-88) |
 | Room id | Never show in Game chrome |
 | Finish place badge | **Retired** — no ranked place chrome |
 | Ready | Own marker top-left when `canSendReady` |
@@ -119,7 +119,7 @@ Sync-driven markers. Page reads mirrored `game.seats` + private `knowledgeDelive
 | Knowledge | Own delivered counter beside avatar; +N fall on delivered growth after sync — [knowledge.md](knowledge.md) |
 | End-turn / leftover ∞ / solo timer modals | **Retired** |
 
-Finish flag + return-icon + yellow BR / red TR badges live on board + strip; presence shows knowledge counter only.
+Finish flag + return-icon + red TR grille badges (board overlay above grille + strip); yellow knowledge badge **strip TR only** (+ lightbulb); presence shows delivered knowledge counter + lightbulb.
 
 ### Presence DOM (canonical — SC-PRESENCE-04/10/11/12/13)
 
@@ -166,7 +166,7 @@ Picker open state (`sayPickerOpen`) is page-local; close if the local seat is lo
 ## GamePage Responsibilities
 
 - Render board + unfinished pieces + grille/catapult overlays; sticky HUD when seated.
-- Presence: say@12 + focus@3 + knowledge counter; strip with finish/return/grille + BR/TR badges.
+- Presence: say@12 + focus@3 + knowledge counter + lightbulb; strip with finish/return/grille TR + knowledge TR (+ lightbulb).
 - Own turn: select + `sendMove` / free `sendRescue` / `sendReturnFromFinish`; open-on-land peek place/submit; board-action local gate.
 - `finishPlace` 0→1 → knowledge modal; remount → `rejoinGame`; leave/status in App.
 

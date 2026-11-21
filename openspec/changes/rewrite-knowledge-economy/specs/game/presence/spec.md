@@ -8,20 +8,21 @@ Knowledge HUD вместо steps/peeks; focus на месте end-turn; без �
 |-------------|----------|
 | SC-PRESENCE-06…07 | modified — no numeric finish-place badge |
 | SC-PRESENCE-09 | removed — solo leftover red ring |
-| SC-PRESENCE-10 | modified — reconnect ring only (no turn ring) |
+| SC-PRESENCE-10 | modified — turn ring + reconnect dual when offline |
 | SC-PRESENCE-14 | modified — no finish-place badge corners |
 | SC-PRESENCE-15…16 | removed — steps/peeks counters |
 | SC-PRESENCE-17…18 | removed — end-turn control |
 | SC-PRESENCE-19…21 | removed — solo unlimited / solo end modals |
 | SC-PRESENCE-25 | removed — end-turn vs budgets layout |
 | SC-PRESENCE-30…33 | modified — focus @3 o’clock; no end-turn |
+| SC-PRESENCE-36 | modified — outcome toast top-center (Notify) |
 | SC-PRESENCE-37 | modified — focus @3 stays fully visible |
 | SC-PRESENCE-38…42 | removed — single-player budget/end-turn gates |
 | SC-PRESENCE-50 | pending — seat knowledge on avatar |
 | SC-PRESENCE-51 | pending — +N knowledge grant animation |
-| SC-PRESENCE-52 | pending — tourist carried knowledge yellow circle |
+| SC-PRESENCE-52 | modified — carried knowledge strip TR + lightbulb only |
 | SC-PRESENCE-53 | pending — focus at former end-turn slot |
-| SC-PRESENCE-54 | pending — no turn countdown ring |
+| SC-PRESENCE-54 | modified — turn countdown ring restored (60s) |
 | SC-PRESENCE-55 | pending — no end-turn control |
 | SC-PRESENCE-56 | pending — no finish-place badge in presence |
 
@@ -29,7 +30,7 @@ Knowledge HUD вместо steps/peeks; focus на месте end-turn; без �
 
 ### Requirement: Own delivered knowledge beside the avatar
 
-While the user is a seated player on the Game screen in phase `playing`, the system SHALL show that user’s **delivered knowledge** total (points transferred from finished tourists, from private `knowledge.delivered`) in a counter **to the right of** that user’s own presence avatar in the bottom HUD. Spectators and other seats MUST NOT see another seat’s private delivered total — **own-seat only** (same privacy family as former budgets). Steps and peeks counters MUST NOT appear.
+While the user is a seated player on the Game screen in phase `playing`, the system SHALL show that user’s **delivered knowledge** total (points transferred from finished tourists, from private `knowledge.delivered`) in a counter **to the right of** that user’s own presence avatar in the bottom HUD, with a knowledge icon (`mdi-lightbulb-on` or equivalent Quasar Material icon in the same family as former steps/peeks icons). Spectators and other seats MUST NOT see another seat’s private delivered total — **own-seat only** (same privacy family as former budgets). Steps and peeks counters MUST NOT appear.
 
 #### Scenario [SC-PRESENCE-50]: Seated user sees own knowledge total
 
@@ -45,15 +46,16 @@ While the user is a seated player on the Game screen in phase `playing`, the sys
 - **THEN** the animation completes in about two seconds
 - **AND** other clients do not see that private animation
 
-### Requirement: Carried knowledge on the tourist chrome
+### Requirement: Carried knowledge on the strip only
 
-While an unfinished own piece carries knowledge greater than 0 (from private `knowledge.pieces`), the Game board and personal strip MUST show that carried amount in a **yellow-background circle** at the **bottom-right** of that tourist’s chrome (product sense: panel bottom-right glow). When knowledge is 0, the circle MUST NOT appear. When the piece finishes and knowledge transfers to the avatar, the circle MUST clear with the finish presentation. Opponents’ carried amounts MUST NOT be shown from another seat’s private payload.
+While an unfinished own piece carries knowledge greater than 0 (from private `knowledge.pieces`), the personal **bottom strip** slot for that piece MUST show that carried amount in a **yellow-background** badge at the **top-right** of the strip tourist chrome, accompanied by a knowledge icon (`mdi-lightbulb-on` or equivalent). The **board** piece chrome MUST NOT show a carried-knowledge badge. When knowledge is 0, the strip badge MUST NOT appear. When the piece finishes and knowledge transfers to the avatar, the strip badge MUST clear with the finish presentation. Opponents’ carried amounts MUST NOT be shown from another seat’s private payload.
 
-#### Scenario [SC-PRESENCE-52]: Tourist shows yellow knowledge circle
+#### Scenario [SC-PRESENCE-52]: Strip shows yellow knowledge badge top-right
 
 - **GIVEN** an own unfinished piece has knowledge 2
 - **WHEN** the owner views the board and strip
-- **THEN** that piece shows a yellow-background circular badge at bottom-right with value 2
+- **THEN** the strip slot shows a yellow-background badge at top-right with value 2 and a lightbulb-style icon
+- **AND** the board piece for that tourist does not show a carried-knowledge badge
 
 ### Requirement: Focus control at the former end-turn position
 
@@ -72,16 +74,25 @@ While the local user is a seated current-turn player in phase `playing` and at l
 - **WHEN** the user views Game chrome
 - **THEN** the end-turn control is not shown
 
-### Requirement: No turn countdown ring
+### Requirement: Turn countdown ring
 
-While phase is `playing`, presence markers MUST NOT show a determinate turn-budget countdown ring. Reconnect grace countdown on offline seats remains as previously specified. Dual turn+grace rings MUST NOT apply because there is no turn ring.
+While phase is `playing` and the synchronized turn deadline is active (`game/move`, 60s), presence markers for the **current** seat MUST show a determinate turn-budget countdown ring driven by `turnUntil` / `turnBudgetSeconds`. Reconnect grace countdown on offline seats remains as previously specified. When the current seat is offline within reconnect grace, dual turn+grace rings MAY apply.
 
-#### Scenario [SC-PRESENCE-54]: Current turn has no timer ring
+#### Scenario [SC-PRESENCE-54]: Current turn shows timer ring
 
-- **GIVEN** it is a seated player’s turn in phase `playing`
+- **GIVEN** it is a seated player’s turn in phase `playing` with an active 60-second deadline
 - **WHEN** any client views that seat’s presence marker
-- **THEN** there is no turn countdown ring around the avatar
-- **AND** current-turn highlighting without a timer ring MAY remain
+- **THEN** a turn countdown ring is visible around the avatar
+
+### Requirement: Peek outcome toast top-center
+
+When clients receive a peek-close outcome (correct, wrong submit, or turn-timeout), they MUST show a conspicuous **top-center toast** (Quasar Notify or equivalent fixed overlay) with the product Russian sense «Правильно!» / «Ошибка!» / «Не успел!» so the result is obvious. Relying solely on the quiet header match-status line is NOT sufficient.
+
+#### Scenario [SC-PRESENCE-36]: Timeout shows Не успел toast
+
+- **GIVEN** a task modal closes with timeout reason
+- **WHEN** any client updates
+- **THEN** a top-center toast «Не успел!» is shown
 
 ### Requirement: No finish-place badge in presence
 
@@ -115,14 +126,14 @@ When a seated player has synchronized `finishPlace > 0` (finished or cut gate), 
 
 ### Requirement: Dual turn and reconnect countdowns
 
-When a seat is offline within reconnect grace, the presence marker MUST show the reconnect grace countdown ring. Because there is no turn deadline ring, dual turn+grace rings MUST NOT apply. Spectators and seated viewers MUST see the same reconnect display when offline.
+When a seat is offline within reconnect grace, the presence marker MUST show the reconnect grace countdown ring. When that seat is also the current turn with an active turn deadline, dual turn+grace rings MAY apply. Spectators and seated viewers MUST see the same reconnect display when offline.
 
 #### Scenario [SC-PRESENCE-10]: Offline current-turn seat shows both rings
 
-- **GIVEN** a current-turn seat that is offline within reconnect grace
+- **GIVEN** a current-turn seat that is offline within reconnect grace with an active turn deadline
 - **WHEN** any client views that seat’s presence marker
 - **THEN** the reconnect grace countdown ring is visible
-- **AND** no turn-deadline countdown ring is shown
+- **AND** the turn-deadline countdown ring is visible
 - **AND** the tourist kind image remains visible in the marker
 
 ### Requirement: Presence affordance and badge corners
@@ -210,8 +221,3 @@ On the local seated user’s own presence avatar, when say is visible its **hit-
 
 **Reason**: Solo timer / time-expired path removed.
 **Migration**: Last player is cut by penultimate finish (`game/finish`) or finishes normally; no solo timer end modal.
-
-### Requirement: Turn countdown ring on presence
-
-**Reason**: Turn timer removed.
-**Migration**: No turn ring; keep reconnect grace ring only when offline.

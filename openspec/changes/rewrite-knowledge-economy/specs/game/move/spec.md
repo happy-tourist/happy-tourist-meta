@@ -1,35 +1,36 @@
 # Delta: game/move
 
-Перепись экономики хода: один move|return, knowledge, open-on-land, grille timer, без push/steps/peeks/таймера/solo leftover/end-turn.
+Перепись экономики хода: один move|return, knowledge, open-on-land, grille timer, таймер хода 60s, all-jail без teleport, без push/steps/peeks/solo leftover/end-turn.
 
 ## Traceability
 
 | Scenario ID | Coverage |
 |-------------|----------|
 | SC-MOVE-33…50 | removed/superseded — steps/peeks budgets & solo ∞ |
-| SC-MOVE-25…32 | removed — turn deadline / time-expired solo |
+| SC-MOVE-25…32 | modified — restore multi turn deadline 60s; no solo leftover timeExpired |
 | SC-MOVE-37…41 | removed — end-turn / peeks gate |
 | SC-MOVE-51…53 | modified — grille land sets remainingTurns; no steps/peek |
 | SC-MOVE-54…56 | removed — rescue for steps; see SC-MOVE-113 free rescue |
 | SC-MOVE-57…59 | modified — return spends the turn, no steps |
-| SC-MOVE-60…61 | modified — all-jail advances turn |
+| SC-MOVE-60…61 | modified — all-jail no teleport; advance turn |
 | SC-MOVE-66…76 | removed — push |
 | SC-MOVE-78…79 | removed — density/overlap seed; exclusive seed in game/board |
 | SC-MOVE-85…86 | modified — exclusive cells; no dual-trap resolve |
 | SC-MOVE-100…106 | removed — single-player steps/peeks refresh |
 | SC-MOVE-110 | pending — one board action per turn |
 | SC-MOVE-111 | pending — turn advances after modal/trap settle |
-| SC-MOVE-112 | pending — no turn deadline |
+| SC-MOVE-112 | modified — turn deadline 60s restored |
 | SC-MOVE-113 | pending — rescue free before move |
 | SC-MOVE-114 | pending — push rejected |
 | SC-MOVE-115 | pending — return spends turn |
 | SC-MOVE-116 | pending — knowledge on piece |
 | SC-MOVE-117 | pending — grille timer tick on become-current |
 | SC-MOVE-118 | pending — grille auto-free at 1 then become-current |
-| SC-MOVE-119 | pending — all-jail reset advances turn |
+| SC-MOVE-119 | modified — all-jail wait remainingTurns; advance turn |
 | SC-MOVE-120 | pending — fling open-on-land chain |
 | SC-MOVE-121 | pending — no solo leftover infinite |
 | SC-MOVE-122 | pending — reopen open task by land |
+| SC-MOVE-123 | pending — turn timeout closes open modal |
 
 ## ADDED Requirements
 
@@ -54,28 +55,38 @@ While phase is `playing` and it is a non-finished seated player’s turn, that s
 
 ### Requirement: Turn advances after the board action resolves
 
-After the seat’s one move or return is accepted, the server MUST run open-on-land / trap pipeline for the landing (and fling chain). When the landing opens a **task** modal, the current turn MUST remain until that modal closes (correct, wrong, or leave force-close). When the landing is a **grille**, after trap presentation the turn MUST advance to the next eligible seat. When the landing is a **catapult**, the fling chain continues under paced presentation; each hop applies open-on-land; when the chain settles (empty/start/finish/grille-after-trap), turn advance follows the same rules as a direct land of that final content (task waits for modal; grille advances after trap; finish follows `game/finish`). When the landing needs no modal (empty/start/already-empty), the turn MUST advance after presentation settles. The server MUST NOT run a synchronized turn deadline or mark seats time-expired for turn timeout.
+After the seat’s one move or return is accepted, the server MUST run open-on-land / trap pipeline for the landing (and fling chain). When the landing opens a **task** modal, the current turn MUST remain until that modal closes (correct, wrong, turn-timeout, or leave force-close). When the landing is a **grille**, after trap presentation the turn MUST advance to the next eligible seat. When the landing is a **catapult**, the fling chain continues under paced presentation; each hop applies open-on-land; when the chain settles (empty/start/finish/grille-after-trap), turn advance follows the same rules as a direct land of that final content (task waits for modal; grille advances after trap; finish follows `game/finish`). When the landing needs no modal (empty/start/already-empty), the turn MUST advance after presentation settles.
+
+While phase is `playing` and at least one other eligible seat exists (or the sole eligible seat is current under one-move economy), the server MUST run a synchronized **turn deadline of 60 seconds** (`turnBudgetSeconds` / `turnUntil`) for the current seat. The deadline MUST keep ticking while a task modal is open. On deadline expiry with an open modal, the server MUST force-close with incorrect + `reason: 'timeout'`, KEEP the bind/open digit, show clients the «Не успел!» toast path (`game/presence`), then advance the turn. On deadline expiry without an open modal, the server MUST advance the turn without permanently marking the seat `timeExpired` for leftover-solo rules. Permanent leftover `timeExpired` / one-minute solo leftover clocks MUST NOT return.
 
 #### Scenario [SC-MOVE-111]: Task modal close advances turn in multiplayer
 
 - **GIVEN** a tourist room with two eligible seats A then B, it is A’s turn, and A’s move opens a task modal
 - **WHEN** A closes the modal (correct or incorrect)
 - **THEN** the current turn becomes B
-- **AND** there is no active turn deadline
 
-#### Scenario [SC-MOVE-112]: No turn deadline while playing
+#### Scenario [SC-MOVE-112]: Turn deadline is sixty seconds
 
 - **GIVEN** a tourist room in phase `playing` with two or more eligible seats
 - **WHEN** a seat becomes current turn
-- **THEN** synchronized turn deadline fields are inactive
-- **AND** wall-clock elapsed time alone MUST NOT time-expire that seat
+- **THEN** synchronized turn deadline fields are active with a 60-second budget
+- **AND** presence clients MAY show a turn countdown ring (`game/presence`)
+
+#### Scenario [SC-MOVE-123]: Turn timeout closes open task modal
+
+- **GIVEN** it is seat A’s turn with an open task modal and the 60-second deadline elapses
+- **WHEN** the server applies turn timeout
+- **THEN** the modal closes as incorrect with timeout reason
+- **AND** the task bind remains KEEP with open knowledge digit
+- **AND** the current turn advances to the next eligible seat
+- **AND** clients show the «Не успел!» top-center toast
 
 #### Scenario [SC-MOVE-120]: Catapult land opens destination content
 
 - **GIVEN** a legal move lands on a catapult whose fling destination is an unbound Q&A task cell
 - **WHEN** the fling relocate completes
 - **THEN** that destination opens as open-on-land (bind + shared task modal)
-- **AND** the turn waits for modal close before advancing
+- **AND** the turn waits for modal close (or timeout) before advancing
 
 ### Requirement: Free own rescue until the board action
 
@@ -91,7 +102,7 @@ While it is the seat’s turn and the seat has not yet spent its one move/return
 
 ### Requirement: Knowledge points on pieces
 
-Each unfinished piece SHALL carry a non-negative **knowledge** integer. The server MUST sync the owning seat’s carried amounts and delivered total via a private room message **`knowledge`** with payload `{ delivered: number, pieces: Record<pieceId, number> }` (same privacy family as former `budgets`; other seats MUST NOT receive another seat’s knowledge). Correct task solve MUST add the task **difficulty** (1|2|3) to that piece’s knowledge and re-send. Knowledge MUST NOT increase on wrong answers. When a piece finishes (`game/finish`), its knowledge MUST transfer to the seat’s delivered knowledge total and the piece’s carried knowledge becomes 0, then re-send. Private steps/peeks `budgets` messages MUST NOT be used for turn economy.
+Each unfinished piece SHALL carry a non-negative **knowledge** integer. The server MUST sync the owning seat’s carried amounts and delivered total via a private room message **`knowledge`** with payload `{ delivered: number, pieces: Record<pieceId, number>, outcome?: 'finish' | 'cut' }` (same privacy family as former `budgets`; other seats MUST NOT receive another seat’s knowledge). Correct task solve MUST add the task **difficulty** (1|2|3) to that piece’s knowledge and re-send. Knowledge MUST NOT increase on wrong answers. When a piece finishes (`game/finish`), its knowledge MUST transfer to the seat’s delivered knowledge total and the piece’s carried knowledge becomes 0, then re-send. On full finish / penultimate cut the server MUST set `outcome` accordingly for the modal copy (`game/finish`). Private steps/peeks `budgets` messages MUST NOT be used for turn economy.
 
 #### Scenario [SC-MOVE-116]: Correct answer adds difficulty knowledge to the piece
 
@@ -167,36 +178,36 @@ While it is a seated client’s own turn, that seat has finish place **0**, has 
 
 ### Requirement: All four own pieces trapped resets to starts
 
-When a seated player’s unfinished pieces are all trapped (none free unfinished remaining; count equals that seat’s unfinished pieces, not always four), the server SHALL clear trapped on those pieces, clear their holding grilles to empty cells (`remainingTurns = 0`), and place each on a uniformly random **free** start cell (same all-jail placement family as today / `game/pieces`). Other seats’ grilles MUST NOT be cleared by this reset. The affected client MUST see a warning modal (product Russian sense: tourists are sent to start) that does not block other clients. Because trapping occurred as part of resolving a board action, the server MUST then **advance** the current turn to the next eligible seat (MUST NOT keep the turn for further board actions).
+When a seated player’s unfinished pieces are all trapped (none free unfinished remaining; count equals that seat’s unfinished pieces, not always four), the server MUST **NOT** teleport those pieces to start cells, MUST **NOT** clear their holding grilles solely because all are trapped, and MUST **NOT** send an all-jail start-reset warning (the historical “reset to starts” path is retired). Pieces MUST remain trapped with their public `remainingTurns` and continue the grille tick/auto-free rules on become-current. Because trapping occurred as part of resolving a board action, after grille presentation settles the server MUST **advance** the current turn to the next eligible seat (MUST NOT keep the turn for further board actions while all pieces stay trapped).
 
 #### Scenario [SC-MOVE-60]: Fourth trap triggers immediate start reset
 
 - **GIVEN** a seated player has three pieces already trapped and one free unfinished piece that lands on an exclusive grille as a legal move
 - **WHEN** that land traps the last free unfinished piece
-- **THEN** all of that seat’s unfinished pieces are free on start cells
-- **AND** the grilles that held them are cleared to empty playable cells
-- **AND** other hidden or revealed grilles unrelated to those pieces remain unchanged
+- **THEN** all of that seat’s unfinished pieces remain trapped on their grille cells (no start teleport)
+- **AND** their `remainingTurns` stay positive
+- **AND** other seats’ grilles are unchanged
 
 #### Scenario [SC-MOVE-61]: Same turn continues after all-jail reset
 
 - **GIVEN** the same setup as SC-MOVE-60 with two eligible opponents remaining
-- **WHEN** the all-jail reset completes
+- **WHEN** the all-jail land presentation settles
 - **THEN** that seat does **not** remain the current turn
 - **AND** the current turn advances to the next eligible seat
+- **AND** that seat’s pieces are still trapped awaiting remainingTurns ticks
 
 #### Scenario [SC-MOVE-63]: All-jail warning modal is only for the affected seat
 
-- **GIVEN** an all-jail reset occurs for seat A while seat B and a spectator are connected
+- **GIVEN** seat A becomes fully trapped while seat B and a spectator are connected
 - **WHEN** clients update
-- **THEN** only seat A’s client shows the start-warning modal
-- **AND** seat B and the spectator do not see that modal
+- **THEN** no client shows the retired start-reset all-jail warning modal
+- **AND** seat B and the spectator likewise do not see that modal
 
-#### Scenario [SC-MOVE-119]: All-jail sends to start and advances turn
+#### Scenario [SC-MOVE-119]: All-jail waits and advances turn
 
 - **GIVEN** seat A has two eligible opponents remaining and A’s last free unfinished piece lands on a grille so all of A’s unfinished pieces are trapped
-- **WHEN** the all-jail reset completes
-- **THEN** A’s pieces are free on start cells
-- **AND** A’s client shows the start-warning modal
+- **WHEN** the trap presentation settles
+- **THEN** A’s pieces remain trapped with remainingTurns
 - **AND** the current turn is no longer A
 
 ### Requirement: Landing on an unspent grille traps the piece

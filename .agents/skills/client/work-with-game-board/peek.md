@@ -11,10 +11,10 @@ Read this when changing the shared Q&A modal, flipped difficulty digits, or `sen
 | Modal chrome | Header: 3 read-only pack difficulty dots (**left edge**) + **word-only** badge (`content.difficultyWord.{n}` — no `Сложность:` / digit; SC-BOARD-50) **horizontally centered**. Question ~24px (SC-BOARD-54). Empty slots: dashed unlabeled portrait. Filled: mini-card + thin primary `#1976d2` border; pool: `.peek-answer-mini` neutral `--pack-card-border` — half-size `--peek-tile-max-w` ~43 + AR 156∶206 (SC-BOARD-51). Pool ≤4×4 + scroll. Peeker: full-width primary submit. Spectators: hint, no enabled submit (SC-BOARD-52/53). |
 | Place / submit | Peeker: pool → next empty via `sendPeekPlace`; click filled → clear; submit → `sendPeekSubmit()`. Testid `peek-answer-chip` on pool. |
 | Reuse | Same answer card MAY fill any number of slots; pool stays selectable (SC-BOARD-49). |
-| Resolve | Correct → +difficulty **knowledge** on landing piece + remove tile. Wrong / leave → KEEP bind + `peekClose.reason:'wrong'`; turn advances. No turn-timeout `'timeout'`. Header flash 10s (SC-PRESENCE-36). |
+| Resolve | Correct → +difficulty **knowledge** on landing piece + remove tile. Wrong / leave → KEEP bind + `peekClose.reason:'wrong'`; turn advances. Multi turn timeout → `peekClose.reason:'timeout'` (incorrect). Header flash 10s + top-center Notify toast (SC-PRESENCE-36 / SC-BOARD-88). |
 | Flipped digit | Public difficulty on still-present bound tasks (`flippedCells`). |
 
 ## Do / Don't
 
-- Do: Colyseus I/O via store place/submit only; clear session from sync/`peekClose`; map `peekClose.correct` + `reason` → `peekStatusFlash`.
-- Don't: revive `sendPeek` open / peeks budget gates / peek affordance; revive Correct/Wrong buttons; invent timeout reason from clocks.
+- Do: Colyseus I/O via store place/submit only; clear session from sync/`peekClose`; map `peekClose.correct` + `reason` → `peekStatusFlash` + Notify; keep `framework.plugins` includes `Notify`.
+- Don't: revive `sendPeek` open / peeks budget gates / peek affordance; revive Correct/Wrong buttons; drop timeout toast/flash when multi `turnUntil` fires.

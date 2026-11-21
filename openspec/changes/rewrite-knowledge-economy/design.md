@@ -1,8 +1,6 @@
 ## Context
 
-See `proposal.md` — Why / Scope. Explore closed D1–D17: knowledge economy, exclusive traps 12%/15%, one move|return, free rescue, no push, no turn timer/end-turn, grille timer 3 on become-current, all-jail → advance, penultimate cut burns undelivered, focus at 3 o’clock.
-
-Current economy is woven through private `budgets` `{steps,peeks,infinite}`, peek affordance, 60s deadline, solo leftover ∞, push, and finish **place**. This change replaces that stack.
+See `proposal.md` — Why / Scope. Explore closed D1–D17 (knowledge economy) plus polish: restore 60s turn timer + timeout toast, grille 15%, all-jail wait (no teleport), strip-only carried knowledge + lightbulb, grille badge z-index, Notify toasts, dual finish/cut copy, finish-travel bugfix.
 
 Packages: **server** + **client** (room `tourist`).
 
@@ -10,95 +8,111 @@ Packages: **server** + **client** (room `tourist`).
 
 **Goals:**
 
-- Authoritative one-action turn + open-on-land / fling chain on server; client mirrors busy/modal locks.
-- Private `knowledge` `{ delivered, pieces }` + public `Piece.remainingTurns`; HUD + transfer anim reuse former +N grant pattern.
-- Fixed exclusive trap seed (clamp grille then catapult); remove density create options and push.
-- Penultimate full-finish cut; knowledge modal; no solo leftover / turn timer / end-turn.
+- Authoritative one-action turn + open-on-land / fling chain; **60s** turn deadline with ring; timeout force-closes open Q&A as «Не успел!» + top toast.
+- Private `knowledge` `{ delivered, pieces, outcome? }` + public `Piece.remainingTurns`; strip-only carried TR + lightbulb; avatar delivered + +N.
+- Fixed exclusive trap seed **15% grille / 15% catapult** (clamp grille then catapult); remove density create options and push.
+- All-jail: stay trapped until remainingTurns expire — no start teleport / no start-warning modal.
+- Penultimate cut; knowledge modal with **distinct** finish vs cut copy; reliable finish travel anim (click + catapult).
 
 **Non-Goals:**
 
 - Public cross-seat scoreboard / ranking UI.
-- New npm deps or external services.
+- New npm deps beyond enabling Quasar **Notify** (already in Quasar package).
 - Map/pack CMS changes.
+- Solo leftover ∞ / permanent `timeExpired` from a leftover-only clock (turn timeout advances / closes modal only).
 
 ## Decisions
 
 ### D1 — Fixed trap ratios, exclusive partition
 
-- **Choice:** At `enterPlaying` / `seedPlayingEconomy`, partition `*` cells with no overlap (pick grille keys first, then catapult from the remainder — never both on one cell; Q&A never under traps). Let `n` = task-cell count. `grilleCount = min(round(n * 0.12), n)`; `catapultCount = min(round(n * 0.15), n - grilleCount)` (fixed **15%** catapult — not the old few/medium/many table). Remaining cells = Q&A tasks. Drop create options `grilleDensity` / `catapultDensity` and lobby UI; if a client still sends density options, server **ignores** them and always uses this seed.
-- **Why:** Explore D1/D5; removes player tuning; exclusive cells match «задание или решётка или катапульта»; clamp order keeps `g + c ≤ n`.
-- **Alt:** Keep density UI — rejected. Absolute N per map — rejected (maps vary).
+- **Choice:** At `enterPlaying` / `seedPlayingEconomy`, partition `*` cells with no overlap (pick grille keys first, then catapult from the remainder — never both on one cell; Q&A never under traps). Let `n` = task-cell count. `grilleCount = min(round(n * 0.15), n)`; `catapultCount = min(round(n * 0.15), n - grilleCount)` (**15%/15%**). Remaining cells = Q&A tasks. Drop create options `grilleDensity` / `catapultDensity` and lobby UI; if a client still sends density options, server **ignores** them.
+- **Why:** Explore polish — equal trap pressure; clamp order keeps `g + c ≤ n`.
+- **Alt:** Keep 12%/15% — rejected after playtest feedback. Density UI — rejected.
 
 ### D2 — Replace budgets with knowledge fields
 
-- **Choice:** Hard-cut private `budgets` `{steps,peeks,infinite}`. Own-HUD only (same privacy family as old budgets): room-private per-seat store (Map like today’s `budgets`) + private message **`knowledge`** `{ delivered: number, pieces: Record<pieceId, number> }` to the owning client (`client.send`). Correct solve → that piece’s carried knowledge `+= difficulty` and re-send. Finish piece → `delivered += piece.knowledge`; piece carried `= 0`; re-send. Do **not** put carried/delivered on public schema (opponents must not see own counters). Yellow BR badge and avatar counter read from this private payload.
-- **Why:** Explore D2; difficulty already on tasks; mirrors existing private-budget channel.
-- **Alt:** Public schema `piece.knowledge` / seat field — rejected (product: own counters only). Knowledge only on seat — rejected (tourist yellow circle needs per-piece).
+- **Choice:** Hard-cut private `budgets`. Own-HUD only: room-private Map + private message **`knowledge`** `{ delivered: number, pieces: Record<pieceId, number>, outcome?: 'finish' | 'cut' }` via `client.send`. Correct solve → piece carried `+= difficulty`. Finish piece → `delivered +=` carried; carried `= 0`. On full finish set `outcome: 'finish'`; on penultimate cut set `outcome: 'cut'` (and re-send). Do **not** put carried/delivered on public schema.
+- **Why:** Explore D2 + dual modal copy needs a finish|cut discriminator without place UX.
+- **Alt:** Heuristic client-side cut detection — rejected (fragile). Public schema counters — rejected.
 
-### D3 — Turn machine: rescue* → one move|return → resolve → advance
+### D3 — Turn machine + 60s deadline
 
-- **Choice:** Remove end-turn message and turn deadline (`clearTurnDeadline` always in playing; do not mark `timeExpired` from turn/solo clocks; leave `turnUntil`/`turnBudgetSeconds` inactive at 0). Track room-private `boardActionUsed` per seat turn (reset when that seat becomes current). Allow rescue while `!boardActionUsed`. On accepted move/return set flag, run land pipeline; when pipeline goes idle: if the landed piece sits on a Q&A cell (bound or unbound, not removed), **auto-open** the shared task modal and **hold** the turn; else `advanceTurn`. Task modal open holds turn until `peekClose`/submit path, then `advanceTurn`. Reject push handlers (`push` no-op / reject). **Client local mirror (no public schema):** set a local «board-action spent» flag when `sendMove` / `sendReturnFromFinish` returns true (same optimistic gate as today’s post-send travel lock — Colyseus has no per-move ack). While the flag is set, hide/disable move, return, and rescue affordances (peekPlace/peekSubmit stay allowed for the open shared modal). Clear the flag when synchronized `currentTurnSessionId` is no longer the local seat (turn advanced or own turn ended). Optional recover: if after board-pipeline settle the moved piece never left its origin cell and no land modal opened (silent reject), clear the flag so the seat can retry.
-- **Why:** Explore D13/D15/D16; open-on-land strategy breaks if push relocates without “your” land intent.
-- **Alt:** Keep end-turn — rejected. Keep push free — rejected by product. Sync `boardActionUsed` publicly — rejected (own-turn UX only; local mirror enough).
+- **Choice:** Keep end-turn retired and push rejected. Restore synchronized turn deadline: `turnBudgetSeconds = 60` when ≥1 other eligible seat exists (same family as pre-rewrite multi turn clock); set `turnUntil` when a seat becomes current (including after modal-free land advance). **Do not** mark permanent solo-leftover `timeExpired` from this clock. Track room-private `boardActionUsed` (reset on become-current). Rescue while `!boardActionUsed`. On accepted move/return set flag; idle pipeline → open-on-land Q&A (hold turn) or `advanceTurn`. While a shared task modal is open, the turn deadline **keeps ticking**; on timeout the server MUST force-close the session with `peekClose` incorrect + `reason: 'timeout'` (KEEP bind / open digit), then `advanceTurn`. Client local board-action spent mirror unchanged. Presence paints the **turn countdown ring** again (reconnect grace may dual-ring when offline current).
+- **Why:** Product polish — «время на ход 1 минуту»; timeout «как было» closes modal + toast.
+- **Alt:** Pause timer while modal open — rejected. Timer display-only — rejected.
 
 ### D4 — Open-on-land unifies peek entry
 
-- **Choice:** On land (move/return/fling hop) onto Q&A cell → after trap-pipeline idle (no grille/catapult on that exclusive cell), server **auto** bind-if-needed + open shared peek session (reuse `syncPeekSession` / `peekOpen` + `peekPlace` / `peekSubmit` / `peekClose`). Session owner = **landing seat** (reopen by another seat **replaces** `openPeek.sessionId` / place rights). No peeks spend; remove peek affordance from board UX. Client `peek` intent MUST be rejected / no-op (opening is land-driven only). Wrong → KEEP open digit; the solving piece **remains** on the cell and the turn advances — a later reopen requires a **legal land** onto that cell once occupancy allows (standing alone does not reopen). Correct → knowledge on that piece + empty cell (`removedTaskKeys`), then advance.
-- **Why:** Explore items 1–2, D7/D11; reuse modal chrome (SC-BOARD-46…).
-- **Alt:** Separate new message name — unnecessary if session already shared. Keep client `peek` as open trigger — rejected.
+- **Choice:** Unchanged from rewrite: land/fling → auto open shared peek; client `peek` reject; wrong KEEP + advance; correct knowledge + empty cell + advance; reopen only by later land.
+- **Why:** Explore items 1–2.
+- **Alt:** Keep client `peek` — rejected.
 
 ### D5 — Grille remainingTurns tick on become-current
 
-- **Choice:** Public schema field `remainingTurns` (uint, 0 when not trapped) on **`Piece`**. On trap start set to **3**. On `advanceTurn` → new current: for each trapped piece of that seat, if `remainingTurns === 1` clear grille to empty + free piece + set 0; else decrement by 1. UI badge top-right red (`game/board`) — visible to every client. Auto-free same turn may move. Rescue / all-jail clear sets 0 and clears badge.
-- **Why:** Explore D9/D10; «было 1 → снова ход → убрали»; SC-BOARD-85 needs public sync.
-- **Alt:** Tick on end of own turn — rejected (product: on become-current). Store only on holding-grille key map — rejected (piece chrome badge binds to piece).
+- **Choice:** Public `Piece.remainingTurns` (3…1). Tick on become-current; at 1 → clear grille empty + free. UI red TR badge on **board + strip**, painted **above** grille overlay (`z-index` higher than `.grille-overlay` / chrome grille).
+- **Why:** Explore D9/D10 + polish visibility under grille art.
+- **Alt:** Tick on end of turn — rejected.
 
 ### D6 — Trap clear / catapult consume → empty cell
 
-- **Choice:** Exclusive trap cells have no underlying task and MUST never receive a Q&A bind. On grille clear (rescue / auto-free / all-jail / leave) or catapult consume after fling, mark the cell empty via the same `removedTaskKeys` / removed-task-hole path as a correct solve. Update «spent grille leaves task peekable» paths.
+- **Choice:** Unchanged — exclusive traps never hold Q&A; clear/consume → `removedTaskKeys` empty cell. (**Note:** all-jail no longer clears grilles via teleport path — see D7.)
 - **Why:** Explore D14.
-- **Alt:** Reshuffle new task under cell — rejected.
+- **Alt:** Reshuffle task under cell — rejected.
 
-### D7 — All-jail advances turn
+### D7 — All-jail waits on remainingTurns (no teleport)
 
-- **Choice:** Keep reset-to-start + modal; change SC-MOVE-61 keep-turn → `advanceTurn` after reset (trap was the board action resolve).
-- **Why:** Explore D17.
-- **Alt:** Keep turn — rejected.
+- **Choice:** When a seat’s unfinished pieces are all trapped, the server MUST **NOT** clear grilles, MUST **NOT** relocate pieces to start, and MUST **NOT** send `allJailWarning` / show the start-reset modal. Pieces stay trapped with their `remainingTurns`. After the trapping land’s presentation settles, the turn **advances** (trap was the board action). Countdown continues via become-current ticks (D5) until auto-free. Retire client `allJailWarning` modal chrome / i18n for start-reset (or leave inert).
+- **Why:** Product polish — «пусть ждут ходы ожидания».
+- **Alt:** Keep start teleport — rejected.
 
-### D8 — Finish: knowledge modal + penultimate cut
+### D8 — Finish: dual-copy knowledge modal + penultimate cut
 
-- **Choice:** Reuse existing seat gate: on full finish **and** on penultimate cut set `finishPlace = 1` (boolean-ish finished; **never** show place in UI; do not assign monotonic 1/2/3; stop using / incrementing `nextFinishPlace` for UX). **One** knowledge-modal chrome for both full finish and cut: body reports private `delivered` only (burned points excluded for cut); no place number; closing keeps the seat in the room. Client opens that modal on **local** seat `finishPlace` 0→1 (same watch as today’s `celebratedPlace` / `finishPlaceModal`) and binds the body to private `knowledge.delivered` (no new room event; cut seat gets the same 0→1 edge). Hide all place badges / «Вы N-й!» copy (`presence-place-badge`, `finishPlaceModal`). Penultimate cut (`maxSeats ≥ 2`, exactly one other eligible remains): mark last seat `finishPlace = 1`, burn all carried knowledge on that seat’s unfinished pieces to 0 **without** adding to `delivered`, set those pieces `finished = true` (cannot move), re-send private `knowledge`, show the same delivered-only modal. `maxSeats === 1` skips cut.
-- **Why:** Explore D4/D8/D12; minimize schema churn by reusing finished-seat gate.
-- **Alt:** Ordered places kept alongside knowledge — rejected. New `finished: boolean` field — unnecessary while `finishPlace > 0` already skips turns. Distinct cut-vs-finish dialog layouts — rejected (same delivered-only chrome).
+- **Choice:** `finishPlace = 1` gate for full finish and cut (no place UX / no `nextFinishPlace` bump). Client opens **one** modal chrome on local `finishPlace` 0→1. Body uses private `knowledge.delivered` **and** `outcome`:
+  - `finish`: product Russian sense — all your tourists reached finish and earned {n};
+  - `cut`: all opponents finished; your tourists that made it earned {n}.
+  Penultimate cut (`maxSeats ≥ 2`): burn carried→0 without adding to delivered, unfinished pieces `finished=true`, re-send `knowledge` with `outcome: 'cut'`. `maxSeats === 1` skips cut.
+- **Why:** Explore D4/D8/D12 + distinct copy request.
+- **Alt:** Same single sentence for both — rejected after polish.
 
-### D9 — Client HUD: knowledge, focus@3, strip badges
+### D9 — Client HUD: strip knowledge, focus@3, toast, timer ring
 
-- **Choice:** GamePage / presence: remove steps/peeks/end-turn/turn ring/solo modals / place badges; **one** avatar knowledge counter (right of own avatar, former budgets column) reading private `knowledge.delivered` + +N fall only when `delivered` increases (piece-finish transfer — same `.budget-fall` family; correct solve updates yellow BR only, no avatar fall). Focus: reuse the **existing end-turn circumference slot** (right-center / **3 o’clock**, 36×36 illustrated glyph) — move focus there and delete end-turn control + old bottom-right focus placement. Yellow BR carried-knowledge circle on **own** board piece **and** personal strip chrome from private `knowledge.pieces` (hide when 0); red TR grille counter on **all** clients’ board + strip chrome from public `Piece.remainingTurns` (map field on piece sync like `trapped`). Outcome modal: replace `finishPlaceModal` / `celebratedPlace` with **one** knowledge modal opened on local seat `finishPlace` 0→1, body = private `knowledge.delivered` (full finish and cut); no place number / badge. Lobby create: drop grille/catapult density UI and omit those keys from create payload. Remove push + peek-icon affordances (`sendPeek` retired; modal only via land sync). Retire `soloEndModalKind` / solo unlimited UX / steps-exhaustion copy.
-- **Why:** Explore HUD + D16; binds FE to existing GamePage slots (end-turn CSS, budgets fall, finishPlace watch) so apply does not invent new chrome families.
-- **Alt:** Leave end-turn unused — rejected (confusing). Keep finishPlace badge as “done” mark — rejected (reads as ranking place).
+- **Choice:**
+  - Avatar: delivered counter + +N on delivered growth; **`mdi-lightbulb-on`** (or same family) beside/in the counter chrome.
+  - Carried: **only** personal strip slots, yellow badge **top-right** + lightbulb icon; **remove** board-piece yellow BR badge.
+  - Grille: red TR board+strip; z-index above grille overlays.
+  - Focus @3 o’clock 36×36; no end-turn; no place badges; no solo leftover/unlimited modals.
+  - Outcome flashes: Quasar **Notify** top-center for correct / wrong / timeout («Правильно!» / «Ошибка!» / «Не успел!»); prefer Notify over (or instead of) quiet header `game-status` flash so the result is obvious. Enable `Notify` in `quasar.config.ts` plugins.
+  - Lobby: no density UI/payload.
+- **Why:** Explore HUD polish.
+- **Alt:** Keep board BR knowledge — rejected. Header-only flash — rejected.
+
+### D10 — Finish travel animation reliability
+
+- **Choice:** Ensure click-to-center and catapult-fling-to-center always run the existing `FINISH_TRAVEL_MS` (~550) + fade (~300) path: seed/preserve `lastKnown` / `finishAnimFrom` / `catapultDeferFinishKeys` so pieces never snap-vanish. Fix races where a second finisher or fling hop skips travel. Keep server finish marking; client presentation only unless a sync race is found.
+- **Why:** Reported vanish without move anim.
+- **Alt:** Accept instant vanish — rejected.
 
 ## Risks / Trade-offs
 
-- **[Risk] Large SC surface area (move/board/presence/finish/lobby)** → Mitigation: one change; mocha/vitest rewrite by capability blocks; retire push/solo/timer tests explicitly.
-- **[Risk] Holding turn open during shared task modal stalls table** → Mitigation: accepted (product); leave-mid-modal KEEP + advance per close path; no wall-clock turn timer.
-- **[Risk] Soft-lock with no legal move and not all-jail** → Mitigation: rare; rescue-before-move; grille auto-free; empty cells landable; if still stuck accept as edge (no end-turn by design).
-- **[Risk] Reusing `finishPlace=1` for all finishers loses ordering** → Mitigation: intentional; UI never shows place.
-- **[Risk] Client still sends peek/push/endTurn** → Mitigation: server reject; client remove send paths same change.
+- **[Risk] Timer + open modal stalls less but pressures answers** → Mitigation: accepted; timeout = «Не успел!» KEEP + advance.
+- **[Risk] All-jail without teleport soft-locks a seat until ticks** → Mitigation: other seats advance turns so become-current ticks; auto-free at 1; rescue still available before board action when a free piece exists.
+- **[Risk] Notify plugin change** → Mitigation: Quasar built-in; no new npm package.
+- **[Risk] Dual modal copy needs outcome on private knowledge** → Mitigation: small additive field; default `finish` when omitted for older clients during deploy skew.
 
 ## Migration Plan
 
-1. Server seed + schema/knowledge + turn machine + retire push/deadline/budgets → mocha.
-2. Client lobby + Game HUD/board affordances + modals → vitest.
-3. No DB migration; rollback = revert both siblings together (contract break).
+1. Blocks 1–6 already applied (knowledge economy without timer / with 12% grille / all-jail teleport).
+2. Polish apply: server seed 15%, restore deadline, all-jail wait, knowledge.outcome; client strip/toast/ring/z-index/finish anim/i18n → tests.
+3. No DB migration; rollback = revert both siblings together.
 
 ## Technical prerequisites
 
-None open (stack Vue/Quasar/Colyseus/Drizzle only; explore D* closed).
+None open (Vue/Quasar Notify plugin enable; Colyseus/Drizzle only).
 
 ## Key touch points (indicative)
 
-**Server:** `rooms/MyRoom.ts` (seed, turn, budgets, all-jail, finish), `game/touristMove.ts` (densities, push/rescue/move), schema seats/pieces, mocha room tests.
+**Server:** `rooms/MyRoom.ts` (seed 15%, turn deadline, all-jail, finish outcome), schema, mocha.
 
-**Client:** `stores/game.ts`, `pages/GamePage.vue`, lobby create modal, board affordance components, `lib/soloEndModalKind` retire/adapt, i18n `game.*`, vitest GameBoardWire / presence / lobby.
+**Client:** `quasar.config.ts` (Notify), `stores/game.ts`, `pages/GamePage.vue`, `App.vue` status flash → Notify, i18n, vitest.
 
-Implementation checklist: `tasks.md`.
+Implementation checklist: `tasks.md` (blocks 1–6 done; block 7+ polish pending).

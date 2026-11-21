@@ -4,13 +4,15 @@ description: >-
   Use when planning or writing mocha + @colyseus/testing tests for
   happy-tourist-server: room connect with JWT, onAuth failures, waiting-only
   seating / deferred pieces until playing / reconnect grace (SC-PIECE), knowledge
-  economy (private knowledge; open-on-land peekPlace+Submit; exclusive traps
-  12%/15%; remainingTurns; push/endTurn/peek-open reject; no leftover ∞/60s
-  deadlines) + content snapshot create (map+pack) + boardGeometry +
-  trap / free rescue / returnFromFinish / all-jail→advance / leave-clear +
+  economy (private knowledge+outcome?; open-on-land peekPlace+Submit; exclusive
+  traps 15%/15%; remainingTurns; push/endTurn/peek-open reject; multi 60s
+  turnUntil; no leftover ∞/timeExpired; all-jail wait no teleport/allJailWarning)
+  + content snapshot create (map+pack) + boardGeometry +
+  trap / free rescue / returnFromFinish / leave-clear +
   catapult paced pipeline / deferred turn (SC-MOVE-78…93) +
-  trap presentation budgets (setTrapPresentationBudgetsForTests; turn-budget
-  helpers deprecated no-ops), finish/cut (SC-FINISH), preset say (SC-SAY),
+  trap presentation budgets (setTrapPresentationBudgetsForTests) +
+  setTurnBudgetsForTests / resetTurnBudgets, finish/cut outcome (SC-FINISH),
+  preset say (SC-SAY),
   schema sync assertions, GET /rooms listing, preference HTTP (GET/POST /api/theme), auth
   email/password-policy (`zz-authEmail`) + profile displayName/change-password
   (`zz-authProfile` SC-PROFILE-*), support tickets + roles
@@ -324,18 +326,19 @@ Helpers in that file (`listPieces`, `allRoomPieces`, `unexpectedDrop`, `assertOf
 are the preferred assertion style — extend them rather than inventing a parallel
 seat-flat `side`/`row`/`col` model. Grace-timeout / countdown cases may need `this.timeout(…)` above the default 15s.
 
-### Turn / move (SC-MOVE)
+### Turn / move (SC-MOVE) — knowledge economy
 
-Canonical coverage: `test/MyRoom.test.ts` (SC-MOVE-*) + pure `test/touristMove.test.ts`.
+Canonical coverage: `test/MyRoom.test.ts` (SC-MOVE-* / SC-LOBBY-41 / SC-BOARD-80/81) + pure `test/touristMove.test.ts`.
 
-- First seated → `currentTurnSessionId`; rotation only via `endTurn` / auto-end / timeout / finish-advance / leave-of-current (skip `finishPlace > 0` / `timeExpired`); leftover / single-player non-finished stays current.
-- Legal orthogonal/diagonal one-step updates piece `row`/`col` and spends 1 step — **does not** advance turn (SC-MOVE-35); only when `phase === 'playing'` + current + steps > 0 + seat eligible (use `forcePlaying` to skip countdown in isolation tests).
-- Occupied / non-playable / out-of-turn / spectator / pre-playing / finished-seat / no-steps → no state change.
-- Permanent leave of current → `applyTurnGrant` on next (multi +1/+1; leftover become-current → ∞ both, no finite +1 — SC-MOVE-50); already-current→leftover → ∞ both (no re-grant — SC-MOVE-40); single-player become-current → finite +1/+1 (SC-MOVE-100); `onDrop` grace does not change turn (non-finished).
-- Grilles (add-grille-traps): create `grilleDensity` few/medium/many → seed count 12/22/35% (SC-LOBBY-14 / SC-BOARD-16); land → trap + `holdingGrilleKeys` (SC-MOVE-51 / SC-PIECE-24/26); trapped rejects move/peek (SC-MOVE-52/53); `rescue` / `returnFromFinish` (SC-MOVE-54…59 / SC-FINISH-12/14); all-jail reset (SC-MOVE-60/61 / SC-PIECE-25); auto-end waits for rescue/return (SC-MOVE-62); leftover/single-player same trap rules (SC-MOVE-64); spent grille leaves task peekable (SC-BOARD-20); permanent leave clears that seat’s holding (SC-PIECE-28; onDrop does not). Pure helpers cover density counts, ring cells, `hasLegalRescue` / `validateReturnFromFinish`.
-- Push (add-tourist-push): `push` `{ pusherSide, targetSessionId, targetSide, row, col }` relocates target only (−1 step finite; no turn advance; land side-effects like move; removed dest OK) — SC-MOVE-66…72; auto-end counts `hasLegalPush` (SC-MOVE-73); pure `farSideCell` / `validateTouristPush` / `hasLegalPush` in `test/touristMove.test.ts`.
-- Catapults / paced trap pipeline (add-tourist-catapult): create `catapultDensity` same 12/22/35% ratios (SC-LOBBY-17); land → paced hop + presentation budget (SC-MOVE-78…89); **SC-MOVE-90** mid-overlay: piece still on catapult, dest grille not holding yet, `isTrapPipelineActiveForTests()`; **SC-MOVE-91/92** auto-end / deadline set `pendingTurnAdvance` until pipeline idle; **SC-MOVE-93** idle without pending **re-evals** auto-end after grille removes peek (land budget > 0 so post-move auto-end still sees free peek); **SC-MOVE-96 / SC-FINISH-21** catapult→center fourth-piece: after idle `finishPlace > 0` and `currentTurnSessionId` ≠ finisher; pending+finish-place → absorb (exactly one leave, assert next eligible not skipped); reject further turn actions while pipeline active (board-lock parity). Helpers: `clearCatapultsForTests` / `plantHiddenCatapultForTests` / `setTrapRngForTests` / `setTrapPresentationBudgetsForTests` / `isPendingTurnAdvanceForTests`. Production defaults after `resetTrapPresentationBudgets`: `CATAPULT_ANIM_MS = 1500`, `CATAPULT_BROKEN_PRESENTATION_MS = 450 + 450 + 300` (**1200**) — assert in mocha SC-BOARD-23/24 (keep `MOVE_ANIM_MS = 250` / `GRILLE_ANIM_MS = 1000`). With zeroed budgets, do **not** assert long-lived `revealingCatapultKeys` / `brokenCatapultKeys` after fire — assert pipeline idle instead.
-- Pure module tests cover playable set, Chebyshev, occupancy (ignores finished; trapped still occupy) without room I/O.
+**Canon now:** one board action per turn (`move` or `returnFromFinish`); free `rescue` before board action; private `knowledge` (+ `outcome?` on finish/cut); open-on-land peek; exclusive seed **15%/15%** (create density options ignored — SC-LOBBY-40/41); multi **60s** `turnUntil` when ≥2 eligible; leftover/single-player **no** deadline / **no** leftover `timeExpired`; all-jail **wait** (pieces stay trapped; **no** teleport / **no** `allJailWarning`) → advance. **Retired:** steps/peeks budgets, `endTurn` success, `push` success, client peek-open, density seed 12/22/35%, all-jail start teleport.
+
+- First eligible → `currentTurnSessionId`; advance after board action / peek resolve / multi timeout / finish-advance / leave-of-current (skip `finishPlace > 0`); leftover sole eligible stays current without wall-clock.
+- Legal one-step `move` `{ pieceId, row, col }` spends the board action (not steps); land → paced traps → open-on-land Q&A or advance. Use `forcePlaying` / `setTurnBudgetsForTests` / `resetTurnBudgets` in isolation tests.
+- Occupied / non-playable / out-of-turn / spectator / pre-playing / finished-seat / trapped → no move; `push` / client `peek` open / `endTurn` → reject.
+- Grilles: fixed exclusive seed (not density UI); land → trap + `holdingGrilleKeys`; trapped rejects move; free `rescue` / `returnFromFinish`; all-jail keeps trapped + ticks `remainingTurns` (assert **no** `allJailWarning`); permanent leave clears that seat’s holding (SC-PIECE-28; onDrop grace does not). Pure helpers: `exclusiveGrilleCount` / `hasLegalRescue` / `validateReturnFromFinish`.
+- Catapults / paced trap pipeline: exclusive 15% after grilles; land → paced hop + presentation budget (SC-MOVE-78…93); `pendingTurnAdvance` until pipeline idle; helpers `setTrapPresentationBudgetsForTests` / `resetTrapPresentationBudgets` — production `CATAPULT_ANIM_MS = 1500`, broken **1200**.
+- Multi timeout while peek open → `peekClose.reason:'timeout'` + advance; non-current leave must **not** re-arm a fresh deadline for the current seat.
+- Pure module tests cover playable set, Chebyshev, occupancy (ignores finished; trapped still occupy), exclusive seed counts without room I/O.
 
 Server is authoritative; never assert by trusting a client-only board copy.
 
@@ -343,8 +346,9 @@ Server is authoritative; never assert by trusting a client-only board copy.
 
 Canonical coverage: `test/MyRoom.test.ts` (SC-FINISH-*) + finished cases in `test/touristMove.test.ts`.
 
-- Center land → `piece.finished=true`; finished pieces do not occupy cells.
-- 4th finished piece on a seat → `finishPlace = nextFinishPlace++`; seat remains seated.
+- Center land → `piece.finished=true`; transfer piece carried → `delivered`; re-send private `knowledge`; finished pieces do not occupy cells.
+- Full seat finish → `finishPlace = 1` + `knowledge.outcome = 'finish'` (no ranked places / place UX).
+- Penultimate cut (`maxSeats≥2`): last seat `finishPlace = 1` + `outcome = 'cut'`; burn unfinished carried without adding to delivered (SC-FINISH-32/34). `maxSeats===1` skips cut.
 - Finished seat rejects `move`; may still `say`; never holds `currentTurnSessionId`.
 - All remaining seats finished → `currentTurnSessionId === ""`; join in playing stays spectator (SC-FINISH-07 / SC-MOVE-19).
 

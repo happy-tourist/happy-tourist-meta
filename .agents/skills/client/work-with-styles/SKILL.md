@@ -24,8 +24,9 @@ built-in **Quasar `Dark` plugin** — no Vuetify, no brand-profile color system,
 no co-located `styles.scss` next to components.
 
 `quasar.config.ts` registers `css: ['app.scss']`, extras `roboto-font` +
-`material-icons`, `framework.plugins: ['Dark']`, boots `theme` before `i18n` /
-`colyseus`. Tokens: `src/css/quasar.variables.scss`.
+`material-icons`, `framework.plugins: ['Dark', 'Notify']` (Notify = peek
+outcome toasts SC-BOARD-88), boots `theme` before `i18n` / `colyseus`. Tokens:
+`src/css/quasar.variables.scss`.
 
 ## Specialized Topics
 

@@ -243,7 +243,7 @@ Private (not schema) — wire in `_attachRoom`:
 |---------|--------------|
 | `budgets` `{ steps, peeks, infinite, peekedThisTurn }` | `steps`/`peeks`, `budgetsInfinite` (leftover ∞ **both**; single-player finite), `peekedThisTurn` (legacy) |
 | synced peek session / optional `peekOpen` | `openPeek` |
-| `allJailWarning` `{}` | `allJailWarning = true` (own seat modal) |
+| `allJailWarning` `{}` | **Inert** — keep `allJailWarning = false` (teleport modal retired; SC-MOVE-119) |
 
 Wire once in the store:
 
@@ -265,7 +265,7 @@ room.onStateChange((state) => {
 room.onMessage('budgets', (message) => { /* steps / peeks / budgetsInfinite=peeks∞ / peekedThisTurn legacy */ });
 room.onMessage('peekOpen', (message) => { /* openPeek */ });
 room.onMessage('peekClose', (message) => { /* clear openPeek; peekStatusFlash from correct + reason */ });
-room.onMessage('allJailWarning', () => { this.allJailWarning = true; });
+room.onMessage('allJailWarning', () => { this.allJailWarning = false; }); // inert SC-MOVE-119
 ```
 
 `GamePage` may call `rejoinGame(roomId)` if Pinia lost the room after refresh / soft-fail / browser reopen (`localStorage` reconnection token → `reconnect`, clear stale on fail → `joinById`); failed rejoin → navigate to lobby. Board tile geometry from synced `grid` (`lib/boardGeometry`); seats + phase + connectivity + turn + removed tiles + holding grilles + catapult reveal keys + peek session come from sync; own budgets from private messages. Token details: `work-with-rooms`.

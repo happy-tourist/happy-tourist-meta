@@ -6,11 +6,11 @@ description: >-
   grid/touristsPerPlayer/packTitle/flippedCells/answerCards/peek session +
   countdownRemaining/started/seats (touristId + pieces by pieceId +
   finished/trapped/remainingTurns + connected/reconnectUntil/ready/finishPlace
-  0|1 gate/timeExpired always-false) + currentTurnSessionId + inactive
-  turnUntil/turnBudgetSeconds + removedTaskKeys + holdingGrilleKeys +
-  revealingCatapultKeys + brokenCatapultKeys, MapSchema / ArraySchema,
-  schema() + t.* (v5), or aligning sync with the sibling client. Private
-  knowledge is NOT schema — room message only.
+  0|1 gate/timeExpired always-false from clocks) + currentTurnSessionId +
+  turnUntil/turnBudgetSeconds (60s multi when ≥2 eligible) + removedTaskKeys +
+  holdingGrilleKeys + revealingCatapultKeys + brokenCatapultKeys, MapSchema /
+  ArraySchema, schema() + t.* (v5), or aligning sync with the sibling client.
+  Private knowledge is NOT schema — room message only.
 ---
 
 # Work With Schema
@@ -32,8 +32,9 @@ Schema is the **sync surface only**. Seating, reconnect, start countdown, turn o
 (`turnOrder` room-private), private **knowledge**, task deck / bindings, exclusive
 trap seed, and move/rescue/return/open-on-land rules live in the Room /
 `work-with-game` — not in schema. Do **not** put knowledge delivered/carried on
-schema. `turnUntil` / `turnBudgetSeconds` stay inactive (deadlines retired).
-`finishPlace` is 0|1 finished/cut gate (no ranked places).
+schema. `turnUntil` / `turnBudgetSeconds` arm for multi ≥2 eligible (60s);
+leftover sole eligible / single-player stay `0`. `finishPlace` is 0|1
+finished/cut gate (no ranked places).
 
 ## Overview
 
@@ -158,8 +159,8 @@ Room mutates these in `onDrop` / `onReconnect` / seat assign — see `work-with-
 |-------|---------|
 | `currentTurnSessionId` | Synced whose turn; empty when no eligible seat |
 | `turnUntil` | Unix ms deadline; `0` = no active turn timer |
-| `turnBudgetSeconds` | `60` multi / `60` solo while timer active; else `0` (solo red ring on client = 1 eligible seat, not duration) |
-| `Seat.timeExpired` | Legacy clock lock; knowledge economy keeps **false** |
+| `turnBudgetSeconds` | `60` while multi ≥2 eligible timer active; else `0` (leftover/single-player never arm; solo red ring on client ≠ wall-clock) |
+| `Seat.timeExpired` | Legacy leftover lock; multi 60s clock never sets it |
 
 **Not synced:** room-private `turnOrder: string[]` in `MyRoom` (join-order queue). Client only needs «чей ход» + deadline chrome.
 
@@ -184,7 +185,7 @@ Finished seats remain in `seats` (count toward `maxSeats`) until consented leave
 | Field | Meaning |
 |-------|---------|
 | `Piece.trapped` | `true` after landing on unspent grille; blocks move/peek for that piece; still occupies cell |
-| `holdingGrilleKeys` | `ArraySchema<string>` of revealed holding `"r,c"`; drop/rise overlay on client; cleared on rescue / all-jail / permanent leave of that seat’s trapped cells (SC-PIECE-28; onDrop grace does not) |
+| `holdingGrilleKeys` | `ArraySchema<string>` of revealed holding `"r,c"`; drop/rise overlay on client; cleared on rescue / permanent leave of that seat’s trapped cells (SC-PIECE-28; onDrop grace does not). All-jail **wait** keeps holding (no teleport clear — SC-MOVE-119). |
 
 ### Catapult reveal (game/board + game/move)
 
@@ -193,7 +194,7 @@ Finished seats remain in `seats` (count toward `maxSeats`) until consented leave
 | `revealingCatapultKeys` | Short-lived `"r,c"` while fade anim runs (~`CATAPULT_ANIM_MS = 1500`); hidden unspent never sync |
 | `brokenCatapultKeys` | Subset of revealing keys that show broken art on fade-out (no fling dest) |
 
-**Not synced (room-private + messages):** private knowledge (`knowledge` Map + `client.send('knowledge')`); task deck / cell bindings / content snapshot; exclusive hidden grille/catapult keys; private `allJailWarning`. Shared peek session syncs on schema. Do **not** put knowledge delivered/carried or hidden trap locations on schema.
+**Not synced (room-private + messages):** private knowledge (`knowledge` Map + `client.send('knowledge', { delivered, pieces, outcome? })`); task deck / cell bindings / content snapshot; exclusive hidden grille/catapult keys. **`allJailWarning` retired** — server must not send. Shared peek session syncs on schema. Do **not** put knowledge delivered/carried or hidden trap locations on schema.
 
 **Not synced (ephemeral messages):** preset `say` bubbles — room-private `liveSays` + `broadcast('say', …)`; client keeps `sayEvents` in Pinia. Do **not** add bubble fields to schema.
 

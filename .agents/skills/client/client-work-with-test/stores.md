@@ -98,7 +98,7 @@ asset imports under `src/assets/board/` + transparent affordance chrome + ×2 gl
 (~36 / ~52 board+return; flag ~18 unchanged) +
 `src/stores/__tests__/game.peekStatusFlash.test.ts` (`peekClose` → `peekStatusFlash`
 10s; legacy `correct:false` without `reason` skips — SC-PRESENCE-36 / SC-BOARD-70) +
-`game.soloPresence` / leftover ∞ / end-turn gates **retired** with knowledge economy — prefer GamePresenceFocus knowledge/focus@3 + board knowledge badges; leftover fixtures should not assert ∞ budgets;
+`game.soloPresence` / leftover ∞ / end-turn gates **retired** with knowledge economy — prefer GamePresenceFocus knowledge/focus@3 + strip knowledge badges + turn ring; leftover fixtures should not assert ∞ budgets;
 **no** `isSoloBudgetSeconds(300)`).
 App shell crumbs + page bg: `src/__tests__/AppHeaderChrome.test.ts` — breadcrumbs **inside**
 `q-page-container` (not elevated `q-header`; SC-BRAND-17…20 / SC-PACK-193 / SC-MAP-52);

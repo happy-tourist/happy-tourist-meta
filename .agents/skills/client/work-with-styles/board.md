@@ -17,7 +17,7 @@ Board UI is custom CSS Grid (not Quasar widgets). Keep selectors local and class
 | `.grille-overlay` / `--drop` / `--rise` | Holding grille; `--grille-anim-ms` (`GRILLE_ANIM_MS = 1000`); **`filter: drop-shadow(...)`** (SC-BOARD-58) |
 | `.catapult-overlay` / `--reveal` / `--intact` / `--broken-hold` / `--vanish` | Catapult presentation; `--catapult-anim-ms` (`CATAPULT_ANIM_MS = 1500`); broken vanish 300; drop-shadow SC-BOARD-58 |
 | `.piece--trapped` | Trapped tourist still visible under grille |
-| `.piece-badge--knowledge` / grille remaining | Yellow BR carried knowledge (own); red TR `remainingTurns` (all clients) — SC-BOARD-85 |
+| `.piece-badge--knowledge` / grille remaining | Yellow knowledge badge **strip TR only** (+ lightbulb; SC-PRESENCE-52); red TR `remainingTurns` as board overlay **above** grille + strip (SC-BOARD-85) — **no** board yellow knowledge |
 | `.tile` / `.tile-start` / `.tile-task` / `.tile-center` | Playable cells via `lib/tileSkins`; one finish tile per grid `7` (no span merge) |
 | `.tile--selected` / `.tile--target` | Local white / red move **and** return-mode rings |
 | `.tile-task.tile--removed` | Removed-task hole = page background; landable |
@@ -25,7 +25,7 @@ Board UI is custom CSS Grid (not Quasar widgets). Keep selectors local and class
 | `.presence-marker` / dual rings / `.presence-avatar` | 96×96 slot; outer turn / inner reconnect; 72px avatar sibling (SC-PRESENCE-11…13) |
 | `.my-tourist-strip` / slots | Wide row; `@container game-hud (max-width: 420px)` → 2×2; **no** chip/`q-menu` |
 | `.my-tourist-chrome-grille` | Strip grille when trapped; same anim + drop-shadow |
-| `.presence-knowledge` / `.knowledge-counter` / `.budget-fall` | Own delivered knowledge beside avatar (SC-PRESENCE-50/51); reuse `.budget-fall` ~2s for +N; **not** steps/peeks |
+| `.presence-knowledge` / `.knowledge-counter` / `.budget-fall` | Own delivered knowledge + lightbulb beside avatar (SC-PRESENCE-50/51); reuse `.budget-fall` ~2s for +N; **not** steps/peeks |
 | `.board-action-icon` | Shared **36×36** glyph for rescue/return/say/focus `<img>`; flag stays ~18 |
 | `.rescue-affordance` / `.return-affordance` | Above sprite then **+20px down**; illustrated `rescue.png` / `return.png`; **no** peek/push affordance classes in product |
 | `.say-affordance` | Own marker **12** — circumference hit-center |
