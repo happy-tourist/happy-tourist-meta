@@ -10,8 +10,9 @@ description: >-
   leave-clear (SC-LOBBY-14 / SC-BOARD-16/20 / SC-MOVE-51…64 /
   SC-MOVE-66…73 / SC-PIECE-24…28 / SC-FINISH-12/14) + catapult paced pipeline /
   deferred turn (SC-MOVE-78…93) + become-current grants
-  (multi +1/+1; solo +1 step;
-  already-current→solo no re-grant) + turn deadlines (setTurnBudgetsForTests) +
+  (multi +1/+1; leftover ∞ both no finite +1; already-current→leftover no
+  re-grant; single-player maxSeats=1 finite +1/+1) + turn deadlines /
+  single-player no-deadline (setTurnBudgetsForTests) +
   trap presentation budgets (setTrapPresentationBudgetsForTests),
   center finish / finishPlace (SC-FINISH), preset say (SC-SAY), schema sync
   assertions, GET /rooms listing, preference HTTP (GET/POST /api/theme), auth
@@ -159,10 +160,10 @@ Use these categories only when the SUT has relevant behavior:
   occupied/non-playable reject; out-of-turn / spectator / pre-playing / finished /
   time-expired / no-steps reject; **successful `move` does not advance turn**;
   `peek`/`peekPlace`/`peekSubmit`/`endTurn`; private `budgets`; grant multi +1/+1 /
-  solo become-current → ∞ both, **no** +1 grant (already-current→solo no re-grant — SC-MOVE-40/50);
-  solo ∞ peeks+steps; auto-end (keep turn when (peeks≥1 ∨ ∞) ∧ live `*` — flipped at peeks=0 does **not** keep, SC-MOVE-95); timeout force incorrect KEEP open peek; permanent leave
-  advances; offline grace keeps turn for non-finished; deadline keeps ticking;
-  multi 60s auto-pass; solo **60s** → `timeExpired`; SC-MOVE-48/97/98 rewritten (**no** steps-exhaustion / no time-lock from steps; `evaluateSoloStepsExhaustedForTests` removed). Also SC-BOARD-07… (reward bag,
+  leftover become-current → ∞ both, **no** +1 grant (already-current→leftover no re-grant — SC-MOVE-40/50);
+  leftover ∞ peeks+steps (`maxSeats≥2`); single-player maxSeats=1 finite +1/+1 / no deadline / no-actions +1/+1 refresh (SC-START-14 / SC-MOVE-100…106); auto-end (keep turn when (peeks≥1 ∨ ∞) ∧ live `*` — flipped at peeks=0 does **not** keep, SC-MOVE-95); timeout force incorrect KEEP open peek; permanent leave
+  advances; offline grace keeps turn for non-finished; deadline keeps ticking when armed;
+  multi 60s auto-pass; leftover **60s** → `timeExpired`; SC-MOVE-48/97/98 rewritten (**no** steps-exhaustion / no time-lock from steps; `evaluateSoloStepsExhaustedForTests` removed). Also SC-BOARD-07… (reward bag,
   Correct removes tile / Incorrect KEEP, holes **landable**). Use `forcePlaying` (clears deadline) /
   `forcePlayingWithTimer` / `waitForPhase` helpers; accelerate clocks with
   `setTurnBudgetsForTests` + `resetTurnBudgets` in `beforeEach`/`afterEach`.
@@ -211,8 +212,8 @@ Verify start / capacity (SC-START / SC-LOBBY-22):
 - create via mapId/packId/taskSetIds + `maxSeats` (`1…map.players`; omit → `min(2, map.players)`; invalid/out-of-range → reject `invalid_max_seats`)
 - metadata.maxSeats = chosen capacity; metadata.players may still mirror map snapshot
 - metadata.seats = occupied seated count (not clients)
-- Full table while waiting → countdown (COUNTDOWN_SECONDS) → playing (+ materialize + turn deadline)
-- Underfilled ≥2: all ready → same countdown; solo ready rejected
+- Full table while waiting → countdown (COUNTDOWN_SECONDS) → playing (+ materialize; turn deadline unless maxSeats=1 — SC-START-14)
+- Underfilled ≥2: all ready → same countdown; single seated under maxSeats≥2: ready rejected
 - Leave/drop during countdown does not cancel; moves rejected until playing
 
 Verify reconnect grace (SC-PIECE-11…16):
@@ -231,11 +232,11 @@ Verify move / turn / timer / budgets (SC-MOVE + SC-BOARD):
   spectator/pre-playing/finished/time-expired/no-steps: unchanged
 - `peek` → shared session; every open (fresh **or** flipped) spends 1 peek in finite mode (SC-BOARD-45 / SC-MOVE-94); peeks=0 rejects both (incl. flipped); solo ∞ no decrement; `peekSubmit` Correct → +difficulty steps + `"r,c"` in
   `removedTaskKeys` (**landable**) + `peekClose` without `reason`; Incorrect KEEP + `peekClose.reason === 'wrong'` (SC-BOARD-44/70); multi peeks while peeks remain;
-  auto-end advances when only flipped at peeks=0 (SC-MOVE-95); solo ∞ peeks+steps; become-current into solo → ∞ / no +1; already-current→solo → ∞; SC-MOVE-48/97/98 → **no** steps-exhaustion time-lock
+  auto-end advances when only flipped at peeks=0 (SC-MOVE-95); leftover ∞ peeks+steps (`maxSeats≥2`); single-player maxSeats=1 finite +1/+1 / no deadline / no-actions refresh (SC-START-14 / SC-MOVE-100…106); become-current into leftover → ∞ / no +1; already-current→leftover → ∞; SC-MOVE-48/97/98 → **no** steps-exhaustion time-lock
 - Permanent leave of current advances turn; offline grace does not (non-finished);
   turnUntil keeps ticking; open peek → force incorrect KEEP: turn timeout → `peekClose.reason === 'timeout'` (SC-MOVE-42 / SC-BOARD-70); leave / endTurn → `'wrong'`
-- ≥2 eligible: `turnBudgetSeconds===60`; timeout → advance without move; solo:
-  `===60`; timeout → `timeExpired`
+- ≥2 eligible: `turnBudgetSeconds===60`; timeout → advance without move; leftover:
+  `===60`; timeout → `timeExpired`; single-player: `turnUntil`/`turnBudgetSeconds` stay `0`; timeout must not `timeExpired` (`onTurnTimeoutForTests`)
 - `setTurnBudgetsForTests(multi, solo)` + `resetTurnBudgets()`; `forcePlaying` clears deadline; `forcePlayingWithTimer` uses `enterPlaying`
 
 Verify finish (SC-FINISH):
@@ -320,7 +321,7 @@ Canonical coverage lives in `test/MyRoom.test.ts`:
 - First join (waiting) → seat+kind only, **no pieces**; on enter playing → `touristsPerPlayer` pieces on free map starts via `pickMinDistanceFloorRandomStarts` (SC-PIECE-50); `connected=true`, `reconnectUntil=0`, `ready=false`.
 - Unique `touristId` among seats; no shared cell among any pieces in the room.
 - Fill `maxSeats` → further joiners are spectators; leave while under maxSeats reopens a seat **only in waiting**; join in countdown/playing is spectator (SC-PIECE-19); leave/grace in playing does not reopen (SC-PIECE-08/14/21).
-- Start: create `{ mapId, packId, taskSetIds, maxSeats? }` (omit → min(2, map.players); invalid → reject); full table or all-ready underfilled → countdown → playing (SC-START-*).
+- Start: create `{ mapId, packId, taskSetIds, maxSeats? }` (omit → min(2, map.players); invalid → reject); full table (incl. maxSeats=1 — SC-START-14) or all-ready underfilled → countdown → playing (SC-START-*).
 - Unexpected drop → hold seat for `RECONNECT_GRACE_SECONDS` (SC-PIECE-11…14); `reconnect(token)` restores online; grace timeout removes; empty seated → dispose with spectators (SC-PIECE-15); connectivity sync (SC-PIECE-16).
 
 Helpers in that file (`listPieces`, `allRoomPieces`, `unexpectedDrop`, `assertOfflineGrace`, `forcePlaying`, `waitForPhase`, `placePiece`, `touristCreateOptionsForTests`)
@@ -331,11 +332,11 @@ seat-flat `side`/`row`/`col` model. Grace-timeout / countdown cases may need `th
 
 Canonical coverage: `test/MyRoom.test.ts` (SC-MOVE-*) + pure `test/touristMove.test.ts`.
 
-- First seated → `currentTurnSessionId`; rotation only via `endTurn` / auto-end / timeout / finish-advance / leave-of-current (skip `finishPlace > 0` / `timeExpired`); solo non-finished stays current.
+- First seated → `currentTurnSessionId`; rotation only via `endTurn` / auto-end / timeout / finish-advance / leave-of-current (skip `finishPlace > 0` / `timeExpired`); leftover / single-player non-finished stays current.
 - Legal orthogonal/diagonal one-step updates piece `row`/`col` and spends 1 step — **does not** advance turn (SC-MOVE-35); only when `phase === 'playing'` + current + steps > 0 + seat eligible (use `forcePlaying` to skip countdown in isolation tests).
 - Occupied / non-playable / out-of-turn / spectator / pre-playing / finished-seat / no-steps → no state change.
-- Permanent leave of current → `applyTurnGrant` on next (multi +1/+1; solo become-current → ∞ both, no finite +1 — SC-MOVE-50); already-current→solo → ∞ both (no re-grant — SC-MOVE-40); `onDrop` grace does not change turn (non-finished).
-- Grilles (add-grille-traps): create `grilleDensity` few/medium/many → seed count 12/22/35% (SC-LOBBY-14 / SC-BOARD-16); land → trap + `holdingGrilleKeys` (SC-MOVE-51 / SC-PIECE-24/26); trapped rejects move/peek (SC-MOVE-52/53); `rescue` / `returnFromFinish` (SC-MOVE-54…59 / SC-FINISH-12/14); all-jail reset (SC-MOVE-60/61 / SC-PIECE-25); auto-end waits for rescue/return (SC-MOVE-62); solo same rules (SC-MOVE-64); spent grille leaves task peekable (SC-BOARD-20); permanent leave clears that seat’s holding (SC-PIECE-28; onDrop does not). Pure helpers cover density counts, ring cells, `hasLegalRescue` / `validateReturnFromFinish`.
+- Permanent leave of current → `applyTurnGrant` on next (multi +1/+1; leftover become-current → ∞ both, no finite +1 — SC-MOVE-50); already-current→leftover → ∞ both (no re-grant — SC-MOVE-40); single-player become-current → finite +1/+1 (SC-MOVE-100); `onDrop` grace does not change turn (non-finished).
+- Grilles (add-grille-traps): create `grilleDensity` few/medium/many → seed count 12/22/35% (SC-LOBBY-14 / SC-BOARD-16); land → trap + `holdingGrilleKeys` (SC-MOVE-51 / SC-PIECE-24/26); trapped rejects move/peek (SC-MOVE-52/53); `rescue` / `returnFromFinish` (SC-MOVE-54…59 / SC-FINISH-12/14); all-jail reset (SC-MOVE-60/61 / SC-PIECE-25); auto-end waits for rescue/return (SC-MOVE-62); leftover/single-player same trap rules (SC-MOVE-64); spent grille leaves task peekable (SC-BOARD-20); permanent leave clears that seat’s holding (SC-PIECE-28; onDrop does not). Pure helpers cover density counts, ring cells, `hasLegalRescue` / `validateReturnFromFinish`.
 - Push (add-tourist-push): `push` `{ pusherSide, targetSessionId, targetSide, row, col }` relocates target only (−1 step finite; no turn advance; land side-effects like move; removed dest OK) — SC-MOVE-66…72; auto-end counts `hasLegalPush` (SC-MOVE-73); pure `farSideCell` / `validateTouristPush` / `hasLegalPush` in `test/touristMove.test.ts`.
 - Catapults / paced trap pipeline (add-tourist-catapult): create `catapultDensity` same 12/22/35% ratios (SC-LOBBY-17); land → paced hop + presentation budget (SC-MOVE-78…89); **SC-MOVE-90** mid-overlay: piece still on catapult, dest grille not holding yet, `isTrapPipelineActiveForTests()`; **SC-MOVE-91/92** auto-end / deadline set `pendingTurnAdvance` until pipeline idle; **SC-MOVE-93** idle without pending **re-evals** auto-end after grille removes peek (land budget > 0 so post-move auto-end still sees free peek); **SC-MOVE-96 / SC-FINISH-21** catapult→center fourth-piece: after idle `finishPlace > 0` and `currentTurnSessionId` ≠ finisher; pending+finish-place → absorb (exactly one leave, assert next eligible not skipped); reject further turn actions while pipeline active (board-lock parity). Helpers: `clearCatapultsForTests` / `plantHiddenCatapultForTests` / `setTrapRngForTests` / `setTrapPresentationBudgetsForTests` / `isPendingTurnAdvanceForTests`. Production defaults after `resetTrapPresentationBudgets`: `CATAPULT_ANIM_MS = 1500`, `CATAPULT_BROKEN_PRESENTATION_MS = 450 + 450 + 300` (**1200**) — assert in mocha SC-BOARD-23/24 (keep `MOVE_ANIM_MS = 250` / `GRILLE_ANIM_MS = 1000`). With zeroed budgets, do **not** assert long-lived `revealingCatapultKeys` / `brokenCatapultKeys` after fire — assert pipeline idle instead.
 - Pure module tests cover playable set, Chebyshev, occupancy (ignores finished; trapped still occupy) without room I/O.

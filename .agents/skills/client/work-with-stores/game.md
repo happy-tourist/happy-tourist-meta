@@ -64,10 +64,10 @@ export const useGameStore = defineStore('game', {
         state.seats.some((s) => s.sessionId === state.sessionId),
       ),
     isPlaying: (state) => state.phase === 'playing',
-    /** Red ring: exactly 1 eligible seat (finishPlace===0 ∧ !timeExpired) — not via turnBudgetSeconds (both 60s). */
-    isSoloBudget: (state) => countEligibleSeats(state.seats) === 1,
+    /** Red ring leftover: maxSeats≥2 ∧ exactly 1 eligible — not via turnBudgetSeconds (both 60s). maxSeats===1 never leftover. */
+    isSoloBudget: (state) => isSoloBudgetFromSeats(state.seats, state.maxSeats),
     canSendReady: (state) => { /* waiting + ≥2 + under maxSeats + own !ready */ },
-    canSendEndTurn: (state) => { /* playing + isMyTurn + !budgetsInfinite + !finished + !timeExpired */ },
+    canSendEndTurn: (state) => { /* playing + maxSeats≥2 + isMyTurn + !budgetsInfinite + !finished + !timeExpired */ },
   },
   actions: {
     async subscribeLobby() { /* lobbyWanted + joinOrCreate lobby + quiet resubscribe */ },
@@ -121,8 +121,8 @@ export const useGameStore = defineStore('game', {
 ```
 
 Notes:
-- Module helpers (same file): `isEligibleSeat` / `countEligibleSeats` / `isSoloBudgetFromSeats` — solo red ring + Vitest (`game.soloPresence.test.ts`); do **not** revive `isSoloBudgetSeconds(===300)`.
-- `budgetsInfinite` (solo): both steps+peeks ∞; `sendMove`/`sendRescue`/`sendPush`/`sendReturnFromFinish` gate `(!budgetsInfinite && steps <= 0)`. Page HUD mirrors both counters as ∞; landable removed holes live on GamePage (`isLandableCell` = playable only).
+- Module helpers (same file): `isEligibleSeat` / `countEligibleSeats` / `isSoloBudgetFromSeats(seats, maxSeats)` — leftover red ring (`maxSeats≥2` ∧ eligible===1) + Vitest (`game.soloPresence.test.ts`); intentional single-player (`maxSeats===1`) is **not** leftover; do **not** revive `isSoloBudgetSeconds(===300)`.
+- `budgetsInfinite` (solo leftover only): both steps+peeks ∞; single-player stays finite. `sendMove`/`sendRescue`/`sendPush`/`sendReturnFromFinish` gate `(!budgetsInfinite && steps <= 0)`. Page HUD mirrors both counters as ∞ when infinite; landable removed holes live on GamePage (`isLandableCell` = playable only).
 - Live lobby listing uses `subscribeLobby` / LobbyRoom messages — not LobbyPage HTTP poll. `refreshRooms` HTTP remains unused fallback. Set `lobby.reconnection.enabled = false`; filter reservation/reconnect noise (see `work-with-lobby`).
 - **SC-LOBBY-05/37:** `_enterRoom` after `_attachRoom` does `void unsubscribeLobby()` (initiate sync clear + timeout-bound leave) and returns the room immediately — do **not** `await unsubscribeLobby()` in `_enterRoom` (hang leave would block create/join UX). `leaveGame` / `subscribeLobby` MAY `await` the bounded leave.
 - **Listing card types (SC-LOBBY-26/32):** `GameRoomMeta.taskSetLabels?: [{ taskSetId, authorDisplayName?, taskCount? }]` — UI shows ordinals + `taskCount`, never author (`work-with-lobby/listing-cards.md`).

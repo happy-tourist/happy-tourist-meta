@@ -10,8 +10,9 @@ description: >-
   portrait `PackAnswerCardTile` SC-PACK-222/225/282/283 + portrait
   `PackTaskTile`/`taskFilledSlots` SC-PACK-278/283 + AddTaskSetDraft SC-PACK-264…268 + DraftLifecycle/DirtySubmit SC-PACK-234/269…275 + GameBoardWire peek/skins/per-cell finish SC-BOARD-45/49/50…54/55/56/57 + SC-MOVE-65 (peeks=0 hides peek affordance on flipped; illustrated `assets/board/*.png` / `.board-action-icon`; left-edge dots),
   solo end timer-only SC-PRESENCE-21/35 (`inferSoloEndModalKind` always `'timer'`;
-  pure lib, not full GamePage mount; see composables.md) + eligible-seat red ring /
-  ∞ budgets (`game.soloPresence` / `GameSoloPresence`),
+  pure lib, not full GamePage mount; see composables.md) + leftover red ring
+  (`maxSeats≥2` ∧ 1 eligible) / ∞ budgets + single-player maxSeats=1 gates
+  (`game.soloPresence` / `GameSoloPresence` SC-PRESENCE-38…42),
   lobby `LobbyRoomCardTile` / `LobbyCreateWire` SC-LOBBY-24…26/33…36, maps
   palette/preview skins SC-MAP-71/72, App header chrome); Colyseus
   client.auth / client.http / room I/O spies; store error + q-banner;

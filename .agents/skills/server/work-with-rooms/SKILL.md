@@ -169,9 +169,9 @@ Align with client Pinia expectations:
 |---------|--------|
 | Capacity | No `maxClients = maxSeats`; seated ≤ `maxSeats` (`1…4`, chosen ≤ map.players) via seats check; spectators may join |
 | Seats | Unique `touristId` 1…4; pieces deferred until `playing` (`touristsPerPlayer` pieces by pieceId on free start cells — see `work-with-game`); **new seat only while `phase === 'waiting'`** and under maxSeats |
-| Connectivity | `connected` + `reconnectUntil` on Seat (D2); online at assign; `timeExpired` for solo budget lock |
-| Start | `phase` waiting → countdown → playing (+ materialize + turn deadline); full table or all-ready underfilled; legacy `started` mirrors `phase === 'playing'` |
-| Turn timer | Synced `turnUntil` / `turnBudgetSeconds` (60 multi / 60 solo); clear on dispose / no eligible (see `work-with-game`) |
+| Connectivity | `connected` + `reconnectUntil` on Seat (D2); online at assign; `timeExpired` for leftover 60s lock |
+| Start | `phase` waiting → countdown → playing (+ materialize; turn deadline unless maxSeats=1); full table (incl. maxSeats=1) or all-ready underfilled; legacy `started` mirrors `phase === 'playing'` |
+| Turn timer | Synced `turnUntil` / `turnBudgetSeconds` (60 multi / 60 leftover; none for maxSeats=1); clear on dispose / no eligible / single-player (see `work-with-game`) |
 | Status metadata | `waiting` until `phase === 'playing'`; always publish `maxSeats` + occupied `seats` |
 | Unexpected drop | Hold seat 30 s + `allowReconnection`; sync offline + deadline (SC-PIECE-11…14, 16); does not cancel countdown |
 | Consented leave | Immediate seat remove; free capacity does **not** reopen seating while phase is `countdown`/`playing` (SC-PIECE-07/08) |

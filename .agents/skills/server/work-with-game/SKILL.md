@@ -43,10 +43,10 @@ Constants: `RECONNECT_GRACE_SECONDS = 30`, `COUNTDOWN_SECONDS = 5`, `TURN_BUDGET
 ## Start phases / ready / countdown (shipped — game/start)
 
 - Synced `phase`: `waiting` → `countdown` → `playing`. New room starts `waiting`.
-- Full table (`seats.size === maxSeats` while `waiting`) → immediate `countdown` (5…1 via `clock.setTimeout`).
-- Underfilled (`≥2` seated, `< maxSeats`): `onMessage('ready')` one-shot → `seat.ready=true` + broadcast say preset `ready`; when all seated ready → same countdown. Solo seated: reject ready.
+- Full table (`seats.size === maxSeats` while `waiting`) → immediate `countdown` (5…1 via `clock.setTimeout`) — **includes maxSeats=1** with one seated (SC-START-14); do **not** require `seated ≥ 2` before the full-table check.
+- Underfilled (`≥2` seated, `< maxSeats`): `onMessage('ready')` one-shot → `seat.ready=true` + broadcast say preset `ready`; when all seated ready → same countdown. Ready path still requires ≥2 via `allSeatedReady`. Solo seated under maxSeats≥2: reject ready.
 - Leave/drop during countdown does **not** cancel countdown; remaining seats’ `ready` marks are **not** cleared on leave.
-- Countdown completion → `enterPlaying()`: materialize deferred pieces, set `phase=playing`, start turn deadline.
+- Countdown completion → `enterPlaying()`: materialize deferred pieces, set `phase=playing`; start turn deadline **except** single-player (`maxSeats===1` → `clearTurnDeadline`).
 - Legacy `started`: mirror of `phase === 'playing'`; **client/canon is phase-first** (`playing` unlocks moves). Prefer `phase`, not `started`, for new logic.
 
 ## Leave And Reconnect (shipped — D1 / D4)
@@ -67,7 +67,7 @@ LobbyRoom: **no** grace / `allowReconnection` — see `work-with-rooms` (D7).
 - Synced `currentTurnSessionId` = current **eligible** seated `sessionId` (`finishPlace === 0` && `!timeExpired`), or `""` if none.
 - First seated → set turn; later seats append only while joining in `waiting`. Join during `countdown`/`playing` is spectator — turn order unchanged (SC-MOVE-19).
 - **Successful `move` / `push` does NOT advance the turn** (SC-MOVE-35/72). Advance via: `endTurn`, auto-end (no legal move ∧ not (peeks≥1 ∧ live `*`) ∧ no legal rescue ∧ no legal return ∧ no legal push), turn timeout, or full-seat finish (`finishPlace` assigned).
-- Permanent seat remove: drop from `turnOrder`; if removed was current → next eligible (or `""`) + `applyTurnGrant` (multi +1/+1; solo become-current → ∞ both, no finite +1). If non-current left → no re-grant; only `syncSoloInfiniteMode` + fresh solo 60s when applicable (SC-MOVE-40/50).
+- Permanent seat remove: drop from `turnOrder`; if removed was current → next eligible (or `""`) + `applyTurnGrant` (multi +1/+1; leftover become-current → ∞ both, no finite +1; single-player next is still finite +1/+1). If non-current left → no re-grant; only `syncSoloInfiniteMode` + fresh leftover 60s when `isSoloLeftover()` (SC-MOVE-40/50).
 - `onDrop` / offline grace: **do not** change `currentTurnSessionId` for **non-finished** seats (turn waits); turn deadline **keeps ticking** (SC-MOVE-26). Finished / time-expired seats are never eligible.
 - Having a current-turn seat does **not** allow moves before `phase === 'playing'`.
 
@@ -77,7 +77,7 @@ Room-private (not schema):
 
 | Bookkeeping | Meaning |
 |-------------|---------|
-| `budgets: Map<sessionId, { steps, peeks, infinite, peekedThisTurn }>` | Owner-only; `infinite` = **∞ peeks and ∞ steps** in solo (multi: false/finite). Resend `client.send('budgets', { steps, peeks, infinite, peekedThisTurn })`. `peekedThisTurn` kept for client mirror — **no** one-peek/turn gate |
+| `budgets: Map<sessionId, { steps, peeks, infinite, peekedThisTurn }>` | Owner-only; `infinite` = **∞ peeks and ∞ steps** only in **solo leftover** (`maxSeats≥2` ∧ 1 eligible); multi and **single-player** (`maxSeats===1`) stay finite. Resend `client.send('budgets', { steps, peeks, infinite, peekedThisTurn })`. `peekedThisTurn` kept for client mirror — **no** one-peek/turn gate |
 | `taskDeck` / `taskPool` / `cellBindings` | Shuffled pack tasks at create; bind on first peek; flipped digit syncs via `flippedCells` |
 | `openPeek` | At most one unresolved peek for current seat |
 | `grilleDensity` + hidden grille keys | Create-time `few`/`medium`/`many` → **12/22/35%** of task cells (6/11/17 on 48); hidden keys never synced until reveal |
@@ -87,8 +87,10 @@ Synced: `removedTaskKeys: string[]` (`"r,c"`) — visual holes for all clients; 
 
 Behavior:
 
-- Enter `playing`: budgets start **0/0**; seed rewards + hidden grilles + hidden catapults; clear `removedTaskKeys` / `holdingGrilleKeys` / catapult reveal arrays; grant current seat (multi +1/+1; solo → `infinite=true`, no finite +1).
-- Multi (≥2 eligible) on becoming current: `steps++`, `peeks++`. Solo (1 eligible) on becoming current: `infinite=true` (∞ peeks **and** ∞ steps; no finite +1); already-current→solo (non-current leave/finish) → ∞ both + fresh 60s **without** re-grant. No end-turn while solo.
+- Distinguish modes via helpers: `isSinglePlayerRoom()` (`maxSeats===1`) vs `isSoloLeftover()` (`maxSeats≥2` ∧ `countEligible()===1`). Never treat maxSeats=1 as leftover ∞.
+- Enter `playing`: budgets start **0/0**; seed rewards + hidden grilles + hidden catapults; clear `removedTaskKeys` / `holdingGrilleKeys` / catapult reveal arrays; grant current seat (multi **or** single-player → finite +1/+1; leftover → `infinite=true`, no finite +1).
+- Multi (≥2 eligible) on becoming current: `steps++`, `peeks++`. Single-player become-current: same finite +1/+1 (`infinite=false`). Leftover become-current: `infinite=true` (∞ peeks **and** ∞ steps; no finite +1); already-current→leftover (non-current leave/finish) → ∞ both + fresh 60s **without** re-grant. No end-turn while leftover or single-player.
+- Single-player no-actions refresh: `maybeAutoEndTurn` when maxSeats=1 and `!seatHasAvailableActions` → +1 step +1 peek (same seat; **never** `advanceTurn` / `pendingTurnAdvance`); defer while `openPeek` / `trapPipelineActive` (early-return only); resume via same call sites as multi auto-end (post-move/rescue/push/return, peek submit, trap idle F1). Grant at most once per evaluation call.
 - `move`: spend 1 step only when finite (`!infinite`); **keep** turn; reject if piece `trapped`; after land → paced trap pipeline; then `maybeAutoEndTurn` (deferred while pipeline active). Landing on removed hole → **accept** when otherwise legal.
 - **Paced trap pipeline (`startTrapPipeline` / `resolveNextTrapHop`):** one next trap on current cell after land/arrival budget → shuffle → grille applies holding then idle; catapult consume + sync reveal → wait overlay budget → fire-time fling/broken → clear reveal → fling travel budget → resolve **only** dest cell. No full-chain sync in one tick; no client `presentationDone`. Fling does **not** spend an extra step. `onTrapPipelineIdle` (SC-MOVE-90…93/96): clear active → `ensureCurrentEligibleOrAdvance` (leave finish-place / time-expired current) → if `pendingTurnAdvance`: clear flag; `advanceTurn` **only** when current is still `wasCurrent` and eligible (else pending absorb — no second advance) → else **re-eval** `maybeAutoEndTurn` (no solo steps-exhaustion).
 - `rescue` `{ pieceId }`: own trapped + Chebyshev-1 free own piece + steps≥1 → −1 step; clear trapped + holding grille; then paced pipeline if a catapult remains.
@@ -97,16 +99,16 @@ Behavior:
 - All-jail (all pieces trapped): free pieces; clear holding grilles; re-place on free starts via the same `pickMinDistanceFloorRandomStarts` rule as materialize (SC-PIECE-25/50); keep turn/steps/timer; private `allJailWarning` to that seat only.
 - `peek` `{ pieceId }` → shared peek session; reject if trapped; bind deck task on first open; every open (fresh **or** flipped) −1 peek in finite mode (peeks=0 rejects both; solo ∞ no decrement). `peekPlace`/`peekSubmit` → peeker places chips / validates order; Correct +difficulty + remove tile; Incorrect KEEP.
 - `endTurn` (no payload): multi only; open peek → force incorrect KEEP first; then `advanceTurn` (+1/+1 next).
-- Auto-end (multi): advance only if no legal move **and not** ((peeks≥1 ∨ solo ∞) ∧ unfinished on live `*`) **and not** legal rescue/return/push — flipped at peeks=0 does **not** block (SC-MOVE-38/47/62/73/95).
-- Solo end: **no** steps-exhaustion gate (`maybeSoloStepsExhausted` removed). Solo uses `infinite=true` (∞ steps+peeks), `SOLO_BUDGET_SECONDS=60`; SC-MOVE-48/97/98 assert **no** time-lock from steps/missing peeks. Timer expiry alone → `timeExpired` (SC-MOVE-45). `canSpendStep` / spend honor `infinite` (no decrement; no +1 grant on solo become-current).
-- Timeout + open peek → `resolveOpenPeek(false, 'timeout')` KEEP then advance / solo timer `timeExpired` (SC-MOVE-42 / SC-BOARD-70); FE «Не успел!».
+- Auto-end (multi, ≥2 eligible): advance only if no legal move **and not** ((peeks≥1 ∨ leftover ∞) ∧ unfinished on live `*`) **and not** legal rescue/return/push — flipped at peeks=0 does **not** block (SC-MOVE-38/47/62/73/95). Single-player uses refresh +1/+1 instead of advance (SC-MOVE-103…105).
+- Leftover end: **no** steps-exhaustion gate (`maybeSoloStepsExhausted` removed). Leftover uses `infinite=true` (∞ steps+peeks), `SOLO_BUDGET_SECONDS=60`; SC-MOVE-48/97/98 assert **no** time-lock from steps/missing peeks. Timer expiry alone → `timeExpired` (SC-MOVE-45). `canSpendStep` / spend honor `infinite` (no decrement; no +1 grant on leftover become-current). Single-player stays finite and never time-expires from wall-clock.
+- Timeout + open peek → `resolveOpenPeek(false, 'timeout')` KEEP then advance / leftover timer `timeExpired` (SC-MOVE-42 / SC-BOARD-70); FE «Не успел!». Single-player `onTurnTimeout` clears deadline and MUST NOT mark `timeExpired`.
 - Consented/permanent leave / endTurn with open peek → `resolveOpenPeek(false, 'wrong')` KEEP (SC-BOARD-70; FE «Ошибка!», not «Не успел!»).
 
 ## Turn deadline (shipped — game/move)
 
-- Only while `phase === 'playing'` with an eligible current seat: synced `turnUntil` (unix ms) + `turnBudgetSeconds` (60 multi / 60 solo). Else both `0`.
-- ≥2 eligible → 60s fresh deadline on each **turn assign** (endTurn / auto / leave-advance / enter playing / finish-advance). Exactly 1 eligible → fresh **60s** (solo), including mid-turn when others finish/leave; solo seat’s own moves **preserve** remaining budget.
-- Timeout: ≥2 eligible → force-close open peek as incorrect KEEP if any, then `advanceTurn` without moving pieces; solo → `seat.timeExpired=true`, clear deadline, reject further moves/peeks; room stays until leave/grace.
+- Only while `phase === 'playing'` with an eligible current seat **and maxSeats≥2**: synced `turnUntil` (unix ms) + `turnBudgetSeconds` (60 multi / 60 leftover). Single-player (`maxSeats===1`): always `clearTurnDeadline` / skip `startTurnDeadline` → both `0`.
+- ≥2 eligible → 60s fresh deadline on each **turn assign** (endTurn / auto / leave-advance / enter playing / finish-advance). Leftover (`maxSeats≥2` ∧ 1 eligible) → fresh **60s**, including mid-turn when others finish/leave; leftover seat’s own moves **preserve** remaining budget (`isSoloLeftover()` gate for preserve).
+- Timeout: ≥2 eligible → force-close open peek as incorrect KEEP if any, then `advanceTurn` without moving pieces; leftover → `seat.timeExpired=true`, clear deadline, reject further moves/peeks; room stays until leave/grace. Single-player timeout handler is a no-op for `timeExpired`.
 - Waiting/countdown: no turn auto-pass. Clear deadline on dispose / countdown restart / no eligible.
 
 ## Move Rules (shipped — D2 / D3 + game/finish + steps + grilles)
@@ -132,7 +134,7 @@ Behavior:
 | Board UI | Synced `grid` → client/server `boardGeometry`; holes from `removedTaskKeys`; flipped digits from `flippedCells` |
 | Synced state | `phase`, `maxSeats`, `countdownRemaining`, `started` (legacy), `seats` Map → `touristId` + `pieces` (+ `finished`/`trapped`; may be empty pre-playing) + connectivity + `ready` + `finishPlace` + `timeExpired`, `currentTurnSessionId`, `turnUntil`, `turnBudgetSeconds`, `nextFinishPlace`, `removedTaskKeys`, `holdingGrilleKeys`, `revealingCatapultKeys`, `brokenCatapultKeys` |
 | Messages | `move`/`rescue`/`push`/`returnFromFinish`/`peek` with **pieceId**; `peekPlace`/`peekSubmit` shared Q&A; `endTurn`/`ready`/`say` via store |
-| Private | Server → owner `budgets` `{ steps, peeks, infinite` (solo ∞ both)`, peekedThisTurn }`; `allJailWarning` `{}`; peek session mostly schema-synced |
+| Private | Server → owner `budgets` `{ steps, peeks, infinite` (leftover ∞ both; single-player finite)`, peekedThisTurn }`; `allJailWarning` `{}`; peek session mostly schema-synced |
 | Create | `{ mapId, packId, taskSetIds, maxSeats?, grilleDensity?: 'few'\|'medium'\|'many', catapultDensity?: 'few'\|'medium'\|'many' }` (maxSeats omit → min(2, map.players); densities default medium) |
 | Say (ephemeral) | `say` `{ presetId: hello\|luck }` → broadcast; readiness preset only via `ready` — see `work-with-messages` |
 | Reconnect | Colyseus token; client `localStorage` + `reconnect` then `joinById`; resend `budgets` on reclaim |

@@ -45,7 +45,7 @@ Coordinate with: `work-with-rooms` (lifecycle / registration), `work-with-schema
 | Client → server | `endTurn` | empty — via `sendEndTurn` when `canSendEndTurn` (multi finite only); **reject** while trap pipeline active |
 | Client → server | `ready` | empty — via `sendReady` (waiting, ≥2 seated, under maxSeats, not yet ready) |
 | Client → server | `say` | `{ presetId: 'hello' \| 'luck' }` — via `sendSay`; whitelist only (no free text; **not** `ready`); finished seats may still say |
-| Server → owner | `budgets` | `{ steps, peeks, infinite, peekedThisTurn }` — private; `infinite` = **∞ peeks and ∞ steps** in solo; `peekedThisTurn` legacy (no gate) |
+| Server → owner | `budgets` | `{ steps, peeks, infinite, peekedThisTurn }` — private; `infinite` = **∞ peeks and ∞ steps** only in solo leftover (`maxSeats≥2` ∧ 1 eligible); single-player (`maxSeats===1`) stays finite; `peekedThisTurn` legacy (no gate) |
 | Server → owner | `peekOpen` | legacy private name may still fire; prefer **synced** peek session (`peekActive*` / broadcasts) for shared Q&A modal |
 | Server → all clients | `peekClose` | `{ sessionId, correct, row, col, reason?: 'wrong' \| 'timeout' }` — via `resolveOpenPeek`; `correct:true` → omit/ignore reason; wrong submit / leave / endTurn force → `'wrong'`; turn/solo timeout while open → `'timeout'` (SC-BOARD-70 / SC-MOVE-42); FE flash from reason (SC-PRESENCE-36) |
 | Server → owner | `allJailWarning` | `{}` — private; seat just freed from all-jail (informational modal) |
@@ -66,7 +66,7 @@ Coordinate with: `work-with-rooms` (lifecycle / registration), `work-with-schema
 
 **`peekPlace` / `peekSubmit`:** peeker only; place updates slot placements; submit compares ordered answer card ids to task slots — correct → +difficulty steps + remove tile + `peekClose` without reason; wrong → KEEP bind + `reason:'wrong'`; leave/endTurn force-close → `'wrong'`; timeout callers → `'timeout'`. Open spend is on `peek` (not place/submit); flipped is not free.
 
-**`endTurn`:** multi (≥2 eligible) + current + not finished/expired + **pipeline idle**; force-close open peek as incorrect KEEP if any; `advanceTurn` (next grant: multi +1/+1; solo become-current → ∞ both, no finite +1). Solo ∞ → reject. While pipeline active → silent reject (board-lock parity).
+**`endTurn`:** multi (≥2 eligible) + current + not finished/expired + **pipeline idle**; force-close open peek as incorrect KEEP if any; `advanceTurn` (next grant: multi +1/+1; leftover become-current → ∞ both, no finite +1). Leftover ∞ **and** single-player (`maxSeats===1`) → reject. While pipeline active → silent reject (board-lock parity).
 
 **`ready`:** accept only in `waiting`, seated + connected, seated count ≥ 2 and `< maxSeats`, seat not already ready. On accept: `seat.ready = true`, broadcast say preset `ready` (bypass live-say cap), maybe start countdown. Silent reject otherwise.
 
@@ -125,7 +125,7 @@ this.onMessage('peekSubmit', (client, message) => {
 });
 this.onMessage('endTurn', (client) => {
   // 1. multi + current + eligible; force-close open peek as incorrect KEEP if any
-  // 2. advanceTurn → applyTurnGrant (multi +1/+1; solo → ∞ both, no finite +1)
+  // 2. advanceTurn → applyTurnGrant (multi +1/+1; leftover → ∞ both, no finite +1)
 });
 
 this.onMessage('ready', (client) => {

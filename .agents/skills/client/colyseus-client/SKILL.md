@@ -231,7 +231,7 @@ Private (not schema) — wire in `_attachRoom`:
 
 | Message | Pinia fields |
 |---------|--------------|
-| `budgets` `{ steps, peeks, infinite, peekedThisTurn }` | `steps`/`peeks`, `budgetsInfinite` (solo: ∞ **both**), `peekedThisTurn` (legacy) |
+| `budgets` `{ steps, peeks, infinite, peekedThisTurn }` | `steps`/`peeks`, `budgetsInfinite` (leftover ∞ **both**; single-player finite), `peekedThisTurn` (legacy) |
 | synced peek session / optional `peekOpen` | `openPeek` |
 | `allJailWarning` `{}` | `allJailWarning = true` (own seat modal) |
 
@@ -409,7 +409,7 @@ Catch at the page only if you need extra UI beyond `game.error`.
 ```ts
 // GamePage: synced grid + pieces + presence + budgets + shared peek + say; remount → rejoinGame(roomId)
 // Own turn: select → red targets → game.sendMove(pieceId, row, col); eye → sendPeek / place / submit
-// Multi: end-turn affordance on own avatar (aria game.endTurn) → game.sendEndTurn(); solo hides end-turn
+// Multi: end-turn affordance on own avatar (aria game.endTurn) → game.sendEndTurn(); leftover ∞ and single-player hide end-turn
 // Own online marker: picker → game.sendSay('hello'|'luck'); bubbles from game.sayEvents
 await game.leaveGame(); // consented — clears tourist reconnect token
 await router.push({ name: 'lobby' });

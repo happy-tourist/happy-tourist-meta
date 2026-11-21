@@ -38,4 +38,4 @@ Store I/O: `work-with-stores/game.md`. Leave/status chrome: [shell.md](shell.md)
 | Route | `/game/:roomId` → `GamePage`; `meta.requiresAuth`; `roomId` reconnect only — not chrome |
 | Store actions | `rejoinGame` / `sendMove` / `sendRescue` / `sendPush` / `sendReturnFromFinish` / `sendPeek*` / `sendEndTurn` / `sendSay` |
 | Room | name `tourist`; mirror seats / turn / `removedTaskKeys` / grilles/catapults; private `budgets` / `peekOpen` / `allJailWarning` |
-| Solo end | Timer-only modal (no `endModalKind` steps branch); `lib/soloEndModalKind` always 'timer'; red ring via 1 eligible seat (`isSoloBudget`); ∞ both budgets; vitest — `client-work-with-test` |
+| Solo leftover / single-player | Leftover (`maxSeats≥2`, 1 eligible): timer-only end modal; red ring (`isSoloBudget`); ∞ both; unlimited modal. Single-player (`maxSeats===1`): numeric budgets; no turn ring / end-turn / unlimited modal; vitest — `client-work-with-test` |
