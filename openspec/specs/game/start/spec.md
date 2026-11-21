@@ -21,6 +21,7 @@
 | SC-START-11 | covered (server mocha) |
 | SC-START-12 | covered (server mocha) |
 | SC-START-13 | covered (server mocha) |
+| SC-START-14 | covered (server mocha — maxSeats=1 full table → countdown) |
 
 Related: deferred pieces — `game/pieces`; turn timers begin in playing — `game/move`.
 
@@ -58,7 +59,7 @@ When the five-second start countdown completes and the synchronized phase become
 
 ### Requirement: Auto countdown when seats are full
 
-When the number of seated players reaches the room’s maxSeats while the phase is `waiting`, the server SHALL immediately enter phase `countdown` and run a five-second start countdown (display values 5, 4, 3, 2, 1) that is authoritative for all clients. When the countdown reaches zero, the phase MUST become `playing`.
+When the number of seated players reaches the room’s maxSeats while the phase is `waiting`, the server SHALL immediately enter phase `countdown` and run a five-second start countdown (display values 5, 4, 3, 2, 1) that is authoritative for all clients. When the countdown reaches zero, the phase MUST become `playing`. This MUST apply when **maxSeats is 1** and the sole seated player has joined — the table is full with one seat; the server MUST NOT require a second seated player before starting countdown.
 
 #### Scenario [SC-START-03]: Full table starts countdown
 
@@ -67,6 +68,14 @@ When the number of seated players reaches the room’s maxSeats while the phase 
 - **THEN** the phase becomes `countdown`
 - **AND** every client in the room observes the shared countdown progressing through 5…1
 - **AND** after the countdown completes, the phase is `playing`
+
+#### Scenario [SC-START-14]: Single-seat full table starts countdown
+
+- **GIVEN** an authenticated client creates a tourist room with maxSeats equal to 1 and joins as the sole seated player while phase is `waiting`
+- **WHEN** that seat is assigned
+- **THEN** the phase becomes `countdown`
+- **AND** after the countdown completes, the phase is `playing`
+- **AND** the ready-to-start control is not required for that start
 
 ### Requirement: Ready-to-start when underfilled
 

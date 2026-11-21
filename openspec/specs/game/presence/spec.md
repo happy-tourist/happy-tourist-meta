@@ -16,7 +16,7 @@
 | SC-PRESENCE-06 | covered (client UX) |
 | SC-PRESENCE-07 | covered (client UX) |
 | SC-PRESENCE-08 | covered (client GamePage turn ring) |
-| SC-PRESENCE-09 | covered (client GamePage solo red ring) |
+| SC-PRESENCE-09 | covered (client GamePage solo leftover red ring — maxSeats≥2) |
 | SC-PRESENCE-10 | covered (client GamePage dual sibling rings) |
 | SC-PRESENCE-11 | covered (client reserved outer chrome 96px around 72px avatar) |
 | SC-PRESENCE-12 | covered (client sibling avatar img + rings) |
@@ -26,7 +26,7 @@
 | SC-PRESENCE-16 | covered (client UX — solo ∞ peeks only) |
 | SC-PRESENCE-17 | covered (client UX — end-turn 36×36; center on avatar circumference at 3 o’clock) |
 | SC-PRESENCE-18 | covered (client UX) |
-| SC-PRESENCE-19 | covered (client UX — peeks-unlimited modal) |
+| SC-PRESENCE-19 | covered (client UX — peeks-unlimited modal; leftover only, not maxSeats=1) |
 | SC-PRESENCE-20 | covered (client UX — +N anim ~2s) |
 | SC-PRESENCE-21 | covered (client vitest soloEndModalKind — timer vs steps-loss; trapped ≠ live peek target) |
 | SC-PRESENCE-35 | covered (client vitest soloEndModalKind — steps-exhausted copy when only trapped/start remainder) |
@@ -42,6 +42,11 @@
 | SC-PRESENCE-33 | covered (client — say @12 + end-turn @3; focus under end-turn at square corner; no overlap) |
 | SC-PRESENCE-36 | covered (client — peek outcome flash texts/colors; all clients; 10s then restore) |
 | SC-PRESENCE-37 | covered (client — focus under end-turn stays fully visible / activatable in HUD) |
+| SC-PRESENCE-38 | covered (client vitest — single-player numeric budgets) |
+| SC-PRESENCE-39 | covered (client vitest — single-player no turn ring) |
+| SC-PRESENCE-40 | covered (client vitest — single-player no unlimited modal) |
+| SC-PRESENCE-41 | covered (client vitest — +N animation on single-player refresh) |
+| SC-PRESENCE-42 | covered (client vitest — single-player hides end-turn) |
 
 Related: turn deadlines / budgets / end-turn / solo — `game/move`; peek modal — `game/board`; reconnect grace — `game/pieces`; bubbles — `game/say`; exit chrome — `game/leave`; board width — `game/board`; strip / selection — `game/pieces`.
 
@@ -116,7 +121,7 @@ Every occupied presence marker on the Game screen SHALL keep the seat’s touris
 
 ### Requirement: Turn countdown ring on presence
 
-While phase is `playing` and a seated player’s seat holds the synchronized current turn with an active turn deadline, every client that shows that seat’s presence marker (including spectators) SHALL show a determinate circular progress for remaining turn time around the tourist image: full at the start of the deadline budget, empty at the deadline. While two or more eligible seats remain, that ring MUST use the same blue accent previously used for the static current-turn outline. While the solo one-minute budget of `game/move` applies (exactly one eligible seat: non-finished and not time-expired), that ring MUST use a red accent instead. Clients MUST NOT distinguish solo vs multiplayer for this accent solely by `turnBudgetSeconds` duration — multiplayer turn and solo budget are both **60 seconds**; use eligible-seat count (visible in synced state to seated players and spectators). The static blue outline / box-shadow that previously marked the current-turn seat MUST NOT be used. When the seat is not current turn, or has no active turn deadline (including time-expired or finished with cleared deadline), the turn countdown ring MUST NOT show progress as an active turn timer (track chrome may remain for layout stability per the reserved-marker requirement).
+While phase is `playing` and a seated player’s seat holds the synchronized current turn with an active turn deadline, every client that shows that seat’s presence marker (including spectators) SHALL show a determinate circular progress for remaining turn time around the tourist image: full at the start of the deadline budget, empty at the deadline. While two or more eligible seats remain, that ring MUST use the same blue accent previously used for the static current-turn outline. While the solo leftover one-minute budget of `game/move` applies (`maxSeats ≥ 2` and exactly one eligible seat: non-finished and not time-expired), that ring MUST use a red accent instead. Clients MUST NOT distinguish solo leftover vs multiplayer for this accent solely by `turnBudgetSeconds` duration — multiplayer turn and solo leftover budget are both **60 seconds**; use eligible-seat count **and** that maxSeats is at least 2 (or equivalently: an active deadline under solo leftover rules). In a **single-player** room (`maxSeats === 1`) there is no active turn deadline, so the turn countdown ring MUST NOT be shown — clients MUST gate on `maxSeats === 1` (not solely an empty `turnUntil`). The static blue outline / box-shadow that previously marked the current-turn seat MUST NOT be used.
 
 #### Scenario [SC-PRESENCE-08]: Current turn shows blue countdown instead of outline
 
@@ -128,11 +133,17 @@ While phase is `playing` and a seated player’s seat holds the synchronized cur
 
 #### Scenario [SC-PRESENCE-09]: Solo budget shows red countdown
 
-- **GIVEN** a tourist room in phase `playing` with exactly one eligible seat (non-finished and not time-expired) under the one-minute solo budget, and at least one spectator or finished/time-expired client may also be present
-- **WHEN** any client (including a spectator) views that eligible seat’s presence marker
+- **GIVEN** a tourist room with maxSeats ≥ 2 in phase `playing` with exactly one eligible seat (non-finished and not time-expired) under the one-minute solo leftover budget, and at least one spectator or finished/time-expired client may also be present
+- **WHEN** any client views that seat’s presence marker
 - **THEN** a red circular countdown for the remaining solo budget is shown
-- **AND** the tourist kind image remains visible in the marker
-- **AND** the red accent is derived from eligible-seat count in synced state, not from `turnBudgetSeconds` duration
+- **AND** the accent is red even though the budget duration equals the multiplayer 60 seconds
+
+#### Scenario [SC-PRESENCE-39]: Single-player shows no turn countdown ring
+
+- **GIVEN** a tourist room with maxSeats 1 in phase `playing` with one eligible seated player
+- **WHEN** any client views that seat’s presence marker
+- **THEN** no turn-deadline circular countdown ring is shown for that seat
+- **AND** the client treats maxSeats 1 as no turn ring (not solely an empty `turnUntil`)
 
 ### Requirement: Dual turn and reconnect countdowns
 
@@ -202,7 +213,7 @@ When a seated player has a synchronized finish place, every client that shows th
 
 ### Requirement: Own step and peek counters beside the avatar
 
-While the user is a seated player on the Game screen in phase `playing`, the system SHALL show that user’s private **steps** and **peeks** counters in a **vertical stack to the right of** that user’s own presence avatar in the bottom HUD. When peeks are infinite (solo mode), the peeks counter MUST display an infinity indication. When steps are infinite (solo mode), the steps counter MUST also display an infinity indication. In multiplayer finite mode both counters MUST show numeric values. Other seated players’ and spectators’ clients MUST NOT show another seat’s step or peek counters. Spectators MUST NOT see step/peek counters for any seat. When the user’s finite budgets increase, the client SHOULD play a local “+N falls into the counter” animation for steps and peeks grants (turn grant and successful peek rewards) lasting approximately **two seconds**. The end-turn control MUST NOT sit in this budgets stack (`game/presence` end-turn requirement).
+While the user is a seated player on the Game screen in phase `playing`, the system SHALL show that user’s private **steps** and **peeks** counters in a **vertical stack to the right of** that user’s own presence avatar in the bottom HUD. When peeks are infinite (solo leftover mode), the peeks counter MUST display an infinity indication. When steps are infinite (solo leftover mode), the steps counter MUST also display an infinity indication. In multiplayer finite mode and in **single-player** (`maxSeats === 1`, finite budgets) both counters MUST show numeric values. Other seated players’ and spectators’ clients MUST NOT show another seat’s step or peek counters. Spectators MUST NOT see step/peek counters for any seat. When the user’s finite budgets increase, the client SHOULD play a local “+N falls into the counter” animation for steps and peeks grants (turn grant, single-player no-actions refresh, and successful peek rewards) lasting approximately **two seconds**. The end-turn control MUST NOT sit in this budgets stack (`game/presence` end-turn requirement).
 
 #### Scenario [SC-PRESENCE-15]: Seated user sees only own counters
 
@@ -213,7 +224,7 @@ While the user is a seated player on the Game screen in phase `playing`, the sys
 
 #### Scenario [SC-PRESENCE-16]: Solo shows infinity only on peeks
 
-- **GIVEN** the user is the sole non-finished seated player under infinite peeks and infinite steps
+- **GIVEN** the user is the sole non-finished seated player under infinite peeks and infinite steps in a maxSeats ≥ 2 room
 - **WHEN** the user views their presence marker
 - **THEN** the peeks counter shows infinity
 - **AND** the steps counter shows infinity
@@ -226,9 +237,22 @@ While the user is a seated player on the Game screen in phase `playing`, the sys
 - **THEN** the animation is visibly slower than a sub-second flash and completes in about two seconds
 - **AND** other clients do not see that animation
 
+#### Scenario [SC-PRESENCE-38]: Single-player shows numeric budgets
+
+- **GIVEN** the user is the seated player in a maxSeats-1 `playing` room under finite steps and peeks
+- **WHEN** the user views their presence marker
+- **THEN** the steps and peeks counters show numeric values (not infinity)
+
+#### Scenario [SC-PRESENCE-41]: Single-player refresh plays grant animation
+
+- **GIVEN** the user’s finite steps and peeks increase because the server refreshed +1/+1 after no available actions in a maxSeats-1 room
+- **WHEN** the local +N fall animation plays
+- **THEN** the animation completes in about two seconds for the increased counters
+- **AND** other clients do not see that animation
+
 ### Requirement: End-turn control next to own avatar
 
-While it is the seated user’s multiplayer turn in phase `playing` (two or more eligible seats) and the user is not time-expired, the Game presence chrome MUST show an **icon-only** end-turn control whose **hit-center sits on the circumference** of that user’s own presence marker at the **right-center** edge (product clock sense: **3 o’clock**). The control MUST use the **illustrated board-action end-turn icon** and MUST NOT paint a solid colored circular chrome behind the icon. Glyph and hit MUST both be **36×36 CSS pixels** (glyph fills the hit) while remaining non-overlapping with say when say is visible. Activating it MUST submit end-turn per `game/move` **immediately** — no confirmation dialog. The control MUST NOT show a visible text label (tooltips later are out of scope). The control MUST NOT appear in the budgets stack beside the avatar. The control MUST NOT appear as a labeled dock above the sticky bottom HUD. The control MUST NOT appear for spectators, for seats that are not current turn, during solo play, or for finished / time-expired seats. While a peek modal is open, the control MUST NOT be activatable (board-busy / peek lock as already required).
+While it is the seated user’s multiplayer turn in phase `playing` (two or more eligible seats) and the user is not time-expired, the Game presence chrome MUST show an **icon-only** end-turn control whose **hit-center sits on the circumference** of that user’s own presence marker at the **right-center** edge (product clock sense: **3 o’clock**). The control MUST use the **illustrated board-action end-turn icon** and MUST NOT paint a solid colored circular chrome behind the icon. Glyph and hit MUST both be **36×36 CSS pixels** (glyph fills the hit) while remaining non-overlapping with say when say is visible. Activating it MUST submit end-turn per `game/move` **immediately** — no confirmation dialog. The control MUST NOT show a visible text label (tooltips later are out of scope). The control MUST NOT appear in the budgets stack beside the avatar. The control MUST NOT appear as a labeled dock above the sticky bottom HUD. The control MUST NOT appear for spectators, for seats that are not current turn, during solo leftover play, during **single-player** (`maxSeats === 1`), or for finished / time-expired seats. While a peek modal is open, the control MUST NOT be activatable (board-busy / peek lock as already required).
 
 #### Scenario [SC-PRESENCE-17]: Current multiplayer seat sees «Завершить ход»
 
@@ -241,9 +265,16 @@ While it is the seated user’s multiplayer turn in phase `playing` (two or more
 
 #### Scenario [SC-PRESENCE-18]: Solo hides end-turn
 
-- **GIVEN** the user is the sole eligible seated player in solo play
+- **GIVEN** the user is the sole eligible seated player in solo leftover play (maxSeats ≥ 2)
 - **WHEN** the user views Game chrome
 - **THEN** the end-turn control is not shown
+
+#### Scenario [SC-PRESENCE-42]: Single-player hides end-turn
+
+- **GIVEN** it is the seated user’s turn in a maxSeats-1 `playing` room under finite budgets (not infinite)
+- **WHEN** the user views Game chrome
+- **THEN** the end-turn control is not shown
+- **AND** the client does not treat sole-eligible alone as sufficient to show end-turn
 
 #### Scenario [SC-PRESENCE-25]: End-turn not inline with budgets
 
@@ -255,14 +286,21 @@ While it is the seated user’s multiplayer turn in phase `playing` (two or more
 
 ### Requirement: Solo peeks-unlimited modal
 
-When the user’s seat enters solo infinite-budgets mode (`game/move`), that user’s client MUST show a modal whose product Russian sense informs them that they are alone, that moves and peeks are unlimited, and that they have one minute. Product Russian default: «Вы один. Ходы и просмотры безлимитны. У вас 1 минута.» Closing the modal MUST leave the user in the room. Other clients MUST NOT show that modal.
+When the user’s seat enters solo leftover infinite-budgets mode (`game/move`, maxSeats ≥ 2 and exactly one eligible seat), that user’s client MUST show a modal whose product Russian sense informs them that they are alone, that moves and peeks are unlimited, and that they have one minute. Product Russian default: «Вы один. Ходы и просмотры безлимитны. У вас 1 минута.» Closing the modal MUST leave the user in the room. Other clients MUST NOT show that modal. Entering **single-player** play (`maxSeats === 1`) MUST NOT show that modal — including if `budgetsInfinite` flips true while maxSeats remains 1.
 
 #### Scenario [SC-PRESENCE-19]: Only the solo player sees the peeks-unlimited modal
 
-- **GIVEN** a seated player becomes the sole non-finished seat and at least one spectator or finished seated client is present
-- **WHEN** solo infinite steps and peeks apply
+- **GIVEN** a seated player becomes the sole non-finished seat in a maxSeats ≥ 2 room and at least one spectator or finished seated client is present
+- **WHEN** solo leftover infinite steps and peeks apply
 - **THEN** that player’s client shows the solo unlimited modal with the one-minute / unlimited-moves-and-peeks sense
 - **AND** other clients do not show that modal
+
+#### Scenario [SC-PRESENCE-40]: Single-player does not show unlimited modal
+
+- **GIVEN** a seated player enters phase `playing` in a maxSeats-1 room under finite budgets
+- **WHEN** that client observes budgets become available for play
+- **THEN** the solo unlimited-budgets modal is not shown
+- **AND** a `budgetsInfinite` false→true transition MUST NOT open that modal while maxSeats is 1
 
 ### Requirement: Distinct solo end copy for timer vs steps exhaustion
 
