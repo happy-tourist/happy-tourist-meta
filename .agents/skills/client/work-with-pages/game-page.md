@@ -32,4 +32,4 @@ chrome: `work-with-game-board` (+ `peek.md` / `focus.md` / `knowledge.md`). CSS:
 | Route | `/game/:roomId` → `GamePage`; `meta.requiresAuth`; `roomId` reconnect only — not chrome |
 | Store actions | `rejoinGame` / `sendMove` / `sendRescue` / `sendReturnFromFinish` / `sendPeekPlace` / `sendPeekSubmit` / `sendSay` (`sendPush`/`sendEndTurn`/`sendPeek` retired) |
 | Room | name `tourist`; mirror seats/pieces/`remainingTurns` / `turnUntil` / traps; private `knowledge` (`outcome?`); `allJailWarning` inert |
-| Economy | One board action per turn; free rescue; fixed exclusive traps **15%/15%**; multi 60s `turnUntil` (≥2 eligible); leftover/single-player no deadline |
+| Economy | One board action per turn; free rescue; fixed exclusive traps **15%/20%**; multi 60s `turnUntil` (≥2 eligible); leftover/single-player no deadline |

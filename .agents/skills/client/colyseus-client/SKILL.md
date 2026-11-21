@@ -5,9 +5,9 @@ description: >-
   happy-tourist tourist SPA: Client singleton from src/boot/colyseus.ts,
   LobbyRoom live listing (subscribeLobby), room create/join/leave (map+pack+maxSeats;
   no density), room.send move/rescue/returnFromFinish/peekPlace/peekSubmit/say
-  (push/peek-open/endTurn retired), private knowledge/allJailWarning, client.auth,
-  Pinia auth/game stores, or VITE_COLYSEUS_URL / VITE_API_URL. Game message details:
-  game-messages.md.
+  (push/peek-open/endTurn retired), private knowledge/allJailWarning (inert) /
+  allJailSkip Notify, client.auth, Pinia auth/game stores, or VITE_COLYSEUS_URL /
+  VITE_API_URL. Game message details: game-messages.md.
 ---
 
 # Colyseus Client

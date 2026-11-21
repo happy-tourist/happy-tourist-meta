@@ -53,3 +53,14 @@
 - [x] 8.6 Две i18n формулировки knowledge modal по `outcome` finish vs cut — vitest SC-FINISH-31/32/34
 - [x] 8.7 Фикс finish travel: клик по центру и catapult→центр всегда slide+fade — vitest SC-FINISH-35
 - [x] 8.8 Убрать/инертить all-jail start-reset modal; `npm test` + `lint` + `typecheck` в client
+
+## 9. Playtest follow-up — all-jail skip toast, icons, finish travel, cut copy, catapult 20%
+
+- [x] 9.1 Перед работой: `design.md` D1/D7/D8/D9/D10; delta `specs/game/board` (SC-BOARD-80/81), `specs/game/move` (SC-MOVE-124/125), `specs/game/presence` (SC-PRESENCE-50/52/57), `specs/game/finish` (SC-FINISH-34/35); skills server `work-with-game`/`work-with-messages`, client `work-with-game-board`/`work-with-localization`/`work-with-stores`
+- [x] 9.2 Server: сид catapult **20%** (`c=min(round(n*0.20),n-g)`), grille остаётся **15%**; mocha SC-BOARD-80/81
+- [x] 9.3 Server: skip turn whenever seat still all-trapped after become-current tick **and** `countEligible() ≥ 2`; broadcast room skip signal; **no** toast/skip spam when eligible < 2 (end-game / solo wait) — mocha SC-MOVE-124/125 + regress SC-MOVE-60/61/119
+- [x] 9.4 Client: room skip → Notify top-center «Все туристы в решётке — ход пропущен» **всем**; без start-reset modal — vitest SC-PRESENCE-57
+- [x] 9.5 Client: заменить `mdi-lightbulb-on` → Material `lightbulb` у аватара и strip; убрать пустой gap — vitest SC-PRESENCE-50/52
+- [x] 9.6 Client: cut i18n «которые успели» (не «что успели») — vitest SC-FINISH-34
+- [x] 9.7 Client: починить finish travel (первый турист / click→центр не snap-vanish); усилить тест SC-FINISH-35 beyond source-assert
+- [x] 9.8 `npm test` + `lint` + `typecheck` в client; `npm test` в server по затронутым suite

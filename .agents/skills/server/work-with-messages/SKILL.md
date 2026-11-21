@@ -4,8 +4,9 @@ description: >-
   Use when adding, changing, reviewing, or debugging Colyseus room messages in
   the happy-tourist tourist server — onMessage handlers (move, rescue,
   returnFromFinish, peekPlace, peekSubmit, ready, say; push/peek/endTurn
-  reject), private knowledge sends (`outcome?`), open-on-land peek, paced
-  trap pipeline / pendingTurnAdvance / idle ensure+absorb / 60s multi timeout
+  reject), private knowledge sends (`outcome?`), `allJailSkip` broadcast when
+  eligible ≥2 (`allJailWarning` retired), open-on-land peek, paced trap
+  pipeline / pendingTurnAdvance / idle ensure+absorb / 60s multi timeout
   `peekClose.reason:'timeout'`, validating intents before schema mutate, or
   aligning contracts with the client. Not lobby listing.
 ---
@@ -37,6 +38,7 @@ Coordinate with: `work-with-rooms`, `work-with-schema`, `work-with-game` (rules 
 | Client → server | `push` / `peek` / `endTurn` | **Reject / no-op** (retired) |
 | Server → owner | `knowledge` | `{ delivered, pieces: Record<pieceId, number>, outcome?: 'finish'\|'cut' }` |
 | Server → owner | `allJailWarning` | **Retired** — server must not send (all-jail wait; SC-MOVE-119) |
+| Server → all | `allJailSkip` | `{}` when seat skipped for all-jail and `countEligible() ≥ 2` (SC-MOVE-124/125 / SC-PRESENCE-57) |
 | Server → all | `peekClose` | `{ sessionId, correct, row, col, reason?: 'wrong'\|'timeout' }` — multi 60s timeout uses `'timeout'` |
 | Server → all | `say` | ephemeral broadcast |
 | Schema | — | seats/pieces/`remainingTurns`/peek session/traps/`turnUntil`/holes |

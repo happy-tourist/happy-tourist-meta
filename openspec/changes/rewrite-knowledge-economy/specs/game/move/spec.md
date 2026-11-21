@@ -13,6 +13,8 @@
 | SC-MOVE-54…56 | removed — rescue for steps; see SC-MOVE-113 free rescue |
 | SC-MOVE-57…59 | modified — return spends the turn, no steps |
 | SC-MOVE-60…61 | modified — all-jail no teleport; advance turn |
+| SC-MOVE-124 | pending — all-jail skip whenever nobody can move + room toast (if eligible remain) |
+| SC-MOVE-125 | pending — no all-jail toast when party over / solo-only wait |
 | SC-MOVE-66…76 | removed — push |
 | SC-MOVE-78…79 | removed — density/overlap seed; exclusive seed in game/board |
 | SC-MOVE-85…86 | modified — exclusive cells; no dual-trap resolve |
@@ -178,7 +180,11 @@ While it is a seated client’s own turn, that seat has finish place **0**, has 
 
 ### Requirement: All four own pieces trapped resets to starts
 
-When a seated player’s unfinished pieces are all trapped (none free unfinished remaining; count equals that seat’s unfinished pieces, not always four), the server MUST **NOT** teleport those pieces to start cells, MUST **NOT** clear their holding grilles solely because all are trapped, and MUST **NOT** send an all-jail start-reset warning (the historical “reset to starts” path is retired). Pieces MUST remain trapped with their public `remainingTurns` and continue the grille tick/auto-free rules on become-current. Because trapping occurred as part of resolving a board action, after grille presentation settles the server MUST **advance** the current turn to the next eligible seat (MUST NOT keep the turn for further board actions while all pieces stay trapped).
+When a seated player’s unfinished pieces are all trapped (none free unfinished remaining; count equals that seat’s unfinished pieces, not always four), the server MUST **NOT** teleport those pieces to start cells, MUST **NOT** clear their holding grilles solely because all are trapped, and MUST **NOT** show the retired start-reset all-jail warning modal. Pieces MUST remain trapped with their public `remainingTurns` and continue the grille tick/auto-free rules on become-current.
+
+Whenever that seat cannot perform a board action because all unfinished pieces are trapped — including (a) after the trapping land’s grille presentation settles and (b) after become-current grille ticks if the seat is still fully trapped — **and** at least one **other** eligible seat remains (`countEligible() ≥ 2`), the server MUST **advance** the current turn to the next eligible seat and MUST broadcast a room-wide skip signal so **every** connected client shows a top-center Notify toast with product Russian sense «Все туристы в решётке — ход пропущен». The server MUST **NOT** keep the turn for further board actions while all pieces stay trapped when another eligible seat exists.
+
+When fewer than two eligible seats remain (solo waiting on ticks, or the party has ended / only finished seats remain), the server MUST **NOT** fire the all-jail skip toast. End-of-game outcome uses the knowledge modal (`game/finish`) only — no all-jail toast. If become-current ticks free at least one unfinished piece, the seat keeps the turn and MUST NOT toast.
 
 #### Scenario [SC-MOVE-60]: Fourth trap triggers immediate start reset
 
@@ -209,6 +215,21 @@ When a seated player’s unfinished pieces are all trapped (none free unfinished
 - **WHEN** the trap presentation settles
 - **THEN** A’s pieces remain trapped with remainingTurns
 - **AND** the current turn is no longer A
+
+#### Scenario [SC-MOVE-124]: Become-current still all-jailed skips with room toast
+
+- **GIVEN** seat A is fully trapped with remainingTurns > 1 on every unfinished piece, and at least one other eligible seat exists
+- **WHEN** A becomes current and grille ticks leave A still fully trapped
+- **THEN** the current turn advances away from A
+- **AND** every connected client shows the all-jail skip toast
+- **AND** A’s pieces remain trapped (no teleport)
+
+#### Scenario [SC-MOVE-125]: No all-jail toast when the party is over
+
+- **GIVEN** trapping or become-current would leave fewer than two eligible seats (party ended / cut / solo-only wait)
+- **WHEN** the all-jail condition is evaluated
+- **THEN** the all-jail skip toast is not shown
+- **AND** end-of-game seats use the knowledge modal path instead of an all-jail toast
 
 ### Requirement: Landing on an unspent grille traps the piece
 

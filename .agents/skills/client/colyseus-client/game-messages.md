@@ -6,7 +6,7 @@ Read this when changing create options, `room.send` / `onMessage` game contracts
 
 | Direction | Name | Payload / behavior |
 |-----------|------|--------------------|
-| Client → server | `create('tourist', opts)` | `{ mapId, packId, taskSetIds, maxSeats }` — **no** `grilleDensity` / `catapultDensity` (server ignores if sent; fixed exclusive seed **15%/15%** — SC-LOBBY-40/41 / SC-BOARD-80/81) |
+| Client → server | `create('tourist', opts)` | `{ mapId, packId, taskSetIds, maxSeats }` — **no** `grilleDensity` / `catapultDensity` (server ignores if sent; fixed exclusive seed **15% grille / 20% catapult** — SC-LOBBY-40/41 / SC-BOARD-80/81) |
 | Client → server | `joinById(roomId)` | Tourist join (spectator if not waiting / full) |
 
 ## Client → server
@@ -28,6 +28,7 @@ Read this when changing create options, `room.send` / `onMessage` game contracts
 |------|---------|----------|
 | `knowledge` (owner) | `{ delivered, pieces: Record<pieceId, number>, outcome?: 'finish'\|'cut' }` | Private; avatar counter + strip TR yellow badges (+ lightbulb). Arm +N fall only after `knowledgeSynced` (SC-PRESENCE-51). `outcome` selects finish\|cut modal copy (SC-FINISH-31/32/34). |
 | `allJailWarning` (owner) | `{}` | **Inert** — keep `allJailWarning = false`; teleport modal retired (SC-MOVE-119). |
+| `allJailSkip` (all) | `{}` | Top-center Notify «Все туристы в решётке — ход пропущен» for every client; never open start-reset modal (SC-PRESENCE-57 / D7). |
 | `peekClose` (all) | `{ sessionId, correct, row, col, reason?: 'wrong'\|'timeout' }` | Header flash + top-center Notify toast (SC-PRESENCE-36 / SC-BOARD-88). Multi turn timeout uses `'timeout'`. |
 | `say` (all) | `{ sessionId, presetId, at }` | Ephemeral. |
 | Schema sync | seats/pieces (+ `remainingTurns`), peek session, traps, `turnUntil` / `turnBudgetSeconds`, holes | `onStateChange` — see `work-with-stores/game.md`. |
@@ -42,5 +43,5 @@ Read this when changing create options, `room.send` / `onMessage` game contracts
 
 ## Do / Don't
 
-- Do: Colyseus I/O only via `stores/game`; keep create payload density-free; listen `knowledge` not `budgets`; Notify on `peekClose`.
+- Do: Colyseus I/O only via `stores/game`; keep create payload density-free; listen `knowledge` not `budgets`; Notify on `peekClose` and `allJailSkip`.
 - Don't: revive density create keys, push/end-turn/peek-open affordances, steps/peeks HUD, board yellow knowledge badge, all-jail teleport modal, or treat `finishPlace` as ranked place UX (`finishPlace` 0→1 opens delivered-knowledge modal by `outcome`).

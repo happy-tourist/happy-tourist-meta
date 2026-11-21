@@ -48,7 +48,7 @@ When a seated player’s last unfinished piece becomes finished (all of that sea
 
 ### Requirement: One knowledge-modal chrome; distinct finish vs cut copy
 
-Full finish and penultimate cut MUST share **one** client modal chrome bound to private `knowledge.delivered` and `knowledge.outcome` (`finish` | `cut`). Distinct visual layouts are NOT required, but i18n copy MUST differ: full finish communicates that all of the player’s tourists reached finish and earned `{n}`; cut communicates that all opponents finished and the tourists that made it earned `{n}`. The client MUST open that modal when the **local** seat’s synchronized `finishPlace` transitions 0→1, reading the latest private knowledge payload. The client MUST retire place congratulation copy (`finishPlaceModal` / «Вы N-й!») and MUST NOT render numeric `finishPlace` badges on presence.
+Full finish and penultimate cut MUST share **one** client modal chrome bound to private `knowledge.delivered` and `knowledge.outcome` (`finish` | `cut`). Distinct visual layouts are NOT required, but i18n copy MUST differ: full finish communicates that all of the player’s tourists reached finish and earned `{n}`; cut MUST use product Russian sense «Соперники финишировали. Ваши туристы, **которые** успели, доставили {n} знаний» (MUST NOT use «что успели»). The client MUST open that modal when the **local** seat’s synchronized `finishPlace` transitions 0→1, reading the latest private knowledge payload. The client MUST retire place congratulation copy (`finishPlaceModal` / «Вы N-й!») and MUST NOT render numeric `finishPlace` badges on presence. When the party ends this way, clients MUST NOT show an all-jail skip toast for that outcome (`game/move`).
 
 #### Scenario [SC-FINISH-34]: Cut and full finish use delivered-only modal with distinct copy
 
@@ -56,16 +56,17 @@ Full finish and penultimate cut MUST share **one** client modal chrome bound to 
 - **WHEN** that seat’s client shows the outcome modal
 - **THEN** the modal body is driven by that seat’s `knowledge.delivered` and `outcome`
 - **AND** full-finish wording is used when `outcome` is `finish`
-- **AND** cut wording is used when `outcome` is `cut`
+- **AND** cut wording uses «которые успели» when `outcome` is `cut`
 - **AND** no finish-place number appears in the modal or on that seat’s presence badge
+- **AND** no all-jail skip toast is shown solely because seats finished
 
 ### Requirement: Center finish keeps travel animation
 
-When an unfinished piece becomes finished by landing on a center cell (direct move click or catapult fling chain), the finishing client MUST present the existing finish travel (~550 ms) then fade (~300 ms) so the piece does not snap-vanish from its pre-finish cell. Mid-join already-finished pieces MAY omit travel. Catapult→center MUST defer vanish until after catapult presentation settles, then run the same travel path.
+When an unfinished piece becomes finished by landing on a center cell (direct move click or catapult fling chain), the finishing client MUST present the existing finish travel (~550 ms) then fade (~300 ms) so the piece does not snap-vanish from its pre-finish cell — including the **first** finisher of a seat. Mid-join already-finished pieces MAY omit travel. Catapult→center MUST defer vanish until after catapult presentation settles, then run the same travel path. Tests MUST cover a behavioral path that fails if travel `from` is missing when finishing from a non-center cell (SFC source-only asserts are not sufficient alone).
 
 #### Scenario [SC-FINISH-35]: Click and catapult finish animate to center
 
-- **GIVEN** an own unfinished piece finishes onto center by direct move or by catapult fling
+- **GIVEN** an own unfinished piece finishes onto center by direct move or by catapult fling (including the seat’s first finished tourist)
 - **WHEN** the local client paints the finish
 - **THEN** the piece slides/travels toward center before fading
 - **AND** it does not disappear from the origin cell without travel

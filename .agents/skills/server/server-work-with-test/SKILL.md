@@ -5,8 +5,9 @@ description: >-
   happy-tourist-server: room connect with JWT, onAuth failures, waiting-only
   seating / deferred pieces until playing / reconnect grace (SC-PIECE), knowledge
   economy (private knowledge+outcome?; open-on-land peekPlace+Submit; exclusive
-  traps 15%/15%; remainingTurns; push/endTurn/peek-open reject; multi 60s
-  turnUntil; no leftover ∞/timeExpired; all-jail wait no teleport/allJailWarning)
+  traps 15%/20%; remainingTurns; push/endTurn/peek-open reject; multi 60s
+  turnUntil; no leftover ∞/timeExpired; all-jail wait/skip + allJailSkip
+  SC-MOVE-124/125; no teleport/allJailWarning)
   + content snapshot create (map+pack) + boardGeometry +
   trap / free rescue / returnFromFinish / leave-clear +
   catapult paced pipeline / deferred turn (SC-MOVE-78…93) +
@@ -330,13 +331,14 @@ seat-flat `side`/`row`/`col` model. Grace-timeout / countdown cases may need `th
 
 Canonical coverage: `test/MyRoom.test.ts` (SC-MOVE-* / SC-LOBBY-41 / SC-BOARD-80/81) + pure `test/touristMove.test.ts`.
 
-**Canon now:** one board action per turn (`move` or `returnFromFinish`); free `rescue` before board action; private `knowledge` (+ `outcome?` on finish/cut); open-on-land peek; exclusive seed **15%/15%** (create density options ignored — SC-LOBBY-40/41); multi **60s** `turnUntil` when ≥2 eligible; leftover/single-player **no** deadline / **no** leftover `timeExpired`; all-jail **wait** (pieces stay trapped; **no** teleport / **no** `allJailWarning`) → advance. **Retired:** steps/peeks budgets, `endTurn` success, `push` success, client peek-open, density seed 12/22/35%, all-jail start teleport.
+**Canon now:** one board action per turn (`move` or `returnFromFinish`); free `rescue` before board action; private `knowledge` (+ `outcome?` on finish/cut); open-on-land peek; exclusive seed **15%/20%** (create density options ignored — SC-LOBBY-40/41); multi **60s** `turnUntil` when ≥2 eligible; leftover/single-player **no** deadline / **no** leftover `timeExpired`; all-jail **wait/skip** (pieces stay trapped; **no** teleport / **no** `allJailWarning`; `allJailSkip` when eligible ≥2) → advance. **Retired:** steps/peeks budgets, `endTurn` success, `push` success, client peek-open, density seed 12/22/35%, all-jail start teleport.
 
 - First eligible → `currentTurnSessionId`; advance after board action / peek resolve / multi timeout / finish-advance / leave-of-current (skip `finishPlace > 0`); leftover sole eligible stays current without wall-clock.
 - Legal one-step `move` `{ pieceId, row, col }` spends the board action (not steps); land → paced traps → open-on-land Q&A or advance. Use `forcePlaying` / `setTurnBudgetsForTests` / `resetTurnBudgets` in isolation tests.
 - Occupied / non-playable / out-of-turn / spectator / pre-playing / finished-seat / trapped → no move; `push` / client `peek` open / `endTurn` → reject.
 - Grilles: fixed exclusive seed (not density UI); land → trap + `holdingGrilleKeys`; trapped rejects move; free `rescue` / `returnFromFinish`; all-jail keeps trapped + ticks `remainingTurns` (assert **no** `allJailWarning`); permanent leave clears that seat’s holding (SC-PIECE-28; onDrop grace does not). Pure helpers: `exclusiveGrilleCount` / `hasLegalRescue` / `validateReturnFromFinish`.
-- Catapults / paced trap pipeline: exclusive 15% after grilles; land → paced hop + presentation budget (SC-MOVE-78…93); `pendingTurnAdvance` until pipeline idle; helpers `setTrapPresentationBudgetsForTests` / `resetTrapPresentationBudgets` — production `CATAPULT_ANIM_MS = 1500`, broken **1200**.
+- Catapults / paced trap pipeline: exclusive **20%** after grilles; land → paced hop + presentation budget (SC-MOVE-78…93); `pendingTurnAdvance` until pipeline idle; helpers `setTrapPresentationBudgetsForTests` / `resetTrapPresentationBudgets` — production `CATAPULT_ANIM_MS = 1500`, broken **1200**. Assert seed counts **7 grille + 10 catapult** of 48 (SC-BOARD-80/81).
+- All-jail: after land-settle **and** become-current tick if still all-trapped → `allJailSkip` only when `countEligible() ≥ 2` (SC-MOVE-124); no toast when eligible < 2 (SC-MOVE-125); assert **no** `allJailWarning`.
 - Multi timeout while peek open → `peekClose.reason:'timeout'` + advance; non-current leave must **not** re-arm a fresh deadline for the current seat.
 - Pure module tests cover playable set, Chebyshev, occupancy (ignores finished; trapped still occupy), exclusive seed counts without room I/O.
 

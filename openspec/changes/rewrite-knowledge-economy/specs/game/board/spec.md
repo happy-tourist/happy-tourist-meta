@@ -15,8 +15,8 @@
 | SC-BOARD-45 | removed — flipped peek spends peeks |
 | SC-BOARD-48 | modified — deck reshuffle on open-on-land |
 | SC-BOARD-70 | modified — timeout close reason restored with turn timer |
-| SC-BOARD-80 | modified — exclusive seed grille 15% / catapult 15% |
-| SC-BOARD-81 | pending — fixed catapult 15% exclusive |
+| SC-BOARD-80 | modified — exclusive seed grille 15% / catapult 20% |
+| SC-BOARD-81 | pending — fixed catapult 20% exclusive |
 | SC-BOARD-82 | pending — open-on-land binds/opens task |
 | SC-BOARD-83 | pending — wrong keeps open knowledge digit |
 | SC-BOARD-84 | pending — no peek icon affordance |
@@ -29,14 +29,14 @@
 
 ### Requirement: Task cells are exclusively task grille or catapult
 
-When phase becomes `playing`, the server SHALL partition still-present map task cells (`*`) into three disjoint sets: **task** (Q&A reward), **grille**, and **catapult**. A cell MUST NOT hold more than one of these. Let `n` be the task-cell count. Grille count MUST be `min(round(n * 0.15), n)`. Catapult count MUST be `min(round(n * 0.15), n - grilleCount)`. Remaining task cells are Q&A tasks. Start and finish cells MUST NOT receive traps or task binds. Placement MUST NOT be predictable from coordinates alone. Create-time density options MUST NOT affect this partition (server ignores them if present).
+When phase becomes `playing`, the server SHALL partition still-present map task cells (`*`) into three disjoint sets: **task** (Q&A reward), **grille**, and **catapult**. A cell MUST NOT hold more than one of these. Let `n` be the task-cell count. Grille count MUST be `min(round(n * 0.15), n)`. Catapult count MUST be `min(round(n * 0.20), n - grilleCount)`. Remaining task cells are Q&A tasks. Start and finish cells MUST NOT receive traps or task binds. Placement MUST NOT be predictable from coordinates alone. Create-time density options MUST NOT affect this partition (server ignores them if present).
 
 #### Scenario [SC-BOARD-80]: Seed partitions without overlap
 
 - **GIVEN** a tourist room entering phase `playing` with 48 task cells
 - **WHEN** traps and tasks are seeded
 - **THEN** exactly `round(48 * 0.15)` = **7** cells are grille-only
-- **AND** exactly `min(round(48 * 0.15), 48 - 7)` = **7** cells are catapult-only
+- **AND** exactly `min(round(48 * 0.20), 48 - 7)` = **10** cells are catapult-only
 - **AND** no cell is both grille and catapult or trap-plus-task
 - **AND** the remaining task cells are Q&A task cells
 
@@ -44,7 +44,7 @@ When phase becomes `playing`, the server SHALL partition still-present map task 
 
 - **GIVEN** a tourist room created without client density options
 - **WHEN** catapults are seeded at playing start
-- **THEN** catapult count is `min(round(n * 0.15), n - grilleCount)` for task-cell count `n`
+- **THEN** catapult count is `min(round(n * 0.20), n - grilleCount)` for task-cell count `n`
 - **AND** those cells are not also grille or Q&A task cells
 
 ### Requirement: Landing opens the cell content

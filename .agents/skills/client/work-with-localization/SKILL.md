@@ -155,6 +155,9 @@ export default {
     returnAffordance: 'Вернуть на поле',
     allJailWarningModal: 'Все туристы попали в решётки. Они отправлены на стартовые клетки.',
     allJailWarningModalOk: 'ОК',
+    allJailSkipToast: 'Все туристы в решётке — ход пропущен',
+    knowledgeDeliveredModalCut:
+      'Соперники финишировали. Ваши туристы, которые успели, доставили {n} знаний',
   },
   support: {
     title: 'Поддержка',

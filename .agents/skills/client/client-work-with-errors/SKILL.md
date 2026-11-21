@@ -36,9 +36,10 @@ Error handling is **store-local**, not a second toast pipeline:
 - Room lifecycle errors also arrive via `room.onError` into `game.error`.
 
 Prefer Pinia `error` + `q-banner` for store/page failures. Do not invent dialog
-interceptors or Notify for **errors**. Quasar `Notify` is reserved for peek
-outcome toasts (`stores/game` on `peekClose` — SC-BOARD-88), not auth/game/
-support/content error paths.
+interceptors or Notify for **errors**. Quasar `Notify` is reserved for gameplay
+toasts in `stores/game`: peek outcomes on `peekClose` (SC-BOARD-88) and
+room-wide `allJailSkip` (SC-PRESENCE-57) — not auth/game/support/content error
+paths.
 
 ## Auth Store Pattern
 

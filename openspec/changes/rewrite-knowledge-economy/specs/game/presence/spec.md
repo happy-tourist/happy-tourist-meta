@@ -1,6 +1,6 @@
 # Delta: game/presence
 
-Knowledge HUD вместо steps/peeks; focus на месте end-turn; без таймера/solo modal/end-turn.
+Knowledge HUD вместо steps/peeks; focus на месте end-turn; turn ring 60s; Notify toasts; Material lightbulb; all-jail skip toast; без solo modal/end-turn.
 
 ## Traceability
 
@@ -20,7 +20,8 @@ Knowledge HUD вместо steps/peeks; focus на месте end-turn; без �
 | SC-PRESENCE-38…42 | removed — single-player budget/end-turn gates |
 | SC-PRESENCE-50 | pending — seat knowledge on avatar |
 | SC-PRESENCE-51 | pending — +N knowledge grant animation |
-| SC-PRESENCE-52 | modified — carried knowledge strip TR + lightbulb only |
+| SC-PRESENCE-52 | modified — carried knowledge strip TR + Material lightbulb only |
+| SC-PRESENCE-57 | pending — all-jail skip toast for all clients |
 | SC-PRESENCE-53 | pending — focus at former end-turn slot |
 | SC-PRESENCE-54 | modified — turn countdown ring restored (60s) |
 | SC-PRESENCE-55 | pending — no end-turn control |
@@ -30,7 +31,7 @@ Knowledge HUD вместо steps/peeks; focus на месте end-turn; без �
 
 ### Requirement: Own delivered knowledge beside the avatar
 
-While the user is a seated player on the Game screen in phase `playing`, the system SHALL show that user’s **delivered knowledge** total (points transferred from finished tourists, from private `knowledge.delivered`) in a counter **to the right of** that user’s own presence avatar in the bottom HUD, with a knowledge icon (`mdi-lightbulb-on` or equivalent Quasar Material icon in the same family as former steps/peeks icons). Spectators and other seats MUST NOT see another seat’s private delivered total — **own-seat only** (same privacy family as former budgets). Steps and peeks counters MUST NOT appear.
+While the user is a seated player on the Game screen in phase `playing`, the system SHALL show that user’s **delivered knowledge** total (points transferred from finished tourists, from private `knowledge.delivered`) in a counter **to the right of** that user’s own presence avatar in the bottom HUD, with a **visible** knowledge icon using Quasar Material Icons name `lightbulb` (from already-loaded `material-icons` extras — MUST NOT use `mdi-*` names unless that font set is enabled). Spectators and other seats MUST NOT see another seat’s private delivered total — **own-seat only** (same privacy family as former budgets). Steps and peeks counters MUST NOT appear.
 
 #### Scenario [SC-PRESENCE-50]: Seated user sees own knowledge total
 
@@ -48,14 +49,15 @@ While the user is a seated player on the Game screen in phase `playing`, the sys
 
 ### Requirement: Carried knowledge on the strip only
 
-While an unfinished own piece carries knowledge greater than 0 (from private `knowledge.pieces`), the personal **bottom strip** slot for that piece MUST show that carried amount in a **yellow-background** badge at the **top-right** of the strip tourist chrome, accompanied by a knowledge icon (`mdi-lightbulb-on` or equivalent). The **board** piece chrome MUST NOT show a carried-knowledge badge. When knowledge is 0, the strip badge MUST NOT appear. When the piece finishes and knowledge transfers to the avatar, the strip badge MUST clear with the finish presentation. Opponents’ carried amounts MUST NOT be shown from another seat’s private payload.
+While an unfinished own piece carries knowledge greater than 0 (from private `knowledge.pieces`), the personal **bottom strip** slot for that piece MUST show that carried amount in a **yellow-background** badge at the **top-right** of the strip tourist chrome, accompanied by a **visible** Material `lightbulb` icon (same constraint as avatar — no blank `mdi-*` glyph that leaves empty padding). The **board** piece chrome MUST NOT show a carried-knowledge badge. When knowledge is 0, the strip badge MUST NOT appear. When the piece finishes and knowledge transfers to the avatar, the strip badge MUST clear with the finish presentation. Opponents’ carried amounts MUST NOT be shown from another seat’s private payload.
 
 #### Scenario [SC-PRESENCE-52]: Strip shows yellow knowledge badge top-right
 
 - **GIVEN** an own unfinished piece has knowledge 2
 - **WHEN** the owner views the board and strip
-- **THEN** the strip slot shows a yellow-background badge at top-right with value 2 and a lightbulb-style icon
+- **THEN** the strip slot shows a yellow-background badge at top-right with value 2 and a visible Material lightbulb icon
 - **AND** the board piece for that tourist does not show a carried-knowledge badge
+- **AND** the badge does not reserve empty space for a missing icon font
 
 ### Requirement: Focus control at the former end-turn position
 
@@ -93,6 +95,17 @@ When clients receive a peek-close outcome (correct, wrong submit, or turn-timeou
 - **GIVEN** a task modal closes with timeout reason
 - **WHEN** any client updates
 - **THEN** a top-center toast «Не успел!» is shown
+
+### Requirement: All-jail skip toast for every client
+
+When the room broadcasts an all-jail turn-skip signal (`game/move` — seat cannot act, another eligible seat remains), **every** connected client MUST show a top-center Notify toast with product Russian sense «Все туристы в решётке — ход пропущен». The retired start-reset all-jail modal MUST NOT appear. When the party is over (knowledge modal path / fewer than two eligible seats), clients MUST NOT show this toast.
+
+#### Scenario [SC-PRESENCE-57]: All-jail skip toast reaches the whole table
+
+- **GIVEN** seat A’s turn is skipped because all of A’s unfinished pieces are trapped and another eligible seat remains
+- **WHEN** the room broadcasts the skip signal
+- **THEN** seat A, seat B, and a spectator each see the top-center toast «Все туристы в решётке — ход пропущен»
+- **AND** no start-reset all-jail modal is shown
 
 ### Requirement: No finish-place badge in presence
 

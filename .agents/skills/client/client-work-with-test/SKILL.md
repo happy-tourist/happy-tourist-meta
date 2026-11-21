@@ -9,9 +9,11 @@ description: >-
   AnswerCompose/TaskCompose + `PackTaskComposeDialog` SC-PACK-256…263/276…281 +
   portrait `PackAnswerCardTile` SC-PACK-222/225/282/283 + portrait
   `PackTaskTile`/`taskFilledSlots` SC-PACK-278/283 + AddTaskSetDraft SC-PACK-264…268 + DraftLifecycle/DirtySubmit SC-PACK-234/269…275 +   GameBoardWire skins/per-cell finish + open-on-land peek chrome SC-BOARD-45/49…57 +
-  SC-MOVE-65; GamePresenceFocus focus@3 / strip knowledge + lightbulb / 60s turn
-  ring / finish|cut modal / Notify peek toasts (leftover ∞ / end-turn /
-  density / all-jail modal / board yellow knowledge cases retired); lobby
+  SC-MOVE-65; `lib/finishTravelFrom` SC-FINISH-35; GamePresenceFocus focus@3 /
+  strip knowledge + Material `lightbulb` (not `mdi-*`) / 60s turn ring /
+  finish|cut modal («которые успели») / Notify peek + `allJailSkip`
+  SC-PRESENCE-57 (leftover ∞ / end-turn / density / all-jail modal / board
+  yellow knowledge / `mdi-lightbulb` cases retired); lobby
   `LobbyRoomCardTile` / `LobbyCreateWire` **no density** SC-LOBBY-24…26/33…36/40/41,
   maps palette/preview SC-MAP-71/72, App header chrome); Colyseus client.auth /
   client.http / room I/O spies; store error + q-banner; vue-i18n / router.

@@ -34,17 +34,17 @@ When an authenticated user opens create-game from the lobby, the system MUST NOT
 - **GIVEN** the create modal is open with valid map/pack/task-set/maxSeats selections
 - **WHEN** the user confirms create
 - **THEN** the create payload omits grilleDensity and catapultDensity
-- **AND** a new `tourist` room is created and seeded with the fixed exclusive 15%/15% partition (density options ignored if present)
+- **AND** a new `tourist` room is created and seeded with the fixed exclusive 15% grille / 20% catapult partition (density options ignored if present)
 - **AND** the user enters that game session
 
 ## REMOVED Requirements
 
 ### Requirement: Create game chooses grille density
 
-**Reason**: Trap counts are fixed (15% grilles / 15% catapults); player choice removed.
+**Reason**: Trap counts are fixed (15% grilles / 20% catapults); player choice removed.
 **Migration**: Server always seeds grilles at 15% of task cells; omit create UI and options.
 
 ### Requirement: Create game chooses catapult density
 
-**Reason**: Trap counts are fixed (15% catapults); player choice removed.
-**Migration**: Server always seeds catapults at 15% of task cells; omit create UI and options.
+**Reason**: Trap counts are fixed (20% catapults); player choice removed.
+**Migration**: Server always seeds catapults at 20% of task cells; omit create UI and options.

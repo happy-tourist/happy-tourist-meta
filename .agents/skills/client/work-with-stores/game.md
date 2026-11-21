@@ -100,6 +100,7 @@ export const useGameStore = defineStore('game', {
 
 - `onMessage('knowledge', …)` → update delivered/pieces/`outcome?`; set `knowledgeSynced=true` after first payload (gate +N falls).
 - Do **not** listen for `budgets`. `allJailWarning` listener stays inert (`= false`).
+- `onMessage('allJailSkip', …)` → Notify top-center `game.allJailSkipToast` (SC-PRESENCE-57); never open start-reset modal.
 - Piece mirror: map `remainingTurns` from schema; mirror `turnUntil` / `turnBudgetSeconds` for presence ring.
 - `finishPlace` 0→1 is a boolean-ish finished/cut gate — GamePage opens knowledge modal by `knowledgeOutcome`, not place UX.
 - `peekClose` → header flash + Quasar Notify top-center (SC-PRESENCE-36 / SC-BOARD-88).
