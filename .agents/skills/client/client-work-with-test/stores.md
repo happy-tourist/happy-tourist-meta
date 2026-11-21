@@ -89,8 +89,8 @@ radius 0 / dark flip digit SC-BOARD-56/57 + per-cell finish click SC-MOVE-65 +
 catapult timings 1500/450/300 + overlay `drop-shadow` SC-BOARD-23/24/58 +
 `FINISH_TRAVEL_MS=550` / `FINISH_FADE_MS=300` + clearance
 `translate(-50%,-100%)` ~8px above sprites SC-FINISH-01/17/19/20 / SC-BOARD-71) +
-`GamePresenceFocus.test.ts` (say **12** / end-turn **3** on marker circumference
-`translate(-50%,-50%)`; focus **under peeks** in budgets — not @9; say-picker
+`GamePresenceFocus.test.ts` (say **12** / focus **3** on marker circumference
+`translate(-50%,-50%)`; knowledge HUD; say-picker
 `transform: none` / left edge visible SC-SAY-15; glyph ~36 / hit ~60;
 illustrated `img.board-action-icon` — not Material `q-icon`; CSS + hit boxes —
 SC-PRESENCE-14/30/33/37 / SC-SAY-07; not DOM-order alone) + `GameBoardWire` board-action
@@ -98,10 +98,7 @@ asset imports under `src/assets/board/` + transparent affordance chrome + ×2 gl
 (~36 / ~52 board+return; flag ~18 unchanged) +
 `src/stores/__tests__/game.peekStatusFlash.test.ts` (`peekClose` → `peekStatusFlash`
 10s; legacy `correct:false` without `reason` skips — SC-PRESENCE-36 / SC-BOARD-70) +
-`game.soloPresence.test.ts` / `GameSoloPresence.test.ts` (leftover red ring via
-`isSoloBudgetFromSeats(seats, maxSeats)` — `maxSeats≥2` ∧ eligible===1; ∞ steps+peeks
-when `budgetsInfinite`; single-player maxSeats=1 numeric / no ring / no unlimited
-modal / no end-turn — SC-PRESENCE-09/16/19/38…42; leftover fixtures use `maxSeats≥2`;
+`game.soloPresence` / leftover ∞ / end-turn gates **retired** with knowledge economy — prefer GamePresenceFocus knowledge/focus@3 + board knowledge badges; leftover fixtures should not assert ∞ budgets;
 **no** `isSoloBudgetSeconds(300)`).
 App shell crumbs + page bg: `src/__tests__/AppHeaderChrome.test.ts` — breadcrumbs **inside**
 `q-page-container` (not elevated `q-header`; SC-BRAND-17…20 / SC-PACK-193 / SC-MAP-52);

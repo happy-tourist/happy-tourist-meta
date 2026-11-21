@@ -3,18 +3,19 @@ name: work-with-game-board
 description: >-
   Use when creating, changing, reviewing, or debugging the tourist board UI in
   the happy-tourist client — GamePage CSS Grid from synced map `grid`
-  (`lib/boardGeometry`), seat pieces by pieceId, presence HUD + focus
-  affordance, shared peek Q&A (mini-card pool + reusable answers SC-BOARD-49/50…54; see peek.md),
-  grille/catapult anim, trap/rescue/push/return, say bubbles, strip by piece
-  index (HUD ≤~420 → 2×2). Core in SKILL.md; topic details in peek.md / focus.md.
-  Brand-logo leave + match status in App.vue.
+  (`lib/boardGeometry`), seat pieces by pieceId, presence HUD + focus@3,
+  private knowledge HUD + remainingTurns badges (knowledge.md), shared
+  open-on-land peek Q&A (peek.md), grille/catapult anim, free rescue + return
+  (no push/end-turn/peek-open), say@12, strip by piece index (HUD ≤~420 → 2×2).
+  Core in SKILL.md; topics peek.md / focus.md / knowledge.md. Brand-logo leave
+  in App.vue.
 ---
 
 # Work With Game Board
 
 Use this skill for the **tourist board UI** on Game in the Vue 3 Quasar client (`happy-tourist.github.io`).
 
-Product: настольная игра «Счастливый турист». On the seated client whose turn it is **and** `game.isPlaying`, the board and own strip accept piece selection by **pieceId**, local move hints, `game.sendMove(pieceId, row, col)`, rescue/push/return, and peek via illustrated board-action icon → shared Q&A (`sendPeek` / `sendPeekPlace` / `sendPeekSubmit`). Before playing: no move chrome. Authority stays on the server (`work-with-game`). Ready / budgets / App leave placement unchanged; say **12** / end-turn **3** on marker circumference; focus **under end-turn** at avatar square corner; peek/rescue/push/return clearance above sprite; finish travel ~550 / fade ~300; hits **36×36** with glyph filling the hit; flag unchanged; PNGs cropped to opaque edges. Affordance glyphs: `src/assets/board/{peek,push,return,flag,focus,end-turn,rescue,say}.png` as `<img>` — **no** Material `q-icon` and **no** solid colored circular chrome (fill / medallion box-shadow) on those slots; budgets HUD + ready stay Material.
+Product: настольная игра «Счастливый турист» (knowledge economy). On the seated client whose turn it is **and** `game.isPlaying`, the board and own strip accept piece selection by **pieceId**, local move hints, `game.sendMove` / free `sendRescue` / `sendReturnFromFinish`. Shared Q&A opens **on land** (place/submit only — no peek affordance). Authority on server (`work-with-game`). Presence: say **12** / focus **3** (end-turn retired); knowledge counter beside avatar; yellow BR carried + red TR `remainingTurns`; finish travel ~550 / fade ~300. Affordance glyphs: `src/assets/board/{return,flag,focus,rescue,say}.png` — **no** Material colored circles; peek/push/end-turn PNGs retired.
 
 ## Specialized Topics
 
@@ -23,16 +24,17 @@ Read the matching file in this folder when the change involves that area
 
 | Topic | File |
 |-------|------|
-| Shared peek modal / flipped digits / peekPlace+Submit | [peek.md](peek.md) |
-| Focus nearest actionable tourist | [focus.md](focus.md) |
+| Shared peek modal / open-on-land / peekPlace+Submit | [peek.md](peek.md) |
+| Focus nearest actionable tourist (@3) | [focus.md](focus.md) |
+| Knowledge HUD / remainingTurns / finish modal | [knowledge.md](knowledge.md) |
 
 ## Overview
 
 | Surface | Path | Role |
 | --- | --- | --- |
 | App shell | `src/App.vue` | Always-button theme wordmarks (`logo-light`/`logo-dark`) height **28px** / toolbar **40** (SC-BRAND-29/30) left; on Game: logo click = leave + centered match status + theme + icon-only `header-game-leave` (aria `game.leave`, no visible label — SC-LEAVE-13); leave confirm + `leaveGame` → lobby. Non-Game: same button — auth/other → lobby, lobby noop (no Material `logout` leave) |
-| Game page | `src/pages/GamePage.vue` | CSS Grid field in scroll region; unfinished pieces overlay (+ finish travel ~550 / fade ~300); holes for `removedTaskKeys`; grille overlays from `holdingGrilleKeys` (drop/rise); catapult sequential overlays from `revealingCatapultKeys` / `brokenCatapultKeys` (land→overlay→fling; pin→vanish→travel; broken 450+450+vanish 300; spectator parity); board-busy lock via `isBoardBusy` / `isInteractive`; peek/rescue/push/return above sprite then +20px down (`translate(-50%, calc(-100% + 20px))`); **top** `.presence-row--top` tight to board (opponents / spectator all; no reserved bubble gap); sticky bottom `.game-hud` only when seated (own + strip); budgets **beside** own avatar; presence clock say **12** / end-turn **3**; focus **under end-turn** at avatar square corner (illustrated icons, no colored circle); local selection/hints; place / timer-only solo end / peek / solo-∞ budgets / all-jail; **return** illustrated icon on finished strip (no confirm `q-dialog`); `rejoinGame(roomId)` — **no** leave/status/roomId chrome |
-| Game store | `src/stores/game.ts` | Room I/O; mirror `seats` (pieces keyed by **pieceId**) / `phase` / `maxSeats` / `grid` / `touristsPerPlayer` / `packTitle` / `flippedCells` / `answerCards` / peek session / `removedTaskKeys` / grilles/catapults; private `steps`/`peeks`/`openPeek`/`allJailWarning`; `sendMove`/`sendRescue`/`sendPush`/`sendReturnFromFinish`/`sendPeek`/`sendPeekPlace`/`sendPeekSubmit`/`sendEndTurn`/`sendReady`/`sendSay` |
+| Game page | `src/pages/GamePage.vue` | CSS Grid; unfinished pieces (+ finish travel ~550 / fade ~300); holes; grille/catapult overlays; board-busy; rescue/return above sprite (+20px down); **top** presence; sticky `.game-hud` (own + strip); **knowledge** beside avatar; say **12** / focus **3**; yellow BR knowledge + red TR `remainingTurns`; open-on-land peek modal; knowledge finish modal; all-jail; return on finished strip; `rejoinGame` — no leave/status/roomId chrome |
+| Game store | `src/stores/game.ts` | Room I/O; mirror seats/pieces (+ `remainingTurns`) / phase / peek session / traps; private `knowledgeDelivered`/`knowledgePieces`/`knowledgeSynced`/`allJailWarning`; `sendMove`/`sendRescue`/`sendReturnFromFinish`/`sendPeekPlace`/`sendPeekSubmit`/`sendReady`/`sendSay` (`sendPush`/`sendEndTurn`/`sendPeek` retired no-ops) |
 
 | Concern | Location |
 | --- | --- |
@@ -42,16 +44,17 @@ Read the matching file in this folder when the change involves that area
 | Grilles | Asset `src/assets/grilles/grille.png`; board overlay on `holdingGrilleKeys` **and** chrome grille on strip slots when `trapped`; drop/rise via **`GRILLE_ANIM_MS = 1000`** → CSS `--grille-anim-ms` for board + chrome (incl. leave-clear rise, SC-BOARD-18/19/21, SC-PIECE-31); **`filter: drop-shadow(...)`** on `.grille-overlay` + `.my-tourist-chrome-grille` (SC-BOARD-58; no opaque underlay); **new drops deferred** while catapult hop queue is presenting — flush on queue idle (SC-BOARD-29/30) |
 | Catapults | Assets `src/assets/catapults/catapult.png` + `catapult-broken.png`; hidden until `revealingCatapultKeys`; **every viewer** (player + spectator): **land/arrival** onto catapult cell (synthesize if sync already relocated; no fake step if already on cell) → overlay → fling/finish travel; **sequential queue** (no chain cap); **yield/cancel own `moveAnimating`** when queue starts; pin on catapult cell during overlay → after full vanish → CSS travel `MOVE_ANIM_MS` to sync dest (**always finish travel** if finished/center even when finish sync arrives after reveal enqueue — SC-FINISH-20 / SC-BOARD-31); successful fade ~**`CATAPULT_ANIM_MS = 1500`** (CSS `--catapult-anim-ms`); broken: intact → **450 ms** → broken → **450 ms** → vanish **300 ms** (`--catapult-broken-vanish-ms`; no travel); **`filter: drop-shadow(...)`** on `.catapult-overlay` (SC-BOARD-58); **D13:** store `$patch` seats+revealing atomically; watch `flush: 'pre'`; attribute by coords transition / last-known / sole mover; **no silent skip** (enqueue overlay even without piece key); **defer grille drop** while catapult queue busy (`pendingGrilleDropKeys` — SC-BOARD-29/30) (SC-BOARD-22…31/58, SC-FINISH-19/20) |
 | Board lock | Continuous `isBoardBusy` → `isInteractive` false: **intent lock before `sendMove`**, own move travel, land-before-overlay / move→trap gap, grille **drop/rise** (+ pipeline settle into hold so there is no unlock flash before drop), deferred grille pending, catapult overlay/holds/queue/pin/fling travel, finish disappear, return travel; **settled grille `hold` alone unlocks** so rescue affordances work while the grille stays visible; strip under lock; **say / leave outside** (SC-BOARD-27/29/30/32) |
-| Presence | Seated: opponents in `.presence-row--top` above board; sticky bottom `.game-hud` = own + strip only. Spectator: all occupied in top row; **no** bottom HUD. Dual rings + 72px avatar; finish/ready top-left; clock: say **12** / end-turn **3**; focus under end-turn at avatar square corner (SC-PRESENCE-30/37) |
+| Presence | Seated: opponents top; sticky `.game-hud` = own + strip. Spectator: all top; no bottom HUD. Dual rings + 72px avatar; ready top-left; clock: say **12** / focus **3**; knowledge counter beside avatar (SC-PRESENCE-50/53) — see [knowledge.md](knowledge.md) |
 | Say (game/say) | Affordance **12** on **own** online marker (hit-center on circumference; hit ~56–64); picker shifted **right** so left edge stays visible; **top** markers → `.say-bubbles--top` (down toward board); **own bottom** → `.say-bubbles--bottom` (up toward board). HUD scroll overflow must not clip (SC-SAY-15) |
 | Tourist strip | Inside HUD after own marker when `mySeat` (+ pieces exist): `.my-tourist-slot` per pieceId — wide row by index; `@container game-hud (max-width: 420px)`: **2×2**. **No** chip/`q-menu`. Select unfinished non-trapped; finish flag + grille when trapped |
 | Move UX | Local `selectedPieceId` + `legalTargets` when `isPlaying && isMyTurn && !isMySeatFinished && !isBoardBusy`; **keep-focus** after non-finishing move (SC-MOVE-46); never select finished/trapped; move does **not** end the turn |
-| Rescue UX | Affordance above trapped sprite then +20px down when adj free + steps≥1 → `sendRescue(pieceId)` (SC-BOARD-71) |
-| Push UX | Icons above target sprites (same +20px down) when selected free pusher + steps≥1 + legal far-side → `sendPush(pusherPieceId, targetSessionId, targetPieceId, row, col)`; keep selection for multi-push (SC-MOVE-74/75) |
-| Return UX | Illustrated `return.png` above finished strip tourist (same +20px down; flag unchanged) when `canReturn(pieceId)` → return-mode + ring `.tile--target` → `sendReturnFromFinish(pieceId, row, col)` (no confirm modal; no green circle chrome; SC-FINISH-09/13/15/16) |
-| Peek UX | See [peek.md](peek.md) — illustrated `peek.png` top-center + shared Q&A modal (`sendPeek` / `sendPeekPlace` / `sendPeekSubmit`), not Correct/Wrong |
-| Focus UX | See [focus.md](focus.md) — illustrated `focus.png` on own avatar → nearest actionable pieceId |
-| Finish UX | Center land (move **or** push) → slide from last board cell + fade (`disappearingKeys` / `finishAnimFromByKey`); own move seeds `lastKnownBoardCellByKey` at submit (D11 / SC-FINISH-18; finish watch owns `finishAnimFrom`); own `finishPlace` 0→N → place modal; stay in room after close. Activate the **clicked finish cell** only (`cellKey`); no nearest-legal remap / no `nearestLegalCenterCell` (SC-MOVE-65) |
+| Rescue UX | Affordance above trapped sprite (+20px down) when adj free + board action not spent → `sendRescue(pieceId)` (free; SC-BOARD-71 / SC-MOVE-113) |
+| Push UX | **Retired** — no push affordance (SC-MOVE-114) |
+| Return UX | Illustrated `return.png` above finished strip tourist (+20px down) when `canReturn` → return-mode + `.tile--target` → `sendReturnFromFinish` (SC-FINISH-09/13/15/16) |
+| Peek UX | See [peek.md](peek.md) — open-on-land shared Q&A (`sendPeekPlace` / `sendPeekSubmit` only) |
+| Focus UX | See [focus.md](focus.md) — `focus.png` @3 → nearest actionable pieceId |
+| Knowledge UX | See [knowledge.md](knowledge.md) — delivered counter + BR/TR badges + finish modal |
+| Finish UX | Center land → slide + fade; own `finishPlace` 0→1 → **knowledge** modal (not place); stay in room. Activate clicked finish cell only (SC-MOVE-65 / SC-FINISH-31/34) |
 | All-jail | Own seat only: informational modal from `game.allJailWarning` |
 | Center | One `BoardTile` per grid `7` with `kind: 'center'` + finish skin; **no** contiguous merge / `span 2` (SC-BOARD-55) |
 | Room enter | Out of scope — see `work-with-lobby` / `work-with-rooms` (`rejoinGame`) |
@@ -71,13 +74,13 @@ Read the matching file in this folder when the change involves that area
 |------|----------|
 | Who interacts | Only seated **non-finished** client with `isPlaying && sessionId === currentTurnSessionId` and not mid-board-animation (`!isBoardBusy`) |
 | Select | Click own **unfinished non-trapped** piece on board **or** matching strip slot → `selectedPieceId`; white outline. Changing select clears return-mode |
-| Hints | Legal one-step neighbors (Chebyshev 1, playable via board geometry **including** removed-task holes, unoccupied; layout never-playable out) → red outline; **local only**; hidden while finite `steps === 0` (∞ treats steps available). Return-mode same `.tile--target` |
+| Hints | Legal one-step neighbors (Chebyshev 1, incl. removed holes, unoccupied) → red outline; **local only**; hide when board-action spent / board busy. Return-mode same `.tile--target` |
 | Reselect | May change `selectedPieceId` among own unfinished non-trapped until submit |
 | Submit | Activate red destination → `game.sendMove(pieceId, row, col)`; **turn stays** |
 | Center finish click | Activate that finish cell only (`cellKey` / legal-key membership); **no** nearest-legal remap (SC-MOVE-65) |
 | Keep-focus | After successful **non-finishing** move: **do not** clear `selectedPieceId` (SC-MOVE-46). Center finish → clear |
 | Peek / Focus | See [peek.md](peek.md) / [focus.md](focus.md) |
-| Rescue / Push / Return | `sendRescue` / `sendPush` / `sendReturnFromFinish` with **pieceId** payloads |
+| Rescue / Return | `sendRescue` / `sendReturnFromFinish` with **pieceId** payloads (no push) |
 | Clear selection | Piece finishes / traps; lose turn / not playing; time-expired / finished seat; also clears return-mode |
 | Finished | Off board after disappear; strip finish icon; dim only if `!canReturn` |
 | Others | Spectators / not-your-turn / not playing / finished seat: no move/peek/push chrome |
@@ -88,43 +91,35 @@ Do **not** sync selection or hints — page-local refs only. Do **not** assume `
 
 - Position pieces with CSS `transform` / absolute offsets from grid vars (`--prow` / `--pcol`), not tweening `grid-row`/`grid-column`.
 - Ordinary board moves: ~250ms ease-out (`MOVE_ANIM_MS`); all clients animate when synced `row`/`col` changes.
-- Finish slide: ~**550 ms** (`FINISH_TRAVEL_MS`); finish fade: ~**300 ms** (`FINISH_FADE_MS`, CSS delay = slide) — all enter-center paths (ordinary move incl. center click, push→center, catapult→center). Catapult overlay (~1500 ms) unchanged.
+- Finish slide: ~**550 ms** (`FINISH_TRAVEL_MS`); finish fade: ~**300 ms** (`FINISH_FADE_MS`, CSS delay = slide) — all enter-center paths (ordinary move incl. center click, catapult→center). Catapult overlay (~1500 ms) unchanged.
 - On submit: set presentation **intent lock before `sendMove`** (continuous `isBoardBusy` through move→trap/catapult/grille); ignore board/strip clicks until idle; keep `selectedPieceId` unless the destination is center finish (SC-MOVE-46 / SC-BOARD-27/32).
 - Skip transition on first paint so pieces do not fly from origin.
 - **Catapult fling (SC-BOARD-23…31 / SC-FINISH-19/20):** every viewer: **land onto catapult cell first** (synthesize when sync already at fling dest; skip fake step if already on cell / after in-flight arrival) → overlay → travel. While overlay runs, pin piece on catapult cell; **only after** full vanish start travel to dest / finish travel+fade; chain = sequential land→overlay→travel→next (every hop animated; finish travel only after **last** vanish to center); broken holds 450+450 then vanish 300 ms with no travel. Enqueue must not silent-skip when piece attribution is weak. When finish sync arrives **after** reveal enqueue, still run finish travel after vanish (`shouldFinishTravelAfterVanish` / `markDeferredFinish` while pin/queue owns the piece). In `releaseDeferredFinishAfterVanish`, add `disappearingKeys` **before** clearing `catapultDeferFinishKeys` so `boardPieces` never drops the finisher for a tick. When the catapult queue takes over, **cancel own `moveAnimating`** (clear timer / flag) so land→overlay→fling owns the piece — do not let the ordinary move travel race the synthesized land.
-- **Center finish (move or push):** sync may already place the piece on a center cell — paint one frame at `lastKnownBoardCellByKey` via `finishAnimFromByKey`, hold until painted (`nextTick` + forced layout + double `rAF`), then clear so CSS slides onto center (`FINISH_TRAVEL_MS`) + fade (`disappearingKeys` / `FINISH_FADE_MS`) (SC-MOVE-76 / SC-FINISH-01/17/18). **Never drop** a finished piece from `boardPieces` without travel+fade (deferred pin / `disappearingKeys`). Track unfinished board cells with a sync-flush watcher (skip recording center coords; drop any stale `finishAnimFrom` for still-unfinished keys). **Own move onto center:** in `submitMove`, seed only `lastKnownBoardCellByKey` with the piece’s current cell **before** `sendMove` (do **not** pre-seed `finishAnimFromByKey` — silent reject would pin the piece). **Own push onto center:** after successful `sendPush`, seed target `lastKnown` from `push.targetRow/Col` the same way. Finish watch sets `finishAnimFrom` when finished arrives (SC-FINISH-18). Remote finish (other’s move/push) still uses the watch + lastKnown path. **Catapult→center:** defer finish travel until catapult vanish (same pin→travel path; always run after vanish if finished/center even when finish sync is late — SC-FINISH-20 / SC-BOARD-31).
-- **Return-from-finish:** when a piece leaves the finished set, all clients animate from `nearestCenterCell(target)` (Chebyshev among `CENTER_CELLS`; tie row, then col) onto the ring — mirror of finish disappear (SC-FINISH-15).
+- **Center finish (move):** sync may already place the piece on a center cell — paint one frame at `lastKnownBoardCellByKey` via `finishAnimFromByKey`, hold until painted, then clear so CSS slides onto center + fade (SC-FINISH-01/17/18). **Own move onto center:** seed only `lastKnownBoardCellByKey` before `sendMove`. Finish watch sets `finishAnimFrom` when finished arrives. **Catapult→center:** defer finish travel until catapult vanish (SC-FINISH-20 / SC-BOARD-31). Push→center path retired.
+- **Return-from-finish:** when a piece leaves the finished set, all clients animate from `nearestCenterCell(target)` onto the ring (SC-FINISH-15).
 
 ## Presence (occupied seats — top row + seated bottom HUD)
 
-Sync-driven markers (SC-PRESENCE-01…25 / redesign-game-hud phase 2). Page reads mirrored `game.seats` + own `steps`/`peeks`/`budgetsInfinite` only — no Colyseus I/O here (`peekedThisTurn` is legacy store mirror, unused by page). Match status strings live in `App.vue` header on Game (SC-PRESENCE-23), not on the page.
+Sync-driven markers. Page reads mirrored `game.seats` + private `knowledgeDelivered` / `knowledgePieces` / `knowledgeSynced` — no Colyseus I/O here. Match status in `App.vue` header (SC-PRESENCE-23). Details: [knowledge.md](knowledge.md) / [focus.md](focus.md).
 
 | Rule | Behavior |
 |------|----------|
-| Who | One marker per **occupied** seat (including offline-in-grace). Empty slots not rendered. |
-| Avatar | Seat `touristId` → same tourist PNG as pieces; **image box = 72px** (SC-PRESENCE-13) |
-| Seated viewer | **Top** `.presence-row--top`: opponents only, tight to board; **always reserve row `min-height` (~96px) when seated** even if 0 opponents — no empty avatars (SC-PRESENCE-26). Sticky bottom `.game-hud` (translucent rgba α 0.78 — SC-PRESENCE-34): **own** marker (+ budgets beside avatar) → **strip**. **No** opponents in bottom bar; **no** chip/`q-menu` (SC-PRESENCE-02/22) |
-| Spectator | All occupied seats → **top** row L→R by join order; **no** bottom presence HUD; no alone min-height reserve (SC-PRESENCE-03) |
-| Join order | Array order from sync map `forEach` as mirrored into `seats[]` |
-| Offline | `!connected && reconnectUntil > 0` → **inner** warning `QCircularProgress` (`min=0`, `max=30`, `value` = remaining from `reconnectUntil − now`) |
-| Reserved chrome | Always outer ring slot sized to outer progress (96px around 72px avatar — SC-PRESENCE-11); inactive turn/grace → transparent track/value 0 (no size jump) |
-| Turn deadline | Outer determinate ring while `playing` + current turn + synced `turnUntil`/`turnBudgetSeconds` **and** `maxSeats≥2`: blue (`primary`) when ≥2 eligible; red (`negative`) when leftover (`maxSeats≥2` ∧ 1 eligible; both budgets 60s — **not** via duration). Single-player (`maxSeats===1`): **no** turn ring even if stale `turnUntil`. **No** static blue outline / `--turn` box-shadow |
-| Dual rings | Offline current-turn: outer = turn, inner = reconnect (both visible — SC-PRESENCE-10). **Siblings** only (outer absolute behind) — do **not** nest `q-circular-progress`. **Avatar:** always sibling `<img class="presence-avatar">` on top (pre-timer pattern); do **not** put avatar only in progress default slot without `show-value` (Quasar omits that slot from the DOM — SC-PRESENCE-12) |
-| Match status | App header centered: «Ваш ход» / «Ход соперника» / «Ход игрока» (spectator) + waiting/connecting/countdown/finished — **not** page chrome (SC-PRESENCE-23). Room-wide `peekClose` → store `peekStatusFlash` 10s in the **same** `game-status` slot (Правильно! / Ошибка! / Не успел! — SC-PRESENCE-36) |
-| Room id | **Never** show `roomId` (or truncated id) in Game chrome (SC-PRESENCE-24) |
-| Finish place | Seat `finishPlace > 0` → numeric badge at **top-left** of marker (SC-PRESENCE-14) |
-| Ready | Own marker only, **top-left** when `canSendReady` (does not overlap finish by phase) |
-| Say affordance | Own online marker only, **12** (`.say-affordance`: `left:50%; top:0; transform: translate(-50%,-50%)`) — hit-center on rim; clears ready TL; SC-PRESENCE-14 / SC-SAY-07 / SC-PRESENCE-33; never on opponents / spectators |
-| Focus affordance | **Under end-turn** at bottom-right of avatar bounding square; see [focus.md](focus.md) (SC-PRESENCE-30/33/37) |
-| Own budgets | Own seated marker only while `playing`: **vertical stack to the right of** avatar (`.presence-budgets`); steps **and** peeks both ∞ when `budgetsInfinite` (leftover ∞ both); single-player (`maxSeats===1`) stays numeric; focus stays on marker (not in this stack); never on opponents / spectators (SC-PRESENCE-15/16/38) |
-| +N anim | Local fall animation when finite `steps`/`peeks` increase (multi grant +1/+1, peek Correct reward); skip **both** while `budgetsInfinite`; duration ≈ **2 s** (`BUDGET_FALL_MS` + CSS) — page-local, no sync event (SC-PRESENCE-20 / SC-MOVE-50) |
-| End-turn | Icon-only illustrated `end-turn.png` **3** on own avatar (`left:100%; top:50%; translate(-50%,-50%)`) when `canSendEndTurn` → `sendEndTurn` immediately (no dialog / no visible label / no solid colored circle); **not** in budgets row; **no** `.end-turn-dock`; hide in leftover ∞ **and** single-player (`maxSeats===1`); keep `.presence-slot--own` gap ≥ end-turn half-hit so icon does not cover budgets (SC-PRESENCE-17/18/25/42) |
-| Solo ∞ modal | Leftover only: when `budgetsInfinite` flips false→true **and** `maxSeats≥2` → unlimited steps+peeks / 1 minute modal (SC-PRESENCE-19); gate off `maxSeats===1` (SC-PRESENCE-40); close keeps player in room |
-| Solo end modal | Own `timeExpired` false→true → timer-only copy (`game.timeExpiredModal*`); no steps-exhausted branch (`inferSoloEndModalKind` always `'timer'` — SC-PRESENCE-21/35 / SC-MOVE-45) |
+| Who | One marker per **occupied** seat (incl. offline-in-grace) |
+| Avatar | Seat `touristId` → tourist PNG; **72px** (SC-PRESENCE-13) |
+| Seated viewer | Top opponents row (reserve ~96px); sticky `.game-hud` α 0.78: own + strip; **no** chip/`q-menu` |
+| Spectator | All occupied → top; **no** bottom HUD |
+| Offline / rings | Inner reconnect ring from `reconnectUntil`; outer turn ring may stay for current-turn chrome — **no** wall-clock deadline animation (deadlines retired) |
+| Dual rings | Sibling progress + sibling avatar (SC-PRESENCE-10/12) — do not nest |
+| Match status | App header; `peekClose` → `peekStatusFlash` 10s (SC-PRESENCE-36) |
+| Room id | Never show in Game chrome |
+| Finish place badge | **Retired** — no ranked place chrome |
+| Ready | Own marker top-left when `canSendReady` |
+| Say | Own online **12** |
+| Focus | Own **3** (former end-turn slot) — [focus.md](focus.md) |
+| Knowledge | Own delivered counter beside avatar; +N fall on delivered growth after sync — [knowledge.md](knowledge.md) |
+| End-turn / leftover ∞ / solo timer modals | **Retired** |
 
-Tick `nowMs` on an interval (~200 ms) while Game is mounted so turn + reconnect rings animate from **server** `turnUntil` / `reconnectUntil`.
-
-Finish flag + return-icon chrome live on the personal **strip** inside the seated HUD — presence only shows the **place** badge.
+Finish flag + return-icon + yellow BR / red TR badges live on board + strip; presence shows knowledge counter only.
 
 ### Presence DOM (canonical — SC-PRESENCE-04/10/11/12/13)
 
@@ -136,9 +131,9 @@ Inside `.presence-marker` (96×96 = outer ring, `position: relative`), **three s
 <img class="presence-avatar" :src="touristSrc(touristId)" alt="" />
 ```
 
-CSS: outer ring `position: absolute; inset: 0; z-index: 0`; inner ring absolute centered (`top/left: 50%`, `transform: translate(-50%, -50%)`, `z-index: 1`); avatar `position: relative; z-index: 2` (**72×72**). Rings and avatar use `pointer-events: none` so affordances / marker clicks pass through. Finish badge / ready (top-left), say (**12**), end-turn (**3**), and focus (under end-turn at avatar square corner) sit on the marker with `z-index: 3+` (`pointer-events: auto`). Shared `.board-action-icon` glyph **36×36** fills the **36×36** hit (say/focus/end-turn/peek/rescue/push/return); clearance above sprite (SC-SAY-15 / SC-PRESENCE-17/33/37 / SC-BOARD-13/71); illustrated `<img>`, transparent hit (no solid fill chrome); assets cropped to opaque edges.
+CSS: outer ring absolute inset 0; inner centered; avatar sibling z-index 2 (**72×72**). Ready (top-left), say (**12**), focus (**3**) at `z-index: 3+`. Shared `.board-action-icon` **36×36** for say/focus/rescue/return (peek/push/end-turn retired).
 
-Layout shell: `q-page.game-page` column — **board scroll region** (flex; includes top presence + board) → sticky bottom `.game-hud` when seated (`position: sticky; bottom: 0`; `container-type` / `container-name: game-hud` for strip CQ). Inside HUD: `.game-hud__scroll` (`overflow-x: auto`, `overflow-y: visible`, `pointer-events: none`) → `.game-hud__bar--seated` (`overflow: visible`, `pointer-events: auto`, own marker + strip). Do **not** put `overflow-x: auto` on the same box as the markers (browsers force Y clip and hide say chrome — SC-SAY-15). Do **not** put all markers in the bottom bar, reintroduce chip/`q-menu`, labeled end-turn dock, or leave opponents in the HUD.
+Layout shell: board scroll region → sticky `.game-hud` when seated (`container-name: game-hud`). Do **not** put `overflow-x: auto` on the marker box (SC-SAY-15); do not revive chip/`q-menu` / end-turn dock / opponents in HUD.
 
 ## Say Bubbles At Presence (game/say — SC-SAY-07…12/15)
 
@@ -162,69 +157,36 @@ Picker open state (`sayPickerOpen`) is page-local; close if the local seat is lo
 
 ## Authority
 
-- Board **geometry** comes from synced `game.grid` via `lib/boardGeometry` (server `game/boardGeometry` + map snapshot). Removed task holes from `removedTaskKeys`; flipped digits from `flippedCells`.
-- **Seats**, `phase` / `maxSeats` / `grid` / `touristsPerPlayer` / peek session / `countdownRemaining`, connectivity, turn fields, **`removedTaskKeys`**, and seat **`timeExpired` / `finishPlace`** are server-authoritative; client mirrors and renders.
-- Own **steps/peeks** are private `budgets`; shared peek chrome is schema (+ optional legacy `peekOpen`). Never show others’ counters.
-- Local legal-target / peek-affordance computation is a **hint** only — server rejects illegal moves/peeks.
-- Say bubbles are **ephemeral room messages**, not schema state; server whitelist + live limit are authoritative.
-- Do not reintroduce legacy draughts CellValue `0…4` / `{ from, to }` encoding.
+- Board **geometry** from synced `game.grid` via `lib/boardGeometry`. Holes from `removedTaskKeys`; flipped digits from `flippedCells`.
+- Seats / phase / maxSeats / peek session / traps / `finishPlace` / piece `remainingTurns` are server-authoritative.
+- Own **knowledge** is private (`knowledge` message); never show others’ counters. Shared peek session is schema.
+- Local legal targets are hints only. Say is ephemeral (not schema).
+- Do not reintroduce draughts `{ from, to }` / steps-peeks budgets / push / end-turn / peek-open.
 
 ## GamePage Responsibilities
 
-- Render `boardTiles` from synced `game.grid` (`buildBoardTiles`), omitting removed task keys as holes, in a scroll region above the HUD.
-- Overlay **unfinished** pieces (plus short-lived disappearing finishers / return travelers) at `row`/`col` (0-based schema → CSS vars / transform).
-- Render **top presence** (seated opponents / spectator all occupied) and, when seated, sticky bottom `.game-hud` (own + strip) — dual turn/reconnect rings + reserved 96px chrome; place badge top-left when `finishPlace > 0`.
-- On own online marker: say affordance **top-center (12)** + picker shifted right (finished / time-expired keep say); ready **top-left** when `canSendReady`; end-turn illustrated icon **right-center (3)** when `canSendEndTurn` (immediate, no dialog); focus under end-turn at avatar square corner when actionable; budgets **beside** avatar; for every marker: live say bubbles from `sayEvents` (TTL / direction per stack rule above).
-- Full-screen countdown overlay while `phase === 'countdown'`.
-- Show strip inside HUD when `mySeat` and pieces exist (**no** caption; **no** chip/`q-menu`); finish flag (`flag.png`) on finished slots; dim finished only if `!canReturn`; return via illustrated strip icon (no confirm modal; no green circle; slot body finished → noop); grille chrome on strip when trapped (`GRILLE_ANIM_MS = 1000`); wide row / HUD ≤~420 → 2×2; on own turn **in playing** select unfinished non-trapped from strip or board.
-- Board overlay: unfinished pieces only when seats have pieces (none in waiting/countdown).
-- On own turn in playing (not finished / not time-expired): white selection + red targets; finish click → that cell only (SC-MOVE-65); submit via `sendMove(pieceId,…)`; push via `sendPush`; keep-focus after non-finishing move/push; peek illustrated icon + shared Q&A modal (see [peek.md](peek.md)); focus control (see [focus.md](focus.md)).
-- Animate piece travel; on center finish (move or push) keep DOM key for slide (`FINISH_TRAVEL_MS` ~550) from last board cell then fade (`FINISH_FADE_MS` ~300 / `finishAnimFromByKey`; own move/push seeds `lastKnown` only; never drop without travel+fade — SC-FINISH-18/19/20); clear selection; on return animate from nearest center; catapult: land→overlay→fling (yield own move anim; pin during overlay → travel after vanish); ignore input while `isBoardBusy` (SC-BOARD-27/28).
-- Own `finishPlace` 0→N → place `q-dialog` (`game.finishPlaceModal*`); own `timeExpired` false→true → timer-only end `q-dialog` (`game.timeExpiredModal*`); leftover ∞ modal when `budgetsInfinite` becomes true with `maxSeats≥2` (never for maxSeats=1); **no** return-confirm dialog; close keeps player in room; clear selection on expiry.
-- Budget +N fall ≈ 2 s (`BUDGET_FALL_MS` / `.budget-fall` CSS — SC-PRESENCE-20).
-- Remount without room → `rejoinGame(roomId)` via store. Leave confirm + status + brand-logo leave live in **`App.vue`** (`work-with-pages` / `work-with-rooms`) — do **not** reintroduce page-local leave header, Material `logout` exit, or room-id chrome.
+- Render board + unfinished pieces + grille/catapult overlays; sticky HUD when seated.
+- Presence: say@12 + focus@3 + knowledge counter; strip with finish/return/grille + BR/TR badges.
+- Own turn: select + `sendMove` / free `sendRescue` / `sendReturnFromFinish`; open-on-land peek place/submit; board-action local gate.
+- `finishPlace` 0→1 → knowledge modal; remount → `rejoinGame`; leave/status in App.
 
 ## Do
 
-- Keep geometry in `lib/boardGeometry` from synced `grid`; one `BoardTile` per finish/`7` (`kind: 'center'`, no multi-cell span — SC-BOARD-55).
-- Preserve max tile 60px, gap 2, playable `border-radius: 0`, hole = page background (incl. removed `*`).
-- Keep Colyseus I/O in `stores/game`; page reads seats/phase/turn/strip/presence/`sayEvents`/`steps`/`peeks`/`budgetsInfinite`/`openPeek`/`removedTaskKeys`/`holdingGrilleKeys`/`revealingCatapultKeys`/`brokenCatapultKeys` from store only.
-- Gate move interactivity with `isPlaying && isMyTurn && !isMySeatFinished && !isMySeatTimeExpired` (and `!isBoardBusy`); never select finished pieces/slots as board movers; gate say with own seated+connected; ready via `sendReady`; end-turn via `canSendEndTurn` icon on own avatar.
-- Map `touristId` 1…4 to `tourist{N}.png`; strip only after pieces exist; finish icon on finished sides; return via illustrated strip icon + same red targets as move (no confirm modal; no green circle chrome).
-- Drive turn/reconnect countdowns from synced `turnUntil` / `reconnectUntil`; countdown overlay from `countdownRemaining`.
-- Expire bubbles from server `at` + `SAY_TTL_MS`; keep max 3 live per sender in UI; stack top markers down / own bottom up.
-- Keep leave/status in App Game chrome; confirm only when seated ∧ playing ∧ `finishPlace === 0` ∧ `!timeExpired`.
+- Geometry in `lib/boardGeometry`; Colyseus I/O in `stores/game` only.
+- Gate moves with `isPlaying && isMyTurn && !isMySeatFinished && !isBoardBusy` (+ local board-action spent).
+- Keep focus@3; knowledge HUD; leave/status in App.
 
 ## Don't
 
-- Call `room.send` from the page — only `game.sendMove` / `sendPush` / `sendPeek` / `sendPeekPlace` / `sendPeekSubmit` / `sendEndTurn` / `sendSay` / `sendReady` / `sendRescue` / `sendReturnFromFinish`.
-- Show white/red move chrome before `playing`, to spectators, non-current players, finished seats, or finished pieces (except return-mode red ring targets).
-- Show say send affordance or budget counters on other players’ markers or to spectators.
-- Put **all** markers in the bottom HUD; reintroduce compact chip / `q-menu` / `touristChipAria` picker; put return **confirm modal**; use orange-only return targets; dim finished slots when `canReturn` is true; merge finish into a spanning 2×2 / nearest-legal finish remap; start return from finished slot body click.
-- Put end-turn inside the budgets row or reintroduce `.end-turn-dock` / labeled «Завершить ход» button — keep icon-only illustrated end-turn right-center on the own avatar (no Material `skip_next` / solid colored circle).
-- Assume a successful move ends the turn — use end-turn / auto / timeout.
-- Clear `selectedPieceId` after every successful non-finishing move — keep-focus (SC-MOVE-46).
-- Ambient-highlight other peekable cells — peek affordance only on the selected piece (SC-BOARD-14); revive Correct/Wrong `peekAnswer`; revive Material eye / colored circular chrome on board-action affordances.
-- Pre-seed `finishAnimFromByKey` in `submitMove` / `onPushClick` — seed only `lastKnownBoardCellByKey`; finish watch owns `finishAnimFrom` (silent reject would pin via `pieceStyle` — SC-FINISH-18).
-- Drop a finished piece without `FINISH_TRAVEL_MS` + `FINISH_FADE_MS`; revive focus under peeks in budgets, on marker @9, or HUD `padding-left` for focus@9; revive ×2 glyph/hit sizes after edge-cropped assets.
-- Record a center cell into `lastKnownBoardCellByKey` (sync may land on center before `finished`; never use center as travel `from`).
-- Use Quasar Notify / screen-edge toasts as the say carrier; force all bubbles “always above” with only one stack class.
-- Depend tile fills on Quasar Dark / theme preference.
-- Invent client-local seat assignment (server assigns on join).
-- Treat client hints as authority.
-- Sync selection / hints / say bubbles / steps-peeks to schema.
-- Put lobby subscribe/create/join logic into the board skill — use `work-with-lobby`.
-- Put reconnect token / `rejoinGame` details here — use `work-with-rooms`.
-- Put leave confirm / match status chrome here — use `work-with-pages` (`App.vue`).
-- Use `GRILLE_ANIM_MS = 1500` (wrong) — board and chrome share **1000** ms.
-- Drop a new holding grille overlay while the catapult hop queue is still presenting — defer via `pendingGrilleDropKeys` and flush on queue idle (SC-BOARD-29/30).
+- Call `room.send` from the page — only store sends (`sendMove` / `sendRescue` / `sendReturnFromFinish` / `sendPeekPlace` / `sendPeekSubmit` / `sendSay` / `sendReady`).
+- Revive push / end-turn / peek-open / density / leftover ∞ / place / timer-end modals.
+- Put knowledge counters on opponents; nest progress; chip/`q-menu`; finish span merge.
+- Assume move advances turn by itself — server advances after land resolve / peek close / all-jail.
+- Use `GRILLE_ANIM_MS = 1500` — board/chrome share **1000** ms; defer grille drop while catapult queue busy.
 
 ## Related
 
-- Server seating / turn / move / budgets: `.agents/skills/server/work-with-game/SKILL.md`
-- Room messages (`move` / `rescue` / `push` / `peek`/`peekPlace`/`peekSubmit` / `endTurn` / `say`): `.agents/skills/server/work-with-messages/SKILL.md`
-- Schema seats + turn + removed tiles: `.agents/skills/server/work-with-schema/SKILL.md`
-- Lobby / room name: `.agents/skills/client/work-with-lobby/SKILL.md`
-- Tourist reconnect: `.agents/skills/client/work-with-rooms/SKILL.md`
-- Pinia `sendPeek` / budgets: `.agents/skills/client/work-with-stores/SKILL.md`
-- Styles / theme chrome: `.agents/skills/client/work-with-styles/SKILL.md`
+- Server game / knowledge: `.agents/skills/server/work-with-game/SKILL.md`
+- Messages: `.agents/skills/server/work-with-messages/SKILL.md`
+- Schema: `.agents/skills/server/work-with-schema/SKILL.md`
+- Lobby / rooms / stores / styles: sibling client skills; topics `knowledge.md` / `peek.md` / `focus.md`

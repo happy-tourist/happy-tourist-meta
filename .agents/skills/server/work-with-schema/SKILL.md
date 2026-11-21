@@ -5,11 +5,12 @@ description: >-
   state in the happy-tourist Colyseus server — MyRoomState phase/maxSeats/
   grid/touristsPerPlayer/packTitle/flippedCells/answerCards/peek session +
   countdownRemaining/started/seats (touristId + pieces by pieceId +
-  finished/trapped + connected/reconnectUntil/ready/finishPlace/timeExpired) +
-  currentTurnSessionId + turnUntil + turnBudgetSeconds + nextFinishPlace +
-  removedTaskKeys + holdingGrilleKeys + revealingCatapultKeys + brokenCatapultKeys,
-  MapSchema / ArraySchema, schema() + t.* (v5), or aligning the sync surface with
-  the sibling client tourist contract.
+  finished/trapped/remainingTurns + connected/reconnectUntil/ready/finishPlace
+  0|1 gate/timeExpired always-false) + currentTurnSessionId + inactive
+  turnUntil/turnBudgetSeconds + removedTaskKeys + holdingGrilleKeys +
+  revealingCatapultKeys + brokenCatapultKeys, MapSchema / ArraySchema,
+  schema() + t.* (v5), or aligning sync with the sibling client. Private
+  knowledge is NOT schema — room message only.
 ---
 
 # Work With Schema
@@ -25,13 +26,14 @@ synced `grid` via `lib/boardGeometry`; seats/`phase`/`maxSeats`/`grid`/
 `touristsPerPlayer`/peek session/`countdownRemaining`/`currentTurnSessionId`/
 `turnUntil`/`turnBudgetSeconds`/`removedTaskKeys`/`holdingGrilleKeys`/
 `revealingCatapultKeys`/`brokenCatapultKeys`/connectivity/ready/`finishPlace`/
-`timeExpired`/piece `trapped` mirrored in `stores/game`).
+`timeExpired`/piece `trapped`/`remainingTurns` mirrored in `stores/game`).
 
-Schema is the **sync surface only**. Seating assignment, reconnect grace, start
-countdown timers, turn order (`turnOrder` room-private), private step/peek budgets,
-task deck / cell bindings, hidden grille + hidden catapult seed, turn deadlines, and
-move/peek/grille/catapult rules live in the Room / `work-with-game` — not in schema
-definitions.
+Schema is the **sync surface only**. Seating, reconnect, start countdown, turn order
+(`turnOrder` room-private), private **knowledge**, task deck / bindings, exclusive
+trap seed, and move/rescue/return/open-on-land rules live in the Room /
+`work-with-game` — not in schema. Do **not** put knowledge delivered/carried on
+schema. `turnUntil` / `turnBudgetSeconds` stay inactive (deadlines retired).
+`finishPlace` is 0|1 finished/cut gate (no ranked places).
 
 ## Overview
 
@@ -59,6 +61,7 @@ export const Piece = schema(
     col: t.uint8(),
     finished: t.boolean().default(false),
     trapped: t.boolean().default(false),
+    remainingTurns: t.uint8().default(0),
   },
   "Piece",
 );
@@ -156,7 +159,7 @@ Room mutates these in `onDrop` / `onReconnect` / seat assign — see `work-with-
 | `currentTurnSessionId` | Synced whose turn; empty when no eligible seat |
 | `turnUntil` | Unix ms deadline; `0` = no active turn timer |
 | `turnBudgetSeconds` | `60` multi / `60` solo while timer active; else `0` (solo red ring on client = 1 eligible seat, not duration) |
-| `Seat.timeExpired` | Solo budget elapsed; moves/peeks rejected; seat remains |
+| `Seat.timeExpired` | Legacy clock lock; knowledge economy keeps **false** |
 
 **Not synced:** room-private `turnOrder: string[]` in `MyRoom` (join-order queue). Client only needs «чей ход» + deadline chrome.
 
@@ -165,7 +168,7 @@ Room mutates these in `onDrop` / `onReconnect` / seat assign — see `work-with-
 | Field | Meaning |
 |-------|---------|
 | `Piece.finished` | `true` after legal move onto a center cell; ignored for occupancy / board render |
-| `Seat.finishPlace` | `0` until all **own** pieces finished; then `1…n` (monotonic room order) |
+| `Seat.finishPlace` | `0` active; `1` after full finish or penultimate cut (no ranked places) |
 | `nextFinishPlace` | Next place to assign (starts `1`; increment after each full finish) |
 
 Finished seats remain in `seats` (count toward `maxSeats`) until consented leave / grace timeout. No room phase `finished`.
@@ -190,7 +193,7 @@ Finished seats remain in `seats` (count toward `maxSeats`) until consented leave
 | `revealingCatapultKeys` | Short-lived `"r,c"` while fade anim runs (~`CATAPULT_ANIM_MS = 1500`); hidden unspent never sync |
 | `brokenCatapultKeys` | Subset of revealing keys that show broken art on fade-out (no fling dest) |
 
-**Not synced (room-private + messages):** step/peek budgets (`budgets` Map + `client.send('budgets')`); task deck / cell bindings / content snapshot (`roomContentSnapshot`); create-time `grilleDensity` / `catapultDensity` + hidden grille/catapult keys; private `allJailWarning`. Shared peek **session fields** sync on schema (above). Do **not** put steps/peeks or hidden trap locations on schema.
+**Not synced (room-private + messages):** private knowledge (`knowledge` Map + `client.send('knowledge')`); task deck / cell bindings / content snapshot; exclusive hidden grille/catapult keys; private `allJailWarning`. Shared peek session syncs on schema. Do **not** put knowledge delivered/carried or hidden trap locations on schema.
 
 **Not synced (ephemeral messages):** preset `say` bubbles — room-private `liveSays` + `broadcast('say', …)`; client keeps `sayEvents` in Pinia. Do **not** add bubble fields to schema.
 
@@ -245,7 +248,7 @@ lockstep. Initialize collections in Room `onCreate` (not inside schema “logic�
 
 ## Don't
 
-- Put rules, seating pools, `turnOrder`, countdown timers, reconnect timers, say/`liveSays`, private step/peek budgets, task deck/bindings, content snapshot internals, hidden grille/catapult seed/`grilleDensity`/`catapultDensity`, win detection, or rating DB writes inside schema files.
+- Put rules, seating pools, `turnOrder`, countdown timers, reconnect timers, say/`liveSays`, private knowledge, task deck/bindings, content snapshot internals, hidden exclusive trap seed, win detection, or rating DB writes inside schema files.
 - Trust or echo a client-supplied full board/layout as truth — create loads immutable snapshot via `roomContentSnapshot`.
 - Invent parallel field names without changing the client in the same effort.
 - Mix decorator `@type` Schema classes with the v5 `schema()` style in this package.
@@ -259,7 +262,7 @@ lockstep. Initialize collections in Room `onCreate` (not inside schema “logic�
 When changing schema:
 
 1. Field names match client Pinia / GamePage (`phase`, `maxSeats`, `grid`, `touristsPerPlayer`, peek session, `seats` → pieces by **pieceId**, turn, `removedTaskKeys`, grilles/catapults; client need not mirror `nextFinishPlace`).
-2. Room owns seating, reconnect, start countdown, turn order, budgets/peek/grilles/catapults, content snapshot, and messages — schema does not define messages or `turnOrder` / steps/peeks / hidden traps.
+2. Room owns seating, reconnect, start countdown, turn order, knowledge/peek/grilles/catapults, content snapshot, and messages — schema does not define messages or `turnOrder` / knowledge / hidden traps.
 3. Sibling client `onStateChange` / presence / `isPlaying` / `isMyTurn` is updated together when fields appear.
 4. Prefer server → client alignment over unilateral client rewrites.
 

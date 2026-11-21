@@ -3,19 +3,15 @@ name: server-work-with-test
 description: >-
   Use when planning or writing mocha + @colyseus/testing tests for
   happy-tourist-server: room connect with JWT, onAuth failures, waiting-only
-  seating / deferred pieces until playing / reconnect grace (SC-PIECE), move +
-  pieceId payloads / shared peekPlace+Submit / endTurn / removed tiles (SC-MOVE /
-  SC-BOARD) + content snapshot create (map+pack) + boardGeometry +
-  grille density / trap / rescue / push / returnFromFinish / all-jail /
-  leave-clear (SC-LOBBY-14 / SC-BOARD-16/20 / SC-MOVE-51…64 /
-  SC-MOVE-66…73 / SC-PIECE-24…28 / SC-FINISH-12/14) + catapult paced pipeline /
-  deferred turn (SC-MOVE-78…93) + become-current grants
-  (multi +1/+1; leftover ∞ both no finite +1; already-current→leftover no
-  re-grant; single-player maxSeats=1 finite +1/+1) + turn deadlines /
-  single-player no-deadline (setTurnBudgetsForTests) +
-  trap presentation budgets (setTrapPresentationBudgetsForTests),
-  center finish / finishPlace (SC-FINISH), preset say (SC-SAY), schema sync
-  assertions, GET /rooms listing, preference HTTP (GET/POST /api/theme), auth
+  seating / deferred pieces until playing / reconnect grace (SC-PIECE), knowledge
+  economy (private knowledge; open-on-land peekPlace+Submit; exclusive traps
+  12%/15%; remainingTurns; push/endTurn/peek-open reject; no leftover ∞/60s
+  deadlines) + content snapshot create (map+pack) + boardGeometry +
+  trap / free rescue / returnFromFinish / all-jail→advance / leave-clear +
+  catapult paced pipeline / deferred turn (SC-MOVE-78…93) +
+  trap presentation budgets (setTrapPresentationBudgetsForTests; turn-budget
+  helpers deprecated no-ops), finish/cut (SC-FINISH), preset say (SC-SAY),
+  schema sync assertions, GET /rooms listing, preference HTTP (GET/POST /api/theme), auth
   email/password-policy (`zz-authEmail`) + profile displayName/change-password
   (`zz-authProfile` SC-PROFILE-*), support tickets + roles
   (test/support.test.ts — SC-SUP-* / SC-ROLE-*; mock mailer; BOOTSTRAP_ADMIN_IDS;

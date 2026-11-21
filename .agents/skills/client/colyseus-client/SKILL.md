@@ -3,12 +3,11 @@ name: colyseus-client
 description: >-
   Use when adding, changing, or reviewing Colyseus client I/O in the
   happy-tourist tourist SPA: Client singleton from src/boot/colyseus.ts,
-  LobbyRoom live listing (subscribeLobby), room create/join/leave (incl.
-  grilleDensity + catapultDensity), room.send move/rescue/push/returnFromFinish/peek/endTurn/say
-  messages, private budgets/peekOpen/allJailWarning (infinite=∞ peeks+steps;
-  removed holes landable; holdingGrilleKeys + revealingCatapultKeys / brokenCatapultKeys),
-  client.auth register/sign-in/sign-out, Pinia auth/game stores, or
-  VITE_COLYSEUS_URL / VITE_API_URL env wiring.
+  LobbyRoom live listing (subscribeLobby), room create/join/leave (map+pack+maxSeats;
+  no density), room.send move/rescue/returnFromFinish/peekPlace/peekSubmit/say
+  (push/peek-open/endTurn retired), private knowledge/allJailWarning, client.auth,
+  Pinia auth/game stores, or VITE_COLYSEUS_URL / VITE_API_URL. Game message details:
+  game-messages.md.
 ---
 
 # Colyseus Client
@@ -20,6 +19,17 @@ Stack: Vue 3 Composition API / `<script setup>`, Quasar 2, Pinia 4, TypeScript, 
 Sibling server: `../happy-tourist-server`. Coordinate room name, state schema, and message protocol with that package.
 
 There is **no** axios layer and **no** BFF. Live lobby uses `LobbyRoom` WebSocket messages; gameplay uses room WebSocket messages. HTTP `client.http` is used for registered theme preference (`GET`/`POST` `/api/theme` in `stores/theme`) and support/admin (`stores/support` → `/api/support/*`, `/api/admin/*`); lobby listing still prefers live LobbyRoom (`GET /rooms/tourist` remains unused fallback).
+
+## Specialized Topics
+
+Read the matching file when the change involves that area (do not load every file at once):
+
+| Topic | File |
+|-------|------|
+| Tourist room create + game `send*` / `onMessage` (knowledge economy) | [game-messages.md](game-messages.md) |
+
+
+> **Knowledge economy (rewrite-knowledge-economy):** create has no density; listen `knowledge` not `budgets`; push / peek-open / endTurn retired. Canonical message table: [game-messages.md](game-messages.md). Older sample snippets below that still show `budgets`/`grilleDensity`/`sendPush`/`sendEndTurn` are historical — do not copy them.
 
 ## Quick Reference
 
@@ -34,7 +44,7 @@ There is **no** axios layer and **no** BFF. Live lobby uses `LobbyRoom` WebSocke
 | Theme preference | `stores/theme.ts` → registered `client.http.get('/api/theme')` restore (≠ JWT-only) + `post('/api/theme', { body: { theme } })` on toggle; guest uses `localStorage` only |
 | Room names | `TOURIST_ROOM = 'tourist'`; `LOBBY_ROOM = 'lobby'` in `stores/game.ts` |
 | Connect | `client.create` / `joinById` / `joinOrCreate` via game store actions |
-| Game messages | `sendMove` → `move` (pieceId; no turn advance); `sendRescue` / `sendPush` / `sendReturnFromFinish`; `sendPeek` / `sendPeekPlace` / `sendPeekSubmit` / `sendEndTurn`; `sendReady` → `ready`; `sendSay` → `say`; listen `budgets` / `allJailWarning` / `say` (+ synced peek session) |
+| Game messages | See [game-messages.md](game-messages.md) — `move`/`rescue`/`returnFromFinish`/`peekPlace`/`peekSubmit`/`ready`/`say`; listen `knowledge` / `allJailWarning` / `peekClose` / `say`; push/peek-open/endTurn retired |
 | Auth | `client.auth` — register / signIn / signOut / `onChange`; token key `colyseus-auth-token` |
 | Env | `VITE_COLYSEUS_URL`, `VITE_API_URL` (typed in `env.d.ts`) |
 | Errors | Store `error` string; pages show `q-banner` |

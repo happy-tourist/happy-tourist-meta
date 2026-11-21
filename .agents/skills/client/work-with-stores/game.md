@@ -1,26 +1,27 @@
 # Game store (`stores/game.ts`)
 
-Read with the [core stores skill](SKILL.md). Board UI: `work-with-game-board`; lobby subscribe: `work-with-lobby`; reconnect: `work-with-rooms`.
+Read with the [core stores skill](SKILL.md). Board UI: `work-with-game-board`; lobby subscribe: `work-with-lobby`; reconnect: `work-with-rooms`. Messages: `colyseus-client/game-messages.md`.
 
 ## Ownership
 
 `game` owns lobby listing + tourist room lifecycle, reconnect token, and mirrored
-state: seats (pieces by **pieceId**) / `phase` / `maxSeats` / `grid` /
-`touristsPerPlayer` / `packTitle` / `flippedCells` / `answerCards` / peek session /
-turn / `removedTaskKeys` / grilles/catapults; private `budgets` + `openPeek` /
+state: seats (pieces by **pieceId**, incl. `trapped` / `remainingTurns`) / `phase` /
+`maxSeats` / `grid` / `touristsPerPlayer` / `packTitle` / `flippedCells` /
+`answerCards` / peek session / turn / `removedTaskKeys` / grilles/catapults;
+private `knowledgeDelivered` / `knowledgePieces` / `knowledgeSynced` /
 `allJailWarning`; `peekStatusFlash` from room `peekClose` (`correct` +
-`reason?: 'wrong'|'timeout'` → 10s header flash; legacy no-reason skip);
-`createGame({ mapId, packId, taskSetIds, maxSeats,
-grilleDensity?, catapultDensity? })` (`maxSeats` `1…map.players`; server omit →
-`min(2, map.players)`); `sendMove` / `sendRescue` / `sendPush` /
-`sendReturnFromFinish` / `sendPeek*` / `sendEndTurn` / `sendReady` / `sendSay`.
+`reason?: 'wrong'` → 10s header flash);
+`createGame({ mapId, packId, taskSetIds, maxSeats })` (no density keys);
+`sendMove` / `sendRescue` / `sendReturnFromFinish` / `sendPeekPlace` /
+`sendPeekSubmit` / `sendReady` / `sendSay`. `sendPush` / `sendEndTurn` /
+`sendPeek` retired (no-op / always false).
 
 Consumers: `LobbyPage`, `GamePage`, `App.vue` leave. Selection / hints /
-`moveAnimating` / say picker / modals stay page-local on `GamePage`.
+board-busy / say picker / modals stay page-local on `GamePage`.
 
 Room constants: `TOURIST_ROOM = 'tourist'`, `LOBBY_ROOM = 'lobby'`.
 
-## Options store pattern
+## Options store pattern (knowledge economy)
 
 ```ts
 export const useGameStore = defineStore('game', {
@@ -36,16 +37,15 @@ export const useGameStore = defineStore('game', {
     countdownRemaining: 0,
     started: false, // legacy mirror of phase === 'playing'
     currentTurnSessionId: '',
-    turnUntil: 0,
+    turnUntil: 0, // inactive (deadlines retired)
     turnBudgetSeconds: 0,
-    seats: [],
+    seats: [], // pieces include remainingTurns
     removedTaskKeys: [],
-    steps: 0,
-    peeks: 0,
-    budgetsInfinite: false,
-    peekedThisTurn: false,
+    knowledgeDelivered: 0,
+    knowledgePieces: {},
+    knowledgeSynced: false,
     openPeek: null,
-    peekStatusFlash: null, // correct|wrong|timeout + until; 10s header flash
+    peekStatusFlash: null,
     status: 'idle',
     error: null,
     listing: false,
@@ -64,10 +64,8 @@ export const useGameStore = defineStore('game', {
         state.seats.some((s) => s.sessionId === state.sessionId),
       ),
     isPlaying: (state) => state.phase === 'playing',
-    /** Red ring leftover: maxSeats≥2 ∧ exactly 1 eligible — not via turnBudgetSeconds (both 60s). maxSeats===1 never leftover. */
-    isSoloBudget: (state) => isSoloBudgetFromSeats(state.seats, state.maxSeats),
     canSendReady: (state) => { /* waiting + ≥2 + under maxSeats + own !ready */ },
-    canSendEndTurn: (state) => { /* playing + maxSeats≥2 + isMyTurn + !budgetsInfinite + !finished + !timeExpired */ },
+    canSendEndTurn: () => false, // retired SC-PRESENCE-55
   },
   actions: {
     async subscribeLobby() { /* lobbyWanted + joinOrCreate lobby + quiet resubscribe */ },
@@ -75,58 +73,31 @@ export const useGameStore = defineStore('game', {
       /* sync: lobbyWanted=false, rooms=[], lobbyRoom=null;
          then Promise.race(leave.catch(…), LOBBY_LEAVE_TIMEOUT_MS=1500) — SC-LOBBY-37 */
     },
-    async createGame(options: { mapId: string; packId: string; taskSetIds: string[]; maxSeats: number; grilleDensity?: 'few' | 'medium' | 'many'; catapultDensity?: 'few' | 'medium' | 'many' }) {
+    async createGame(options: {
+      mapId: string;
+      packId: string;
+      taskSetIds: string[];
+      maxSeats: number;
+    }) {
       return this._enterRoom(() => client.create(TOURIST_ROOM, options));
     },
-    async rejoinGame(roomId, options = {}) {
-      // localStorage reconnect(token) → clear stale on fail → fallback joinById
-    },
-    sendMove(pieceId, row, col) {
-      if (
-        !this.room ||
-        this.phase !== 'playing' ||
-        !this.isMyTurn ||
-        this.isMySeatFinished ||
-        this.isMySeatTimeExpired ||
-        (!this.budgetsInfinite && this.steps <= 0)
-      ) {
-        return false;
-      }
-      this.room.send('move', { pieceId, row, col });
-      return true;
-    },
-    sendPeek(pieceId) {
-      /* playing + isMyTurn → room.send('peek', { pieceId });
-         finite: every open spends 1 (fresh|flipped); peeks=0 reject — eye gate on GamePage */
-    },
-    sendPeekPlace(slotIndex, answerCardId) { /* room.send('peekPlace', …) */ },
-    sendPeekSubmit() { /* room.send('peekSubmit', {}) */ },
-    sendEndTurn() {
-      if (!this.room || !this.canSendEndTurn) return false;
-      this.room.send('endTurn');
-      return true;
-    },
-    sendReady() {
-      if (!this.room || !this.canSendReady) return false;
-      this.room.send('ready');
-      return true;
-    },
-    sendSay(presetId) {
-      // whitelist hello|luck only (block ready); seated + connected; max 3 live
-      this.room.send('say', { presetId });
-      return true;
-    },
+    sendMove(pieceId, row, col) { /* one board action; no steps budget */ },
+    sendRescue(pieceId) { /* free before board action */ },
+    sendPush() { return false; },
+    sendReturnFromFinish(pieceId, row, col) { /* board action */ },
+    sendPeek() { return false; },
+    sendPeekPlace(slotIndex, answerCardId) { /* … */ },
+    sendPeekSubmit() { /* … */ },
+    sendEndTurn() { return false; },
+    sendReady() { /* … */ },
+    sendSay(presetId) { /* … */ },
   },
 });
 ```
 
-Notes:
-- Module helpers (same file): `isEligibleSeat` / `countEligibleSeats` / `isSoloBudgetFromSeats(seats, maxSeats)` — leftover red ring (`maxSeats≥2` ∧ eligible===1) + Vitest (`game.soloPresence.test.ts`); intentional single-player (`maxSeats===1`) is **not** leftover; do **not** revive `isSoloBudgetSeconds(===300)`.
-- `budgetsInfinite` (solo leftover only): both steps+peeks ∞; single-player stays finite. `sendMove`/`sendRescue`/`sendPush`/`sendReturnFromFinish` gate `(!budgetsInfinite && steps <= 0)`. Page HUD mirrors both counters as ∞ when infinite; landable removed holes live on GamePage (`isLandableCell` = playable only).
-- Live lobby listing uses `subscribeLobby` / LobbyRoom messages — not LobbyPage HTTP poll. `refreshRooms` HTTP remains unused fallback. Set `lobby.reconnection.enabled = false`; filter reservation/reconnect noise (see `work-with-lobby`).
-- **SC-LOBBY-05/37:** `_enterRoom` after `_attachRoom` does `void unsubscribeLobby()` (initiate sync clear + timeout-bound leave) and returns the room immediately — do **not** `await unsubscribeLobby()` in `_enterRoom` (hang leave would block create/join UX). `leaveGame` / `subscribeLobby` MAY `await` the bounded leave.
-- **Listing card types (SC-LOBBY-26/32):** `GameRoomMeta.taskSetLabels?: [{ taskSetId, authorDisplayName?, taskCount? }]` — UI shows ordinals + `taskCount`, never author (`work-with-lobby/listing-cards.md`).
-- **SC-LOBBY-20:** clear `rooms = []` on subscribe start / unsubscribe / quiet resubscribe; keep `listing` true until the first fresh `rooms` snapshot (clear `listing` in `onMessage('rooms')`, not in a subscribe `finally`).
-- Mirror `seats` (incl. connectivity + `ready` + `finishPlace` + `timeExpired` + piece `trapped`) / `phase` / `maxSeats` / `countdownRemaining` / `currentTurnSessionId` / `turnUntil` / `turnBudgetSeconds` / `removedTaskKeys` / `holdingGrilleKeys` / `revealingCatapultKeys` / `brokenCatapultKeys` / `sessionId` in the store; **D13:** `$patch` seats + revealing/broken catapult keys in one tick (avoid split mirror). Listen `budgets` / `peekOpen` / `allJailWarning` privately. Keep tile geometry + presence + selection/hints + peek/rescue/push/return/end-turn chrome + catapult sequential overlays (land→overlay→fling / continuous board-busy) + say/timeout/place/solo/all-jail modals on `GamePage` (not Pinia). Ephemeral `sayEvents` stay in the store (room I/O).
-- Persist tourist `reconnectionToken` in `localStorage` (`ht-tourist-reconnect`); clear on consented `leaveGame` / `_leaveTouristRoom` and after failed `reconnect`; keep on unexpected `onLeave`; cross-tab steal OK (see `work-with-rooms`).
-- `leaveGame` sets store `consentedLeaving` around room clear (gates GamePage soft-drop), unsubscribes lobby, swallows leave errors (room may already be closed), then clears the flag in `finally`. `GamePage` calls `rejoinGame(roomId)` on mount / soft-fail (reconnect → `joinById`). Leave confirm UX lives in `App.vue` on Game (`work-with-pages`).
+## Attach notes
+
+- `onMessage('knowledge', …)` → update delivered/pieces; set `knowledgeSynced=true` after first payload (gate +N falls).
+- Do **not** listen for `budgets`.
+- Piece mirror: map `remainingTurns` from schema.
+- `finishPlace` 0→1 is a boolean-ish finished/cut gate — GamePage opens knowledge modal, not place UX.
