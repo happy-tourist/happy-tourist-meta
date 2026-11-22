@@ -315,21 +315,6 @@ When exactly one eligible seat remains (`maxSeats ≥ 2` leftover or `maxSeats =
 **Reason**: No steps/peeks refresh loop.
 **Migration**: Player takes move/return; rescue free before move; all-jail if all trapped.
 
-### Requirement: Authoritative turn deadline while playing
-
-**Reason**: Turn timer removed entirely.
-**Migration**: No `turnUntil` / time-expired from turn clock.
-
-### Requirement: Turn timeout advances among eligible seats
-
-**Reason**: No turn deadline to expire.
-**Migration**: Turn advances only after board-action resolve / modal close.
-
-### Requirement: Turn timeout forces open peek as incorrect
-
-**Reason**: No turn-timeout force-close path.
-**Migration**: Task modal closes via submit/wrong/leave only; see `game/board` peek-close.
-
 ### Requirement: Solo infinite peeks and finite steps
 
 **Reason**: Solo leftover infinite economy removed.
@@ -392,5 +377,20 @@ When exactly one eligible seat remains (`maxSeats ≥ 2` leftover or `maxSeats =
 
 ### Requirement: Playing seeds hidden catapults by density
 
-**Reason**: Fixed exclusive 12%/15% partition lives in `game/board`; density/overlap seed removed.
+**Reason**: Fixed exclusive 15% grille / 20% catapult partition lives in `game/board`; density/overlap seed removed.
 **Migration**: Server ignores create density; exclusive cells only.
+
+### Requirement: Authoritative turn deadline while playing
+
+**Reason**: Old deadline wording (end-turn coupling, solo leftover clocks) replaced by ADDED one-move turn + multi **60s** `turnUntil` / `turnBudgetSeconds` (SC-MOVE-112/123).
+**Migration**: Drop this requirement block; behavior lives under ADDED turn-advance + deadline scenarios.
+
+### Requirement: Turn timeout advances among eligible seats
+
+**Reason**: Replaced by ADDED turn-advance + 60s timeout (modal close then advance; no permanent leftover lock).
+**Migration**: Drop this block; see SC-MOVE-112/123.
+
+### Requirement: Turn timeout forces open peek as incorrect
+
+**Reason**: Replaced by ADDED timeout → `peekClose` incorrect + `reason: 'timeout'` + «Не успел!» toast, then advance.
+**Migration**: Drop this block; see SC-MOVE-123 / `game/board` peek-close.

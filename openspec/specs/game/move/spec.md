@@ -9,7 +9,7 @@
 ## Traceability
 
 | Scenario ID | Coverage |
-|-------------|----------|
+|-------------|---------|
 | SC-MOVE-01 | covered-by-reuse (server mocha) |
 | SC-MOVE-02 | covered (server mocha — skip finished via SC-MOVE-21) |
 | SC-MOVE-03 | covered-by-reuse (server mocha — solo; finished skip via SC-MOVE-21) |
@@ -34,61 +34,22 @@
 | SC-MOVE-22 | covered (server mocha) |
 | SC-MOVE-23 | covered (server mocha) |
 | SC-MOVE-24 | covered (client UX) |
-| SC-MOVE-25 | covered (server mocha — multiplayer deadline; excludes maxSeats=1) |
-| SC-MOVE-26 | covered (server mocha) |
-| SC-MOVE-27 | covered (server mocha) |
-| SC-MOVE-28 | covered (server mocha — timeout + open peek = wrong, KEEP tile) |
-| SC-MOVE-29 | covered (server mocha) |
-| SC-MOVE-30 | covered (server mocha) |
-| SC-MOVE-31 | covered (client timeout modal) |
-| SC-MOVE-32 | covered (client isInteractive lock) |
-| SC-MOVE-33 | covered (server mocha) |
-| SC-MOVE-34 | covered (server mocha) |
-| SC-MOVE-35 | covered (server mocha) |
-| SC-MOVE-36 | covered (server mocha) |
-| SC-MOVE-37 | covered (server mocha) |
-| SC-MOVE-38 | covered (server mocha — auto-end only without peeks-on-`*`) |
-| SC-MOVE-39 | covered (server mocha — multi peek while peeks remain; flipped spends) |
-| SC-MOVE-40 | covered (server mocha — solo peeks∞; already-current carries steps) |
-| SC-MOVE-41 | covered (server mocha — solo no end-turn) |
-| SC-MOVE-42 | covered (server mocha — timeout + open peek → incorrect KEEP + peekClose timeout reason → «Не успел!» flash) |
 | SC-MOVE-43 | covered (server mocha — move no longer advances turn) |
 | SC-MOVE-44 | covered (server mocha) |
-| SC-MOVE-45 | covered (server mocha — timer time-expired; distinct from step-loss) |
 | SC-MOVE-46 | covered (client UX — keep-focus after move) |
-| SC-MOVE-47 | covered (server mocha — keep turn when peeks and on live `*`) |
-| SC-MOVE-48 | covered (server mocha — solo step-loss → timeExpired; legal peek = free unfinished on live `*`; deadline cleared) |
 | SC-MOVE-49 | covered (server mocha — move onto removed hole rejected) |
-| SC-MOVE-50 | covered (server mocha — become-current into solo grants +1 step) |
 | SC-MOVE-51 | covered (server mocha — land traps) |
 | SC-MOVE-52 | covered (server mocha — trapped cannot move) |
 | SC-MOVE-53 | covered (server mocha — trapped cannot peek) |
-| SC-MOVE-54 | covered (server mocha — rescue costs 1 step) |
-| SC-MOVE-55 | covered (server mocha — cannot rescue other seat) |
-| SC-MOVE-56 | covered (server mocha — rescue needs adjacency + steps) |
 | SC-MOVE-57 | covered (server mocha — return costs 1 step) |
 | SC-MOVE-58 | covered (server mocha — return ring cells) |
 | SC-MOVE-59 | covered (server mocha — return rejected without steps) |
 | SC-MOVE-60 | covered (server mocha — all-jail auto reset) |
 | SC-MOVE-61 | covered (server mocha — all-jail keeps turn) |
-| SC-MOVE-62 | covered (server mocha — auto-end waits for rescue/return) |
 | SC-MOVE-63 | covered (client UX — all-jail modal self only) |
 | SC-MOVE-64 | covered (server mocha — solo same rules) |
 | SC-MOVE-65 | covered (client vitest GameBoardWire — per-cell finish click / outline) |
-| SC-MOVE-66 | covered (server mocha — push costs 1 step, relocates target) |
-| SC-MOVE-67 | covered (server mocha + unit — collinear through geometry) |
-| SC-MOVE-68 | covered (server mocha + unit — cannot push trapped) |
-| SC-MOVE-69 | covered (server mocha — push onto center finishes target) |
-| SC-MOVE-70 | covered (server mocha — push onto grille traps target) |
-| SC-MOVE-71 | covered (server mocha + unit — reject hole / occupied / no steps) |
-| SC-MOVE-72 | covered (server mocha — push does not advance turn) |
-| SC-MOVE-73 | covered (server mocha — auto-end waits for legal push) |
-| SC-MOVE-74 | covered (client UX — 36×36 push; hit clear of tourist figure) |
-| SC-MOVE-75 | covered (client UX — approach/back + target travel; keep selection) |
-| SC-MOVE-76 | covered (client UX — push onto center: travel then disappear) |
 | SC-MOVE-77 | covered (client UX — 36×36 rescue; hit clear of tourist figure) |
-| SC-MOVE-78 | covered (server mocha — medium catapult seed count on task cells) |
-| SC-MOVE-79 | covered (server mocha — catapult+grille may share a cell) |
 | SC-MOVE-80 | covered (server mocha — move onto catapult flings to ring-2 when free) |
 | SC-MOVE-81 | covered (server mocha — fling prefers ring-2 then ring-1) |
 | SC-MOVE-82 | covered (server mocha — no dest → broken consume, piece stays) |
@@ -103,115 +64,153 @@
 | SC-MOVE-91 | covered (server mocha — auto-end deferred until trap pipeline idle) |
 | SC-MOVE-92 | covered (server mocha — deadline advance deferred until trap pipeline idle; pending absorb if eligibility repair already moved current) |
 | SC-MOVE-93 | covered (server mocha — idle re-eval auto-end after grille removes peek) |
-| SC-MOVE-94 | covered (server mocha — flipped peek consumes peeks) |
-| SC-MOVE-95 | covered (server mocha — auto-end advances at flipped peeks=0) |
 | SC-MOVE-96 | covered (server mocha — finish place via catapult→center clears current turn; pending absorb) |
-| SC-MOVE-97 | covered (server mocha — last-step ordinary center finish; start+trapped remainder → timeExpired + deadline cleared) |
-| SC-MOVE-98 | covered (server mocha — steps 0; only trapped on live `*` → evaluateSoloStepsExhaustedForTests → timeExpired) |
-| SC-MOVE-100 | covered (server mocha — single-player finite grant, not ∞) |
-| SC-MOVE-101 | covered (server mocha — single-player no turn deadline / onTurnTimeout gate) |
-| SC-MOVE-102 | covered (server mocha — single-player spends steps) |
-| SC-MOVE-103 | covered (server mocha — no actions → +1 step +1 peek) |
-| SC-MOVE-104 | covered (server mocha — legal peek blocks auto-+1/+1) |
-| SC-MOVE-105 | covered (server mocha — legal rescue/return/push blocks auto-+1/+1) |
-| SC-MOVE-106 | covered (server mocha — solo leftover still ∞ when maxSeats≥2) |
+| SC-MOVE-33…50 | removed/superseded — steps/peeks budgets & solo ∞ |
+| SC-MOVE-25…32 | modified — restore multi turn deadline 60s; no solo leftover timeExpired |
+| SC-MOVE-37…41 | removed — end-turn / peeks gate |
+| SC-MOVE-51…53 | modified — grille land sets remainingTurns; no steps/peek |
+| SC-MOVE-54…56 | removed — rescue for steps; see SC-MOVE-113 free rescue |
+| SC-MOVE-57…59 | modified — return spends the turn, no steps |
+| SC-MOVE-60…61 | modified — all-jail no teleport; advance turn |
+| SC-MOVE-124 | pending — all-jail skip whenever nobody can move + room toast (if eligible remain) |
+| SC-MOVE-125 | pending — no all-jail toast when party over / solo-only wait |
+| SC-MOVE-66…76 | removed — push |
+| SC-MOVE-78…79 | removed — density/overlap seed; exclusive seed in game/board |
+| SC-MOVE-85…86 | modified — exclusive cells; no dual-trap resolve |
+| SC-MOVE-100…106 | removed — single-player steps/peeks refresh |
+| SC-MOVE-110 | pending — one board action per turn |
+| SC-MOVE-111 | pending — turn advances after modal/trap settle |
+| SC-MOVE-112 | modified — turn deadline 60s restored |
+| SC-MOVE-113 | pending — rescue free before move |
+| SC-MOVE-114 | pending — push rejected |
+| SC-MOVE-115 | pending — return spends turn |
+| SC-MOVE-116 | pending — knowledge on piece |
+| SC-MOVE-117 | pending — grille timer tick on become-current |
+| SC-MOVE-118 | pending — grille auto-free at 1 then become-current |
+| SC-MOVE-119 | modified — all-jail wait remainingTurns; advance turn |
+| SC-MOVE-120 | pending — fling open-on-land chain |
+| SC-MOVE-121 | pending — no solo leftover infinite |
+| SC-MOVE-122 | pending — reopen open task by land |
+| SC-MOVE-123 | pending — turn timeout closes open modal |
 
-Related: board peek / removed tiles / grilles / catapults — `game/board`; presence counters / end-turn — `game/presence`; solo finish / return / catapult→center — `game/finish`; trapped sync — `game/pieces`.
+Related: board peek / removed tiles / grilles / catapults — `game/board`; presence countdown / knowledge strip — `game/presence`; finish / return / catapult→center / knowledge modal — `game/finish`; trapped sync / remainingTurns — `game/pieces`.
 
 ## Requirements
 
-### Requirement: Private step and peek budgets per seat
+### Requirement: One board move or return per turn
 
-While phase is `playing`, the server SHALL maintain for each non-finished seated player a private **steps** budget and a private **peeks** budget that are visible only to that seat’s client (not to other seated players or spectators). The private room message `budgets` continues to carry `{ steps, peeks, infinite, peekedThisTurn }`. In multiplayer (`maxSeats ≥ 2` with two or more eligible seats), `infinite` is **false** and both counters are finite numbers. In **solo leftover** (`maxSeats ≥ 2` and exactly one eligible seat), `infinite` MUST be **true** and SHALL mean **both** peeks and steps are unlimited (client shows ∞ for both; server MUST NOT decrement steps while `infinite`). In **single-player** (`maxSeats === 1`), `infinite` MUST remain **false** and budgets follow the single-player requirements of this capability. At materialize into `playing` both budgets MUST start at **0**. Each time a seat **becomes** current turn:
+While phase is `playing` and it is a non-finished seated player’s turn, that seat MAY perform unlimited **own** rescues of adjacent trapped own pieces, then MUST perform at most **one** board action that relocates a piece: a legal **move** or a legal **return-from-finish**. The server MUST reject a second move or return in the same turn. There is no end-turn message. There is no steps or peeks budget. Push intents MUST be rejected. After the client successfully **sends** an own `move` or `returnFromFinish` this turn (`sendMove` / `sendReturnFromFinish` returned true — optimistic mirror of server `boardActionUsed`; no public schema field and no per-move ack), it MUST locally disable further move/return/rescue send affordances until the synchronized current seat is no longer that player. Shared-modal `peekPlace` / `peekSubmit` remain allowed while the land-opened task modal is open. The client MAY clear the local spent flag early if, after board-pipeline settle, the piece never left its origin and no land modal opened (silent reject recovery).
 
-- while **two or more** eligible seats remain, the server MUST add exactly **1** step and exactly **1** peek to that seat’s budgets before play continues;
-- while **exactly one** eligible seat remains and **maxSeats ≥ 2** (solo leftover), the server MUST set that seat’s **steps** and **peeks** to **infinite** mode (`infinite: true`) and MUST **not** apply a finite +1 step or +1 peek grant;
-- while **maxSeats === 1**, the server MUST apply the finite +1 step and +1 peek grant (single-player requirement) and MUST **not** set `infinite: true`.
+#### Scenario [SC-MOVE-110]: Second move in same turn rejected
 
-Budgets MUST persist across that seat’s turns (remainder carries over in finite mode). Becoming solo leftover **without** a change of current turn (another seat permanently left or finished while this seat was already current, and maxSeats ≥ 2) MUST switch that seat to infinite steps and peeks without a finite +1 grant. While the same seat remains current under solo leftover rules, successful moves MUST NOT trigger further turn grants and MUST NOT decrement steps. Reconnect within grace MUST restore the same budgets to the reclaiming client. Spectators MUST NOT receive step or peek budgets.
+- **GIVEN** it is a seated player’s turn and that seat has already completed one successful move this turn whose open-on-land pipeline has settled without ending the turn yet solely due to an open task modal (client local board-action spent is set from the successful send)
+- **WHEN** that player attempts another move before the turn advances
+- **THEN** the server rejects the second move
+- **AND** piece positions from the first move remain
+- **AND** the acting client’s move/return/rescue affordances stay disabled for the rest of that turn (peekPlace/peekSubmit for the open modal still allowed)
 
-#### Scenario [SC-MOVE-33]: Budgets start at zero until first turn grant
+#### Scenario [SC-MOVE-114]: Push is rejected
 
-- **GIVEN** a tourist room that has just entered phase `playing` with at least two non-finished seated players
-- **WHEN** seated clients observe their private budgets before any turn grant animation settles
-- **THEN** each non-current seat that has not yet been granted a turn this game has steps 0 and peeks 0
-- **AND** the seat that becomes current turn receives +1 step and +1 peek as part of becoming current
-
-#### Scenario [SC-MOVE-34]: Remainder carries and next turn adds one each
-
-- **GIVEN** a non-finished seated player ends a multiplayer turn with 2 steps and 1 peek remaining
-- **WHEN** that seat becomes current turn again while two or more eligible seats remain
-- **THEN** that seat’s private budgets become 3 steps and 2 peeks
-- **AND** other clients do not observe those budget values
-
-#### Scenario [SC-MOVE-50]: Becoming current as the solo leftover grants one step
-
-- **GIVEN** a tourist room with maxSeats ≥ 2 in phase `playing` with two eligible seated players A then B, it is A’s turn, and B still has steps 0 and peeks 0 (B has not yet received a turn grant this game)
-- **WHEN** A permanently leaves **or** A receives a finish place so that B is the only remaining eligible seat and becomes current turn
-- **THEN** B’s peeks are infinite
-- **AND** B’s steps are infinite
-- **AND** B is not given a finite +1 step grant
-- **AND** B may legally move without spending steps
-
-#### Scenario [SC-MOVE-106]: Solo leftover still infinite when maxSeats is at least two
-
-- **GIVEN** a tourist room created with maxSeats 2 in phase `playing` where every other seated player has finished or permanently left, leaving exactly one eligible seat
-- **WHEN** solo leftover rules apply
-- **THEN** that seat’s peeks and steps are infinite
-- **AND** the synchronized one-minute solo deadline applies
-- **AND** single-player finite refresh rules do not apply to that seat
-
-### Requirement: Single-player room budgets without turn timer
-
-When phase is `playing` and the room’s **maxSeats is exactly 1**, the seat’s private budgets MUST remain in **finite** mode (`infinite: false`). The server MUST NOT enter solo infinite-budgets mode and MUST NOT start a synchronized turn deadline for that seat solely because exactly one eligible seat remains. At materialize into `playing`, budgets start at **0**; when that seat **becomes** current turn the server MUST add exactly **1** step and exactly **1** peek. Successful moves and peeks MUST spend finite budgets as in multiplayer. The server MUST NOT offer or require end-turn among seats. While the seat remains current under single-player rules, a successful move alone MUST NOT grant further +1/+1.
-
-#### Scenario [SC-MOVE-100]: Single-player become-current grants finite +1/+1
-
-- **GIVEN** a tourist room created with maxSeats 1 that has just entered phase `playing` with one eligible seated player
-- **WHEN** that seat becomes current turn
-- **THEN** that seat’s private budgets are finite with steps 1 and peeks 1
-- **AND** `infinite` is false
-
-#### Scenario [SC-MOVE-101]: Single-player has no turn deadline
-
-- **GIVEN** a tourist room in phase `playing` with maxSeats 1 and one eligible seated player under finite budgets
-- **WHEN** clients observe synchronized turn deadline fields
-- **THEN** there is no active turn deadline for that seat
-- **AND** the seat does not become time-expired solely due to elapsed wall-clock turn time
-- **AND** even if a turn-timeout handler were invoked, the server MUST NOT mark that seat time-expired while maxSeats is 1
-
-#### Scenario [SC-MOVE-102]: Single-player move spends one step
-
-- **GIVEN** it is the sole seat’s turn in a maxSeats-1 `playing` room with finite steps ≥ 1 and a legal neighbor cell
-- **WHEN** that player submits a legal move
-- **THEN** the piece position updates
-- **AND** that seat’s steps budget decreases by 1
-- **AND** the current turn remains that same seat
-- **AND** no additional +1/+1 is granted solely because the move succeeded
-
-### Requirement: Single-player refresh when no actions remain
-
-While phase is `playing`, maxSeats is 1, and it is the sole eligible seat’s turn, when that seat has **no available actions** — cannot legally move (steps 0 or no legal destinations; removed task cells **are** legal destinations when otherwise playable) **and** does not have a legal peek (peeks ≥ 1 and an own unfinished free piece on a still-present task cell, or solo-infinite peeks which do not apply here) **and** has no legal own rescue, return (finish place 0), or push — the server MUST add exactly **1** step and exactly **1** peek to that seat’s private budgets without changing piece positions and without waiting for a turn deadline. The server MUST **not** advance current turn to another seat (none exist). While any of those actions remain available, the server MUST NOT apply that +1/+1 refresh. An open peek modal MUST defer the refresh until the peek is resolved (skip evaluation / return without granting). While the trap presentation pipeline is active the server MUST likewise defer (skip evaluation / return without granting) and MUST **not** set multiplayer `pendingTurnAdvance` for this purpose. When evaluation runs again after peek close or trap-pipeline idle (same call sites that re-invoke multiplayer auto end-turn evaluation), the server MUST perform this +1/+1 refresh if still no actions — MUST **not** pass the turn via `advanceTurn` / multi `pendingTurnAdvance` resolution. Grant at most once per evaluation call; if after the grant the seat still has no available actions, do not grant again until a later game event re-triggers evaluation (including all-jail reset, which MUST re-run this evaluation via the idle path).
-
-#### Scenario [SC-MOVE-103]: No actions refreshes +1 step and +1 peek
-
-- **GIVEN** it is the sole seat’s turn in a maxSeats-1 `playing` room with finite steps 0 and peeks 0 (or peeks remain but no own unfinished free piece stands on a still-present task cell), and no legal rescue, return, or push
-- **WHEN** the server evaluates available actions
-- **THEN** that seat’s private budgets increase by 1 step and 1 peek
+- **GIVEN** it is a seated player’s turn with an own free piece adjacent to another free unfinished piece
+- **WHEN** that player submits a push intent
+- **THEN** the server rejects the push
 - **AND** piece positions are unchanged
-- **AND** the current turn remains that same seat
 
-#### Scenario [SC-MOVE-104]: Legal peek blocks single-player refresh
+### Requirement: Turn advances after the board action resolves
 
-- **GIVEN** it is the sole seat’s turn in a maxSeats-1 `playing` room with steps 0, peeks ≥ 1, and an own unfinished free piece on a still-present task cell
-- **WHEN** the server evaluates available actions
-- **THEN** the server does not add +1 step and +1 peek solely because steps are 0
+After the seat’s one move or return is accepted, the server MUST run open-on-land / trap pipeline for the landing (and fling chain). When the landing opens a **task** modal, the current turn MUST remain until that modal closes (correct, wrong, turn-timeout, or leave force-close). When the landing is a **grille**, after trap presentation the turn MUST advance to the next eligible seat. When the landing is a **catapult**, the fling chain continues under paced presentation; each hop applies open-on-land; when the chain settles (empty/start/finish/grille-after-trap), turn advance follows the same rules as a direct land of that final content (task waits for modal; grille advances after trap; finish follows `game/finish`). When the landing needs no modal (empty/start/already-empty), the turn MUST advance after presentation settles.
 
-#### Scenario [SC-MOVE-105]: Legal rescue return or push blocks single-player refresh
+While phase is `playing` and at least one other eligible seat exists (or the sole eligible seat is current under one-move economy), the server MUST run a synchronized **turn deadline of 60 seconds** (`turnBudgetSeconds` / `turnUntil`) for the current seat. The deadline MUST keep ticking while a task modal is open. On deadline expiry with an open modal, the server MUST force-close with incorrect + `reason: 'timeout'`, KEEP the bind/open digit, show clients the «Не успел!» toast path (`game/presence`), then advance the turn. On deadline expiry without an open modal, the server MUST advance the turn without permanently marking the seat `timeExpired` for leftover-solo rules. Permanent leftover `timeExpired` / one-minute solo leftover clocks MUST NOT return.
 
-- **GIVEN** it is the sole seat’s turn in a maxSeats-1 `playing` room with finite steps ≥ 1 and a legal own rescue, return, or push available, and no other reason to refresh
-- **WHEN** the server evaluates available actions
-- **THEN** the server does not add +1 step and +1 peek while that action remains available
+#### Scenario [SC-MOVE-111]: Task modal close advances turn in multiplayer
+
+- **GIVEN** a tourist room with two eligible seats A then B, it is A’s turn, and A’s move opens a task modal
+- **WHEN** A closes the modal (correct or incorrect)
+- **THEN** the current turn becomes B
+
+#### Scenario [SC-MOVE-112]: Turn deadline is sixty seconds
+
+- **GIVEN** a tourist room in phase `playing` with two or more eligible seats
+- **WHEN** a seat becomes current turn
+- **THEN** synchronized turn deadline fields are active with a 60-second budget
+- **AND** presence clients MAY show a turn countdown ring (`game/presence`)
+
+#### Scenario [SC-MOVE-123]: Turn timeout closes open task modal
+
+- **GIVEN** it is seat A’s turn with an open task modal and the 60-second deadline elapses
+- **WHEN** the server applies turn timeout
+- **THEN** the modal closes as incorrect with timeout reason
+- **AND** the task bind remains KEEP with open knowledge digit
+- **AND** the current turn advances to the next eligible seat
+- **AND** clients show the «Не успел!» top-center toast
+
+#### Scenario [SC-MOVE-120]: Catapult land opens destination content
+
+- **GIVEN** a legal move lands on a catapult whose fling destination is an unbound Q&A task cell
+- **WHEN** the fling relocate completes
+- **THEN** that destination opens as open-on-land (bind + shared task modal)
+- **AND** the turn waits for modal close (or timeout) before advancing
+
+### Requirement: Free own rescue until the board action
+
+While it is the seat’s turn and the seat has not yet spent its one move/return, the seat MAY rescue an own trapped unfinished piece when an own free unfinished piece stands at Chebyshev distance 1. Rescue MUST NOT cost knowledge or a board-action slot, MUST clear trapped and the holding grille (empty cell afterward per `game/board`), and MUST NOT permanently relocate the rescuer. Rescue of another seat’s piece MUST be rejected. After the seat has completed its move or return for this turn, further rescues this turn MUST be rejected.
+
+#### Scenario [SC-MOVE-113]: Rescue before move does not end the turn
+
+- **GIVEN** it is a seated player’s turn, one own piece is trapped, and another own free piece is adjacent
+- **WHEN** that player successfully rescues the trapped piece
+- **THEN** the rescued piece is free
+- **AND** the current turn remains that seat
+- **AND** that seat may still perform one move or return
+
+### Requirement: Knowledge points on pieces
+
+Each unfinished piece SHALL carry a non-negative **knowledge** integer. The server MUST sync the owning seat’s carried amounts and delivered total via a private room message **`knowledge`** with payload `{ delivered: number, pieces: Record<pieceId, number>, outcome?: 'finish' | 'cut' }` (same privacy family as former `budgets`; other seats MUST NOT receive another seat’s knowledge). Correct task solve MUST add the task **difficulty** (1|2|3) to that piece’s knowledge and re-send. Knowledge MUST NOT increase on wrong answers. When a piece finishes (`game/finish`), its knowledge MUST transfer to the seat’s delivered knowledge total and the piece’s carried knowledge becomes 0, then re-send. On full finish / penultimate cut the server MUST set `outcome` accordingly for the modal copy (`game/finish`). Private steps/peeks `budgets` messages MUST NOT be used for turn economy.
+
+#### Scenario [SC-MOVE-116]: Correct answer adds difficulty knowledge to the piece
+
+- **GIVEN** an own free piece with knowledge 0 opens a task of difficulty 3 and submits the correct order
+- **WHEN** the server accepts the answer
+- **THEN** that piece’s knowledge is 3
+- **AND** the seat’s delivered knowledge is unchanged until that piece finishes
+
+#### Scenario [SC-MOVE-122]: Another seat may solve an open task by landing
+
+- **GIVEN** task cell C is open with bound difficulty 2 after a wrong answer by seat A, A’s piece has since left C so C is unoccupied, and it is seat B’s turn
+- **WHEN** seat B’s free piece legally lands on C and submits the correct order
+- **THEN** the shared task modal opens with B as the only seat that may edit slots
+- **AND** B’s piece knowledge increases by 2
+- **AND** cell C becomes an empty playable cell
+
+### Requirement: Grille remaining turns tick on become-current
+
+When a free unfinished piece becomes trapped by a grille, its public schema `remainingTurns` MUST start at **3**. Each time that piece’s seat **becomes** current turn while the piece is still trapped with remaining turns ≥ 1, the server MUST decrement remaining turns by 1. When the seat becomes current and remaining turns were **1**, the server MUST clear the grille (empty cell), free the piece, set remaining turns to 0, and MUST allow that piece to move during that same turn. Auto-free and rescue MUST clear the badge (`remainingTurns = 0`). Other seats’ become-current MUST NOT tick another seat’s trapped counters.
+
+#### Scenario [SC-MOVE-117]: Become-current decrements grille counter
+
+- **GIVEN** seat A has a trapped piece with remaining turns 3 and it is not A’s turn
+- **WHEN** the turn advances so A becomes current
+- **THEN** that piece’s remaining turns become 2
+- **AND** the piece remains trapped
+
+#### Scenario [SC-MOVE-118]: Become-current from 1 frees and allows move
+
+- **GIVEN** seat A has a trapped piece with remaining turns 1
+- **WHEN** A becomes current turn
+- **THEN** the grille is cleared and the piece is free on the empty cell
+- **AND** A may legally move that piece during this turn
+
+### Requirement: No solo leftover infinite economy
+
+When `maxSeats ≥ 2` and exactly one eligible seat remains, the server MUST NOT grant infinite steps/peeks, MUST NOT start a one-minute solo deadline, and MUST NOT time-expire that seat for solo timer rules. That seat continues under the one-move economy until it finishes or is cut by penultimate completion (`game/finish`). Single-player (`maxSeats === 1`) uses the same one-move economy without penultimate cut.
+
+#### Scenario [SC-MOVE-121]: Last eligible seat is not infinite solo
+
+- **GIVEN** a tourist room with maxSeats 2 in phase `playing` where one seat has finished and one eligible seat remains
+- **WHEN** that remaining seat becomes current turn
+- **THEN** that seat does not receive infinite budgets
+- **AND** there is no one-minute solo deadline
+- **AND** the seat may take one move or return per turn as in multiplayer
 
 ### Requirement: Turn order among seated players
 
@@ -279,89 +278,6 @@ As soon as at least one seated player exists in the tourist room, the server SHA
 - **WHEN** that player completes a successful non-center move
 - **THEN** the current turn remains that same player
 - **AND** the next player does not become current solely because of that move
-
-### Requirement: Moves consume steps and do not advance the turn
-
-A legal one-step move in phase `playing` MUST decrement the mover’s steps budget by exactly **1** when the seat’s steps budget is **finite**. When steps are **infinite** (solo), a legal move MUST NOT decrement steps. The server MUST reject a move that would require a step while the seat’s steps budget is **0** in finite mode without changing piece positions or the current turn. After an accepted move the current turn MUST **remain** on that seat; the turn MUST NOT advance solely because a move succeeded. Orthogonal/diagonal adjacency, occupancy, playable cells (**including** removed task cells as landing targets per `game/board`), center finish, and finished/time-expired gates remain as previously specified except where this change modifies turn advancement.
-
-#### Scenario [SC-MOVE-35]: Successful move spends one step and keeps the turn
-
-- **GIVEN** the room phase is `playing`, it is a seated non-finished non-time-expired player’s turn with finite steps ≥ 1, and a legal neighbor cell exists for one unfinished piece
-- **WHEN** that player submits a legal move to that cell
-- **THEN** the server updates the piece position
-- **AND** that seat’s steps budget decreases by 1
-- **AND** the current turn remains that same seat
-
-#### Scenario [SC-MOVE-36]: Move with zero steps is rejected
-
-- **GIVEN** it is a seated player’s turn with finite steps 0
-- **WHEN** that player submits a move message
-- **THEN** the server rejects the move
-- **AND** piece positions, peeks budget, and the current turn remain unchanged
-
-#### Scenario [SC-MOVE-99]: Solo move does not spend steps
-
-- **GIVEN** it is a solo eligible seat’s turn under infinite steps and peeks
-- **WHEN** that player submits a legal move
-- **THEN** the server updates the piece position
-- **AND** steps remain infinite (not decremented)
-- **AND** the current turn remains that same seat
-
-### Requirement: Player end-turn and auto end-turn when no actions remain
-
-While phase is `playing`, at least two eligible seats remain, and it is a non-finished non-time-expired seat’s turn, that client MUST be able to submit an end-turn action. On acceptance the server MUST advance the turn to the next eligible seat in join order and grant that seat +1 step and +1 peek per the budget requirement. The server MUST **not** auto-advance while the current seat still has peeks ≥ 1 **and** at least one own unfinished piece stands on a still-present task cell (a legal peek remains available), even if steps are 0. The server MUST also treat a legal own rescue, a legal own return (when finish place is 0), or a legal own push as available actions. When the current seat has **no available actions** — cannot legally move (steps 0 or no legal destinations; removed task cells **are** legal destinations when otherwise playable) **and** does not have (peeks ≥ 1 and an own unfinished piece on a still-present task cell) **and** has no legal rescue, return, or push — the server MUST auto-advance the turn the same way without waiting for the deadline. Solo leftover mode (maxSeats ≥ 2, one eligible) MUST NOT offer or require end-turn advancement among seats. Single-player (maxSeats === 1) MUST NOT offer end-turn; when no available actions remain it MUST refresh +1/+1 per the single-player refresh requirement instead of advancing turn.
-
-#### Scenario [SC-MOVE-37]: End-turn advances and grants the next seat
-
-- **GIVEN** a tourist room in phase `playing` with two eligible seated players A then B, it is A’s turn, and A still has steps or peeks remaining
-- **WHEN** A submits end-turn
-- **THEN** the current turn becomes B
-- **AND** B’s private budgets increase by 1 step and 1 peek
-- **AND** no piece positions change solely because of end-turn
-
-#### Scenario [SC-MOVE-38]: Auto end-turn when no actions remain
-
-- **GIVEN** it is a seated player’s multiplayer turn with steps 0 and peeks 0 (or peeks remain but no own unfinished piece stands on a still-present task cell), so no legal move and no available peek remain
-- **WHEN** the server evaluates available actions
-- **THEN** the turn advances to the next eligible seat without waiting for the deadline
-
-#### Scenario [SC-MOVE-47]: Auto end-turn does not fire while peeks and a live task tile remain
-
-- **GIVEN** it is a seated player’s multiplayer turn with steps 0, peeks ≥ 1, and an own unfinished piece on a still-present task cell
-- **WHEN** the server evaluates available actions
-- **THEN** the turn does not auto-advance solely because steps are 0
-
-### Requirement: Multiple peeks per turn while peeks remain
-
-While it is a seat’s turn in phase `playing`, that seat MAY successfully open as many peeks as its peeks budget (or solo infinite peeks) allows, each time an own unfinished free piece stands on a still-present task cell (unbound or flipped — see `game/board`). The server MUST NOT enforce a one-peek-per-turn limit. Each successful open (fresh **or** flipped) MUST consume one peek in finite peeks mode. With peeks 0 (and not infinite), no further peek open is allowed on any task cell.
-
-#### Scenario [SC-MOVE-39]: Second peek in the same turn is allowed
-
-- **GIVEN** it is a multiplayer turn and the current seat has already resolved one fresh peek this turn, still has peeks ≥ 1, and an own unfinished piece stands on a still-present unbound task cell
-- **WHEN** that seat attempts another peek
-- **THEN** the server accepts the peek open
-- **AND** the shared peek modal is shown per `game/board`
-
-### Requirement: Flipped peek consumes peeks budget
-
-Opening a peek on an already flipped task cell MUST decrease the seat’s peeks budget by one in finite peeks mode (same as a fresh open). Solo infinite peeks MUST NOT decrement.
-
-#### Scenario [SC-MOVE-94]: Flipped peek consumes peeks
-
-- **GIVEN** it is a multiplayer turn with peeks 1 and an own piece on a flipped task cell
-- **WHEN** that seat opens a peek on the flipped cell and later resolves it incorrectly
-- **THEN** peeks become 0 (the flipped open consumed one peek)
-
-### Requirement: Auto end-turn gates flipped peek by peeks budget
-
-The server MUST treat a legal own peek on a flipped still-present task cell as an available action that blocks multiplayer auto end-turn **only when** peeks remain (or solo infinite peeks) — the same budget gate as a fresh peek. When peeks are 0 (and not infinite), a flipped cell MUST NOT block auto end-turn solely as a peek opportunity. When no legal move, rescue, return, push, or budgeted peek remains, auto end-turn MUST apply as today.
-
-#### Scenario [SC-MOVE-95]: Auto end-turn advances when flipped peek at zero peeks
-
-- **GIVEN** it is a seated player’s multiplayer turn with steps 0, peeks 0, and an own unfinished free piece on a flipped still-present task cell, and no other legal move/rescue/return/push
-- **WHEN** the server evaluates auto end-turn
-- **THEN** the turn MAY auto-advance (flipped peek at peeks 0 is not an available action)
-- **AND** the player MUST NOT be able to open the flipped peek
 
 ### Requirement: Authoritative one-step tourist move
 
@@ -444,146 +360,6 @@ The server SHALL accept a move message only when the room start phase is `playin
 - **THEN** the piece is finished per `game/finish`
 - **AND** steps decrease by 1 in finite mode
 - **AND** the turn does not advance solely because of that move
-
-### Requirement: Authoritative turn deadline while playing
-
-While the start phase is `playing` and there is an eligible current-turn seat that is not time-expired, the server SHALL maintain a synchronized turn deadline for that seat **except when maxSeats is exactly 1** (single-player: no turn deadline — see single-player requirements; `clearTurnDeadline` / skip `startTurnDeadline`; `onTurnTimeout` MUST NOT mark `timeExpired`). When **maxSeats ≥ 2** and two or more seated players are eligible to move (non-finished and not time-expired), each time that seat becomes current turn the deadline MUST be exactly **60 seconds** from that moment. The deadline MUST keep counting down while the current-turn seat is offline within reconnect grace. While the phase is `waiting` or `countdown`, the server MUST NOT run a turn deadline that auto-advances the turn. When the turn advances because of end-turn, auto end-turn, a permanent leave, or a normal 60-second timeout with another eligible seat remaining, the new current-turn seat MUST receive a fresh deadline per this requirement (or the solo leftover budget requirement when applicable).
-
-#### Scenario [SC-MOVE-25]: Sixty-second deadline on each multiplayer turn
-
-- **GIVEN** a tourist room in phase `playing` with maxSeats ≥ 2, at least two non-finished seated players, and it becomes one of their turns
-- **WHEN** every client observes the synchronized turn state
-- **THEN** that current-turn seat has a turn deadline 60 seconds from becoming current
-- **AND** every client in the room observes that synchronized deadline
-
-#### Scenario [SC-MOVE-26]: Deadline ticks during reconnect grace
-
-- **GIVEN** a non-finished current-turn seat in phase `playing` with a remaining turn deadline and at least one other eligible seat
-- **WHEN** that current-turn player disconnects unexpectedly within reconnect grace
-- **THEN** the synchronized turn remains on that offline seat
-- **AND** the turn deadline continues to count down without pausing for the disconnect
-
-#### Scenario [SC-MOVE-27]: No turn auto-pass before playing
-
-- **GIVEN** a tourist room in phase `waiting` or `countdown` with a current-turn seated player
-- **WHEN** more than 60 seconds elapse without a move
-- **THEN** the current turn does not advance solely because of elapsed wall time
-- **AND** no turn-deadline auto-pass applies until phase `playing`
-
-### Requirement: Turn timeout advances among eligible seats
-
-When phase is `playing`, at least two seated players remain eligible to move, and the current-turn seat’s 60-second deadline elapses, the server SHALL advance the turn to the next eligible seated player in join order without requiring a move, without moving any piece. An open peek MUST be force-resolved as incorrect without removing the task tile (`game/board`). The newly current seat MUST receive a fresh 60-second deadline and the +1 step / +1 peek grant. This timeout pass MUST apply even if the timed-out seat is still offline within reconnect grace.
-
-#### Scenario [SC-MOVE-28]: Sixty-second timeout passes the turn
-
-- **GIVEN** a tourist room in phase `playing` with two or more eligible seated players and a current-turn seat whose 60-second deadline has just elapsed
-- **WHEN** the server applies the turn timeout
-- **THEN** the current turn becomes the next eligible seated player in join order
-- **AND** no piece positions change solely because of that timeout
-- **AND** an open peek, if any, is resolved as incorrect without removing that task tile
-- **AND** the new current-turn seat has a fresh 60-second deadline and +1 step / +1 peek
-
-### Requirement: Turn timeout forces open peek as incorrect
-
-When a multiplayer 60-second turn deadline elapses, or when a solo turn deadline elapses while a peek is open, the server SHALL resolve that open peek as **incorrect** (no step reward) and MUST NOT remove the peeked task tile (same KEEP as a wrong submit in `game/board`) before or as part of advancing / expiring the turn. That peek-close MUST identify the **turn-timeout** reason so every client can show the match-status flash «Не успел!» per `game/presence`. Wrong-submit closes MUST NOT use the timeout reason.
-
-#### Scenario [SC-MOVE-42]: Timeout with open peek is incorrect and keeps the tile
-
-- **GIVEN** it is a seated player’s turn with an unresolved peek modal open
-- **WHEN** the server applies the turn timeout
-- **THEN** that peek is resolved as incorrect with no steps added
-- **AND** the peeked task tile is not removed
-- **AND** every client receives a peek-close identifying the timeout reason
-- **AND** every client shows the match-status flash «Не успел!» for about ten seconds
-
-### Requirement: Solo infinite peeks and finite steps
-
-When phase is `playing`, **maxSeats ≥ 2**, and exactly one seated player remains eligible to move, the server SHALL set that seat’s **peeks** budget to an **infinite** mode and SHALL set that seat’s **steps** budget to an **infinite** mode, MUST NOT accept or require end-turn to keep playing, and MUST NOT apply further turn grants while that same seat remains current under solo leftover (successful moves do not re-grant and do not spend steps). When another seat’s permanent leave or finish causes this seat to **become** current turn as the sole eligible seat, infinite steps and peeks MUST apply without a finite +1 step grant. When the seat was **already** current and merely becomes the sole eligible seat, steps and peeks MUST become infinite (any prior finite remainder is superseded; no finite +1). The one-minute solo deadline remains as the sole solo soft-lock besides finishing all pieces (`game/finish`). The server MUST **not** mark the seat time-expired because steps reached 0 or because no legal peek remains. Finishing all pieces follows `game/finish`. The solo leftover client MUST be informed via a modal that they are alone, that moves and peeks are unlimited, and that they have one minute. Other clients MUST NOT see that seat’s budget values. This requirement MUST **not** apply when maxSeats is 1 (see single-player requirements).
-
-#### Scenario [SC-MOVE-40]: Becoming solo while already current carries steps
-
-- **GIVEN** a tourist room with maxSeats ≥ 2 in phase `playing` where it is non-finished seated player A’s turn with a finite steps budget greater than 0, and every other seated player either receives a finish place or permanently leaves, leaving A as the only eligible seat **without** changing current turn away from A
-- **WHEN** that condition becomes true
-- **THEN** A’s peeks are infinite and A’s steps are infinite
-- **AND** that client is shown the solo unlimited-budgets modal
-- **AND** the synchronized one-minute solo deadline applies as specified
-
-#### Scenario [SC-MOVE-41]: Solo needs no end-turn
-
-- **GIVEN** a non-finished seated player under solo leftover infinite peeks and infinite steps (maxSeats ≥ 2)
-- **WHEN** that player views Game controls for ending a turn
-- **THEN** the end-turn control is not offered
-- **AND** successful moves do not pass the turn to another seat
-- **AND** successful moves do not grant an additional +1 step solely because the seat remains solo current
-
-#### Scenario [SC-MOVE-48]: Solo steps exhaustion without a live task tile time-locks
-
-- **GIVEN** a tourist room in phase `playing` with maxSeats ≥ 2 and exactly one eligible seated player under solo infinite peeks and infinite steps, and no own free unfinished piece on a still-present task cell
-- **WHEN** the server evaluates solo end conditions
-- **THEN** that seat does **not** become time-expired solely because of missing peeks or step count
-- **AND** the synchronized one-minute solo deadline keeps running until timer expiry or finish
-
-#### Scenario [SC-MOVE-97]: Last-step ordinary center finish with start and jail remainder time-locks
-
-- **GIVEN** a tourist room in phase `playing` with maxSeats ≥ 2 and exactly one eligible seated player under solo infinite steps and peeks, one own free unfinished piece adjacent to a free center cell, at least one other own unfinished free piece on a start cell, and one own unfinished trapped piece (grille), with finish place still 0
-- **WHEN** that player successfully moves the free piece onto the center cell (ordinary move, not a trap-pipeline fling), finishing that piece without assigning a finish place
-- **THEN** that seat’s steps remain infinite
-- **AND** that seat does **not** become time-expired
-- **AND** the synchronized solo turn deadline keeps ticking
-- **AND** further moves and peeks from that seat remain allowed
-
-#### Scenario [SC-MOVE-98]: Trapped piece on live task does not block steps exhaustion
-
-- **GIVEN** a tourist room in phase `playing` with maxSeats ≥ 2 and exactly one eligible seated player under solo infinite steps and peeks, and every own unfinished piece is either trapped or not on a still-present task cell
-- **WHEN** the server evaluates solo end conditions
-- **THEN** that seat does **not** become time-expired solely for that reason
-- **AND** the synchronized solo turn deadline is not cleared by that evaluation
-
-### Requirement: Solo endgame five-minute budget
-
-When phase is `playing`, **maxSeats ≥ 2**, and exactly one seated player remains eligible to move (all other seats either hold a finish place or have permanently left), the server SHALL give that seat a synchronized turn deadline of exactly **one minute** (60 seconds) from the moment that condition becomes true, replacing any prior multiplayer turn deadline, and SHALL apply solo leftover infinite peeks and infinite steps as specified above. While that solo budget runs, the seat remains current turn after its own successful moves without resetting the remaining solo budget to a new one minute on each move and without +1/+1 turn grants; if the player finishes all four pieces before the deadline, normal finish rules apply (`game/finish`) and the turn deadline MUST clear. Spectators and other clients MUST observe the same synchronized solo deadline. When maxSeats is 1, this requirement MUST NOT apply (no turn deadline — see single-player requirements).
-
-#### Scenario [SC-MOVE-29]: Solo remaining player gets five minutes
-
-- **GIVEN** a tourist room with maxSeats ≥ 2 in phase `playing` where every other seated player has either a finish place or has permanently left, leaving exactly one non-finished seated player
-- **WHEN** that condition becomes true
-- **THEN** that seat’s synchronized turn deadline is exactly one minute (60 seconds) from that moment
-- **AND** every client observes that one-minute deadline
-
-#### Scenario [SC-MOVE-30]: Successful solo finish clears the deadline
-
-- **GIVEN** a tourist room in phase `playing` with maxSeats ≥ 2 and exactly one non-finished seated player under the one-minute solo budget
-- **WHEN** that player finishes their last piece and receives a finish place
-- **THEN** the turn deadline for that seat is cleared
-- **AND** the seat follows finished-seat rules without a time-expired lock
-
-#### Scenario [SC-MOVE-45]: Solo timer expiration time-locks with timer copy
-
-- **GIVEN** a tourist room in phase `playing` with maxSeats ≥ 2 and exactly one non-finished seated player under the one-minute solo budget with infinite peeks and infinite steps
-- **WHEN** the one-minute deadline elapses without finishing all pieces
-- **THEN** that seat becomes time-expired and further moves and peeks are rejected
-- **AND** the client is shown the timer-expired end copy
-
-### Requirement: Solo budget expiry locks moves
-
-When the one-minute solo budget elapses without that seat finishing all pieces, the server SHALL mark that seat time-expired in synchronized state, MUST clear the active turn deadline, and MUST reject further move messages from that seat without changing piece positions. The room MUST NOT dispose or force-leave solely because of that expiry; the seat remains until consented leave or reconnect grace timeout as for other seats. The time-expired client’s Game UI MUST show a modal whose product Russian sense is that the tourists were not finished in time; closing the modal MUST leave the player in the room. That client MUST clear any local piece selection and move-destination hints and MUST NOT offer board/strip move interaction while time-expired. Other clients MUST NOT show that modal. Say and presence for the seat remain allowed as for a finished seat without a finish place.
-
-#### Scenario [SC-MOVE-31]: Solo timeout locks and shows modal only to that player
-
-- **GIVEN** a tourist room in phase `playing` with exactly one non-finished seated player whose one-minute solo budget has just elapsed, and at least one spectator or finished seated client also in the room
-- **WHEN** the server applies solo budget expiry
-- **THEN** that seat is marked time-expired in synced state
-- **AND** move messages from that seat are rejected without changing pieces
-- **AND** that player’s client shows the timeout modal
-- **AND** other clients do not show that modal
-- **AND** the room remains open with that seat still present after the modal is closed
-
-#### Scenario [SC-MOVE-32]: Time-expired clears local move chrome
-
-- **GIVEN** a seated client who had a piece selected with destination hints and whose seat has just become time-expired
-- **WHEN** that client observes the time-expired state
-- **THEN** selection and destination hints are cleared
-- **AND** further board or strip activations do not submit moves
 
 ### Requirement: No move chrome for finished pieces or finished seats
 
@@ -677,70 +453,45 @@ When a piece’s synchronized cell changes because of an accepted move, every cl
 
 ### Requirement: Landing on an unspent grille traps the piece
 
-When phase is `playing` and the server accepts a legal move whose target cell still holds an unspent grille, the server SHALL consume the move’s step as usual, reveal and clear the hidden status of that grille, and mark that piece trapped. The piece MUST remain on that cell and MUST continue to occupy it for other pieces. The grille MUST become visible to all clients per `game/board`.
+When phase is `playing` and the server accepts a legal move/return/fling whose target cell still holds an exclusive unspent grille, the server SHALL reveal and clear the hidden status of that grille, mark that piece trapped, set public `Piece.remainingTurns` to **3**, and MUST NOT spend steps/peeks. The piece MUST remain on that cell and MUST continue to occupy it for other pieces. The grille MUST become visible to all clients per `game/board`. After grille presentation settles (and unless all-jail fires), the turn MUST advance per the turn-advance requirement.
 
 #### Scenario [SC-MOVE-51]: Land on grille traps and spends the step
 
-- **GIVEN** it is a seated player’s turn with steps ≥ 1 and an unfinished free piece adjacent to a task cell that still holds an unspent grille
+- **GIVEN** it is a seated player’s turn and an unfinished free piece adjacent to an exclusive grille cell
 - **WHEN** that player submits a legal move onto that cell
-- **THEN** that seat’s steps budget decreases by 1
-- **AND** that piece is marked trapped in synced state
+- **THEN** that piece is marked trapped with `remainingTurns` 3
 - **AND** the piece remains on that cell
+- **AND** no steps budget is spent
 
 ### Requirement: Trapped pieces cannot move or peek
 
-While a piece is trapped, the server MUST reject move and peek intents that target that piece. Other free unfinished pieces of the same seat MAY still move or peek under existing turn and budget rules.
+While a piece is trapped, the server MUST reject move intents that target that piece and MUST reject client `peek` intents. Other free unfinished pieces of the same seat MAY still move under the one-board-action turn rules when it is that seat’s turn and the board action is not yet spent. Open-on-land task opens remain land-driven only.
 
 #### Scenario [SC-MOVE-52]: Move rejected for trapped piece
 
 - **GIVEN** it is a seated player’s turn and one of that player’s pieces is trapped
 - **WHEN** that player submits a move identifying the trapped piece
 - **THEN** the server rejects the move
-- **AND** piece positions and steps do not change from that attempt
+- **AND** piece positions do not change from that attempt
 
 #### Scenario [SC-MOVE-53]: Peek rejected for trapped piece
 
-- **GIVEN** it is a seated player’s turn with peeks remaining and a trapped own piece stands on a still-present task cell
-- **WHEN** that player attempts to open a peek for that trapped piece
+- **GIVEN** it is a seated player’s turn and a trapped own piece stands on a cell
+- **WHEN** that player attempts a client `peek` intent for that trapped piece
 - **THEN** the server rejects the peek
-- **AND** no reward is revealed
-
-### Requirement: Rescue own adjacent trapped piece for one step
-
-While it is a seated client’s own turn with steps ≥ 1, that client MAY rescue exactly one of their own trapped pieces when at least one of their own free unfinished pieces stands at Chebyshev distance 1 from the trapped piece’s cell (orthogonal or diagonal). A successful rescue MUST decrease steps by 1, clear trapped on the rescued piece, and clear the holding grille (rise and vanish ~1000 ms per `game/board`). Rescue of another seat’s piece MUST be rejected. Rescue MUST NOT permanently relocate the rescuer (approach animation is client presentation only).
-
-#### Scenario [SC-MOVE-54]: Rescue spends one step and frees the piece
-
-- **GIVEN** it is a seated player’s turn with steps ≥ 1, one own piece trapped on a cell, and another own free unfinished piece on a Chebyshev-1 neighbor of that cell
-- **WHEN** that player submits a rescue for the trapped piece
-- **THEN** steps decrease by 1
-- **AND** the trapped piece becomes free
-- **AND** the grille on that cell is cleared for all clients
-
-#### Scenario [SC-MOVE-55]: Cannot rescue another player’s tourist
-
-- **GIVEN** it is seat A’s turn with steps ≥ 1 and seat A has a free piece adjacent to seat B’s trapped piece
-- **WHEN** seat A submits a rescue targeting seat B’s piece
-- **THEN** the server rejects the rescue
-- **AND** no steps are spent and no grille is cleared
-
-#### Scenario [SC-MOVE-56]: Rescue rejected without adjacency or steps
-
-- **GIVEN** it is a seated player’s turn and either steps are 0 or no own free unfinished piece is Chebyshev-1 from the trapped own piece
-- **WHEN** that player submits a rescue for that trapped piece
-- **THEN** the server rejects the rescue
+- **AND** no task modal opens from that intent
 
 ### Requirement: Return a finished piece onto the center ring for one step
 
-While it is a seated client’s own turn, that seat has finish place **0**, steps ≥ 1 in finite mode (or infinite steps in solo), and at least one own piece is finished, the client MAY return one finished piece onto a legal ring cell: any playable cell at Chebyshev distance 1 from the central 2×2 block (including diagonal corners relative to the block), including a **removed** task cell on that ring, that is not occupied by an unfinished piece. Layout holes that were never playable MUST NOT be return targets. A successful return MUST decrease steps by 1 only in finite mode, mark that piece unfinished at the chosen cell, and place it on the board for all clients. Return MUST be offered per finished strip slot whenever steps (or infinite) and at least one legal ring cell exist (not only in a jail deadlock).
+While it is a seated client’s own turn, that seat has finish place **0**, has not yet spent its one board action this turn, and at least one own piece is finished, the client MAY return one finished piece onto a legal ring cell: any playable cell at Chebyshev distance 1 from the central 2×2 block (including diagonal corners), including a **removed** task cell on that ring, that is not occupied by an unfinished piece. Layout holes that were never playable MUST NOT be return targets. A successful return MUST count as the seat’s one board action (MUST NOT cost steps), mark that piece unfinished at the chosen cell, apply open-on-land on the landing cell, and advance the turn after land/trap settle per the turn-advance requirement.
 
 #### Scenario [SC-MOVE-57]: Return spends one step and places on ring
 
-- **GIVEN** it is a seated player’s turn with finite steps ≥ 1, finish place 0, one finished own piece, and a free playable ring cell around the center block (including a removed task cell)
-- **WHEN** that player submits a return of that piece onto that cell
-- **THEN** steps decrease by 1 in finite mode
+- **GIVEN** it is a seated player’s turn with finish place 0, one finished own piece, a free playable ring cell, and the seat has not spent its board action
+- **WHEN** that player submits a return of that piece onto that cell with no task/trap content
+- **THEN** the return spends the seat’s one board action (no steps budget)
 - **AND** the piece is unfinished at that cell in synced state
-- **AND** every client shows that piece on the board
+- **AND** after presentation settles the turn advances to the next eligible seat
 
 #### Scenario [SC-MOVE-58]: Ring includes diagonal cells around the center block
 
@@ -750,141 +501,63 @@ While it is a seated client’s own turn, that seat has finish place **0**, step
 
 #### Scenario [SC-MOVE-59]: No return affordance without steps
 
-- **GIVEN** it is a seated player’s multiplayer turn with finite steps 0 and at least one finished own piece
+- **GIVEN** it is a seated player’s turn and that seat has already spent its one move/return board action this turn and at least one finished own piece remains
 - **WHEN** the client renders return controls
 - **THEN** return is not offered as an actionable control
 - **AND** a return message is rejected if sent
 
 ### Requirement: All four own pieces trapped resets to starts
 
-When a seated player’s four pieces are all trapped (none finished), the server SHALL immediately clear trapped on those four pieces, clear the four holding grilles, and place each piece on a uniformly random **free** start cell of that piece’s own side (`N`/`E`/`S`/`W`). Other seats’ grilles MUST NOT be cleared by this reset. The affected client MUST see a warning modal (product Russian sense: tourists are sent to start) that does not block other clients; closing it is informational only. If that seat is still current turn with remaining steps and turn time, the seat MUST keep the turn after reset.
+When a seated player’s unfinished pieces are all trapped (none free unfinished remaining; count equals that seat’s unfinished pieces, not always four), the server MUST **NOT** teleport those pieces to start cells, MUST **NOT** clear their holding grilles solely because all are trapped, and MUST **NOT** show the retired start-reset all-jail warning modal. Pieces MUST remain trapped with their public `remainingTurns` and continue the grille tick/auto-free rules on become-current.
+
+Whenever that seat cannot perform a board action because all unfinished pieces are trapped — including (a) after the trapping land’s grille presentation settles and (b) after become-current grille ticks if the seat is still fully trapped — **and** at least one **other** eligible seat remains (`countEligible() ≥ 2`), the server MUST **advance** the current turn to the next eligible seat and MUST broadcast a room-wide skip signal so **every** connected client shows a top-center Notify toast with product Russian sense «Все туристы в решётке — ход пропущен». The server MUST **NOT** keep the turn for further board actions while all pieces stay trapped when another eligible seat exists.
+
+When fewer than two eligible seats remain (solo waiting on ticks, or the party has ended / only finished seats remain), the server MUST **NOT** fire the all-jail skip toast. End-of-game outcome uses the knowledge modal (`game/finish`) only — no all-jail toast. If become-current ticks free at least one unfinished piece, the seat keeps the turn and MUST NOT toast.
 
 #### Scenario [SC-MOVE-60]: Fourth trap triggers immediate start reset
 
-- **GIVEN** a seated player has three pieces already trapped and one free unfinished piece that lands on an unspent grille as a legal move
-- **WHEN** that land traps the fourth piece
-- **THEN** all four of that seat’s pieces are free on start cells of their respective sides
-- **AND** the four grilles that held them are cleared
-- **AND** other hidden or revealed grilles unrelated to those four remain unchanged
+- **GIVEN** a seated player has three pieces already trapped and one free unfinished piece that lands on an exclusive grille as a legal move
+- **WHEN** that land traps the last free unfinished piece
+- **THEN** all of that seat’s unfinished pieces remain trapped on their grille cells (no start teleport)
+- **AND** their `remainingTurns` stay positive
+- **AND** other seats’ grilles are unchanged
 
 #### Scenario [SC-MOVE-61]: Same turn continues after all-jail reset
 
-- **GIVEN** the same setup as SC-MOVE-60 and after the trapping move the seat still has steps ≥ 1 and turn time remaining
-- **WHEN** the all-jail reset completes
-- **THEN** that seat remains the current turn
-- **AND** that seat MAY move a free piece with remaining steps
+- **GIVEN** the same setup as SC-MOVE-60 with two eligible opponents remaining
+- **WHEN** the all-jail land presentation settles
+- **THEN** that seat does **not** remain the current turn
+- **AND** the current turn advances to the next eligible seat
+- **AND** that seat’s pieces are still trapped awaiting remainingTurns ticks
 
 #### Scenario [SC-MOVE-63]: All-jail warning modal is only for the affected seat
 
-- **GIVEN** an all-jail reset occurs for seat A while seat B and a spectator are connected
+- **GIVEN** seat A becomes fully trapped while seat B and a spectator are connected
 - **WHEN** clients update
-- **THEN** only seat A’s client shows the start-warning modal
-- **AND** seat B and the spectator do not see that modal
+- **THEN** no client shows the retired start-reset all-jail warning modal
+- **AND** seat B and the spectator likewise do not see that modal
 
-### Requirement: Auto end-turn waits for available rescue or return
+#### Scenario [SC-MOVE-119]: All-jail waits and advances turn
 
-While evaluating whether the current seat has no available actions for auto end-turn, the server MUST treat a legal own rescue, a legal own return (when finish place is 0), and a legal own push as available actions. Auto end-turn MUST NOT fire solely because no board move remains if rescue, return, or push is still legal under steps and geometry rules.
+- **GIVEN** seat A has two eligible opponents remaining and A’s last free unfinished piece lands on a grille so all of A’s unfinished pieces are trapped
+- **WHEN** the trap presentation settles
+- **THEN** A’s pieces remain trapped with remainingTurns
+- **AND** the current turn is no longer A
 
-#### Scenario [SC-MOVE-62]: Auto-end deferred while rescue is legal
+#### Scenario [SC-MOVE-124]: Become-current still all-jailed skips with room toast
 
-- **GIVEN** it is a seated player’s turn with steps ≥ 1, no legal board move for any free piece, and a legal own rescue exists
-- **WHEN** the server evaluates auto end-turn
-- **THEN** the turn does not auto-end solely for lack of board moves
-- **AND** the seat may still submit that rescue
+- **GIVEN** seat A is fully trapped with remainingTurns > 1 on every unfinished piece, and at least one other eligible seat exists
+- **WHEN** A becomes current and grille ticks leave A still fully trapped
+- **THEN** the current turn advances away from A
+- **AND** every connected client shows the all-jail skip toast
+- **AND** A’s pieces remain trapped (no teleport)
 
-#### Scenario [SC-MOVE-73]: Auto-end deferred while push is legal
+#### Scenario [SC-MOVE-125]: No all-jail toast when the party is over
 
-- **GIVEN** it is a seated player’s turn with steps ≥ 1, no legal board move for any free piece, no legal rescue or return, and a legal own push exists
-- **WHEN** the server evaluates auto end-turn
-- **THEN** the turn does not auto-end solely for lack of board moves
-- **AND** the seat may still submit that push
-
-### Requirement: Push adjacent free tourist through for one step
-
-While it is a seated client’s own turn with steps ≥ 1 in finite mode (or infinite steps in solo), that client MAY push another unfinished **free** (not trapped) piece that stands at Chebyshev distance 1 from one of the current seat’s own unfinished **free** pieces (the pusher), when the cell on the far side of the target — continuing the same Chebyshev delta from pusher through target — is a legal landing cell for that target as if the target performed an ordinary one-step move onto it (playable including removed task cells, not a never-playable layout hole, not occupied by any unfinished piece). The target MAY belong to the same seat or another seat. A successful push MUST decrease the current seat’s steps by 1 only in finite mode, relocate the target piece onto that destination cell, and MUST NOT permanently relocate the pusher (approach-and-back animation is client presentation only). The pusher’s selection on the submitting client MUST remain on that pusher after a successful push. Push MUST NOT advance the turn solely because of the push. Side-effects of the destination MUST follow ordinary move landing rules: landing on a center cell finishes the **target** piece per `game/finish`; landing on an unspent grille traps the **target** per existing grille rules. Pushing a trapped piece MUST be rejected. Destinations that are never-playable layout holes or occupied MUST be rejected without spending a step. Removed task cells MUST be accepted when otherwise legal.
-
-#### Scenario [SC-MOVE-66]: Push spends one step and moves the target
-
-- **GIVEN** it is a seated player’s turn with finite steps ≥ 1, one own free unfinished piece adjacent to another free unfinished piece (own or other seat), and the far-side cell through that target is a free playable non-center cell (including a removed task cell)
-- **WHEN** that player submits a push of that target through that destination
-- **THEN** steps decrease by 1 in finite mode
-- **AND** the target piece occupies the destination cell
-- **AND** the pusher remains on its original cell
-
-#### Scenario [SC-MOVE-67]: Push direction is collinear through the target
-
-- **GIVEN** the pusher is at cell A, the target at cell B with Chebyshev distance 1, and destination C equals B plus the same delta as B minus A
-- **WHEN** that player submits a push identifying that pusher, target, and C
-- **THEN** the server accepts only when C is that far-side cell and is a legal landing for the target
-- **AND** a destination that is not that far-side cell is rejected
-
-#### Scenario [SC-MOVE-68]: Cannot push a trapped tourist
-
-- **GIVEN** it is a seated player’s turn with steps ≥ 1 (or infinite) and an own free piece adjacent to a trapped piece whose far-side cell would otherwise be landable
-- **WHEN** that player submits a push targeting the trapped piece
-- **THEN** the server rejects the push
-- **AND** steps and piece positions do not change from that attempt
-
-#### Scenario [SC-MOVE-69]: Push onto center finishes the target
-
-- **GIVEN** it is a seated player’s turn with finite steps ≥ 1, an own free pusher adjacent to a free unfinished target, and the far-side cell is a free center cell
-- **WHEN** that player submits a push onto that center cell
-- **THEN** the target piece is marked finished per `game/finish`
-- **AND** steps decrease by 1 in finite mode
-- **AND** the turn does not advance solely because of that push
-
-#### Scenario [SC-MOVE-70]: Push onto grille traps the target
-
-- **GIVEN** it is a seated player’s turn with finite steps ≥ 1, an own free pusher adjacent to a free unfinished target, and the far-side cell still holds an unspent grille
-- **WHEN** that player submits a push onto that cell
-- **THEN** steps decrease by 1 in finite mode
-- **AND** the target piece is marked trapped on that cell
-- **AND** the grille becomes visible per `game/board`
-
-#### Scenario [SC-MOVE-71]: Push rejected for hole, occupied, or no steps
-
-- **GIVEN** it is a seated player’s multiplayer turn and either finite steps are 0, or the far-side cell is occupied
-- **WHEN** that player submits a push toward that far-side cell
-- **THEN** the server rejects the push
-- **AND** steps and piece positions do not change from that attempt
-- **AND** when instead the far-side cell is a free removed task hole and steps ≥ 1 (or infinite), the push is accepted onto that cell
-
-#### Scenario [SC-MOVE-72]: Push does not advance the turn
-
-- **GIVEN** a successful push in multiplayer
-- **WHEN** the push is accepted
-- **THEN** the current turn remains on the pushing seat
-
-### Requirement: Push affordances on targets of the selected pusher
-
-While it is the user’s own turn with steps ≥ 1 and a free unfinished own piece is locally selected, the client MUST show a push affordance **centered above** each unfinished free piece (own or other) that that selected piece can legally push under the push requirement (same top-center family as strip return). Each push affordance MUST use the **illustrated board-action push icon** and MUST NOT paint a solid colored (including green) circular chrome behind the icon. The illustrated glyph MUST render at **36×36 CSS pixels** for both the illustrated glyph and the hit target (glyph fills the hit). Each push hit MUST sit entirely **above** its target tourist figure (same clearance as peek / strip return — about an 8 CSS-pixel gap above the cell top). The peek affordance MUST remain on the selected own piece when peek is available (illustrated peek icon centered above that piece per `game/board`). Push affordances MUST NOT appear for trapped targets, when no piece is selected, when it is not the user’s turn, or when steps are 0. Activating a push affordance MUST submit that push. Destination cells for push MUST NOT use red move-target rings; only the affordance initiates push. After a successful push the submitting client MUST keep selection on the pusher. The client MUST present an approach-and-back animation of the pusher toward the target and ordinary piece travel of the target to the destination (visible to the submitting client for approach; travel visible to clients that display the board). When the destination is a center cell and the target finishes, every client that displays the board MUST present the same travel-to-landing then disappear animation as for an ordinary move onto center (`game/finish` / SC-FINISH-01) — the target MUST NOT vanish without traveling to the center cell.
-
-#### Scenario [SC-MOVE-74]: Push icons appear over pushable neighbors of the selection
-
-- **GIVEN** it is the user’s turn with steps ≥ 1, one own free piece is selected, and two different free neighbors are each legally pushable through their far-side cells
-- **WHEN** the board renders affordances
-- **THEN** a push affordance with the illustrated push icon is shown centered above each of those two targets
-- **AND** those affordances use the 36×36 glyph-fills-hit family
-- **AND** those affordance hits do not cover the target tourist figures
-- **AND** those affordances have no solid colored circular chrome behind the icon
-- **AND** no push affordance is shown over the selected pusher for those actions
-- **AND** if a peek is also available for the selected piece, the peek affordance remains centered above the selected piece
-
-#### Scenario [SC-MOVE-75]: Push click animates and keeps selection
-
-- **GIVEN** the same turn with a selected pusher and one push affordance visible
-- **WHEN** the user activates that affordance and the server accepts the push
-- **THEN** the pusher shows an approach-and-back presentation
-- **AND** the target travels to the destination
-- **AND** local selection remains on the pusher
-
-#### Scenario [SC-MOVE-76]: Push onto center travels then disappears
-
-- **GIVEN** it is a seated player’s turn with a legal push whose far-side cell is a free center cell
-- **WHEN** that player successfully pushes the target onto that center cell
-- **THEN** clients that display the board show the target traveling onto the center cell
-- **AND** then removing that piece with the same short disappear animation as a center finish from a move
-- **AND** the target does not disappear from its pre-push cell without that travel
+- **GIVEN** trapping or become-current would leave fewer than two eligible seats (party ended / cut / solo-only wait)
+- **WHEN** the all-jail condition is evaluated
+- **THEN** the all-jail skip toast is not shown
+- **AND** end-of-game seats use the knowledge modal path instead of an all-jail toast
 
 ### Requirement: Rescue affordance centered above trapped tourist
 
@@ -901,55 +574,36 @@ While it is the user’s own turn with steps ≥ 1 and a legal own rescue exists
 
 ### Requirement: Solo uses the same grille rules
 
-When exactly one eligible seat remains (solo), grille land/trap, rescue, return, and all-jail reset MUST follow the same rules as multiplayer, subject to existing solo infinite budgets and one-minute timer rules (`game/move` main). Solo rescue, return, and push MUST NOT decrement steps while steps are infinite.
+When exactly one eligible seat remains (`maxSeats ≥ 2` leftover or `maxSeats === 1`), grille land/trap, rescue, return, remainingTurns tick, and all-jail reset MUST follow the same one-move economy rules as multiplayer. Solo leftover infinite budgets and one-minute timer MUST NOT apply.
 
 #### Scenario [SC-MOVE-64]: Solo rescue costs one finite step
 
-- **GIVEN** a solo eligible seat with infinite steps, one own trapped piece, and one own free piece at Chebyshev-1
+- **GIVEN** a leftover eligible seat (`maxSeats ≥ 2`, exactly one eligible) with one own trapped piece and one own free piece at Chebyshev-1, before the board action is spent
 - **WHEN** that seat submits a rescue
-- **THEN** steps remain infinite
-- **AND** the trapped piece becomes free
-
-### Requirement: Playing seeds hidden catapults by density
-
-When the room start phase becomes `playing`, the server SHALL place a hidden catapult on a random subset of still-present brown task cells (`*`). The subset size MUST equal the create-time catapult density percent of the layout’s task-cell count (few **12%**, medium **22%**, many **35%**), rounded to the nearest integer and clamped to `[0, taskCount]`. Start cells and center cells MUST NOT receive catapults. Catapult placement MUST NOT be predictable from coordinates alone. The same task cell MAY also hold a grille (and vice versa); independent density draws MUST allow overlap.
-
-#### Scenario [SC-MOVE-78]: Medium catapult density seeds expected count
-
-- **GIVEN** a tourist room created with medium catapult density transitioning into phase `playing` with the standard tourist layout (48 task cells)
-- **WHEN** catapults are seeded
-- **THEN** exactly `round(48 * 0.22)` = **11** hidden catapults exist on distinct task cells
-- **AND** no catapult is on a start or center cell
-
-#### Scenario [SC-MOVE-79]: Catapult and grille may share a task cell
-
-- **GIVEN** a tourist room whose grille and catapult densities both seed at least one trap
-- **WHEN** playing begins
-- **THEN** it is allowed that some task cell holds both an unspent grille and an unspent catapult
+- **THEN** the rescue succeeds without spending a board-action slot or steps budget
+- **AND** the trapped piece becomes free on an empty playable cell
 
 ### Requirement: Landing resolves remaining traps on the cell
 
-When phase is `playing` and a piece **lands** on a cell via an accepted move, push, or return-from-finish, the server SHALL resolve still-unspent traps on that cell (grille and/or catapult) in a **fresh random order** for that resolve. Landing after a catapult fling MUST use the same resolve rules as an ordinary move/push landing on the destination cell. While a piece is trapped by a grille on a cell, remaining unspent catapults on that cell MUST wait until the piece becomes free on that cell (successful rescue) and then MUST resolve as a new land-style resolve for that piece. Each trap type’s existing consume rules apply (grille → trap holding; catapult → fling or broken, then spent).
-
-The server MUST NOT apply an entire multi-hop catapult/grille chain in a single synchronous tick. It MUST resolve **one** next trap effect at a time, waiting a presentation budget (shared with client timing in `game/board`) after reveal / before applying relocate, grille holding, or scheduling the next cell’s resolve — so synced state exposes only the current hop, not the final chain outcome early.
+When phase is `playing` and a piece **lands** on a cell via an accepted move or return-from-finish (push removed), the server SHALL resolve that cell’s exclusive content under open-on-land: at most one of Q&A task, grille, or catapult (never grille+catapult together). Landing after a catapult fling MUST use the same open-on-land rules on the destination cell. The server MUST NOT apply an entire multi-hop catapult chain in a single synchronous tick — paced presentation budgets remain. Because cells are exclusive, there is no remaining second trap on the same cell after grille holding.
 
 #### Scenario [SC-MOVE-87]: Stacked traps shuffle order each resolve
 
-- **GIVEN** a free unfinished piece lands on a cell that still holds both an unspent grille and an unspent catapult
-- **WHEN** the server resolves that landing
-- **THEN** either the grille or the catapult may fire first according to a random shuffle for that resolve
-- **AND** a later resolve on the same cell (if traps remain) MUST shuffle again rather than reusing a fixed seed order
+- **GIVEN** exclusive trap seed so no cell holds both an unspent grille and an unspent catapult
+- **WHEN** a free unfinished piece lands on a trap cell
+- **THEN** only that cell’s single trap type resolves (grille **or** catapult)
+- **AND** the server does not shuffle two trap types on one cell
 
 #### Scenario [SC-MOVE-86]: Rescue then remaining catapult flings
 
-- **GIVEN** a piece is trapped on a cell that still holds an unspent catapult after the grille is holding
+- **GIVEN** a piece is trapped on an exclusive grille cell (no catapult on that cell)
 - **WHEN** that piece is successfully rescued and becomes free on that same cell
-- **THEN** the remaining catapult resolves for that piece (fling or broken) under the paced pipeline
-- **AND** the catapult is consumed
+- **THEN** the cell is an empty playable cell
+- **AND** no deferred catapult resolves on that former grille cell
 
 #### Scenario [SC-MOVE-90]: Paced resolve applies only the next hop after budget
 
-- **GIVEN** a free unfinished piece lands on a cell with an unspent catapult that will fling onto another cell that still holds an unspent grille
+- **GIVEN** a free unfinished piece lands on a cell with an unspent catapult that will fling onto another cell that still holds an exclusive grille
 - **WHEN** the catapult hop is revealed
 - **THEN** synced piece coordinates MUST remain on the catapult cell until that hop’s presentation budget elapsed
 - **AND** the destination grille MUST NOT appear in `holdingGrilleKeys` until after the fling relocation is applied and that destination land hop begins
@@ -1050,4 +704,3 @@ When the trap presentation pipeline becomes idle and the seat that currently hol
 - **THEN** A’s synchronized finish place is greater than `0`
 - **AND** the synchronized current turn is no longer A
 - **AND** the current turn is the next eligible seat in join order (A is skipped)
-

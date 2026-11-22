@@ -105,9 +105,8 @@ Packages: **server** + **client** (room `tourist`).
 
 ## Migration Plan
 
-1. Blocks 1–8 already applied (knowledge economy + first polish).
-2. Block 9 playtest follow-up: all-jail skip toast, Material lightbulb, cut copy, finish travel re-fix → tests.
-3. No DB migration; rollback = revert both siblings together.
+1. Blocks 1–9 applied (knowledge economy + polish + playtest follow-up).
+2. No DB migration; rollback = revert both siblings together.
 
 ## Technical prerequisites
 

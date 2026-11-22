@@ -14,17 +14,17 @@
 | SC-BOARD-04 | covered (client — theme-independent tile skins, transparent holes) |
 | SC-BOARD-05 | covered (client — non-movers still non-interactive) |
 | SC-BOARD-06 | covered (client — current-turn mover may select/hint/submit) |
-| SC-BOARD-10 | covered (server mocha — reject any peek at peeks 0) |
+| SC-BOARD-10 | removed — peeks budget gate |
 | SC-BOARD-11 | covered (client UX + server — hole not landable) |
 | SC-BOARD-12 | covered (client UX — piece may stand on hole) |
-| SC-BOARD-13 | covered (client UX — 36×36 peek; hit entirely above tourist sprite — no figure overlap) |
-| SC-BOARD-14 | covered (client UX — same clearance family after keep-focus) |
+| SC-BOARD-13 | removed — peek affordance icon |
+| SC-BOARD-14 | removed — peek affordance after keep-focus |
 | SC-BOARD-15 | covered (server mocha — land on hole rejected; mirrors SC-MOVE-49) |
-| SC-BOARD-16 | covered (server mocha — medium density seed count) |
+| SC-BOARD-16 | removed — medium density seed; see SC-BOARD-80 |
 | SC-BOARD-17 | covered (client UX — hidden until land) |
 | SC-BOARD-18 | covered (client UX — drop anim ~1000 ms all clients) |
 | SC-BOARD-19 | covered (client UX — rise+vanish ~1000 ms on clear) |
-| SC-BOARD-20 | covered (server mocha — spent tile still peekable) |
+| SC-BOARD-20 | removed — spent grille leaves task peekable |
 | SC-BOARD-21 | covered (client UX — rise on leave clear all clients) |
 | SC-BOARD-22 | covered (client UX — hidden catapult until land) |
 | SC-BOARD-23 | covered (client UX — land then ~1500 ms overlay then fling travel) |
@@ -38,26 +38,35 @@
 | SC-BOARD-31 | covered (client UX — every hop animated; finish travel after last vanish to center) |
 | SC-BOARD-32 | covered (client strip under isInteractive; say remains) |
 | SC-BOARD-40 | covered (server mocha — layout from map) |
-| SC-BOARD-41 | covered (server mocha — deck bind) |
+| SC-BOARD-41 | modified — bind on first open-on-land |
 | SC-BOARD-42 | covered (server mocha + client — flipped skin + digit `#212121`) |
 | SC-BOARD-55 | covered (client vitest boardGeometry — one tile per finish, no span) |
 | SC-BOARD-56 | covered (client vitest GameBoardWire — unbound vs flipped task skins) |
 | SC-BOARD-57 | covered (client vitest GameBoardWire — start/finish skins on board) |
 | SC-BOARD-58 | covered (client — overlay drop-shadow on skinned tiles; board + strip chrome) |
-| SC-BOARD-43 | covered (server mocha — correct → room-wide header flash «Правильно!» via presence; KEEP/remove rules unchanged) |
-| SC-BOARD-44 | covered (server mocha — wrong submit → room-wide header flash «Ошибка!»; KEEP bind unchanged) |
-| SC-BOARD-45 | covered (server mocha — flipped peek rejected at 0) |
+| SC-BOARD-43 | modified — correct grants knowledge not steps |
+| SC-BOARD-44 | covered (server mocha — wrong submit → KEEP bind + open knowledge digit; toast «Ошибка!») |
+| SC-BOARD-45 | removed — flipped peek spends peeks |
 | SC-BOARD-46 | covered (client UX — shared modal chrome) |
 | SC-BOARD-47 | covered (server mocha — leave mid-peek keeps bind) |
-| SC-BOARD-48 | covered (server mocha — cycle deck) |
+| SC-BOARD-48 | modified — deck reshuffle on open-on-land |
 | SC-BOARD-49 | covered (client UX — pool reuse without used-chrome) |
 | SC-BOARD-50 | covered (client UX — dots left, word-only badge center) |
 | SC-BOARD-51 | covered (client UX — empty/filled half size + primary border) |
 | SC-BOARD-52 | covered (client UX — pool 4×4 half-size) |
 | SC-BOARD-53 | covered (client UX — submit primary full-width) |
 | SC-BOARD-54 | covered (client UX — game question ×1.5) |
-| SC-BOARD-70 | covered (server — peekClose carries close reason so clients distinguish wrong vs turn-timeout) |
+| SC-BOARD-70 | modified — timeout close reason restored with turn timer |
 | SC-BOARD-71 | covered (client UX — peek/rescue/push hits must not cover the tourist figure) |
+| SC-BOARD-80 | modified — exclusive seed grille 15% / catapult 20% |
+| SC-BOARD-81 | pending — fixed catapult 20% exclusive |
+| SC-BOARD-82 | pending — open-on-land binds/opens task |
+| SC-BOARD-83 | pending — wrong keeps open knowledge digit |
+| SC-BOARD-84 | pending — no peek icon affordance |
+| SC-BOARD-85 | modified — grille counter TR red above overlay |
+| SC-BOARD-86 | pending — trap clear leaves empty cell |
+| SC-BOARD-87 | pending — correct removes tile empty cell |
+| SC-BOARD-88 | pending — outcome toast top-center (Notify) |
 
 Related: create snapshot — `lobby/rooms`; piece count — `game/pieces`; peeks budget — `game/move`; stub removal — `content/packs`; presence row layout — `game/presence` (opponents top / self bottom); turn budgets / multi peek / paced traps / deferred turn — `game/move`; finish travel after catapult — `game/finish`; trapped / leave clear — `game/pieces`; peek chip reuse — SC-BOARD-49 (compose reuse — `content/packs` SC-PACK-263).
 
@@ -135,19 +144,19 @@ The tourist board SHALL accept piece selection, move-destination hints, and move
 
 ### Requirement: Task deck binds on first peek
 
-At playing start the server SHALL build a shuffled deck from all tasks in the room’s selected published task sets (same pack snapshot). Unrevealed still-present task cells (`*`) MUST NOT have a bound task until a successful first peek on that cell. The first peek on an unbound task cell MUST take the next task from the deck and **bind** it to that cell for the rest of the match until the tile is removed. When the deck is exhausted, the server MUST reshuffle a new round from the same task pool and continue dealing. Bound tasks MUST NOT be reassigned to another cell while the tile remains.
+At playing start the server SHALL build a shuffled deck from all tasks in the room’s selected published task sets (same pack snapshot). Unrevealed still-present exclusive **Q&A task** cells MUST NOT have a bound task until the first open-on-land open on that cell. The first open on an unbound Q&A cell MUST take the next task from the deck and **bind** it to that cell for the rest of the match until the tile is removed. When the deck is exhausted, the server MUST reshuffle a new round from the same task pool and continue dealing. Bound tasks MUST NOT be reassigned to another cell while the tile remains. Exclusive grille/catapult cells MUST NOT receive a Q&A bind.
 
 #### Scenario [SC-BOARD-41]: First peek binds next deck task
 
-- **GIVEN** phase is playing, an unbound still-present task cell C, and a shuffled deck whose next task is T with difficulty 2
-- **WHEN** a seated player successfully opens the first peek on C
+- **GIVEN** phase is playing, an unbound still-present Q&A task cell C, and a shuffled deck whose next task is T with difficulty 2
+- **WHEN** a seated player’s free unfinished piece legally lands on C and open-on-land opens the task
 - **THEN** T is bound to C
 - **AND** every client observes C as flipped with difficulty digit 2
 
 #### Scenario [SC-BOARD-48]: Exhausted deck starts a new round
 
-- **GIVEN** the deck has no remaining unbound deals and at least one unbound task cell remains
-- **WHEN** a first peek is opened on that cell
+- **GIVEN** the deck has no remaining unbound deals and at least one unbound Q&A task cell remains
+- **WHEN** a first open-on-land open is performed on that cell
 - **THEN** the server deals from a reshuffled round of the same task pool
 - **AND** a task is bound to that cell
 
@@ -197,49 +206,100 @@ Start cells MUST use the start skin. Finish cells MUST use the finish skin. Hole
 
 ### Requirement: Shared peek modal with question and answer slots
 
-While it is a seated client’s own turn and a peek is allowed for an own unfinished free piece on a still-present task cell, opening a peek MUST show a modal synchronized so **every** client in the room sees it: a difficulty header (three difficulty dots plus a word difficulty badge — see SC-BOARD-50), the bound task’s question (see SC-BOARD-54), ordered answer slots above, and below them an answer pool of mini-cards from that pack’s live/snapshot answer cards (see SC-BOARD-51/52). Only the peeking seat MAY place answers into slots; other clients MUST see placements in realtime and MUST NOT edit slots. Closing without a correct submit (wrong order, leave cell, turn timeout, end-turn with open peek) MUST keep the tile and keep the same bound task. A **correct** submit MUST require the slot order to match the task’s defined slot order exactly; on success the server MUST add **difficulty** steps to that seat’s private steps budget and MUST remove the task tile. Forced incorrect closes and wrong submits MUST NOT remove the tile. When a peek closes as **correct**, every client in the room MUST show the match-status flash «Правильно!» per `game/presence`. When a peek closes because the peeker submitted an **incorrect** slot order, every client MUST show the match-status flash «Ошибка!» per `game/presence`. When a peek closes because the **turn deadline** elapsed while the peek was open, every client MUST show «Не успел!» per `game/presence` (and `game/move`). Other force-closes (for example leave mid-peek) MUST NOT use the «Не успел!» flash.
+While a task modal is open after open-on-land (or reopen on an already-open task cell), every client in the room MUST see the shared modal chrome (difficulty header, question, answer slots, answer pool) as previously specified for peek modal layout. Only the seat whose piece opened the modal MAY place answers. A **correct** submit MUST require exact slot order, MUST add **difficulty** knowledge to that piece (not steps), MUST remove the task tile to an empty playable cell, and MUST show toast «Правильно!». Wrong submit MUST KEEP the open bound cell and show toast «Ошибка!». Turn-deadline force-close MUST KEEP the bind and show toast «Не успел!» (`game/move` / `game/presence`). Leave mid-modal and other non-wrong, non-timeout force-closes MUST KEEP the bind without the «Не успел!» toast.
 
 #### Scenario [SC-BOARD-43]: Correct ordered slots grant difficulty steps
 
-- **GIVEN** a seated player has an open peek with slots filled in the task’s correct order
+- **GIVEN** a seated player has an open task modal with slots filled in the task’s correct order
 - **WHEN** that player submits the peek answer
 - **THEN** the server accepts the answer as correct
-- **AND** that seat gains difficulty steps and the task tile is removed per existing rules
-- **AND** every client in the room sees the match-status flash «Правильно!» for about ten seconds
+- **AND** that piece gains difficulty knowledge points (not steps) and the task tile is removed
+- **AND** every client in the room sees a top-center toast «Правильно!»
 
 #### Scenario [SC-BOARD-44]: Wrong order keeps the same bound task
 
 - **GIVEN** the same setup as SC-BOARD-43 except the slot order is incorrect
 - **WHEN** that player submits the peek answer
 - **THEN** the server rejects the answer as incorrect
-- **AND** the task tile and bind remain (KEEP)
-- **AND** every client in the room sees the match-status flash «Ошибка!» for about ten seconds
+- **AND** the task tile and bind remain (KEEP) with the open knowledge digit visible
+- **AND** every client in the room sees a top-center toast «Ошибка!»
+
+#### Scenario [SC-BOARD-88]: Outcome uses top-center toast
+
+- **GIVEN** a task modal resolves as correct, wrong, or turn-timeout
+- **WHEN** clients receive peek-close
+- **THEN** each client shows a conspicuous top-center toast for that outcome
+- **AND** the toast is not limited to the quiet header match-status line alone
 
 #### Scenario [SC-BOARD-46]: Everyone sees the peek modal and placements
 
-- **GIVEN** a seated player opens a peek on a task cell
+- **GIVEN** a seated player opens a task modal by landing on a task cell
 - **WHEN** that player places answer cards into slots
 - **THEN** every other client in the room sees the same modal chrome and placements
 - **AND** those other clients cannot edit the slots
 
 #### Scenario [SC-BOARD-47]: Leave mid-peek keeps bind
 
-- **GIVEN** a seated player has an open peek on task cell C
-- **WHEN** that player’s piece leaves C or the peek is force-resolved as incorrect without a wrong submit or turn-timeout flash path
-- **THEN** the bind and flipped digit remain on C (KEEP)
+- **GIVEN** a seated player has an open task modal on task cell C
+- **WHEN** that player’s piece leaves C or the modal is force-resolved as incorrect without a wrong-submit flash path
+- **THEN** the bind and open knowledge digit remain on C (KEEP)
 - **AND** the task tile is not removed
 
 ### Requirement: Peek close announces outcome reason
 
-When the server closes an open peek session, it MUST broadcast a peek-close event to every client that includes whether the resolve was correct and, when incorrect, a close reason that distinguishes at least **wrong submit** from **turn-timeout** force-close. Clients MUST use that payload (not heuristics alone) to choose among the header flashes in `game/presence`. Leave mid-peek and other non-timeout force-closes MUST NOT be labeled as turn-timeout.
+When the server closes an open task/peek session, it MUST broadcast a peek-close event to every client that includes whether the resolve was correct and, when incorrect, a close reason that distinguishes at least **wrong submit** from **turn-timeout** and from other force-closes. Clients MUST use that payload (not heuristics alone) to choose among the toasts in `game/presence`. When the turn deadline expires while a modal is open (`game/move`), the server MUST emit incorrect + turn-timeout reason and clients MUST show «Не успел!». Leave mid-modal and other non-wrong, non-timeout force-closes MUST NOT be labeled as turn-timeout and MUST NOT use the «Не успел!» toast.
 
 #### Scenario [SC-BOARD-70]: Peek close carries correct flag and reason
 
-- **GIVEN** an open peek in a tourist room
-- **WHEN** the server resolves that peek (correct submit, wrong submit, or turn-timeout force-close)
+- **GIVEN** an open task modal in a tourist room
+- **WHEN** the server resolves that modal (correct submit, wrong submit, turn-timeout, or leave/force-close without wrong submit)
 - **THEN** every client receives a peek-close message with the correct outcome flag
-- **AND** when the resolve is incorrect due to turn timeout, the message identifies the timeout reason
 - **AND** when the resolve is incorrect due to a wrong submit, the message identifies the wrong reason
+- **AND** when the resolve is turn-timeout, the message identifies the timeout reason
+
+### Requirement: Landing opens the cell content
+
+When a free unfinished piece lands on a still-covered exclusive cell (by move, return, or catapult fling), the server MUST reveal that cell’s content without a separate peek affordance or peeks budget (hook after the paced trap pipeline is idle for that land/hop):
+
+- **Q&A task** (unbound or already open/flipped): bind if needed and open the shared task modal for every client; only the **landing** seat may edit slots (reopen replaces prior session owner). Standing on a cell without a new land MUST NOT reopen.
+- **Grille**: trap that piece (`remainingTurns = 3`) and show grille presentation per existing grille anim rules; then advance turn per `game/move`.
+- **Catapult**: consume and fling per existing catapult rules; the destination land MUST apply this same open-on-land rule recursively.
+
+There MUST NOT be a board peek icon above tourists. Opening MUST NOT require or spend peeks. A client `peek` intent MUST NOT open a task; only landing (or fling land) opens/reopens.
+
+#### Scenario [SC-BOARD-82]: Move onto unbound task opens modal
+
+- **GIVEN** it is a seated player’s turn and a legal move lands an own free unfinished piece on an unbound Q&A task cell
+- **WHEN** the move is accepted
+- **THEN** a task is bound to that cell
+- **AND** every client sees the shared task modal
+- **AND** no peek icon was required to open it
+
+#### Scenario [SC-BOARD-84]: No peek affordance on board
+
+- **GIVEN** phase is `playing` and an own unfinished free piece stands on an open or covered task cell
+- **WHEN** the current-turn client views the board
+- **THEN** no peek icon affordance is shown above that piece
+
+### Requirement: Wrong answer leaves open knowledge digit
+
+When a task modal closes without a correct submit (wrong order or dismiss without correct), the server MUST keep the tile present and bound, and every client MUST show the flipped/open task skin with the knowledge value digit (**difficulty** 1|2|3). Another free unfinished piece (any seat) that later lands on that open cell MUST reopen the same bound task modal. A **correct** submit MUST grant that piece **difficulty** knowledge points, remove the task tile leaving an empty playable cell (same presentation family as today’s removed task hole), and show a top-center toast «Правильно!» per `game/presence`. Wrong submit MUST show toast «Ошибка!» and MUST NOT grant knowledge.
+
+#### Scenario [SC-BOARD-83]: Wrong keeps open cell with knowledge digit
+
+- **GIVEN** a seated player has an open task modal and submits an incorrect slot order
+- **WHEN** the modal closes as incorrect
+- **THEN** the cell remains present with the bound task
+- **AND** every client sees the open skin with digit equal to the task difficulty
+- **AND** no knowledge is granted
+
+#### Scenario [SC-BOARD-87]: Correct grants knowledge and clears cell
+
+- **GIVEN** a seated player submits the correct slot order for a bound task of difficulty 2
+- **WHEN** the server accepts the answer
+- **THEN** that piece’s knowledge increases by 2
+- **AND** the task tile is removed leaving an empty playable cell
+- **AND** every client sees the «Правильно!» top-center toast
 
 ### Requirement: Peek answer chips stay reusable without used-state chrome
 
@@ -253,25 +313,6 @@ While a shared peek modal is open, the peeker MUST be allowed to place the same 
 - **AND** the answer-pool card for that answer remains available for further empty slots
 - **AND** the pool card is not shown in a distinct already-used disabled or highlighted consumed state solely because it appears in a slot
 - **AND** other clients still see the placements in realtime and cannot edit slots
-
-### Requirement: Every peek open spends peeks (fresh and flipped)
-
-Opening a peek on a still-present task cell (whether **unbound** or **already bound / flipped**) MUST require peeks remaining or solo infinite peeks. In finite peeks mode each successful open MUST consume **one** peek. With peeks **0** (and not infinite), the server MUST reject the open for both unbound and flipped cells. Solo infinite peeks MUST allow opens without decrementing peeks. Peek on removed holes or trapped pieces remains rejected per existing rules. Bind-on-first-open and KEEP-on-incorrect rules are unchanged.
-
-#### Scenario [SC-BOARD-45]: Flipped peek rejected at zero peeks
-
-- **GIVEN** it is a seated player’s turn with peeks 0 in finite mode and an own unfinished free piece on flipped still-present cell C
-- **WHEN** that player attempts to open a peek on C
-- **THEN** the server rejects the peek
-- **AND** peeks remain 0
-- **AND** the bound task on C is unchanged
-
-#### Scenario [SC-BOARD-10]: Fresh peek rejected without budget
-
-- **GIVEN** it is a seated player’s turn with peeks 0 in finite mode and an own unfinished free piece on an **unbound** still-present task cell
-- **WHEN** that player attempts to open a peek
-- **THEN** the server rejects the peek
-- **AND** no task is bound
 
 ### Requirement: Peek modal difficulty header
 
@@ -364,27 +405,6 @@ When a peek resolves as **correct**, the server SHALL mark that task cell as rem
 - **THEN** that removed hole is outlined as a destination
 - **AND** submitting a move onto it is accepted by the server
 
-### Requirement: Eye affordance to open a peek
-
-While it is the user’s multiplayer or solo turn and a peek is currently allowed for one of their unfinished pieces on a still-present task cell, activating that piece MUST offer a peek affordance to open the peek modal. The peek affordance MUST use the **illustrated board-action peek icon** (not a Material eye glyph) and MUST be shown **centered above** that tourist on the board (same top-center family as strip return and board rescue/push affordances). The affordance hit MUST sit entirely **above** the tourist figure (bottom of the hit clear of the sprite — about an 8 CSS-pixel gap above the cell top is the product default) so the button MUST NOT cover the tourist’s head or body. The affordance MUST NOT paint a solid colored circular chrome behind the icon (no solid fill and no medallion-like shadow). The illustrated glyph MUST render at **36×36 CSS pixels** for both the illustrated glyph and the hit target (glyph fills the hit) while remaining touchable. When local selection is already kept on such a piece after a move (`game/move` keep-focus), the peek affordance MUST appear without requiring another activation click. Clients that are not allowed to peek MUST NOT show that affordance as a way to open a peek. A removed-task hole under the piece MUST NOT offer the peek affordance.
-
-#### Scenario [SC-BOARD-13]: Current player sees eye on a peekable tourist
-
-- **GIVEN** it is the user’s turn with an allowed peek and an own unfinished piece on a still-present task cell
-- **WHEN** the user activates that piece
-- **THEN** a peek affordance with the illustrated peek icon is available centered above that tourist to open the peek
-- **AND** the icon glyph is 36×36 with the glyph filling the hit
-- **AND** the affordance hit does not cover the tourist figure
-- **AND** the affordance has no solid colored circular chrome behind the icon
-- **AND** other clients do not gain that peek affordance for the user’s piece
-
-#### Scenario [SC-BOARD-14]: Eye after move without re-select when still on a present task tile
-
-- **GIVEN** it is the user’s turn with peeks remaining (or solo infinite peeks) and after a successful move the same unfinished piece remains selected on a still-present task cell
-- **WHEN** the move animation finishes and interaction returns
-- **THEN** the peek affordance (illustrated peek icon, 36×36 glyph-fills-hit family, clear of the sprite) is available on that piece without requiring another selection click
-- **AND** if the cell under the piece is a removed-task hole or not a task cell, the peek affordance is not shown for that piece
-
 ### Requirement: Board action hits clear the tourist figure
 
 Board peek, rescue, and push affordances that sit in the top-center family above a tourist MUST place their hit targets so the hit does **not** cover that tourist’s figure on the board (same clearance family as strip return in `game/finish`). The product default is about an **8 CSS-pixel** gap between the bottom of the hit and the top of the cell.
@@ -396,16 +416,25 @@ Board peek, rescue, and push affordances that sit in the top-center family above
 - **THEN** each affordance hit is centered above its tourist
 - **AND** none of those hits cover the corresponding tourist figure
 
-### Requirement: Grilles seed on task cells by density
+### Requirement: Task cells are exclusively task grille or catapult
 
-When the room start phase becomes `playing`, the server SHALL place a hidden grille on a random subset of still-present brown task cells (`*`). The subset size MUST equal the create-time density percent of the layout’s task-cell count (few **12%**, medium **22%**, many **35%**), rounded to the nearest integer and clamped to `[0, taskCount]`. Start cells and center cells MUST NOT receive grilles. Grille placement MUST NOT be predictable from coordinates alone.
+When phase becomes `playing`, the server SHALL partition still-present map task cells (`*`) into three disjoint sets: **task** (Q&A reward), **grille**, and **catapult**. A cell MUST NOT hold more than one of these. Let `n` be the task-cell count. Grille count MUST be `min(round(n * 0.15), n)`. Catapult count MUST be `min(round(n * 0.20), n - grilleCount)`. Remaining task cells are Q&A tasks. Start and finish cells MUST NOT receive traps or task binds. Placement MUST NOT be predictable from coordinates alone. Create-time density options MUST NOT affect this partition (server ignores them if present).
 
-#### Scenario [SC-BOARD-16]: Medium density seeds about twenty-two percent of tasks
+#### Scenario [SC-BOARD-80]: Seed partitions without overlap
 
-- **GIVEN** a tourist room created with medium grille density transitioning into phase `playing` with the standard tourist layout (48 task cells)
-- **WHEN** grilles are seeded
-- **THEN** exactly `round(48 * 0.22)` = **11** hidden grilles exist on distinct task cells
-- **AND** no grille is on a start or center cell
+- **GIVEN** a tourist room entering phase `playing` with 48 task cells
+- **WHEN** traps and tasks are seeded
+- **THEN** exactly `round(48 * 0.15)` = **7** cells are grille-only
+- **AND** exactly `min(round(48 * 0.20), 48 - 7)` = **10** cells are catapult-only
+- **AND** no cell is both grille and catapult or trap-plus-task
+- **AND** the remaining task cells are Q&A task cells
+
+#### Scenario [SC-BOARD-81]: Fixed catapult ratio without create density
+
+- **GIVEN** a tourist room created without client density options
+- **WHEN** catapults are seeded at playing start
+- **THEN** catapult count is `min(round(n * 0.20), n - grilleCount)` for task-cell count `n`
+- **AND** those cells are not also grille or Q&A task cells
 
 ### Requirement: Hidden grilles are invisible until triggered
 
@@ -439,16 +468,28 @@ When a piece lands on an unspent grille, every client that displays the board MU
 - **WHEN** clients update the board
 - **THEN** every client shows the grille rise and vanish lasting about 1000 ms
 
-### Requirement: Spent grille leaves the task tile peekable
+### Requirement: Clearing a trap leaves an empty cell
 
-Clearing a grille MUST remove that trap from the cell and MUST NOT remove the brown task tile or its hidden peek reward (if still present). After clear, a free unfinished piece standing on that cell MAY open a peek per existing peek rules.
+When a grille is cleared (rescue, auto-free, or leave) or a catapult is consumed after fling, the underlying cell MUST become an **empty playable** cell (same family as a removed task hole). All-jail MUST NOT clear grilles by itself. The server MUST NOT leave a Q&A task under a former exclusive trap cell.
 
-#### Scenario [SC-BOARD-20]: After rescue the task may still be peeked
+#### Scenario [SC-BOARD-86]: Grille clear leaves empty playable cell
 
-- **GIVEN** a piece was trapped on a still-present task cell whose grille was then cleared by rescue, and it is that seat’s turn with peeks remaining
-- **WHEN** that free unfinished piece remains on that task cell
-- **THEN** that seat MAY open a peek on that cell
-- **AND** the cell is not treated as a removed-task hole solely because the grille was cleared
+- **GIVEN** a piece is trapped on an exclusive grille cell
+- **WHEN** that grille is cleared by rescue or auto-free
+- **THEN** the cell is an empty playable cell with no task bind and no trap
+- **AND** every client shows the grille rise/vanish presentation
+
+### Requirement: Grille remaining-turns badge
+
+While a piece is trapped by a grille, every client that shows that piece (board and personal strip chrome) MUST display the remaining auto-free turns as a badge at the **top-right** of the piece chrome on a **red** background. The value MUST match synchronized public `Piece.remainingTurns` from `game/move` (starts at **3**). The badge MUST paint **above** the grille overlay / strip chrome grille (`z-index` higher than the grille artwork) so the digit remains readable. When the grille clears, the badge MUST disappear with the grille. This badge is **public** (all clients). Own carried-knowledge chrome (`game/presence`) lives on the strip only and MUST NOT replace the grille counter.
+
+#### Scenario [SC-BOARD-85]: Trapped piece shows red top-right counter
+
+- **GIVEN** a piece is trapped with remaining turns 3
+- **WHEN** any client views the board
+- **THEN** that piece shows a red-background counter at top-right with value 3
+- **AND** the counter remains visible above the grille overlay
+- **AND** other seats see the same red counter (public sync)
 
 ### Requirement: Hidden catapults are invisible until triggered
 
@@ -562,4 +603,3 @@ While any board presentation animation is running for the local client (piece la
 - **WHEN** the player activates a personal strip tourist or return affordance
 - **THEN** that strip interaction is ignored until the board is no longer busy
 - **AND** the say send affordance on the own presence avatar remains usable per `game/say`
-

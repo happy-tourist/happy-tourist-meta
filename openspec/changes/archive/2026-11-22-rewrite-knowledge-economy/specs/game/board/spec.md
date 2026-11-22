@@ -105,7 +105,7 @@ While a piece is trapped by a grille, every client that shows that piece (board 
 
 ### Requirement: Clearing a trap leaves an empty cell
 
-When a grille is cleared (rescue, auto-free, all-jail, or leave) or a catapult is consumed after fling, the underlying cell MUST become an **empty playable** cell (same family as a removed task hole). The server MUST NOT leave a Q&A task under a former exclusive trap cell.
+When a grille is cleared (rescue, auto-free, or leave) or a catapult is consumed after fling, the underlying cell MUST become an **empty playable** cell (same family as a removed task hole). All-jail MUST NOT clear grilles by itself. The server MUST NOT leave a Q&A task under a former exclusive trap cell.
 
 #### Scenario [SC-BOARD-86]: Grille clear leaves empty playable cell
 

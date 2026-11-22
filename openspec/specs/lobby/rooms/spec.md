@@ -20,12 +20,12 @@ Live-список доступных игровых комнат на экран
 | SC-LOBBY-10 | removed (superseded by map ceiling + seats picker) |
 | SC-LOBBY-11 | covered (client UX) |
 | SC-LOBBY-12 | covered (client UX) |
-| SC-LOBBY-13 | covered (client UX + server parse) |
-| SC-LOBBY-14 | covered (server mocha — many → 35%) |
-| SC-LOBBY-15 | covered (client UX default medium) |
-| SC-LOBBY-16 | covered (client UX + server parse) |
-| SC-LOBBY-17 | covered (server mocha create options — many → 35% catapults) |
-| SC-LOBBY-18 | covered (client UX default medium for catapults) |
+| SC-LOBBY-13 | removed — grille density UI |
+| SC-LOBBY-14 | removed — grille density create option |
+| SC-LOBBY-15 | removed — default grille density |
+| SC-LOBBY-16 | removed — catapult density UI |
+| SC-LOBBY-17 | removed — catapult density create option |
+| SC-LOBBY-18 | removed — default catapult density |
 | SC-LOBBY-19 | covered (client LobbyPage join busy-lock) |
 | SC-LOBBY-20 | covered (client game store clear rooms on leave/resubscribe) |
 | SC-LOBBY-21 | covered (client — map required; capacity in options) |
@@ -45,8 +45,10 @@ Live-список доступных игровых комнат на экран
 | SC-LOBBY-35 | covered (≤4 set rows + overflow «ещё {k}») |
 | SC-LOBBY-36 | covered (seats/tourists rows: label left + count right; same lead column as sets) |
 | SC-LOBBY-37 | covered (client vitest `game.lobbyEnter.test.ts` — create/join completes when leave hangs past bound) |
+| SC-LOBBY-40 | pending — client UX create without density |
+| SC-LOBBY-41 | pending — create omits density; server ignores if sent |
 
-Related: map snapshot / task deck — `game/board`; seating capacity — `game/pieces` / `game/start`. Grille/catapult density unchanged (SC-LOBBY-13…18). Pack catalog set-preview overflow SC-PACK-249; shared card chrome SC-PACK-255 / SC-MAP-55/66/67.
+Related: map snapshot / task deck — `game/board`; seating capacity — `game/pieces` / `game/start`. Trap seed ratios fixed server-side (SC-LOBBY-40/41; SC-LOBBY-13…18 removed). Pack catalog set-preview overflow SC-PACK-249; shared card chrome SC-PACK-255 / SC-MAP-55/66/67.
 
 ## Requirements
 
@@ -285,56 +287,25 @@ The lobby screen MUST NOT offer a primary «Играть» / joinOrCreate shortc
 - **THEN** there is no «Играть» action that performs joinOrCreate into an arbitrary room
 - **AND** create-game and join-by-listed-room actions remain available
 
-### Requirement: Create game chooses grille density
+### Requirement: Create game has no trap density choice
 
-When an authenticated user opens create-game from the lobby, the system SHALL present a choice of grille density with three presets: few, medium, and many. The presets MUST map to **12%**, **22%**, and **35%** of task cells on the tourist layout at playing seed time (rounded to nearest integer, clamped to the task-cell count). Confirming create MUST pass the selected density into the new `tourist` room create options. Cancelling MUST NOT create a room. Product labels remain мало / средне / много without showing the percent numbers.
+When an authenticated user opens create-game from the lobby, the system MUST NOT present grille density or catapult density presets (few/medium/many). Confirming create MUST create a `tourist` room without client-selected trap densities (create payload omits `grilleDensity` / `catapultDensity`). If those options are still present, the server MUST **ignore** them. Trap seed ratios are fixed server-side per `game/board` / `game/move` (grille/catapult partition formula). Other create options (map, pack, task sets, maxSeats) remain as previously specified.
 
-#### Scenario [SC-LOBBY-13]: Density presets are few medium many
+#### Scenario [SC-LOBBY-40]: Create modal has no density controls
 
 - **GIVEN** the user is on the lobby screen and opens create-game
 - **WHEN** the create modal appears
-- **THEN** the selectable grille density options are few, medium, and many
-- **AND** the product sense of the labels is мало / средне / много
+- **THEN** there are no selectable grille density options
+- **AND** there are no selectable catapult density options
+- **AND** map, pack, task-set, and maxSeats choices remain available
 
-#### Scenario [SC-LOBBY-14]: Confirm create uses selected density
+#### Scenario [SC-LOBBY-41]: Create omits density; server uses fixed seed
 
-- **GIVEN** the create modal is open with grille density many selected
+- **GIVEN** the create modal is open with valid map/pack/task-set/maxSeats selections
 - **WHEN** the user confirms create
-- **THEN** a new `tourist` room is created with grille density many (35% of task cells at seed)
+- **THEN** the create payload omits grilleDensity and catapultDensity
+- **AND** a new `tourist` room is created and seeded with the fixed exclusive 15% grille / 20% catapult partition (density options ignored if present)
 - **AND** the user enters that game session
-
-#### Scenario [SC-LOBBY-15]: Default grille density is medium
-
-- **GIVEN** the user is on the lobby screen and opens create-game
-- **WHEN** the create modal appears
-- **THEN** medium (22%) is selected by default for grille density
-- **AND** max seats default remains 2 per existing create rules
-
-### Requirement: Create game chooses catapult density
-
-When an authenticated user opens create-game from the lobby, the system SHALL present a choice of catapult density with three presets: few, medium, and many, **independent** of the grille density choice. The presets MUST map to **12%**, **22%**, and **35%** of task cells on the tourist layout at playing seed time (rounded to the nearest integer, clamped to the task-cell count). Confirming create MUST pass the selected catapult density into the new `tourist` room create options alongside grille density. Cancelling MUST NOT create a room. Product labels remain мало / средне / много without showing the percent numbers.
-
-#### Scenario [SC-LOBBY-16]: Catapult density presets are few medium many
-
-- **GIVEN** the user is on the lobby screen and opens create-game
-- **WHEN** the create modal appears
-- **THEN** the selectable catapult density options are few, medium, and many
-- **AND** the product sense of the labels is мало / средне / много
-- **AND** catapult density is chosen separately from grille density
-
-#### Scenario [SC-LOBBY-17]: Confirm create uses selected catapult density
-
-- **GIVEN** the create modal is open with catapult density many selected
-- **WHEN** the user confirms create
-- **THEN** a new `tourist` room is created with catapult density many (35% of task cells at seed)
-- **AND** the user enters that game session
-
-#### Scenario [SC-LOBBY-18]: Default catapult density is medium
-
-- **GIVEN** the user is on the lobby screen and opens create-game
-- **WHEN** the create modal appears
-- **THEN** medium (22%) is selected by default for catapult density
-- **AND** grille density default remains medium per existing create rules
 
 ### Requirement: Join action is busy-locked
 

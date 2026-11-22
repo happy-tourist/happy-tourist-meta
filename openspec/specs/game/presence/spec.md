@@ -13,42 +13,35 @@
 | SC-PRESENCE-03 | covered (client spectator — all markers above board) |
 | SC-PRESENCE-04 | covered-by-reuse (client Game presence chrome — dual with turn) |
 | SC-PRESENCE-05 | covered (client only occupied seats) |
-| SC-PRESENCE-06 | covered (client UX) |
-| SC-PRESENCE-07 | covered (client UX) |
+| SC-PRESENCE-06 | modified — no numeric finish-place badge |
+| SC-PRESENCE-07 | modified — no finish-place badge |
 | SC-PRESENCE-08 | covered (client GamePage turn ring) |
-| SC-PRESENCE-09 | covered (client GamePage solo leftover red ring — maxSeats≥2) |
-| SC-PRESENCE-10 | covered (client GamePage dual sibling rings) |
+| SC-PRESENCE-10 | modified — turn ring + reconnect dual when offline |
 | SC-PRESENCE-11 | covered (client reserved outer chrome 96px around 72px avatar) |
 | SC-PRESENCE-12 | covered (client sibling avatar img + rings) |
 | SC-PRESENCE-13 | covered (client avatar size matches strip tourist) |
-| SC-PRESENCE-14 | covered (client finish/ready top-left; say top-center / 12 o’clock) |
-| SC-PRESENCE-15 | covered (client UX — budgets vertical stack right of avatar) |
-| SC-PRESENCE-16 | covered (client UX — solo ∞ peeks only) |
-| SC-PRESENCE-17 | covered (client UX — end-turn 36×36; center on avatar circumference at 3 o’clock) |
-| SC-PRESENCE-18 | covered (client UX) |
-| SC-PRESENCE-19 | covered (client UX — peeks-unlimited modal; leftover only, not maxSeats=1) |
-| SC-PRESENCE-20 | covered (client UX — +N anim ~2s) |
-| SC-PRESENCE-21 | covered (client vitest soloEndModalKind — timer vs steps-loss; trapped ≠ live peek target) |
-| SC-PRESENCE-35 | covered (client vitest soloEndModalKind — steps-exhausted copy when only trapped/start remainder) |
+| SC-PRESENCE-14 | modified — no finish-place badge corners |
 | SC-PRESENCE-22 | covered (client sticky bottom HUD — own+strip when seated; surface fill revised by SC-PRESENCE-34) |
 | SC-PRESENCE-34 | covered (`AppHeaderChrome.test.ts` — sticky bottom HUD translucent underlay ~0.78 alpha) |
-| SC-PRESENCE-23 | covered (client match-status slot can show peek outcome flash for ~10s) |
+| SC-PRESENCE-23 | covered (client match-status slot) |
 | SC-PRESENCE-24 | covered (client no room id in chrome) |
-| SC-PRESENCE-25 | covered (client UX — end-turn not in budgets; focus under end-turn on marker) |
 | SC-PRESENCE-26 | covered (client seated top presence min-height reserve) |
-| SC-PRESENCE-30 | covered (client vitest — focus under end-turn at avatar square corner; 36×36 fills hit) |
+| SC-PRESENCE-30 | modified — focus @3 o’clock; no end-turn |
 | SC-PRESENCE-31 | covered (client vitest — focuses nearest actionable) |
 | SC-PRESENCE-32 | covered (client vitest — hidden when none actionable) |
-| SC-PRESENCE-33 | covered (client — say @12 + end-turn @3; focus under end-turn at square corner; no overlap) |
-| SC-PRESENCE-36 | covered (client — peek outcome flash texts/colors; all clients; 10s then restore) |
-| SC-PRESENCE-37 | covered (client — focus under end-turn stays fully visible / activatable in HUD) |
-| SC-PRESENCE-38 | covered (client vitest — single-player numeric budgets) |
-| SC-PRESENCE-39 | covered (client vitest — single-player no turn ring) |
-| SC-PRESENCE-40 | covered (client vitest — single-player no unlimited modal) |
-| SC-PRESENCE-41 | covered (client vitest — +N animation on single-player refresh) |
-| SC-PRESENCE-42 | covered (client vitest — single-player hides end-turn) |
+| SC-PRESENCE-33 | modified — say @12 + focus @3; no end-turn |
+| SC-PRESENCE-36 | modified — outcome toast top-center (Notify) |
+| SC-PRESENCE-37 | modified — focus @3 stays fully visible |
+| SC-PRESENCE-50 | pending — seat knowledge on avatar |
+| SC-PRESENCE-51 | pending — +N knowledge grant animation |
+| SC-PRESENCE-52 | modified — carried knowledge strip TR + Material lightbulb only |
+| SC-PRESENCE-53 | pending — focus at former end-turn slot |
+| SC-PRESENCE-54 | pending — turn countdown ring restored (60s) |
+| SC-PRESENCE-55 | pending — no end-turn control |
+| SC-PRESENCE-56 | pending — no finish-place badge in presence |
+| SC-PRESENCE-57 | pending — all-jail skip toast for all clients |
 
-Related: turn deadlines / budgets / end-turn / solo — `game/move`; peek modal — `game/board`; reconnect grace — `game/pieces`; bubbles — `game/say`; exit chrome — `game/leave`; board width — `game/board`; strip / selection — `game/pieces`.
+Related: turn deadlines / knowledge / all-jail skip — `game/move`; peek modal — `game/board`; reconnect grace — `game/pieces`; bubbles — `game/say`; exit chrome — `game/leave`; board width — `game/board`; strip / selection — `game/pieces`; finish/cut outcome modal — `game/finish`.
 
 ## Requirements
 
@@ -72,7 +65,7 @@ While the user is on the Game screen in a tourist room, the system SHALL show a 
 
 ### Requirement: Relative layout for seated players
 
-For a seated viewer, presence markers of **other** occupied seats MUST appear in a row **above** the board, ordered left-to-right by earlier join time among those opponents. The viewer’s **own** presence marker MUST appear in the sticky bottom HUD panel under the board, together with that viewer’s private step/peek counters and the personal tourist strip when it exists (`game/pieces`). Opponent markers MUST NOT appear in the bottom HUD. Own marker MUST NOT appear above the board. Left/right columns beside the board MUST NOT be used for presence.
+For a seated viewer, presence markers of **other** occupied seats MUST appear in a row **above** the board, ordered left-to-right by earlier join time among those opponents. The viewer’s **own** presence marker MUST appear in the sticky bottom HUD panel under the board, together with that viewer’s private delivered-knowledge counter and the personal tourist strip when it exists (`game/pieces`). Opponent markers MUST NOT appear in the bottom HUD. Own marker MUST NOT appear above the board. Left/right columns beside the board MUST NOT be used for presence.
 
 #### Scenario [SC-PRESENCE-02]: Seated viewer is always at home position
 
@@ -121,7 +114,7 @@ Every occupied presence marker on the Game screen SHALL keep the seat’s touris
 
 ### Requirement: Turn countdown ring on presence
 
-While phase is `playing` and a seated player’s seat holds the synchronized current turn with an active turn deadline, every client that shows that seat’s presence marker (including spectators) SHALL show a determinate circular progress for remaining turn time around the tourist image: full at the start of the deadline budget, empty at the deadline. While two or more eligible seats remain, that ring MUST use the same blue accent previously used for the static current-turn outline. While the solo leftover one-minute budget of `game/move` applies (`maxSeats ≥ 2` and exactly one eligible seat: non-finished and not time-expired), that ring MUST use a red accent instead. Clients MUST NOT distinguish solo leftover vs multiplayer for this accent solely by `turnBudgetSeconds` duration — multiplayer turn and solo leftover budget are both **60 seconds**; use eligible-seat count **and** that maxSeats is at least 2 (or equivalently: an active deadline under solo leftover rules). In a **single-player** room (`maxSeats === 1`) there is no active turn deadline, so the turn countdown ring MUST NOT be shown — clients MUST gate on `maxSeats === 1` (not solely an empty `turnUntil`). The static blue outline / box-shadow that previously marked the current-turn seat MUST NOT be used.
+While phase is `playing` and the synchronized turn deadline is active (`game/move`, 60s), presence markers for the **current** seat MUST show a determinate turn-budget countdown ring driven by `turnUntil` / `turnBudgetSeconds`. That ring MUST use the same blue accent previously used for the static current-turn outline. Reconnect grace countdown on offline seats remains as previously specified. When the current seat is offline within reconnect grace, dual turn+grace rings MAY apply. The static blue outline / box-shadow that previously marked the current-turn seat MUST NOT be used.
 
 #### Scenario [SC-PRESENCE-08]: Current turn shows blue countdown instead of outline
 
@@ -131,30 +124,22 @@ While phase is `playing` and a seated player’s seat holds the synchronized cur
 - **AND** the tourist kind image remains visible in the marker
 - **AND** no static blue outline-only turn indicator is shown on that marker
 
-#### Scenario [SC-PRESENCE-09]: Solo budget shows red countdown
+#### Scenario [SC-PRESENCE-54]: Current turn shows timer ring
 
-- **GIVEN** a tourist room with maxSeats ≥ 2 in phase `playing` with exactly one eligible seat (non-finished and not time-expired) under the one-minute solo leftover budget, and at least one spectator or finished/time-expired client may also be present
+- **GIVEN** it is a seated player’s turn in phase `playing` with an active 60-second deadline
 - **WHEN** any client views that seat’s presence marker
-- **THEN** a red circular countdown for the remaining solo budget is shown
-- **AND** the accent is red even though the budget duration equals the multiplayer 60 seconds
-
-#### Scenario [SC-PRESENCE-39]: Single-player shows no turn countdown ring
-
-- **GIVEN** a tourist room with maxSeats 1 in phase `playing` with one eligible seated player
-- **WHEN** any client views that seat’s presence marker
-- **THEN** no turn-deadline circular countdown ring is shown for that seat
-- **AND** the client treats maxSeats 1 as no turn ring (not solely an empty `turnUntil`)
+- **THEN** a turn countdown ring is visible around the avatar
 
 ### Requirement: Dual turn and reconnect countdowns
 
-When a seat simultaneously has an active turn deadline ring and an offline reconnect grace countdown, the presence marker MUST show **both** determinate circular progresses at once so neither hides the other. The turn countdown MUST be the outer ring and the reconnect grace countdown the inner ring (warning accent as today). Spectators and seated viewers MUST see the same dual display.
+When a seat is offline within reconnect grace, the presence marker MUST show the reconnect grace countdown ring. When that seat is also the current turn with an active turn deadline, dual turn+grace rings MAY apply. Spectators and seated viewers MUST see the same reconnect display when offline.
 
 #### Scenario [SC-PRESENCE-10]: Offline current-turn seat shows both rings
 
-- **GIVEN** a current-turn seat that is offline within reconnect grace with remaining turn deadline and remaining reconnect grace
+- **GIVEN** a current-turn seat that is offline within reconnect grace with an active turn deadline
 - **WHEN** any client views that seat’s presence marker
-- **THEN** both the turn countdown ring and the reconnect grace countdown ring are visible together
-- **AND** the turn ring is outside the reconnect ring
+- **THEN** the reconnect grace countdown ring is visible
+- **AND** the turn-deadline countdown ring is visible
 - **AND** the tourist kind image remains visible in the marker
 
 ### Requirement: Reserved presence marker chrome size
@@ -182,148 +167,75 @@ The tourist kind image inside every occupied presence marker SHALL use the same 
 
 ### Requirement: Presence affordance and badge corners
 
-When a seat has a synchronized finish place, every client SHALL show the finish place indicator at the **top-left** of that seat’s presence marker. While the local user may send a ready intent from the Game screen, the ready affordance MUST appear at the **top-left** of that user’s own presence marker only. While the local user may send a say intent, the say send affordance MUST appear at the **top-center** of that user’s own presence marker only (product clock sense: **12 o’clock** on the avatar). When ready (or the own finish-place badge) and say are both visible on the own marker, their hit boxes MUST NOT overlap (raise say enough that centers stay clear). Other players’ markers MUST NOT show a say send affordance for the local user. Spectators MUST NOT see a say send affordance.
+While the local user may send a ready intent from the Game screen, the ready affordance MUST appear at the **top-left** of that user’s own presence marker only. While the local user may send a say intent, the say send affordance MUST appear at the **top-center** of that user’s own presence marker only (product clock sense: **12 o’clock** on the avatar). Finished/cut seats MUST NOT show a numeric finish-place badge at top-left (or elsewhere). When ready and say are both visible on the own marker, their hit boxes MUST NOT overlap. Other players’ markers MUST NOT show a say send affordance for the local user. Spectators MUST NOT see a say send affordance.
 
 #### Scenario [SC-PRESENCE-14]: Finish, ready, and say corners
 
-- **GIVEN** a seated connected user viewing Game with their own marker and at least one opponent marker that has finish place `1`
+- **GIVEN** a seated connected user viewing Game with their own marker and at least one opponent marker that has `finishPlace = 1`
 - **WHEN** the presence chrome is shown
-- **THEN** the opponent’s finish place indicator is at the top-left of that opponent marker
+- **THEN** the opponent marker shows no numeric finish-place badge
 - **AND** if the ready affordance is available for the local user, it is at the top-left of the local user’s marker
 - **AND** the say send affordance is at the top-center (12 o’clock) of the local user’s marker only
-- **AND** when ready (or own finish-place badge) and say are both visible, their hit boxes do not overlap
+- **AND** when ready and say are both visible, their hit boxes do not overlap
 - **AND** opponent markers do not show a say send affordance for the local user
 
 ### Requirement: Finish place badge on presence marker
 
-When a seated player has a synchronized finish place, every client that shows that seat’s presence marker on the Game screen SHALL display a finish indicator on that marker that includes the place number (1, 2, …). Seats without a finish place MUST NOT show that place badge. The badge MUST remain while the finished seat remains occupied (including offline within reconnect grace).
+When a seated player has synchronized `finishPlace > 0` (finished or cut gate), clients MUST NOT display a numeric finish-place badge (1, 2, …) or «Вы N-й!» chrome on that seat’s presence marker. Schema `finishPlace` remains the finished/cut eligibility gate. Outcome UX is the delivered-knowledge modal from `game/finish` only.
 
 #### Scenario [SC-PRESENCE-06]: Finished seat shows place on presence
 
-- **GIVEN** a seated player has finish place `2` and is connected
+- **GIVEN** a seated player has `finishPlace = 1` after full finish or penultimate cut and is connected
 - **WHEN** any client views that seat’s presence marker on Game
-- **THEN** the marker shows a finish indicator that includes the place `2`
+- **THEN** no numeric place badge is shown on that marker
 - **AND** the tourist kind image remains visible in the marker
 
 #### Scenario [SC-PRESENCE-07]: Non-finished seat has no place badge
 
-- **GIVEN** a seated player who has unfinished pieces and no finish place
+- **GIVEN** a seated player who has unfinished pieces and `finishPlace` 0
 - **WHEN** any client views that seat’s presence marker
 - **THEN** no finish-place badge is shown on that marker
 
-### Requirement: Own step and peek counters beside the avatar
+#### Scenario [SC-PRESENCE-56]: Finished seat shows no place badge
 
-While the user is a seated player on the Game screen in phase `playing`, the system SHALL show that user’s private **steps** and **peeks** counters in a **vertical stack to the right of** that user’s own presence avatar in the bottom HUD. When peeks are infinite (solo leftover mode), the peeks counter MUST display an infinity indication. When steps are infinite (solo leftover mode), the steps counter MUST also display an infinity indication. In multiplayer finite mode and in **single-player** (`maxSeats === 1`, finite budgets) both counters MUST show numeric values. Other seated players’ and spectators’ clients MUST NOT show another seat’s step or peek counters. Spectators MUST NOT see step/peek counters for any seat. When the user’s finite budgets increase, the client SHOULD play a local “+N falls into the counter” animation for steps and peeks grants (turn grant, single-player no-actions refresh, and successful peek rewards) lasting approximately **two seconds**. The end-turn control MUST NOT sit in this budgets stack (`game/presence` end-turn requirement).
+- **GIVEN** a seated player has `finishPlace = 1` after full finish or penultimate cut
+- **WHEN** any client views that seat’s presence marker
+- **THEN** no numeric place badge is shown on that marker
+- **AND** the finished seat’s own client uses the knowledge modal for outcome copy, not a place string
 
-#### Scenario [SC-PRESENCE-15]: Seated user sees only own counters
+### Requirement: Own delivered knowledge beside the avatar
 
-- **GIVEN** two seated players in phase `playing` with different private budgets
+While the user is a seated player on the Game screen in phase `playing`, the system SHALL show that user’s **delivered knowledge** total (points transferred from finished tourists, from private `knowledge.delivered`) in a counter **to the right of** that user’s own presence avatar in the bottom HUD, with a **visible** knowledge icon using Quasar Material Icons name `lightbulb` (from already-loaded `material-icons` extras — MUST NOT use `mdi-*` names unless that font set is enabled). Spectators and other seats MUST NOT see another seat’s private delivered total — **own-seat only** (same privacy family as former budgets). Steps and peeks counters MUST NOT appear.
+
+#### Scenario [SC-PRESENCE-50]: Seated user sees own knowledge total
+
+- **GIVEN** two seated players in phase `playing` with different delivered knowledge totals
 - **WHEN** each views Game presence
-- **THEN** each sees steps and peeks only on their own marker, stacked vertically to the right of their own avatar
-- **AND** neither sees the other’s budget numbers on the opponent marker
+- **THEN** each sees their own knowledge total to the right of their own avatar
+- **AND** neither sees steps or peeks counters
 
-#### Scenario [SC-PRESENCE-16]: Solo shows infinity only on peeks
+#### Scenario [SC-PRESENCE-51]: Knowledge grant animation lasts about two seconds
 
-- **GIVEN** the user is the sole non-finished seated player under infinite peeks and infinite steps in a maxSeats ≥ 2 room
-- **WHEN** the user views their presence marker
-- **THEN** the peeks counter shows infinity
-- **AND** the steps counter shows infinity
-- **AND** other clients still do not see those budget values
+- **GIVEN** the user’s delivered knowledge increases because a tourist finished and transferred points
+- **WHEN** the local +N fall animation plays into the avatar knowledge counter
+- **THEN** the animation completes in about two seconds
+- **AND** other clients do not see that private animation
 
-#### Scenario [SC-PRESENCE-20]: Budget grant animation lasts about two seconds
+### Requirement: Carried knowledge on the strip only
 
-- **GIVEN** the user’s finite steps or peeks budget increases while they view their own presence marker
-- **WHEN** the local +N fall animation plays
-- **THEN** the animation is visibly slower than a sub-second flash and completes in about two seconds
-- **AND** other clients do not see that animation
+While an unfinished own piece carries knowledge greater than 0 (from private `knowledge.pieces`), the personal **bottom strip** slot for that piece MUST show that carried amount in a **yellow-background** badge at the **top-right** of the strip tourist chrome, accompanied by a **visible** Material `lightbulb` icon (same constraint as avatar — no blank `mdi-*` glyph that leaves empty padding). The **board** piece chrome MUST NOT show a carried-knowledge badge. When knowledge is 0, the strip badge MUST NOT appear. When the piece finishes and knowledge transfers to the avatar, the strip badge MUST clear with the finish presentation. Opponents’ carried amounts MUST NOT be shown from another seat’s private payload.
 
-#### Scenario [SC-PRESENCE-38]: Single-player shows numeric budgets
+#### Scenario [SC-PRESENCE-52]: Strip shows yellow knowledge badge top-right
 
-- **GIVEN** the user is the seated player in a maxSeats-1 `playing` room under finite steps and peeks
-- **WHEN** the user views their presence marker
-- **THEN** the steps and peeks counters show numeric values (not infinity)
-
-#### Scenario [SC-PRESENCE-41]: Single-player refresh plays grant animation
-
-- **GIVEN** the user’s finite steps and peeks increase because the server refreshed +1/+1 after no available actions in a maxSeats-1 room
-- **WHEN** the local +N fall animation plays
-- **THEN** the animation completes in about two seconds for the increased counters
-- **AND** other clients do not see that animation
-
-### Requirement: End-turn control next to own avatar
-
-While it is the seated user’s multiplayer turn in phase `playing` (two or more eligible seats) and the user is not time-expired, the Game presence chrome MUST show an **icon-only** end-turn control whose **hit-center sits on the circumference** of that user’s own presence marker at the **right-center** edge (product clock sense: **3 o’clock**). The control MUST use the **illustrated board-action end-turn icon** and MUST NOT paint a solid colored circular chrome behind the icon. Glyph and hit MUST both be **36×36 CSS pixels** (glyph fills the hit) while remaining non-overlapping with say when say is visible. Activating it MUST submit end-turn per `game/move` **immediately** — no confirmation dialog. The control MUST NOT show a visible text label (tooltips later are out of scope). The control MUST NOT appear in the budgets stack beside the avatar. The control MUST NOT appear as a labeled dock above the sticky bottom HUD. The control MUST NOT appear for spectators, for seats that are not current turn, during solo leftover play, during **single-player** (`maxSeats === 1`), or for finished / time-expired seats. While a peek modal is open, the control MUST NOT be activatable (board-busy / peek lock as already required).
-
-#### Scenario [SC-PRESENCE-17]: Current multiplayer seat sees «Завершить ход»
-
-- **GIVEN** it is the user’s turn in a multiplayer `playing` room and no peek modal is open
-- **WHEN** the user views Game chrome
-- **THEN** an icon-only end-turn control with the illustrated end-turn icon is shown with its hit-center on the own avatar circumference at 3 o’clock
-- **AND** the glyph / hit use the 36×36 glyph-fills-hit family
-- **AND** the control has no solid colored circular chrome behind the icon
-- **AND** activating it submits end-turn without a confirmation dialog
-
-#### Scenario [SC-PRESENCE-18]: Solo hides end-turn
-
-- **GIVEN** the user is the sole eligible seated player in solo leftover play (maxSeats ≥ 2)
-- **WHEN** the user views Game chrome
-- **THEN** the end-turn control is not shown
-
-#### Scenario [SC-PRESENCE-42]: Single-player hides end-turn
-
-- **GIVEN** it is the seated user’s turn in a maxSeats-1 `playing` room under finite budgets (not infinite)
-- **WHEN** the user views Game chrome
-- **THEN** the end-turn control is not shown
-- **AND** the client does not treat sole-eligible alone as sufficient to show end-turn
-
-#### Scenario [SC-PRESENCE-25]: End-turn not inline with budgets
-
-- **GIVEN** it is the local seated user’s turn in multi-seat play and end-turn is available
-- **WHEN** the bottom HUD budgets stack beside the own avatar is shown
-- **THEN** steps and peeks appear in that stack without the end-turn control inline
-- **AND** the end-turn control remains on the right edge of the avatar (not a separate above-panel text dock)
-- **AND** when focus is available it sits below end-turn on the marker (not in that budgets stack)
-
-### Requirement: Solo peeks-unlimited modal
-
-When the user’s seat enters solo leftover infinite-budgets mode (`game/move`, maxSeats ≥ 2 and exactly one eligible seat), that user’s client MUST show a modal whose product Russian sense informs them that they are alone, that moves and peeks are unlimited, and that they have one minute. Product Russian default: «Вы один. Ходы и просмотры безлимитны. У вас 1 минута.» Closing the modal MUST leave the user in the room. Other clients MUST NOT show that modal. Entering **single-player** play (`maxSeats === 1`) MUST NOT show that modal — including if `budgetsInfinite` flips true while maxSeats remains 1.
-
-#### Scenario [SC-PRESENCE-19]: Only the solo player sees the peeks-unlimited modal
-
-- **GIVEN** a seated player becomes the sole non-finished seat in a maxSeats ≥ 2 room and at least one spectator or finished seated client is present
-- **WHEN** solo leftover infinite steps and peeks apply
-- **THEN** that player’s client shows the solo unlimited modal with the one-minute / unlimited-moves-and-peeks sense
-- **AND** other clients do not show that modal
-
-#### Scenario [SC-PRESENCE-40]: Single-player does not show unlimited modal
-
-- **GIVEN** a seated player enters phase `playing` in a maxSeats-1 room under finite budgets
-- **WHEN** that client observes budgets become available for play
-- **THEN** the solo unlimited-budgets modal is not shown
-- **AND** a `budgetsInfinite` false→true transition MUST NOT open that modal while maxSeats is 1
-
-### Requirement: Distinct solo end copy for timer vs steps exhaustion
-
-When the user’s seat becomes time-expired in solo (`game/move`), the client MUST show a single end modal for **timer expiry** (product Russian sense: tourists were not finished in time). There MUST NOT be a distinct steps-exhaustion end copy; solo steps are infinite so that branch MUST NOT apply. Closing the modal MUST leave the player in the room. Other clients MUST NOT show that modal.
-
-#### Scenario [SC-PRESENCE-21]: Steps-loss and timer-loss show different copy
-
-- **GIVEN** the user is the sole non-finished seated player
-- **WHEN** the one-minute solo deadline elapses
-- **THEN** the client shows the timer-expired end copy
-- **AND** the client MUST NOT show a steps-exhausted end copy
-- **AND** that modal is not shown to other clients
-
-#### Scenario [SC-PRESENCE-35]: Steps-exhausted copy when only jail or start remainder
-
-- **GIVEN** the user is under solo infinite steps with unfinished pieces only trapped and/or on start cells
-- **WHEN** the seat is still within the one-minute solo deadline
-- **THEN** the client does **not** open a steps-exhausted end modal
-- **AND** play continues until timer expiry or finish
+- **GIVEN** an own unfinished piece has knowledge 2
+- **WHEN** the owner views the board and strip
+- **THEN** the strip slot shows a yellow-background badge at top-right with value 2 and a visible Material lightbulb icon
+- **AND** the board piece for that tourist does not show a carried-knowledge badge
+- **AND** the badge does not reserve empty space for a missing icon font
 
 ### Requirement: Sticky bottom game HUD panel
 
-While the user is on the Game screen as a **seated** viewer, the bottom HUD panel that holds the own presence marker, budgets beside the avatar, and personal strip (when present) MUST remain pinned to the bottom of the viewport so it stays visible while the board area above may scroll or resize. Opponent markers MUST use the row above the board, not this sticky panel — laid out tightly against the board (no large reserved empty band under the markers for say chrome). For a **spectator**, there MUST NOT be a bottom presence HUD row; markers stay above the board. The sticky bottom HUD surface MUST use a **translucent** fill so the shell / page artwork remains visible through it — product sense the same alpha as pack card-grid underlay (about three-quarters opacity light white / dark near-black). The panel MUST NOT use an opaque solid white / near-black (or equivalent fully opaque theme canvas) that fully hides the art behind the HUD.
+While the user is on the Game screen as a **seated** viewer, the bottom HUD panel that holds the own presence marker, delivered-knowledge counter beside the avatar, and personal strip (when present) MUST remain pinned to the bottom of the viewport so it stays visible while the board area above may scroll or resize. Opponent markers MUST use the row above the board, not this sticky panel — laid out tightly against the board (no large reserved empty band under the markers for say chrome). For a **spectator**, there MUST NOT be a bottom presence HUD row; markers stay above the board. The sticky bottom HUD surface MUST use a **translucent** fill so the shell / page artwork remains visible through it — product sense the same alpha as pack card-grid underlay (about three-quarters opacity light white / dark near-black). The panel MUST NOT use an opaque solid white / near-black (or equivalent fully opaque theme canvas) that fully hides the art behind the HUD.
 
 #### Scenario [SC-PRESENCE-22]: Bottom HUD stays pinned while board scrolls
 
@@ -342,27 +254,35 @@ While the user is on the Game screen as a **seated** viewer, the bottom HUD pane
 
 ### Requirement: Match status in shared application header
 
-While the user is on the Game screen, the shared application header MUST show a concise match-status label centered in the header (product Russian senses such as «Ваш ход», «Ход соперника», «Ход игрока», «Ожидание соперника», connection/finished phrases as already used on Game). On Login and Lobby screens that match-status label MUST NOT appear. The status MUST derive from room phase / turn / connection state already mirrored for Game — not from a separate server channel — **except** while a peek-outcome flash is active (see peek outcome flash requirement), during which the same centered header slot MUST show the flash text instead of the ordinary match-status phrase. After the flash duration ends, the ordinary match-status MUST return.
+While the user is on the Game screen, the shared application header MUST show a concise match-status label centered in the header (product Russian senses such as «Ваш ход», «Ход соперника», «Ход игрока», «Ожидание соперника», connection/finished phrases as already used on Game). On Login and Lobby screens that match-status label MUST NOT appear. The status MUST derive from room phase / turn / connection state already mirrored for Game — not from a separate server channel. Peek outcomes MUST use the top-center Notify toast requirement; relying solely on this quiet match-status line for peek results is NOT sufficient.
 
 #### Scenario [SC-PRESENCE-23]: Status centered in shared header on Game
 
-- **GIVEN** the user is on the Game screen during their multiplayer turn and no peek-outcome flash is active
+- **GIVEN** the user is on the Game screen during their multiplayer turn
 - **WHEN** the shared application header is shown
 - **THEN** a centered status label conveys that it is the user’s turn
 - **AND** on Lobby the same match-status label is not shown
 
-### Requirement: Peek outcome flash in match-status slot
+### Requirement: Peek outcome toast top-center
 
-When any client in the room receives a peek-close that reports a **correct** resolve, **every** client on the Game screen MUST replace the centered match-status label with the product Russian text «Правильно!» in a green emphasis for about **ten seconds**, then restore the ordinary match-status. When the peek-close reports an **incorrect wrong submit**, every such client MUST show «Ошибка!» in a red emphasis for about ten seconds, then restore. When the peek-close reports an **incorrect turn-timeout** while a peek was open, every such client MUST show «Не успел!» in a yellow emphasis for about ten seconds, then restore. The flash MUST use the same centered header slot as ordinary match-status (it replaces that text for the duration — not a second permanent line). Spectators and seated players alike MUST see the same flash. Leave mid-peek and other non-timeout force-closes MUST NOT show «Не успел!».
+When clients receive a peek-close outcome (correct, wrong submit, or turn-timeout), they MUST show a conspicuous **top-center toast** (Quasar Notify or equivalent fixed overlay) with the product Russian sense «Правильно!» / «Ошибка!» / «Не успел!» so the result is obvious. Relying solely on the quiet header match-status line is NOT sufficient.
 
-#### Scenario [SC-PRESENCE-36]: All clients see peek outcome flash then restore status
+#### Scenario [SC-PRESENCE-36]: Timeout shows Не успел toast
 
-- **GIVEN** two clients are on the Game screen in the same room with an open peek
-- **WHEN** the peek closes as correct
-- **THEN** both clients show «Правильно!» in green in the centered match-status slot for about ten seconds
-- **AND** afterward each client again shows the ordinary match-status for the current room/turn state
-- **AND** when a peek instead closes as a wrong submit, both clients show «Ошибка!» in red for about ten seconds
-- **AND** when a peek instead closes because the turn timed out with the modal open, both clients show «Не успел!» in yellow for about ten seconds
+- **GIVEN** a task modal closes with timeout reason
+- **WHEN** any client updates
+- **THEN** a top-center toast «Не успел!» is shown
+
+### Requirement: All-jail skip toast for every client
+
+When the room broadcasts an all-jail turn-skip signal (`game/move` — seat cannot act, another eligible seat remains), **every** connected client MUST show a top-center Notify toast with product Russian sense «Все туристы в решётке — ход пропущен». The retired start-reset all-jail modal MUST NOT appear. When the party is over (knowledge modal path / fewer than two eligible seats), clients MUST NOT show this toast.
+
+#### Scenario [SC-PRESENCE-57]: All-jail skip toast reaches the whole table
+
+- **GIVEN** seat A’s turn is skipped because all of A’s unfinished pieces are trapped and another eligible seat remains
+- **WHEN** the room broadcasts the skip signal
+- **THEN** seat A, seat B, and a spectator each see the top-center toast «Все туристы в решётке — ход пропущен»
+- **AND** no start-reset all-jail modal is shown
 
 ### Requirement: No room identifier in Game chrome
 
@@ -387,51 +307,63 @@ For a **seated** viewer, the layout region above the board that holds opponent p
 
 ### Requirement: Focus actionable tourist control
 
-While the local user is a seated current-turn player in phase `playing` and at least one of their unfinished free pieces can currently take an action (legal move with steps remaining, fresh peek, flipped peek, rescue, push, or return-from-finish when applicable), the Game presence chrome MUST show an **icon-only** focus control on the own presence marker **below the end-turn control**, with its hit-center at the **bottom-right corner of the square** that bounds the own tourist avatar image (avatar inscribed in that square). The control MUST use the **illustrated board-action focus icon** and MUST NOT paint a solid colored circular chrome behind the icon. Glyph and hit MUST both be **36×36 CSS pixels** (glyph fills the hit). The focus control MUST NOT sit in the budgets stack under peeks and MUST NOT sit at 9 o’clock. Activating it MUST select / focus the **nearest** (or otherwise first) own unfinished free piece that has at least one such available action, without requiring a confirm dialog. When no own piece has an available action, the control MUST be hidden or disabled. Spectators and non-current seats MUST NOT see an enabled control for themselves. Say remains on the **top-center** circumference (~**12 o’clock**); end-turn remains on the **right-center** circumference (~**3 o’clock**) per their requirements.
+While the local user is a seated current-turn player in phase `playing` and at least one of their unfinished free pieces can currently take a legal move, return, or rescue (and the local board-action spent flag is clear), the Game presence chrome MUST show an **icon-only** focus control with its hit-center on the own avatar circumference at the **right-center** edge (product clock sense: **3 o’clock** — the former end-turn slot). The control MUST use the **illustrated board-action focus icon** and MUST NOT paint a solid colored circular chrome behind the icon. Glyph and hit MUST both be **36×36 CSS pixels**. Focus MUST NOT sit in the knowledge counter stack and MUST NOT sit at the old bottom-right-under-end-turn placement. Activating it MUST select / focus an actionable own unfinished free piece. When no own piece has an available action (including after board-action spent, or while a task modal is open), the control MUST be hidden or disabled. Spectators and non-current seats MUST NOT see an enabled control for themselves. Say remains on the **top-center** circumference (~**12 o’clock**). End-turn MUST NOT appear.
 
 #### Scenario [SC-PRESENCE-30]: Focus control sits between say and end-turn
 
-- **GIVEN** it is the local seated user’s multiplayer turn with at least one actionable own tourist
+- **GIVEN** it is the local seated user’s turn with at least one actionable own tourist and no task modal open
 - **WHEN** the own presence chrome is shown
-- **THEN** a focus control with the illustrated focus icon is present on the own marker below end-turn at the bottom-right corner of the avatar’s bounding square
+- **THEN** a focus control with the illustrated focus icon is present at right-center (3 o’clock) on the own avatar
 - **AND** the glyph / hit use the 36×36 glyph-fills-hit family
-- **AND** no focus control is in the peeks budgets stack or at 9 o’clock
-- **AND** say (when visible) is at top-center (12) and end-turn (when visible) at right-center (3) on the marker circumference
-- **AND** the three controls remain non-overlapping
+- **AND** no end-turn control is shown
+- **AND** say (when visible) is at top-center (12) on the marker circumference
+- **AND** say and focus hits do not overlap
 
 #### Scenario [SC-PRESENCE-31]: Focus selects nearest actionable tourist
 
-- **GIVEN** it is the local user’s turn with two own unfinished free pieces where only piece B can peek or move and piece A cannot
+- **GIVEN** it is the local user’s turn with two own unfinished free pieces where only piece B can move or be rescued and piece A cannot
 - **WHEN** the user activates the focus control
 - **THEN** piece B becomes selected / focused for board actions
 - **AND** piece A is not selected
 
 #### Scenario [SC-PRESENCE-32]: Focus hidden when nothing actionable
 
-- **GIVEN** it is the local user’s turn and no own unfinished free piece has a legal move, peek, rescue, push, or return
+- **GIVEN** it is the local user’s turn and no own unfinished free piece has a legal move, rescue, or return (or the board-action spent flag is set)
 - **WHEN** the own presence chrome is shown
 - **THEN** the focus control is not available as an enabled action
 
+#### Scenario [SC-PRESENCE-53]: Focus sits at three o’clock
+
+- **GIVEN** it is the user’s turn with at least one actionable own piece and no task modal open
+- **WHEN** the user views Game chrome
+- **THEN** the focus control is shown at 3 o’clock on the own avatar
+- **AND** no end-turn control is shown
+
+#### Scenario [SC-PRESENCE-55]: End-turn control never shown
+
+- **GIVEN** it is the user’s turn in a multiplayer `playing` room
+- **WHEN** the user views Game chrome
+- **THEN** the end-turn control is not shown
+
 ### Requirement: Focus under end-turn stays fully visible
 
-While the focus control is visible on the own presence marker in the sticky bottom HUD (below end-turn at the avatar square corner), every client MUST keep the entire focus hit target inside the visible, pointer-reachable chrome of that HUD (not clipped by the panel or its horizontal scrollport).
+While the focus control is visible on the own presence marker in the sticky bottom HUD (at 3 o’clock on the avatar circumference), every client MUST keep the entire focus hit target inside the visible, pointer-reachable chrome of that HUD (not clipped by the panel or its horizontal scrollport).
 
 #### Scenario [SC-PRESENCE-37]: Focus hit under end-turn stays fully visible
 
-- **GIVEN** it is the local seated user’s turn with the focus control visible below end-turn on the own marker
+- **GIVEN** it is the local seated user’s turn with the focus control visible at 3 o’clock on the own marker
 - **WHEN** the user views the own presence chrome
 - **THEN** the entire focus hit is visible without being clipped by the HUD panel or its horizontal scrollport
 - **AND** the user can activate the focus control
 
 ### Requirement: Say affordance sits above the focus control
 
-On the local seated user’s own presence avatar, when say and/or end-turn are visible, their **hit-centers MUST sit on the marker circumference** at distinct clock positions — say at **12** (top-center), end-turn at **3** (right-center) — so their hit areas do not overlap. Focus, when visible, MUST sit **below end-turn** at the bottom-right corner of the avatar’s bounding square and MUST NOT overlap say or end-turn hits. Say remains above focus on the marker. This does not change say whitelist or `game/say` message rules, nor end-turn submission rules. Hits and glyphs are **36×36** (glyph fills the hit).
+On the local seated user’s own presence avatar, when say is visible its **hit-center MUST sit on the marker circumference** at **12** (top-center). Focus, when visible, MUST sit at **3** (right-center) on the circumference (former end-turn slot) and MUST NOT overlap say. End-turn MUST NOT appear. This does not change say whitelist or `game/say` message rules. Hits and glyphs are **36×36** (glyph fills the hit).
 
 #### Scenario [SC-PRESENCE-33]: Say is above focus without overlap
 
-- **GIVEN** it is the local seated user’s multiplayer turn with say available, at least one actionable own tourist (focus visible), and end-turn available
+- **GIVEN** it is the local seated user’s turn with say available and at least one actionable own tourist (focus visible)
 - **WHEN** the own presence chrome is shown
-- **THEN** the say affordance hit-center is at top-center (12) and end-turn at right-center (3) on the avatar circumference
-- **AND** the focus control is below end-turn at the bottom-right corner of the avatar’s bounding square
-- **AND** the three hit areas do not overlap
-
+- **THEN** the say affordance hit-center is at top-center (12) and focus at right-center (3) on the avatar circumference
+- **AND** no end-turn control is shown
+- **AND** the say and focus hit areas do not overlap

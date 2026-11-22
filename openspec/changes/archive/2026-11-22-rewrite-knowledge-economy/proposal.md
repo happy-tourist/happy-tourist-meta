@@ -49,7 +49,7 @@
 
 - Контракт room `tourist`: private `knowledge` `{ delivered, pieces, outcome? }` (own only); `turnUntil` / `turnBudgetSeconds=60` снова активны в multi eligible; open-on-land + timeout → `peekClose.reason === 'timeout'`; `push`/`endTurn`/client `peek` retired; create без density; public `Piece.remainingTurns`; exclusive traps 15% grille / 20% catapult; all-jail без start reset + room broadcast skip toast (не при end-of-game); `finishPlace=1` без place UX; две i18n-формулировки по `outcome`.
 - Client: Quasar `Notify`; icon names from **material-icons** (`lightbulb`); header flash исхода ответа может уступить toast.
-- Client + server тесты: блоки 1–8 уже applied; блок 9 — playtest follow-up.
+- Client + server тесты: блоки 1–9 applied (включая playtest follow-up).
 
 ## References
 
