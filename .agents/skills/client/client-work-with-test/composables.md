@@ -12,6 +12,10 @@ Submit uses server `hasUnsubmittedChanges` SC-PACK-234/271; map editor still
 session baseline SC-MAP-65; colocated `src/lib/__tests__/editorDirty.test.ts`),
 `focusActionable.ts` (SC-PRESENCE-30/31/32 nearest; colocated
 `src/lib/__tests__/focusActionable.test.ts`),
+`travelClip.ts` (finish/return paint helpers — `travelClipPaintCell` /
+`travelClipIsDisappearing`; colocated `src/lib/__tests__/travelClip.test.ts`
+SC-FINISH-15/35; GamePage clip lifecycle + SC-FINISH-36/37 stay in
+`GameFinishTravelClip.test.ts`, not this helper),
 `soloEndModalKind` / `hasOwnUnfinishedOnLiveTask` (SC-PRESENCE-21/35 — `inferSoloEndModalKind`
 always `'timer'` (no steps-exhausted branch); `hasOwnUnfinishedOnLiveTask` kept as legacy
 legal-peek helper: unfinished ∧ present task ∧ **!trapped**; inject `isPresentTaskCell`;

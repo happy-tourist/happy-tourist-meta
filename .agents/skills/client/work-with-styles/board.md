@@ -21,7 +21,8 @@ Board UI is custom CSS Grid (not Quasar widgets). Keep selectors local and class
 | `.tile` / `.tile-start` / `.tile-task` / `.tile-center` | Playable cells via `lib/tileSkins`; one finish tile per grid `7` (no span merge) |
 | `.tile--selected` / `.tile--target` | Local white / red move **and** return-mode rings |
 | `.tile-task.tile--removed` | Removed-task hole = page background; landable |
-| `.piece` | Absolute from `--pcol`/`--prow`; ~250ms transition |
+| `.piece` | Absolute from `--pcol`/`--prow`; ~250ms transition; during travel clip paint cell comes from `lib/travelClip` (`hold`→`from`, `travel`\|`fade`→`to`) |
+| `.piece--disappearing` | Finish travel\|fade only (clip-driven; ~550 slide + ~300 fade delay) — not a separate reconstruct Map |
 | `.presence-marker` / dual rings / `.presence-avatar` | 96×96 slot; outer turn / inner reconnect; 72px avatar sibling (SC-PRESENCE-11…13) |
 | `.my-tourist-strip` / slots | Wide row; `@container game-hud (max-width: 420px)` → 2×2; **no** chip/`q-menu` |
 | `.my-tourist-chrome-grille` | Strip grille when trapped; same anim + drop-shadow |

@@ -87,8 +87,14 @@ Game board geometry/skins: `src/lib/__tests__/boardGeometry.test.ts` (one center
 tile per finish cell SC-BOARD-55) + `GameBoardWire.test.ts` (skin CSS vars /
 radius 0 / dark flip digit SC-BOARD-56/57 + per-cell finish click SC-MOVE-65 +
 catapult timings 1500/450/300 + overlay `drop-shadow` SC-BOARD-23/24/58 +
-`FINISH_TRAVEL_MS=550` / `FINISH_FADE_MS=300` + clearance
+`FINISH_TRAVEL_MS=550` / `FINISH_FADE_MS=300` + presentation travel clip source
+asserts (`@/lib/travelClip` / `startTravelClip`; **no** `finishAnimFrom` /
+`disappearingKeys` / `catapultDeferFinishKeys` / `finishTravelFrom`) + clearance
 `translate(-50%,-100%)` ~8px above sprites SC-FINISH-01/17/19/20 / SC-BOARD-71) +
+`src/lib/__tests__/travelClip.test.ts` (paint `from`/`to` by phase; return no
+finish-fade SC-FINISH-15/35) + `GameFinishTravelClip.test.ts` (behavioral click→
+center keeps `from`; early sync finished mid-clip / mid-catapult overlay does not
+drop — SC-FINISH-35/36/37; return from nearest center SC-FINISH-15) +
 `GamePresenceFocus.test.ts` (say **12** / focus **3** on marker circumference
 `translate(-50%,-50%)`; knowledge HUD; say-picker
 `transform: none` / left edge visible SC-SAY-15; glyph ~36 / hit ~60;
