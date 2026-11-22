@@ -7,7 +7,8 @@ chrome: `work-with-game-board` (+ `peek.md` / `focus.md` / `knowledge.md`). CSS:
 
 ## Composition
 
-- Board in scroll region (`tileSkinCssVars()` on `.tourist-board`); unfinished pieces +
+- Board in scroll region (`tileSkinCssVars()` on `.tourist-board`); stable `boardPieces`
+  (seat→pieceId; finished only while travel clip or catapult-owned — SC-FINISH-36/37/38) +
   presentation travel clip (`lib/travelClip` finish|return; hold→travel→fade, return omits fade);
   holes for `removedTaskKeys` (still landable);
   grille overlays (`GRILLE_ANIM_MS = 1000`; defer drops while catapult queue busy);

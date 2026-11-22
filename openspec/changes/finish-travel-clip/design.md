@@ -1,6 +1,6 @@
 ## Context
 
-See `proposal.md` — Why / Scope. Сейчас finish/return travel в client реконструируется из sync (`finished` / coords) через несколько Set/Map, seed `from`, double-`rAF` clear и defer-флаги катапульты; при раннем sync фигура выпадает из board overlay → snap-vanish. Серверный finish/return authority менять не нужно.
+See `proposal.md` — Why / Scope. Travel clip (D1–D5) уже заменён reconstruct-стек; чужой/observed finish travel выглядит стабильно. Residual: на **acting** клиенте own click→center clip стартует, пока фигура ещё в unfinished-ветке overlay; sync `finished` перекладывает её в finished+clip-ветку **во время** CSS slide/fade → DOM reorder обрывает transition → мгновенный disappear на center (читается как «под тайл финиша»). Серверный finish/return authority менять не нужно.
 
 ## Goals / Non-Goals
 
@@ -10,12 +10,13 @@ See `proposal.md` — Why / Scope. Сейчас finish/return travel в client �
 - Пока clip жив — только он задаёт visual `row/col` (+ fade phase для finish); sync не снимает фигуру с доски и не snap’ает return на кольцо.
 - Упростить Game board: убрать хрупкий reconstruct-стек finish travel (D3 pinned).
 - Поведение на всех зрителях доски; mid-join без observed transition — omit.
+- **Own/acting parity (D6):** sync unfinished→finished mid-flight MUST NOT abort in-flight finish CSS presentation on the acting client (SC-FINISH-38).
 
 **Non-Goals:**
 
 - Менять server schema/messages или откладывать `finished` на сервере.
 - Переписывать ordinary move / non-center catapult fling pin path (кроме стыка «после vanish → start finish clip»).
-- Редизайн таймингов (~550 / ~300 finish; return ≈ ordinary move travel).
+- Редизайн таймингов (~550 / ~300 finish; return ≈ ordinary move travel) или арта finish-тайла.
 
 ## Decisions
 
@@ -43,14 +44,20 @@ See `proposal.md` — Why / Scope. Сейчас finish/return travel в client �
 
 ### D4 — CSS / фазы
 
-- **Choice:** Явные фазы hold→travel→fade для `kind: 'finish'` (hold = один committed paint на `from`, затем travel на `to` ~550 ms = product `FINISH_TRAVEL_MS`, затем fade ~300 ms = `FINISH_FADE_MS`). Для `kind: 'return'`: hold→travel с timing ordinary move travel (~`MOVE_ANIM_MS`); без finish-fade (фигура остаётся на кольце). **Binding к существующему board chrome (extends, не новый stack):** `pieceStyle` / `--prow`/`--pcol` читают clip `from` на hold и clip `to` на travel|fade; fade-фаза finish выставляет класс `.piece--disappearing` (уже ~550 slide + ~300 fade delay); hold может использовать `piece--no-transition` / suppress на один paint, затем снять suppress чтобы travel стартовал **по фазе clip**, не по double-`rAF` clear override. `boardPieces` включает finished, пока (a)|(b) из D3; `hasVisualBoardPresentation` / busy учитывают живой travel clip (вместо size checks `finishAnimFrom`/`returnAnimFrom`). Не полагаться на «снять override чтобы CSS сам догадался» как на единственный триггер. Sync `finished`/coords — confirmation после конца clip’а.
+- **Choice:** Явные фазы hold→travel→fade для `kind: 'finish'` (hold = один committed paint на `from`, затем travel на `to` ~550 ms = product `FINISH_TRAVEL_MS`, затем fade ~300 ms = `FINISH_FADE_MS`). Для `kind: 'return'`: hold→travel с timing ordinary move travel (~`MOVE_ANIM_MS`); без finish-fade (фигура остаётся на кольце). **Binding к существующему board chrome (extends, не новый stack):** `pieceStyle` / `--prow`/`--pcol` читают clip `from` на hold и clip `to` на travel|fade; finish travel|fade выставляет класс `.piece--disappearing` (уже ~550 slide + ~300 fade delay); hold может использовать `piece--no-transition` / suppress на один paint, затем снять suppress чтобы travel стартовал **по фазе clip**, не по double-`rAF` clear override. `boardPieces` включает finished, пока (a)|(b) из D3; `hasVisualBoardPresentation` / busy учитывают живой travel clip (вместо size checks `finishAnimFrom`/`returnAnimFrom`). Не полагаться на «снять override чтобы CSS сам догадался» как на единственный триггер. Sync `finished`/coords — confirmation после конца clip’а.
 - **Why:** Тот же visual contract (~550+~300 / move travel), без rAF-гонки; явный стык с текущими CSS-классами GamePage.
 - **Alt:** Web Animations API — optional later; не обязателен, если фазы стабильны на CSS transition.
 
 ### D5 — Тесты
 
-- **Choice:** Behavioral vitest: clip/`from` обязателен при finish с non-center origin (SC-FINISH-35/36); early `finished` во время catapult overlay не drop до старта clip (SC-FINISH-37); return clip `from` = nearest center (SC-FINISH-15); source-only SFC regex не считать достаточным для SC-FINISH-35. Обновить client board skill / AGENTS при apply, если канон ещё ссылается на `finishTravelFrom`.
-- **Why:** Спека уже требует behavioral path.
+- **Choice:** Behavioral vitest: clip/`from` обязателен при finish с non-center origin (SC-FINISH-35/36); early `finished` во время catapult overlay не drop до старта clip (SC-FINISH-37); return clip `from` = nearest center (SC-FINISH-15); **own click→center + sync mid-flight не snap** (SC-FINISH-38) — не только «элемент ещё в DOM», а непрерывность презентации / отсутствие acting-only abort; source-only SFC regex не считать достаточным для SC-FINISH-35/38. Обновить client board skill / AGENTS при apply, если канон ещё ссылается на `finishTravelFrom` или молчит про own-path list stability.
+- **Why:** Спека требует behavioral path; residual баг не ловится «exists after patch» alone.
+
+### D6 — Стабильный overlay-слот на время finish clip (own-path)
+
+- **Choice (pinned):** Пока у `pieceKey` жив finish travel clip, overlay-элемент этой фигуры MUST сохранять стабильное членство/порядок относительно CSS transition так, чтобы sync unfinished→finished **не** перекладывал vnode mid-slide/fade. Практический default: строить `boardPieces` так, чтобы фигура с активным finish clip не мигрировала между «полками» unfinished → finished+clip при том же `key` во время анимации (например единый проход / clip-first membership, без смены группы mid-flight). Observed-only путь уже стабилен (clip стартует после sync в finished-ветке) — цель D6 = паритет acting own click→center.
+- **Why:** Объясняет acting-only snap при OK у соперников; закрывает SC-FINISH-38 без server delay.
+- **Alt:** Не стартовать own clip до sync (только observed) — rejected (теряем early from / снова гонка). Web Animations API вместо CSS — optional later, не обязателен если список стабилен. Поднимать z-index тайлов/фигур — rejected (не корень; opacity abort на center читается как «под тайл»).
 
 ## Risks / Trade-offs
 
@@ -58,6 +65,7 @@ See `proposal.md` — Why / Scope. Сейчас finish/return travel в client �
 - **[Risk] Двойной старт clip (own submit + sync watch)** → Mitigation: start idempotent per pieceKey (второй start ignored while clip alive).
 - **[Risk] Регрессия catapult multi-hop** → Mitigation: finish clip только после last vanish; промежуточные hops — существующий fling path.
 - **[Risk] Return timing vs move** → Mitigation: kind `'return'` использует ordinary move travel ms (~`MOVE_ANIM_MS`); finish — ~550 travel + ~300 fade.
+- **[Risk] Стабилизация списка ломает visibility D3 a|b** → Mitigation: clip-first membership must still honor catapult-owned pre-clip (SC-FINISH-37) and omit mid-join without clip.
 
 ## Migration Plan
 
@@ -71,7 +79,7 @@ None open — Vue/CSS/Colyseus mirror уже в стеке; новых npm/deps 
 
 ## Key touch points (indicative)
 
-**Client:** `GamePage` — `boardPieces` visibility (D3 a|b), `pieceStyle` / `--prow`/`--pcol`, `.piece--disappearing` / suppress, `hasVisualBoardPresentation` / busy, catapult queue release→finish clip (D2); optional thin `lib` helper for clip types; remove/replace `finishTravelFrom` + reconstruct Maps; vitest board/finish travel (**behavioral** + обновить `GameBoardWire` asserts старого reconstruct-стека); meta skill `work-with-game-board` при apply.
+**Client:** `GamePage` — `boardPieces` membership/order while finish clip alive (D6 / SC-FINISH-38), `pieceStyle` / `--prow`/`--pcol`, `.piece--disappearing` / suppress, `hasVisualBoardPresentation` / busy, catapult queue release→finish clip (D2); `lib/travelClip`; vitest own click→center + sync mid-flight (**behavioral** SC-FINISH-38); meta skill `work-with-game-board` note own-path list stability.
 
 ### Server contract (reuse-only)
 

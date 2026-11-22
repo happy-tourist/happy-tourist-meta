@@ -14,7 +14,7 @@ session baseline SC-MAP-65; colocated `src/lib/__tests__/editorDirty.test.ts`),
 `src/lib/__tests__/focusActionable.test.ts`),
 `travelClip.ts` (finish/return paint helpers — `travelClipPaintCell` /
 `travelClipIsDisappearing`; colocated `src/lib/__tests__/travelClip.test.ts`
-SC-FINISH-15/35; GamePage clip lifecycle + SC-FINISH-36/37 stay in
+SC-FINISH-15/35; GamePage clip lifecycle + SC-FINISH-36/37/38 stay in
 `GameFinishTravelClip.test.ts`, not this helper),
 `soloEndModalKind` / `hasOwnUnfinishedOnLiveTask` (SC-PRESENCE-21/35 — `inferSoloEndModalKind`
 always `'timer'` (no steps-exhausted branch); `hasOwnUnfinishedOnLiveTask` kept as legacy

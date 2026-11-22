@@ -1,6 +1,6 @@
 # Delta: game/finish
 
-Надёжный presentation-owned travel на enter-center finish и return-from-finish (все клиенты; без snap-vanish от sync).
+Надёжный presentation-owned travel на enter-center finish и return-from-finish (все клиенты; без snap-vanish от sync). Own/acting click→center MUST сохранить непрерывный slide+fade при sync mid-travel (паритет с observed/чужим путём).
 
 ## Traceability
 
@@ -13,12 +13,13 @@
 | SC-FINISH-35 | modified — click + catapult finish travel on every board viewer; behavioral test |
 | SC-FINISH-36 | **added** — finished piece stays visible while finish travel presents (early/late sync) |
 | SC-FINISH-37 | **added** — early `finished` during catapult overlay keeps piece until finish travel starts |
+| SC-FINISH-38 | **added** — acting client own click→center: sync mid-travel MUST NOT abort slide+fade (parity with observers) |
 
 ## MODIFIED Requirements
 
 ### Requirement: Center finish keeps travel animation
 
-When an unfinished piece becomes finished by landing on a center cell (direct move click or catapult fling chain), **every client that displays the board** MUST present finish travel (~550 ms slide) then fade (~300 ms) so the piece does not snap-vanish from its pre-finish cell — including the **first** finisher of a seat and including opponent/spectator viewers. Mid-join already-finished pieces (no observed transition into finished) MAY omit travel. Catapult→center MUST start finish travel only after that hop’s catapult presentation has fully settled (land → overlay → vanish), then run the same travel path from the catapult cell. While finish travel is presenting **or** while catapult presentation still owns the piece before that finish travel starts, synchronized `finished` / center coordinates MUST NOT remove the piece from the board without that travel. Tests MUST cover a **behavioral** path that fails if travel origin is missing when finishing from a non-center cell (SFC source-only asserts are not sufficient alone).
+When an unfinished piece becomes finished by landing on a center cell (direct move click or catapult fling chain), **every client that displays the board** MUST present finish travel (~550 ms slide) then fade (~300 ms) so the piece does not snap-vanish from its pre-finish cell — including the **first** finisher of a seat, including the **acting** seated client that submitted the center move, and including opponent/spectator viewers. Mid-join already-finished pieces (no observed transition into finished) MAY omit travel. Catapult→center MUST start finish travel only after that hop’s catapult presentation has fully settled (land → overlay → vanish), then run the same travel path from the catapult cell. While finish travel is presenting **or** while catapult presentation still owns the piece before that finish travel starts, synchronized `finished` / center coordinates MUST NOT remove the piece from the board without that travel, and MUST NOT abort an in-flight slide+fade on the acting client into an immediate disappear on the center cell. Tests MUST cover a **behavioral** path that fails if travel origin is missing when finishing from a non-center cell (SFC source-only asserts are not sufficient alone). Tests MUST also cover acting-client own click→center where sync marks finished mid-presentation without snapping away the travel (SC-FINISH-38).
 
 #### Scenario [SC-FINISH-35]: Click and catapult finish animate to center
 
@@ -34,6 +35,14 @@ When an unfinished piece becomes finished by landing on a center cell (direct mo
 - **WHEN** synchronized state marks that piece finished at a center cell (early or late relative to presentation start)
 - **THEN** the piece remains visible along the finish travel path until slide+fade complete
 - **AND** the client MUST NOT leave the piece absent from the board without that travel solely because sync already shows finished at center
+
+#### Scenario [SC-FINISH-38]: Acting client own finish keeps continuous travel when sync lands mid-flight
+
+- **GIVEN** the seated acting client has started finish travel for an own piece from a non-center cell toward center (own move onto center)
+- **WHEN** synchronized state marks that piece finished at a center cell while that finish travel is still presenting
+- **THEN** that acting client continues the same slide-then-fade presentation through completion
+- **AND** the piece MUST NOT instantly disappear on the center cell without completing that travel solely because sync flipped unfinished→finished mid-presentation
+- **AND** presentation quality on the acting client MUST match the continuous travel observers see for the same finish (no acting-only snap)
 
 ### Requirement: Return-from-finish travel animation
 

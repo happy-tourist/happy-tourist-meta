@@ -15,3 +15,9 @@
 - [x] 2.2 Behavioral vitest: finish с non-center origin требует travel `from` (SC-FINISH-35/36); early `finished` во время catapult overlay не drop (SC-FINISH-37); return clip from nearest center (SC-FINISH-15); заменить/удалить unit-тесты `finishTravelFrom`; **обновить/снять** `GameBoardWire` source-asserts старого reconstruct-стека (`finishAnimFrom`+rAF / `disappearingKeys`+`catapultDefer` как истину) — SFC regex alone не cover SC-FINISH-35 — verify: `npm test` (client) падает без `from` / проходит с clip; нет красных asserts на удалённый стек
 - [x] 2.3 Обновить meta skill `work-with-game-board` / client AGENTS: канон travel clip вместо `finishTravelFrom` / `finishAnimFrom`+rAF — verify: ссылки не указывают на удалённый helper как истину
 - [x] 2.4 Client `npm run lint` + `npm run typecheck` + `npm test` — verify: все три зелёные
+
+## 3. Client — own-path finish travel stability (SC-FINISH-38)
+
+- [x] 3.1 Перед работой: design.md D6; delta SC-FINISH-38; текущий `boardPieces` (unfinished затем finished+clip) + own `submitMove`→`startTravelClip` до sync; существующий `GameFinishTravelClip` own click тест — verify: понятен acting-only snap mid-list-move
+- [x] 3.2 Стабилизировать overlay membership/порядок для фигуры с активным finish clip по D6 так, чтобы sync unfinished→finished mid-flight не обрывал CSS slide+fade на acting клиенте; не ломать D3 visibility (a)|(b) и mid-join omit — verify: own click→center + sync finished mid-travel продолжает travel|fade (SC-FINISH-38); чужой/observed путь без регрессии
+- [x] 3.3 Behavioral vitest SC-FINISH-38: own click→center, затем sync `finished`+center mid-presentation — фигура не мгновенно отсутствует / не snap-only на center без непрерывного travel; обновить skill `work-with-game-board` (own-path list stability) — verify: тест красный без D6-фикса; `npm run lint` + `npm run typecheck` + `npm test` (client) зелёные

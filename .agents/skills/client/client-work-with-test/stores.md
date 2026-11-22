@@ -94,7 +94,9 @@ asserts (`@/lib/travelClip` / `startTravelClip`; **no** `finishAnimFrom` /
 `src/lib/__tests__/travelClip.test.ts` (paint `from`/`to` by phase; return no
 finish-fade SC-FINISH-15/35) + `GameFinishTravelClip.test.ts` (behavioral click→
 center keeps `from`; early sync finished mid-clip / mid-catapult overlay does not
-drop — SC-FINISH-35/36/37; return from nearest center SC-FINISH-15) +
+drop — SC-FINISH-35/36/37; **own-path** sync mid-travel keeps stable `.piece`
+sibling index through hold→travel — SC-FINISH-38 / D6; return from nearest
+center SC-FINISH-15) +
 `GamePresenceFocus.test.ts` (say **12** / focus **3** on marker circumference
 `translate(-50%,-50%)`; knowledge HUD; say-picker
 `transform: none` / left edge visible SC-SAY-15; glyph ~36 / hit ~60;
