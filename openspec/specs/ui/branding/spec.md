@@ -29,16 +29,16 @@
 | SC-BRAND-19 | covered (vitest) |
 | SC-BRAND-20 | covered (`AppHeaderChrome` Lobby crumb → lobby) |
 | SC-BRAND-21 | covered — `AppHeaderChrome.test.ts` (layout `app-page-bg` + `app.scss` source-match theme×viewport fixed bg + transparent canvas + four JPG) |
-| SC-BRAND-22 | covered (client vitest — anonymous header login icon + auth omit) |
+| SC-BRAND-22 | covered (client vitest — guest header has no login control) |
 | SC-BRAND-23 | covered (client vitest — `--with-crumbs` class + app.scss flex/min-height) |
-| SC-BRAND-24 | covered (client vitest — burger login for guest) |
+| SC-BRAND-24 | covered (client vitest — burger has no login for guest) |
 | SC-BRAND-25 | covered (ContentUnifiedList / ContentMaps / AppHeaderChrome — title+create band; no separate DOM wordmark label; map capacity rows) |
 | SC-BRAND-26 | covered (ContentUnifiedList / ContentMaps — guest create on title band; no filter row) |
 | SC-BRAND-27 | covered (ContentUnifiedList / ContentMaps / LobbyCreateWire — catalog create matches lobby Quasar primary) |
 | SC-BRAND-28 | covered (AppHeaderChrome / ContentUnifiedList — catalog grid keeps SC-PACK-285 translucent underlay; no solid cream/navy override) |
 | SC-BRAND-29 | covered (vitest — theme toggles logo-light / logo-dark; no logo.png header mark) |
 | SC-BRAND-30 | covered (vitest — logo 28px; header content band ~40px min-height) |
-| SC-BRAND-31 | covered (vitest — wide toolbar login/logout icon-only + aria) |
+| SC-BRAND-31 | covered (client vitest — wide logout icon-only when shown; no guest login control) |
 | SC-BRAND-32 | covered (vitest — Account session logout icon-only + aria) |
 
 Related leave-on-Game: `game/leave`. Theme toggle: `ui/theme`. Related content chrome: `content/packs`, `content/maps`. Board holes / page background under tiles: `ui/theme` (SC-THEME-07). Card-grid underlay: `content/packs` (SC-PACK-285).
@@ -59,7 +59,7 @@ The shared application header MUST show the Happy Tourist brand logo on the **le
 
 ### Requirement: Logo navigates to lobby outside Game
 
-When the user activates the brand logo on a non-Game screen other than Lobby (including Account, Support, staff/admin support surfaces, and auth screens Login / forgot-password / confirm-email / reset-password), the client SHALL navigate toward the lobby screen. If the user is already on the Lobby screen, activating the logo MUST NOT navigate away and MUST NOT perform session logout. Existing route guards MAY redirect an unauthenticated guest away from lobby (for example back to login); that bounce MUST NOT be treated as a brand-logo failure.
+When the user activates the brand logo on a non-Game screen other than Lobby (including Account, Support, staff/admin support surfaces, and auth screens Login / forgot-password / confirm-email / reset-password), the client SHALL navigate toward the lobby screen. If the user is already on the Lobby screen, activating the logo MUST NOT navigate away and MUST NOT perform session logout. Existing route guards MAY keep or establish an anonymous session on lobby; that MUST NOT be treated as a brand-logo failure. Guards MUST NOT send the user to Login solely because of this logo navigation.
 
 #### Scenario [SC-BRAND-02]: Logo opens lobby from Account or Support
 
@@ -79,7 +79,7 @@ When the user activates the brand logo on a non-Game screen other than Lobby (in
 - **GIVEN** the user is on Login, forgot-password, confirm-email, or reset-password
 - **WHEN** the user activates the brand logo
 - **THEN** the client navigates toward the lobby screen
-- **AND** if the user is not authenticated, existing auth guards may redirect them away from lobby (for example back to login)
+- **AND** if the user is not authenticated, existing auth guards may establish a guest session on lobby without requiring Login for that navigation
 
 ### Requirement: No page-level back-to-lobby controls
 
@@ -166,7 +166,7 @@ On authenticated non-Game screens that use the shared header, the header MUST ex
 
 ### Requirement: Header account, theme, and session logout cluster
 
-On authenticated non-Game screens with a **wide** viewport (section links visible in the toolbar), the shared header MUST place the applicable account-cluster controls to the left of the rightmost session control, with that session control rightmost among that toolbar cluster. For a **registered** (non-anonymous) user the cluster MUST include account and theme, and the session control MUST be session logout. For an **anonymous guest** the cluster MUST include theme only (account MUST remain omitted — cabinet stays registered-only) and the session control MUST be a login affordance that opens the Login screen for upgrade — NOT session logout. In the **wide toolbar**, both session logout and the guest login affordance MUST be **icon-only** (no visible text label beside the icon); each MUST expose an accessible name (product keys `auth.logout` / `auth.login`). On **narrow** viewports where the section burger applies, those same cluster controls MUST appear **inside** the burger menu (not as separate toolbar icons); within the menu, the session control MUST be last among that account cluster and MAY keep a visible text label as a menu item. On Game, neither logout nor the guest login affordance MUST appear (leave-from-room is specified in `game/leave`). On auth screens in the shared `AUTH_ROUTE_NAMES` set (login / forgot-password / confirm-email / reset-password), neither logout nor the guest login affordance MUST appear; theme MAY remain in the toolbar on auth screens without section navigation.
+On authenticated non-Game screens with a **wide** viewport (section links visible in the toolbar), the shared header MUST place the applicable account-cluster controls with the rightmost session-related control among that toolbar cluster as specified below. For a **registered** (non-anonymous) user the cluster MUST include account and theme, and the session control MUST be session logout (rightmost among that cluster). For an **anonymous guest** the cluster MUST include theme only (account MUST remain omitted — cabinet stays registered-only) and MUST NOT show a login affordance and MUST NOT show session logout. In the **wide toolbar**, session logout (when shown for registered users) MUST be **icon-only** (no visible text label beside the icon) and MUST expose an accessible name (product key `auth.logout`). On **narrow** viewports where the section burger applies, those same cluster controls MUST appear **inside** the burger menu (not as separate toolbar icons); within the menu, session logout (registered only) MUST be last among that account cluster and MAY keep a visible text label as a menu item. On Game, session logout MUST NOT appear (leave-from-room is specified in `game/leave`). On auth screens in the shared `AUTH_ROUTE_NAMES` set (login / forgot-password / confirm-email / reset-password), session logout MUST NOT appear; theme MAY remain in the toolbar on auth screens without section navigation.
 
 #### Scenario [SC-BRAND-13]: Logout rightmost off-Game (wide)
 
@@ -174,26 +174,26 @@ On authenticated non-Game screens with a **wide** viewport (section links visibl
 - **WHEN** the shared header renders
 - **THEN** session logout is rightmost relative to account and theme in the header toolbar
 
-#### Scenario [SC-BRAND-22]: Guest sees login icon instead of logout (wide)
+#### Scenario [SC-BRAND-22]: Guest header has theme only, no login (wide)
 
 - **GIVEN** an authenticated anonymous guest on Lobby on a wide viewport
 - **WHEN** the shared header renders
-- **THEN** a login affordance is rightmost relative to theme in the header toolbar
+- **THEN** theme is shown in the header toolbar account cluster
 - **AND** the account control is not shown for that guest
 - **AND** session logout is not shown for that guest
-- **AND** activating the login affordance opens the Login screen with a return target for the current path (for example `redirect` query)
-- **AND** the login affordance MUST NOT appear on auth screens in today’s `AUTH_ROUTE_NAMES` set (login / forgot-password / confirm-email / reset-password) — same omission surface as session logout
+- **AND** no login affordance is shown in the header toolbar
+- **AND** session logout / login controls MUST NOT appear on auth screens in today’s `AUTH_ROUTE_NAMES` set (login / forgot-password / confirm-email / reset-password)
 
 #### Scenario [SC-BRAND-31]: Wide toolbar session controls are icon-only
 
-- **GIVEN** an authenticated user on a non-Game screen on a wide viewport where the session login or logout control is shown in the toolbar
-- **WHEN** that session control is observed
+- **GIVEN** an authenticated registered user on a non-Game screen on a wide viewport where session logout is shown in the toolbar
+- **WHEN** that session logout control is observed
 - **THEN** the control shows an icon and no visible text label beside the icon
-- **AND** the control still exposes an accessible name for login or logout as applicable
+- **AND** the control still exposes an accessible name for logout
 
 ### Requirement: Mobile burger for section navigation
 
-On narrow viewports for authenticated non-Game screens that use shared section navigation, Packs / Maps / Support / staff «Модерация» (when applicable) MUST be reachable via a burger or equivalent menu. That burger MUST be the **rightmost** control in the header toolbar. The same account-cluster rules as the wide toolbar MUST apply inside the burger: registered → account + theme + logout; anonymous → theme + login affordance (no account); session control last among that cluster. Those controls MUST NOT remain as separate toolbar icons. Game screens MUST NOT use this section-burger fold (Leave and related chrome stay as specified in `game/leave` / existing Game header). Auth/login screens without section navigation MUST NOT gain this burger solely for theme.
+On narrow viewports for authenticated non-Game screens that use shared section navigation, Packs / Maps / Support / staff «Модерация» (when applicable) MUST be reachable via a burger or equivalent menu. That burger MUST be the **rightmost** control in the header toolbar. The same account-cluster rules as the wide toolbar MUST apply inside the burger: registered → account + theme + logout; anonymous → theme only (no account, no login affordance, no logout); session logout last among that cluster when present. Those controls MUST NOT remain as separate toolbar icons. Game screens MUST NOT use this section-burger fold (Leave and related chrome stay as specified in `game/leave` / existing Game header). Auth/login screens without section navigation MUST NOT gain this burger solely for theme.
 
 #### Scenario [SC-BRAND-14]: Burger exposes sections on narrow viewport
 
@@ -210,14 +210,14 @@ On narrow viewports for authenticated non-Game screens that use shared section n
 - **AND** account, theme, and session logout are not separate toolbar controls
 - **AND** opening the burger exposes account, theme, and session logout (logout last among that cluster)
 
-#### Scenario [SC-BRAND-24]: Narrow burger holds login for guest
+#### Scenario [SC-BRAND-24]: Narrow burger has theme only, no login for guest
 
 - **GIVEN** an authenticated anonymous guest on Lobby on a narrow viewport
 - **WHEN** the user opens the header burger/menu
-- **THEN** theme and the login affordance are available in the menu
+- **THEN** theme is available in the menu
 - **AND** the account control is not shown for that guest
 - **AND** session logout is not shown for that guest
-- **AND** the login affordance is last among that account cluster
+- **AND** no login affordance is shown in the burger menu
 
 ### Requirement: Lobby is not the sole section entry
 
