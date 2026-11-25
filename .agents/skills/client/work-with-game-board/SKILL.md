@@ -118,21 +118,23 @@ Sync-driven markers. Page reads mirrored `game.seats` + private `knowledgeDelive
 | Say | Own online **12** |
 | Focus | Own **3** (former end-turn slot) — [focus.md](focus.md) |
 | Knowledge | Own delivered counter beside avatar; +N fall on delivered growth after sync — [knowledge.md](knowledge.md) |
+| AI caption | When mirrored `seat.isBot` — muted `text-caption` «AI» (`game.presenceAi`) under avatar (`.presence-ai-caption`; absolute `top:100%`; reserve top-row `margin-bottom` ~22px — SC-PRESENCE-60). Humans: no name caption |
 | End-turn / leftover ∞ / solo timer modals | **Retired** |
 
 Finish flag + return-icon + red TR grille badges (board overlay above grille + strip); yellow knowledge badge **strip TR only** (+ lightbulb); presence shows delivered knowledge counter + lightbulb.
 
 ### Presence DOM (canonical — SC-PRESENCE-04/10/11/12/13)
 
-Inside `.presence-marker` (96×96 = outer ring, `position: relative`), **three siblings** — never nest progress in progress, never put avatar only in progress default slot without `show-value`:
+Inside `.presence-marker` (96×96 = outer ring, `position: relative`), ring + avatar siblings — never nest progress in progress, never put avatar only in progress default slot without `show-value`. Optional fourth sibling when `isBot`:
 
 ```html
 <q-circular-progress class="presence-progress presence-progress--outer" size="96px" … />
 <q-circular-progress class="presence-progress presence-progress--inner" size="84px" … />
 <img class="presence-avatar" :src="touristSrc(touristId)" alt="" />
+<span v-if="marker.isBot" class="presence-ai-caption text-caption text-muted">{{ $t('game.presenceAi') }}</span>
 ```
 
-CSS: outer ring absolute inset 0; inner centered; avatar sibling z-index 2 (**72×72**). Ready (top-left), say (**12**), focus (**3**) at `z-index: 3+`. Shared `.board-action-icon` **36×36** for say/focus/rescue/return (peek/push/end-turn retired).
+CSS: outer ring absolute inset 0; inner centered; avatar sibling z-index 2 (**72×72**); AI caption absolute under avatar. Ready (top-left), say (**12**), focus (**3**) at `z-index: 3+`. Shared `.board-action-icon` **36×36** for say/focus/rescue/return (peek/push/end-turn retired).
 
 Layout shell: board scroll region → sticky `.game-hud` when seated (`container-name: game-hud`). Do **not** put `overflow-x: auto` on the marker box (SC-SAY-15); do not revive chip/`q-menu` / end-turn dock / opponents in HUD.
 

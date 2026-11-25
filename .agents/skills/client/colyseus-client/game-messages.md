@@ -6,8 +6,8 @@ Read this when changing create options, `room.send` / `onMessage` game contracts
 
 | Direction | Name | Payload / behavior |
 |-----------|------|--------------------|
-| Client → server | `create('tourist', opts)` | `{ mapId, packId, taskSetIds, maxSeats }` — **no** `grilleDensity` / `catapultDensity` (server ignores if sent; fixed exclusive seed **15% grille / 20% catapult** — SC-LOBBY-40/41 / SC-BOARD-80/81) |
-| Client → server | `joinById(roomId)` | Tourist join (spectator if not waiting / full) |
+| Client → server | `create('tourist', opts)` | `{ mapId, packId, taskSetIds, maxSeats, opponentMode: 'people'\|'ai' }` — omit/`people` → human table; effective AI only when `ai` ∧ maxSeats≥2 (server coerce; private + bots; join deny). **no** `grilleDensity` / `catapultDensity` (server ignores if sent; fixed exclusive seed **15% grille / 20% catapult** — SC-LOBBY-40/41 / SC-BOARD-80/81) |
+| Client → server | `joinById(roomId)` | Tourist join (spectator if not waiting / full); effective AI rooms deny extra humans (`ai_room_join_denied`) |
 
 ## Client → server
 
@@ -31,7 +31,7 @@ Read this when changing create options, `room.send` / `onMessage` game contracts
 | `allJailSkip` (all) | `{}` | Top-center Notify «Все туристы в решётке — ход пропущен» for every client; never open start-reset modal (SC-PRESENCE-57 / D7). |
 | `peekClose` (all) | `{ sessionId, correct, row, col, reason?: 'wrong'\|'timeout' }` | Header flash + top-center Notify toast (SC-PRESENCE-36 / SC-BOARD-88). Multi turn timeout uses `'timeout'`. |
 | `say` (all) | `{ sessionId, presetId, at }` | Ephemeral. |
-| Schema sync | seats/pieces (+ `remainingTurns`), peek session, traps, `turnUntil` / `turnBudgetSeconds`, holes | `onStateChange` — see `work-with-stores/game.md`. |
+| Schema sync | seats/pieces (+ `remainingTurns`, `isBot`), peek session, traps, `turnUntil` / `turnBudgetSeconds`, holes | `onStateChange` — see `work-with-stores/game.md`. |
 
 ## Store mirrors (Pinia `game`)
 

@@ -8,6 +8,8 @@ description: >-
   traps 15%/20%; remainingTurns; push/endTurn/peek-open reject; multi 60s
   turnUntil; no leftover ∞/timeExpired; all-jail wait/skip + allJailSkip
   SC-MOVE-124/125; no teleport/allJailWarning)
+  + Easy AI (`opponentMode` / `Seat.isBot` / `botEasy` +
+  `test/botEasy.test.ts` / MyRoom SC-AI-*)
   + content snapshot create (map+pack) + boardGeometry +
   trap / free rescue / returnFromFinish / leave-clear +
   catapult paced pipeline / deferred turn (SC-MOVE-78…93) +

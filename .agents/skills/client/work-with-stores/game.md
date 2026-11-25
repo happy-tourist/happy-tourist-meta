@@ -11,7 +11,9 @@ state: seats (pieces by **pieceId**, incl. `trapped` / `remainingTurns`) / `phas
 private `knowledgeDelivered` / `knowledgePieces` / `knowledgeOutcome` /
 `knowledgeSynced`; `allJailWarning` inert; `peekStatusFlash` + Notify from
 room `peekClose` (`correct` + `reason?: 'wrong'|'timeout'` → flash + toast);
-`createGame({ mapId, packId, taskSetIds, maxSeats })` (no density keys);
+`createGame({ mapId, packId, taskSetIds, maxSeats, opponentMode })`
+(`OpponentMode = 'people'|'ai'`; always send; no client coerce at maxSeats=1;
+no density keys); mirror seat `isBot` for presence «AI» caption;
 `sendMove` / `sendRescue` / `sendReturnFromFinish` / `sendPeekPlace` /
 `sendPeekSubmit` / `sendReady` / `sendSay`. `sendPush` / `sendEndTurn` /
 `sendPeek` retired (no-op / always false).
@@ -79,6 +81,7 @@ export const useGameStore = defineStore('game', {
       packId: string;
       taskSetIds: string[];
       maxSeats: number;
+      opponentMode: 'people' | 'ai';
     }) {
       return this._enterRoom(() => client.create(TOURIST_ROOM, options));
     },
@@ -102,5 +105,6 @@ export const useGameStore = defineStore('game', {
 - Do **not** listen for `budgets`. `allJailWarning` listener stays inert (`= false`).
 - `onMessage('allJailSkip', …)` → Notify top-center `game.allJailSkipToast` (SC-PRESENCE-57); never open start-reset modal.
 - Piece mirror: map `remainingTurns` from schema; mirror `turnUntil` / `turnBudgetSeconds` for presence ring.
+- Seat mirror: `isBot: Boolean(seat.isBot)` on `GameSeat` (SC-PRESENCE-60) — presence caption only; humans stay `false`.
 - `finishPlace` 0→1 is a boolean-ish finished/cut gate — GamePage opens knowledge modal by `knowledgeOutcome`, not place UX.
 - `peekClose` → header flash + Quasar Notify top-center (SC-PRESENCE-36 / SC-BOARD-88).

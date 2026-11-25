@@ -6,7 +6,8 @@ description: >-
   onJoin / onDrop / onReconnect / onLeave / onDispose), tourist reconnect grace
   vs LobbyRoom fire-and-forget, room registration in app.config (lobby +
   tourist + enableRealtimeListing), mapId/packId/taskSetIds + maxSeats
-  (1…map.players; omit → min(2, map.players); density keys ignored) /
+  (1…map.players; omit → min(2, map.players); density keys ignored) +
+  opponentMode people|ai (effective AI = ai ∧ maxSeats≥2 → private + bots) /
   waiting-only seating / deferred pieces / seat connectivity / start phase,
   consented leave clears holding grilles (SC-PIECE-28), onDispose cancels paced
   trap pipeline, JWT room gate, or aligning room name with client TOURIST_ROOM.
@@ -33,10 +34,11 @@ Coordinate with sibling skills when they exist: `work-with-schema`, `work-with-m
 |-------|------|------|
 | Registration | `src/app.config.ts` | `lobby: defineRoom(LobbyRoom)`; `tourist: defineRoom(MyRoom).enableRealtimeListing()` |
 | Game handler | `src/rooms/MyRoom.ts` | `Room` subclass: `onAuth`, `onCreate`, `onJoin`, `onDrop`, `onReconnect`, `onLeave`, `onDispose`; `onMessage('move'|'rescue'|'returnFromFinish'|'ready'|'say'|…)` |
-| Schema | `src/rooms/schema/MyRoomState.ts` | Synced: `phase` / `maxSeats` / `grid` / `touristsPerPlayer` / peek session / `countdownRemaining` + seats (pieces by pieceId) + turn + `removedTaskKeys` + grilles/catapults |
+| Schema | `src/rooms/schema/MyRoomState.ts` | Synced: `phase` / `maxSeats` / `grid` / `touristsPerPlayer` / peek session / `countdownRemaining` + seats (pieces by pieceId + `isBot`) + turn + `removedTaskKeys` + grilles/catapults |
 | Snapshot | `src/lib/roomContentSnapshot.ts` | Immutable map+pack load on create |
 | Geometry | `src/game/boardGeometry.ts` | Parse grid → playable/task/center |
-| Tests | `test/MyRoom.test.ts` | JWT, tourist connect; capacity/start (SC-START-*); seating/deferred pieces (SC-PIECE-*); turn/move/knowledge/grille/catapult (SC-MOVE-*); finish/cut (SC-FINISH-*); say (SC-SAY-*); lobby (SC-LOBBY-*; density retired SC-LOBBY-40/41) |
+| Easy AI | `src/game/botEasy.ts` | Pure heuristics; room spawns `bot:N` + schedules — see `work-with-game` |
+| Tests | `test/MyRoom.test.ts` (+ `test/botEasy.test.ts`) | JWT, tourist connect; capacity/start (SC-START-*); seating/deferred pieces (SC-PIECE-*); turn/move/knowledge/grille/catapult (SC-MOVE-*); finish/cut (SC-FINISH-*); say (SC-SAY-*); lobby (SC-LOBBY-*; density retired SC-LOBBY-40/41); AI (SC-AI-*; private/join-deny/dispose) |
 | Loadtest | `loadtest/example.ts` | `joinOrCreate`; `--room tourist` |
 
 Registered room keys today: **`lobby`** (built-in listing) and **`tourist`** (playable `MyRoom` with realtime listing). Client `TOURIST_ROOM` / `LOBBY_ROOM` match these names — do not reintroduce `my_room`.
@@ -46,8 +48,8 @@ Constants: `RECONNECT_GRACE_SECONDS = 30`, `COUNTDOWN_SECONDS = 5`. Multi turn d
 ## Lifecycle Flow
 
 ```text
-client create({ mapId, packId, taskSetIds, maxSeats? }) / joinById / joinOrCreate / reconnect('tourist')
-        │  (density keys ignored if sent — fixed exclusive seed)
+client create({ mapId, packId, taskSetIds, maxSeats?, opponentMode? }) / joinById / joinOrCreate / reconnect('tourist')
+        │  (density keys ignored; opponentMode ai∧maxSeats≥2 → private + bots)
         ▼
   static onAuth(token)     ← JWT.verify; fail → reject join
         │  returns userdata → onJoin(…, auth)
@@ -84,11 +86,11 @@ client create({ mapId, packId, taskSetIds, maxSeats? }) / joinById / joinOrCreat
 | Hook | Do here | Don't |
 |------|---------|--------|
 | `static onAuth` | `JWT.verify(token)`; return userdata | Trust client-supplied identity without JWT |
-| `onCreate` | `setState`; **async** `loadRoomContentSnapshot(options)` → parse `maxSeats` (`1…map.players`; omit → `min(2, map.players)`; invalid → reject) + `grid` + pack; ignore density keys; `phase=waiting`; `refreshMetadata`; register move/rescue/return/peek*/push/endTurn/ready/say (push/peek-open/endTurn reject); do **not** set `maxClients = maxSeats` | Mutate board from HTTP; force `maxSeats = map.players` without host choice; revive density seed options |
-| `onJoin` | Assign seat only while `phase === 'waiting'` and under `maxSeats`; unique `touristId`; pieces deferred until `playing`; online connectivity; `ready=false`; `timeExpired=false`; maybe start countdown when full | Cap the room with `maxClients`; seat during `countdown`/`playing`; invent pieces in waiting |
-| `onDrop` | Seated: mark offline + `allowReconnection(client, 30)`; hold seat/pieces; do not cancel countdown; do **not** pause turn deadline | Treat unexpected drop as immediate seat delete; grace for spectators or LobbyRoom |
+| `onCreate` | `setState`; **async** `loadRoomContentSnapshot(options)` → parse `maxSeats` (`1…map.players`; omit → `min(2, map.players)`; invalid → reject) + `opponentMode` (explicit `'ai'` only) + `grid` + pack; ignore density keys; effective AI → `setPrivate(true)`; `phase=waiting`; `refreshMetadata` (people listing); register move/rescue/return/peek*/push/endTurn/ready/say (push/peek-open/endTurn reject); do **not** set `maxClients = maxSeats` | Mutate board from HTTP; force `maxSeats = map.players` without host choice; revive density seed options; treat maxSeats=1+ai as effective AI |
+| `onJoin` | People: seat only while `waiting` under `maxSeats`. Effective AI: first human seats + `spawnBotSeats()` → countdown; further humans → `ai_room_join_denied` (no spectator). Unique `touristId`; pieces deferred; `isBot:false` for humans; `ready=false`; `timeExpired=false` | Cap with `maxClients`; seat during `countdown`/`playing`; invent pieces in waiting; silent-spectator into AI rooms |
+| `onDrop` | Seated human: mark offline + `allowReconnection(client, 30)`; hold seat/pieces; do not cancel countdown; do **not** pause turn deadline. Bots never grace | Treat unexpected drop as immediate seat delete; grace for spectators/LobbyRoom/bots |
 | `onReconnect` | Restore seat online (`connected=true`, `reconnectUntil=0`) | Re-assign a new seat / touristId |
-| `onLeave` | Clear holding grilles of this seat’s trapped cells (SC-PIECE-28), then permanent remove seat; subsequent joins get seats only while `phase === 'waiting'`; refreshMetadata; maybeStartCountdown; if zero seats → `disconnect()` | Leave stale seats; leave orphan holding grilles; clear holding on `onDrop` grace; let spectators keep an empty-seated room alive; clear others' `ready` on leave; reopen seating in countdown/playing |
+| `onLeave` | Clear holding grilles of this seat’s trapped cells (SC-PIECE-28), then permanent remove seat; subsequent joins get seats only while `phase === 'waiting'`; refreshMetadata; maybeStartCountdown; if zero seats → `disconnect()`. Effective AI: zero **human** seats → `disconnect()` even if bots remain; clear bot timers | Leave stale seats; leave orphan holding grilles; clear holding on `onDrop` grace; keep AI room alive on bots alone; clear others' `ready` on leave; reopen seating in countdown/playing |
 | `onDispose` | Bump `trapPipelineGeneration` + clear `trapPipelineActive` / `pendingTurnAdvance`; `clearTurnDeadline()` + cleanup other timers / logs | Assume clients still connected; leave dangling turn / trap pipeline timeouts |
 
 ## Current Room (`MyRoom.ts`)
@@ -165,9 +167,9 @@ Align with client Pinia expectations:
 | Concern | Target |
 |---------|--------|
 | Capacity | No `maxClients = maxSeats`; seated ≤ `maxSeats` (`1…4`, chosen ≤ map.players) via seats check; spectators may join |
-| Seats | Unique `touristId` 1…4; pieces deferred until `playing` (`touristsPerPlayer` pieces by pieceId on free start cells — see `work-with-game`); **new seat only while `phase === 'waiting'`** and under maxSeats |
-| Connectivity | `connected` + `reconnectUntil` on Seat; online at assign; `timeExpired` unused (always false) |
-| Start | `phase` waiting → countdown → playing (+ materialize; turn deadline unless maxSeats=1); full table (incl. maxSeats=1) or all-ready underfilled; legacy `started` mirrors `phase === 'playing'` |
+| Seats | Unique `touristId` 1…4; pieces deferred until `playing` (`touristsPerPlayer` pieces by pieceId on free start cells — see `work-with-game`); **new human seat only while `phase === 'waiting'`** and under maxSeats (people); AI fills remainder with `bot:N` / `isBot` |
+| Connectivity | `connected` + `reconnectUntil` on Seat; online at assign; `timeExpired` unused (always false); bots stay `connected: true` without Client |
+| Start | `phase` waiting → countdown → playing (+ materialize; turn deadline unless maxSeats=1); full table (incl. maxSeats=1 / AI-filled) or all-ready underfilled; legacy `started` mirrors `phase === 'playing'` |
 | Turn timer | Multi ≥2 eligible: `TURN_BUDGET_SECONDS=60` + `turnUntil` / `turnBudgetSeconds`; leftover sole eligible / single-player: inactive; never leftover `timeExpired` — see `work-with-game` |
 | Status metadata | `waiting` until `phase === 'playing'`; always publish `maxSeats` + occupied `seats` |
 | Unexpected drop | Hold seat 30 s + `allowReconnection`; sync offline + deadline (SC-PIECE-11…14, 16); does not cancel countdown |

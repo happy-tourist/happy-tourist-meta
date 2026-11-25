@@ -16,7 +16,8 @@ description: >-
   finish|cut modal («которые успели») / Notify peek + `allJailSkip`
   SC-PRESENCE-57 (leftover ∞ / end-turn / density / all-jail modal / board
   yellow knowledge / `mdi-lightbulb` cases retired); lobby
-  `LobbyRoomCardTile` / `LobbyCreateWire` **no density** SC-LOBBY-24…26/33…36/40/41,
+  `LobbyRoomCardTile` / `LobbyCreateWire` opponentMode + **no density**
+  SC-LOBBY-24…26/33…36/40/41/50…52 + `GamePresenceAi` SC-PRESENCE-60,
   maps palette/preview SC-MAP-71/72, App header chrome); Colyseus client.auth /
   client.http / room I/O spies; store error + q-banner; vue-i18n / router.
   Harness: `vitest.config.ts`, `test/setup.ts`, `npm test`. Core in SKILL.md;

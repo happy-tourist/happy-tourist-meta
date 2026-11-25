@@ -3,7 +3,7 @@ name: colyseus-client
 description: >-
   Use when adding, changing, or reviewing Colyseus client I/O in the
   happy-tourist tourist SPA: Client singleton from src/boot/colyseus.ts,
-  LobbyRoom live listing (subscribeLobby), room create/join/leave (map+pack+maxSeats;
+  LobbyRoom live listing (subscribeLobby), room create/join/leave (map+pack+maxSeats+opponentMode;
   no density), room.send move/rescue/returnFromFinish/peekPlace/peekSubmit/say
   (push/peek-open/endTurn retired), private knowledge/allJailWarning (inert) /
   allJailSkip Notify, client.auth, Pinia auth/game stores, or VITE_COLYSEUS_URL /

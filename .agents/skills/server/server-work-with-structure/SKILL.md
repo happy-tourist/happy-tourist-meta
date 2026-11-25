@@ -69,7 +69,7 @@ Read the matching file in this folder when the change involves that area
 | Database | `src/db/` | `GameDatabase` (`index.ts`) + Drizzle user schema (`schema.ts`; `htRole` + support + content pack/map table decls) |
 | Rooms | `src/rooms/` | Room handlers (`onCreate` / `onJoin` / `onDrop` / `onReconnect` / leave / dispose; `onMessage('move'|'ready'|'say')`) |
 | Schema | `src/rooms/schema/` | `@colyseus/schema` synced state (`phase` / `maxSeats` / `countdownRemaining` + legacy `started` + `seats` + `currentTurnSessionId`) |
-| Pure rules | `src/game/` | Authoritative move validate/apply (`touristMove.ts`, `boardGeometry.ts`) — no Colyseus I/O |
+| Pure rules | `src/game/` | Authoritative move validate/apply (`touristMove.ts`, `boardGeometry.ts`) + Easy AI scoring (`botEasy.ts`) — no Colyseus I/O |
 | Room create snapshot | `src/lib/roomContentSnapshot.ts` | Immutable map+pack snapshot for `MyRoom.onCreate` |
 | Create fixture cache | `src/lib/touristCreateFixtureState.ts` | Mocha tourist-create fixture ids (cleared with content tables) |
 | Tests | `test/` | mocha + `@colyseus/testing` (`*.test.ts`; auth email + theme + room + `support.test.ts` + `zz-contentPacks.test.ts` + `zz-contentMaps.test.ts` + `zz-defaultContentPacks.test.ts`) |

@@ -7,9 +7,11 @@ description: >-
   move|return board action + free rescue, exclusive grille/catapult seed
   15%/20%, paced trap pipeline / pendingTurnAdvance / idle ensure+absorb,
   remainingTurns grille tick, 60s multi turn deadline, all-jail wait/skip +
-  allJailSkip when eligible ≥2, penultimate cut, center finish, or one-step
-  rules in happy-tourist-server (`MyRoom`, schema, src/game/touristMove.ts).
-  Push/endTurn/solo leftover clock/density options/all-jail teleport retired.
+  allJailSkip when eligible ≥2, penultimate cut, center finish, Easy AI
+  (`opponentMode` / Seat.isBot / src/game/botEasy.ts + room bot timers), or
+  one-step rules in happy-tourist-server (`MyRoom`, schema,
+  src/game/touristMove.ts). Push/endTurn/solo leftover clock/density
+  options/all-jail teleport retired.
 ---
 
 # Work With Game
@@ -24,18 +26,28 @@ Pair with client board UX: `happy-tourist-meta/.agents/skills/client/work-with-g
 
 | Surface | Path | Role |
 | --- | --- | --- |
-| Room | `src/rooms/MyRoom.ts` | JWT `onAuth`; async create via `roomContentSnapshot`; seat assign; start/ready/countdown; `turnOrder` + private `knowledge` / `boardActionUsed` / task deck / BoardGeometry / `openPeek` / exclusive traps; paced trap pipeline; `onMessage('move'|'rescue'|'returnFromFinish'|'peek'|'peekPlace'|'peekSubmit'|'push'|'endTurn'|'ready'|'say')` (push/peek-open/endTurn reject); `onDrop`/`onReconnect`/`onLeave` |
-| Schema | `src/rooms/schema/MyRoomState.ts` | `phase` + `maxSeats` + seats (`finishPlace` 0\|1 gate; `timeExpired` always false) + piece `finished`/`trapped`/`remainingTurns` + turn + `removedTaskKeys` + grilles/catapults + peek session |
+| Room | `src/rooms/MyRoom.ts` | JWT `onAuth`; async create via `roomContentSnapshot`; seat assign; start/ready/countdown; `turnOrder` + private `knowledge` / `boardActionUsed` / task deck / BoardGeometry / `openPeek` / exclusive traps; paced trap pipeline; Easy AI spawn/schedule; `onMessage('move'|'rescue'|'returnFromFinish'|'peek'|'peekPlace'|'peekSubmit'|'push'|'endTurn'|'ready'|'say')` (push/peek-open/endTurn reject); `onDrop`/`onReconnect`/`onLeave` |
+| Schema | `src/rooms/schema/MyRoomState.ts` | `phase` + `maxSeats` + seats (`finishPlace` 0\|1 gate; `timeExpired` always false; `isBot`) + piece `finished`/`trapped`/`remainingTurns` + turn + `removedTaskKeys` + grilles/catapults + peek session |
 | Rules | `src/game/touristMove.ts` | Pure one-step move; landable removed holes; `hasLegalMove` / `hasLegalRescue` / `hasLegalReturn`; exclusive seed helpers `exclusiveGrilleCount` / `exclusiveCatapultCount` / `pickExclusiveTrapKeys` (15% grille / 20% catapult); catapult fling helpers. Push validators retired from product paths. |
+| Easy AI | `src/game/botEasy.ts` | Pure delay sample + rescue pick + selfish move/return scoring (`MOVE_DELAY_MS` / `ANSWER_DELAY_MS`); room schedules via `clock.setTimeout` and applies through sessionId helpers |
 | Registration | `src/app.config.ts` | Room name `tourist` |
 
 Constants: `RECONNECT_GRACE_SECONDS = 30`, `COUNTDOWN_SECONDS = 5`. Multi turn deadline: `TURN_BUDGET_SECONDS = 60` when ≥2 eligible (`turnUntil` / `turnBudgetSeconds`; mocha `setTurnBudgetsForTests` / `resetTurnBudgets`). Solo leftover wall-clock (`SOLO_BUDGET_SECONDS`) retired — never arms permanent `timeExpired`. Trap presentation: `MOVE_ANIM_MS`, `CATAPULT_ANIM_MS=1500`, broken **1200**, `GRILLE_ANIM_MS=1000` — `setTrapPresentationBudgetsForTests` / `resetTrapPresentationBudgets`.
 
 ## Seating / start
 
-- Create options: `{ mapId, packId, taskSetIds, maxSeats?: 1…map.players }` (`maxSeats` omit → **`min(2, map.players)`**; invalid → reject). Density keys if present are **ignored**.
-- New seat only while `phase === 'waiting'` and under `maxSeats`. Pieces deferred until `enterPlaying` / `materializePiecesForAllSeats`.
-- Full table (incl. `maxSeats=1`) → countdown → `enterPlaying`: materialize, seed knowledge zeros + exclusive traps, become-current first eligible → arm 60s multi deadline when ≥2 eligible.
+- Create options: `{ mapId, packId, taskSetIds, maxSeats?: 1…map.players, opponentMode?: 'people'|'ai' }` (`maxSeats` omit → **`min(2, map.players)`**; invalid → reject; omit/`≠ai` → people). Density keys if present are **ignored**.
+- **Effective AI** = `opponentMode === 'ai'` ∧ `maxSeats ≥ 2`. Else coerce people/solo (no bots / no `setPrivate` / no AI join-deny) even if client sent `ai` at maxSeats=1.
+- Effective AI: `setPrivate(true)` (unlist); after host `onJoin` → `spawnBotSeats()` (`bot:N` keys, unique `touristId` 1…4, `isBot: true`, `connected: true`) → full table countdown. Extra human `onJoin` → throw `ai_room_join_denied` (no spectator). Host reconnect unchanged.
+- New human seat only while `phase === 'waiting'` and under `maxSeats` (people tables). Pieces deferred until `enterPlaying` / `materializePiecesForAllSeats` (bots too).
+- Full table (incl. `maxSeats=1` solo / AI filled) → countdown → `enterPlaying`: materialize, seed knowledge zeros + exclusive traps, become-current first eligible → arm 60s multi deadline when ≥2 eligible.
+- Effective AI dispose: keep-alive while ≥1 human seated (any phase); permanent human leave / grace expiry → `disconnect()` even if bots remain; clear bot timers on dispose/leave.
+
+## Easy AI (D7)
+
+- Become-current bot → schedule controller (not human messages): legal own rescue → move-delay → rescue helper; then move-delay → `botEasy` score → move|return helper (same sessionId-scoped paths as humans).
+- Open peek for bot session → answer-delay → always-correct resolve (`resolveOpenPeek(true)`); humans remain non-owner of shared modal.
+- Delays: `MOVE_DELAY_MS = [600,900,1100,1400]`; `ANSWER_DELAY_MS = [1200,1600,2000,2500,3000]` (random pick). Cancel timers on dispose / human-gone.
 
 ## Turn machine (D3)
 
@@ -76,7 +88,8 @@ Room-private `knowledge: Map<sessionId, { delivered, pieces: Map<pieceId, number
 | Seed exclusive 15%/20%; private knowledge (+ `outcome?`); open-on-land after pipeline idle | Revive density create options, steps/peeks budgets, push, endTurn, solo leftover `timeExpired` |
 | Tick `remainingTurns` on become-current; all-jail **wait/skip** + `allJailSkip` when eligible ≥2 (no teleport/`allJailWarning`) | Ranked finish places; public knowledge fields; client peek-open as land substitute; all-jail start teleport |
 | Arm 60s multi `turnUntil` when ≥2 eligible; timeout → `peekClose.reason:'timeout'` + advance | Assert leftover ∞ / permanent leftover lock / density seed counts 22/35% / 12% grille |
-| Mocha: knowledge helpers / `boardActionUsed` / trap presentation + turn-budget overrides | — |
+| Effective AI via sessionId helpers + `botEasy`; sync `isBot`; private + join-deny + dispose on last human | Fake `Client` for bots; mix humans+AI at one table; keep AI room alive on bots alone |
+| Mocha: knowledge helpers / `boardActionUsed` / trap presentation + turn-budget overrides + `botEasy` / AI room cases | — |
 
 ## Related
 

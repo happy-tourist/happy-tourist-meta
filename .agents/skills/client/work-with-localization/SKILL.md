@@ -91,6 +91,9 @@ export default {
     taskSets: 'Наборы заданий',
     mapCapacity: '{players}×{tourists}',
     maxSeats: 'Число мест',
+    opponentMode: 'Соперник', // SC-LOBBY-50; after maxSeats
+    opponentPeople: 'Люди',
+    opponentAi: 'AI',
     emptyMaps: 'Нет опубликованных карт',
     emptyPacks: 'Нет опубликованных наборов',
     emptyTaskSets: 'Нет опубликованных наборов заданий',
@@ -156,6 +159,7 @@ export default {
     allJailWarningModal: 'Все туристы попали в решётки. Они отправлены на стартовые клетки.',
     allJailWarningModalOk: 'ОК',
     allJailSkipToast: 'Все туристы в решётке — ход пропущен',
+    presenceAi: 'AI', // SC-PRESENCE-60 bot caption under avatar
     knowledgeDeliveredModalCut:
       'Соперники финишировали. Ваши туристы, которые успели, доставили {n} знаний',
   },

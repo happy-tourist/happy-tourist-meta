@@ -6,11 +6,12 @@ description: >-
   grid/touristsPerPlayer/packTitle/flippedCells/answerCards/peek session +
   countdownRemaining/started/seats (touristId + pieces by pieceId +
   finished/trapped/remainingTurns + connected/reconnectUntil/ready/finishPlace
-  0|1 gate/timeExpired always-false from clocks) + currentTurnSessionId +
-  turnUntil/turnBudgetSeconds (60s multi when ≥2 eligible) + removedTaskKeys +
-  holdingGrilleKeys + revealingCatapultKeys + brokenCatapultKeys, MapSchema /
-  ArraySchema, schema() + t.* (v5), or aligning sync with the sibling client.
-  Private knowledge is NOT schema — room message only.
+  0|1 gate/timeExpired always-false from clocks + isBot for synthetic AI seats)
+  + currentTurnSessionId + turnUntil/turnBudgetSeconds (60s multi when ≥2
+  eligible) + removedTaskKeys + holdingGrilleKeys + revealingCatapultKeys +
+  brokenCatapultKeys, MapSchema / ArraySchema, schema() + t.* (v5), or aligning
+  sync with the sibling client. Private knowledge is NOT schema — room message
+  only.
 ---
 
 # Work With Schema
@@ -26,15 +27,17 @@ synced `grid` via `lib/boardGeometry`; seats/`phase`/`maxSeats`/`grid`/
 `touristsPerPlayer`/peek session/`countdownRemaining`/`currentTurnSessionId`/
 `turnUntil`/`turnBudgetSeconds`/`removedTaskKeys`/`holdingGrilleKeys`/
 `revealingCatapultKeys`/`brokenCatapultKeys`/connectivity/ready/`finishPlace`/
-`timeExpired`/piece `trapped`/`remainingTurns` mirrored in `stores/game`).
+`timeExpired`/`isBot`/piece `trapped`/`remainingTurns` mirrored in `stores/game`).
 
 Schema is the **sync surface only**. Seating, reconnect, start countdown, turn order
 (`turnOrder` room-private), private **knowledge**, task deck / bindings, exclusive
-trap seed, and move/rescue/return/open-on-land rules live in the Room /
-`work-with-game` — not in schema. Do **not** put knowledge delivered/carried on
-schema. `turnUntil` / `turnBudgetSeconds` arm for multi ≥2 eligible (60s);
+trap seed, Easy AI orchestration (`botEasy` + room timers), and
+move/rescue/return/open-on-land rules live in the Room / `work-with-game` — not
+in schema. Do **not** put knowledge delivered/carried on schema.
+`turnUntil` / `turnBudgetSeconds` arm for multi ≥2 eligible (60s);
 leftover sole eligible / single-player stay `0`. `finishPlace` is 0|1
-finished/cut gate (no ranked places).
+finished/cut gate (no ranked places). `Seat.isBot` marks synthetic AI seats
+(no Colyseus client); humans stay `false`.
 
 ## Overview
 
@@ -77,6 +80,8 @@ export const Seat = schema(
     /** Finish place; `0` until all own pieces finished. */
     finishPlace: t.uint8().default(0),
     timeExpired: t.boolean().default(false),
+    /** Synthetic AI opponent seat (no Colyseus client); humans stay false. */
+    isBot: t.boolean().default(false),
   },
   "Seat",
 );
